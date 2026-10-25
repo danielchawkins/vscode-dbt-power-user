@@ -89,7 +89,7 @@ module.exports = {
       name: "docs-pure",
       severity: "error",
       comment:
-        "The docs drafts store and the column proposal payload builders import neither vscode nor the docs host.",
+        "The docs drafts store and the column proposal payload builders import no vscode, so they test without its mock.",
       from: {
         path: "^src/features/docs/(docsDrafts|columnProposalPayloads)\\.ts$",
       },

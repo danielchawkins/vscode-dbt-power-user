@@ -38,12 +38,14 @@ export class DocsDrafts {
     }
   }
 
+  /** The unsaved draft's columns for the model at `filePath`; undefined when it has none. */
+  draftColumns(filePath: string): Column[] | undefined {
+    return this.drafts.get(filePath)?.docs.columns;
+  }
+
   /** The columns a proposal or a save answers for: the draft's when the model has one, else the YAML's. */
   columnsFor(documentation: { filePath: string; columns: Column[] }): Column[] {
-    return (
-      this.drafts.get(documentation.filePath)?.docs.columns ??
-      documentation.columns
-    );
+    return this.draftColumns(documentation.filePath) ?? documentation.columns;
   }
 
   /** Model paths with an unsaved draft; the smoke suites check that none leak between them. */

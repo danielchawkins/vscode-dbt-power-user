@@ -171,16 +171,15 @@ export class DocsEditRequests {
     );
   }
 
-  private getDbtTestCode(test: TestMetaData, modelName: string) {
+  private getDbtTestCode(test: TestMetaData, modelName: string, uri: Uri) {
     return {
       sql: test.path?.endsWith(".sql")
         ? readFileSync(test.path, { encoding: "utf-8" })
         : undefined,
-      config: this.host.dbtTestService.getConfigByTest(
-        test,
-        modelName,
-        test.column_name,
-      ),
+      config: this.host.dbtTestService.getConfigByTest(test, modelName, {
+        columnNameFromTestMetadata: test.column_name,
+        uri,
+      }),
     };
   }
 
@@ -205,10 +204,15 @@ export class DocsEditRequests {
     return {
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),
-      getTestCode: this.withProject(({ syncRequestId, test, model }) =>
+      getTestCode: this.withProject(({ syncRequestId, test, model }, active) =>
         this.handleSyncRequest(
           syncRequestId,
-          () => this.getDbtTestCode(test as unknown as TestMetaData, model),
+          () =>
+            this.getDbtTestCode(
+              test as unknown as TestMetaData,
+              model,
+              active.uri,
+            ),
           "getTestCode",
         ),
       ),

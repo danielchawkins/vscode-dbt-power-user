@@ -110,14 +110,17 @@ describe("docs editor save", () => {
   afterEach(() => rmSync(root, { recursive: true, force: true }));
 
   const save = (patchPath?: string, dialogType?: string) =>
-    panel.saveDocumentation({
-      name: "orders",
-      filePath: path.join(root, "models", "orders.sql"),
-      patchPath,
-      dialogType,
-      columns: [{ name: "id" }],
-      updatedTests: [columnTest],
-    });
+    panel.saveDocumentation(
+      {
+        name: "orders",
+        filePath: path.join(root, "models", "orders.sql"),
+        patchPath,
+        dialogType,
+        columns: [{ name: "id" }],
+        updatedTests: [columnTest],
+      },
+      panel.getProject(),
+    );
 
   it("writes data_tests for a column added to a model that already has YAML", async () => {
     expect(await save("project://models/schema.yml")).toBe(true);
@@ -182,5 +185,6 @@ describe("docs editor save", () => {
 });
 
 interface SavePanel {
-  saveDocumentation(message: unknown): Promise<boolean>;
+  saveDocumentation(message: unknown, project: unknown): Promise<boolean>;
+  getProject(): unknown;
 }
