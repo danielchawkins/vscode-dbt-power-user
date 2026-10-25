@@ -1,0 +1,14 @@
+id: ts-path-containment-from-core-paths
+snapshots:
+  return !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);:
+    labels:
+    - source: relative.startsWith(`..${path.sep}`)
+      style: primary
+      start: 8
+      end: 44
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);:
+    labels:
+    - source: rel.startsWith("..")
+      style: primary
+      start: 22
+      end: 42
