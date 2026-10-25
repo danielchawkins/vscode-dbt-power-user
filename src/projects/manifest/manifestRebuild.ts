@@ -117,7 +117,7 @@ export class ManifestRebuild {
     delegate: FusionCli,
     generation: number,
   ): Promise<ParsedManifest | undefined> {
-    const targetPath = delegate.getTargetPath();
+    const targetPath = delegate.paths().targetPath;
     if (!targetPath) {
       this.terminal.debug(
         "Project",

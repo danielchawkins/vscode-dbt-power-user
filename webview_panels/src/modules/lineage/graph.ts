@@ -1,4 +1,5 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import { sameColumnName } from "./edgeIds";
 import type { NeighbourGroups } from "./grouping";
 import { bucketNeighbours, groupedNeighbours } from "./grouping";
 import { hiddenTables } from "./hiddenNodes";
@@ -111,18 +112,40 @@ export const parseExpansion = (
       : undefined;
 };
 
-export const isExpanded = (
+const isExpanded = (
   state: GraphState,
   direction: Direction,
   table: string,
 ): boolean => state.expansions.includes(expansionKey(direction, table));
 
 /** Whether the `direction` neighbours of `table` are being fetched. */
-export const isPending = (
+const isPending = (
   state: GraphState,
   direction: Direction,
   table: string,
 ): boolean => state.pending.includes(expansionKey(direction, table));
+
+/** What a click on the `direction` expander of `table` does: an open or still pending one collapses, else it expands. */
+export const expansionClick = (
+  state: GraphState,
+  direction: Direction,
+  table: string,
+): "collapse" | "expand" =>
+  isExpanded(state, direction, table) || isPending(state, direction, table)
+    ? "collapse"
+    : "expand";
+
+/** What a click on `ref` does: the selected column, compared case-insensitively, clears the trace; any other traces. */
+export const columnClick = (
+  state: GraphState,
+  ref: ColumnRef,
+): "clear" | "trace" => {
+  const selected = state.selectedColumn;
+  return selected?.[0] === ref[0] &&
+    sameColumnName({ name: selected[1] }, ref[1])
+    ? "clear"
+    : "trace";
+};
 
 const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;

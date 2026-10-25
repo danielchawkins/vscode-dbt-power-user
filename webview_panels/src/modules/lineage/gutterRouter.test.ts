@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { tableEdgeId } from "./edgeIds";
 import { routeGutters, type TableRoute } from "./gutterRouter";
 import type { LayeredNode } from "./layered";
 import { layeredFlow } from "./layeredFlow";
@@ -13,7 +14,7 @@ const node = (id: string, tag: string): LayeredNode => ({
   tag,
 });
 const table = (parent: string, child: string): TableRoute => ({
-  id: `t:${parent}->${child}`,
+  id: tableEdgeId(parent, child),
   parent,
   child,
 });
@@ -63,7 +64,7 @@ describe("layeredFlow on a mixed-layer fixture", () => {
   it("draws one path per table edge, each a rounded orthogonal path", () => {
     const result = flow("start", nodes, pairs);
     for (const [parent, child] of pairs) {
-      const path = result.paths.get(`t:${parent}->${child}`);
+      const path = result.paths.get(tableEdgeId(parent, child));
       expect(path?.d.startsWith("M")).toBe(true);
       expect(path?.d).not.toMatch(/NaN|Infinity/);
     }

@@ -4,6 +4,7 @@ import type { QueryExecutionResult } from "../../core/dbt/domain";
 import type { QueryExecution } from "../../core/dbtCommand";
 import type { ModelNode } from "../../core/lineage/modelNode";
 import type { Log } from "../../core/log";
+import type { ProjectPaths } from "../../core/snapshot/index";
 import type { DBColumn } from "../../core/types";
 import { readSetting } from "../../settings/index";
 import {
@@ -27,7 +28,7 @@ import type { SharedStateService } from "./sharedStateService";
 
 /** What the queries read from their project. */
 export interface QueriedProject extends WarehouseProject {
-  getTargetPath(): string | undefined;
+  paths(): Pick<ProjectPaths, "targetPath"> | undefined;
 }
 
 /** The compile, column and query operations of a project, which run against its CLI and language server. */
@@ -55,7 +56,7 @@ export class ProjectQueries {
     const root = this.project.projectRoot.fsPath;
     void findModelInTargetfolder(
       root,
-      this.project.getTargetPath(),
+      this.project.paths()?.targetPath,
       modelPath,
       "run",
     );

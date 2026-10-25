@@ -3,11 +3,11 @@ import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
-import type { FlowInput } from "./flow";
 import { drawnEdges, toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
+import type { FlowInput } from "./layeredInput";
 import { geometry, tableHeight } from "./layout";
 import type { RoutedRelationshipData } from "./relationshipRoute";
 
@@ -451,7 +451,7 @@ describe("toFlow layered layout", () => {
       expect(ref.bottom - ref.top).toBeGreaterThan(decl.bottom - decl.top);
       expect(centre(ref)).toBe(centre(decl));
       const rel = edges.find((e) => e.id === "r:ref1");
-      const { routed } = rel?.data as { routed: RoutedRelationshipData };
+      const { routed } = rel!.data as { routed: RoutedRelationshipData };
       // The source is the referenced card's bar and the target the declaring card's crow's foot: each ends on one of
       // its own card's edges, not on the other card's.
       expect([ref.top, ref.bottom]).toContain(routed.source.y);

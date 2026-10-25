@@ -11,13 +11,13 @@ import {
   validateSmokeHost,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID } from "./panels";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const GENERAL = "worktree_general";
 const STAGING_MODEL = "transformation/dbt/general/models/general_model.sql";
 const PROBE_MODEL = "tests/fixtures/probe/models/probe_model.sql";

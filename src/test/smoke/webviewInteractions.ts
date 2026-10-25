@@ -73,9 +73,12 @@ const FRAME_HELPERS = `
     const y = rect.top + (offset ? offset[1] : rect.height / 2);
     const inView =
       rect.width > 0 && rect.height > 0 && x >= 0 && y >= 0 && x <= innerWidth && y <= innerHeight;
+    const top = inView ? document.elementFromPoint(x, y) : null;
+    const onTop = top !== null && (top === node || node.contains(top));
     const rectText = [rect.left, rect.top, rect.width, rect.height].map(Math.round).join(",");
-    const detail = \`\${rectText} in \${innerWidth}x\${innerHeight}\`;
-    return { found: inView, x, y, detail, html: node.outerHTML.slice(0, ${HTML_LIMIT}) };
+    const covered = inView && !onTop ? \`; covered by \${(top?.outerHTML ?? "nothing").slice(0, 200)}\` : "";
+    const detail = \`\${rectText} in \${innerWidth}x\${innerHeight}\${covered}\`;
+    return { found: onTop, x, y, detail, html: node.outerHTML.slice(0, ${HTML_LIMIT}) };
   };
 `;
 
@@ -117,8 +120,9 @@ interface Located {
 }
 
 /**
- * Polls until the element is laid out inside the webview's viewport, then returns the frame that holds it and a
- * point inside it. A point outside the viewport gets no click, so it is not accepted.
+ * Polls until the element is laid out inside the webview's viewport, is the topmost element at its point, and sits at
+ * the same point on two polls in a row, then returns the frame that holds it and that point. A canvas that refits
+ * after a redraw moves its cards a frame later, so a point read before the move would miss.
  */
 async function locate(
   panel: PanelEntry,
@@ -127,14 +131,20 @@ async function locate(
 ): Promise<{ frame: string; x: number; y: number }> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
   let last: Located | undefined;
+  let previous: Located | undefined;
   do {
     const match = await evaluatePanel<Located & { entry: string }>(
       cdpPort(),
       panel.entry,
       inFrame(panel.entry, body),
     );
+    previous = last;
     last = match?.value;
-    if (match && last?.found) {
+    const settled =
+      previous?.found === true &&
+      Math.abs(previous.x - (last?.x ?? Number.NaN)) < 0.5 &&
+      Math.abs(previous.y - (last?.y ?? Number.NaN)) < 0.5;
+    if (match && last?.found && settled) {
       return { frame: match.target, x: last.x, y: last.y };
     }
     await sleep(POLL_INTERVAL_MS);

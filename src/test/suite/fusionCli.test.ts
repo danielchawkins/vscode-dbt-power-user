@@ -334,14 +334,16 @@ describe("FusionCli project state and commands", () => {
   it("reads name and paths from the snapshot", () => {
     const { cli } = cliWith();
     expect(cli.getProjectName()).toBe("proj");
-    expect(cli.getTargetPath()).toBe(path.join(root, "target"));
-    expect(cli.getModelPaths()).toEqual([path.join(root, "models")]);
-    expect(cli.getSeedPaths()).toEqual([path.join(root, "seeds")]);
-    expect(cli.getMacroPaths()).toEqual([path.join(root, "macros")]);
-    expect(cli.getPackageInstallPath()).toBe(path.join(root, "dbt_packages"));
+    expect(cli.paths().targetPath).toBe(path.join(root, "target"));
+    expect(cli.paths().modelPaths).toEqual([path.join(root, "models")]);
+    expect(cli.paths().seedPaths).toEqual([path.join(root, "seeds")]);
+    expect(cli.paths().macroPaths).toEqual([path.join(root, "macros")]);
+    expect(cli.paths().packagesInstallPath).toBe(
+      path.join(root, "dbt_packages"),
+    );
   });
 
-  it("reads the project file once for the getters until refreshProjectConfig", async () => {
+  it("reads the project file once for the accessors until refreshProjectConfig", async () => {
     let targetPath = "target";
     const read = vi.fn(() =>
       resolveProjectSnapshot({
@@ -361,14 +363,14 @@ describe("FusionCli project state and commands", () => {
     );
     const { cli } = cliWith({}, read);
     for (let i = 0; i < 50; i++) {
-      cli.getTargetPath();
+      cli.paths();
       cli.getProjectName();
     }
     expect(read).toHaveBeenCalledTimes(1);
     targetPath = "out";
-    expect(cli.getTargetPath()).toBe(path.join(root, "target"));
+    expect(cli.paths().targetPath).toBe(path.join(root, "target"));
     await cli.refreshProjectConfig();
-    expect(cli.getTargetPath()).toBe(path.join(root, "out"));
+    expect(cli.paths().targetPath).toBe(path.join(root, "out"));
   });
 
   it("turns parse config errors then warnings into diagnostics on the project file", async () => {

@@ -1,0 +1,17 @@
+# The extension id and each panel's view container, command and entry are facts of package.json. The smoke suites
+# name them through src/test/smoke/panels.ts, so a renamed container or publisher changes one file.
+id: ts-smoke-panel-ids-from-one-module
+language: typescript
+severity: error
+message: >-
+  Import the extension id or the panel entry from src/test/smoke/panels.ts (`EXTENSION_ID`, `PANELS`) instead of
+  writing the string here.
+files:
+  - src/test/smoke/**
+ignores:
+  - src/test/smoke/panels.ts
+rule:
+  kind: string
+  any:
+    - regex: '^["'']danielchawkins\.fusion-power-user["'']$'
+    - regex: '^["'']workbench\.view\.extension\.[A-Za-z_]+["'']$'

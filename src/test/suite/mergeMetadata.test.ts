@@ -26,8 +26,10 @@ const root = path.resolve(
 const project: ManifestProject = {
   getProjectRoot: () => root,
   getProjectName: () => "p",
-  getPackageInstallPath: () => path.join(root, "dbt_packages"),
-  getTargetPath: () => path.join(root, "target"),
+  paths: () => ({
+    packagesInstallPath: path.join(root, "dbt_packages"),
+    targetPath: path.join(root, "target"),
+  }),
 };
 
 type RawNodes = Record<string, Record<string, unknown>>;

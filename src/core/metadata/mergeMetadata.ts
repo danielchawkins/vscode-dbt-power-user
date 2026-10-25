@@ -1,21 +1,13 @@
+import type { ParsedManifest } from "../dbt/domain";
 import type { Log } from "../log";
 import { GraphParser, type DBTGraphType } from "../manifest";
 import type {
-  DocMetaMap,
-  ExposureMetaMap,
-  FunctionMetaMap,
   GraphMetaMap,
-  MacroMetaMap,
-  MetricMetaMap,
   NodeData,
   NodeGraphMap,
   NodeMetaData,
   NodeMetaMap,
   NodeResourceType,
-  SemanticModelMetaMap,
-  SourceMetaMap,
-  TestMetaMap,
-  UnitTestMetaMap,
 } from "../manifest/types";
 import {
   ADDED_TYPES,
@@ -25,22 +17,6 @@ import {
 } from "./fieldOwners";
 import { createModelDepthsMap } from "./modelDepth";
 import type { ServerMetadata, ServerNode } from "./serverMetadata";
-
-/** The maps consumers read; `ParsedManifest` has the same shape. */
-export interface MergeableManifest {
-  nodeMetaMap: NodeMetaMap;
-  macroMetaMap: MacroMetaMap;
-  metricMetaMap: MetricMetaMap;
-  sourceMetaMap: SourceMetaMap;
-  graphMetaMap: GraphMetaMap;
-  testMetaMap: TestMetaMap;
-  unitTestMetaMap: UnitTestMetaMap;
-  docMetaMap: DocMetaMap;
-  exposureMetaMap: ExposureMetaMap;
-  functionMetaMap: FunctionMetaMap;
-  semanticModelMetaMap: SemanticModelMetaMap;
-  modelDepthMap: Map<string, number>;
-}
 
 const quiet: Pick<Log, "debug"> = { debug: () => undefined };
 
@@ -64,7 +40,7 @@ const typeOf = (uniqueId: string): string => uniqueId.split(".")[0] ?? "";
  * A manifest with nothing in it, for a project that has not been parsed yet.
  * @internal
  */
-export function emptyParsedManifest(): MergeableManifest {
+export function emptyParsedManifest(): ParsedManifest {
   const emptyNodes: NodeMetaMap = {
     lookupByBaseName: () => undefined,
     lookupByUniqueId: () => undefined,
@@ -103,9 +79,9 @@ export interface MergeOptions {
  */
 export function mergeMetadata(
   server: ServerMetadata | undefined,
-  parse: MergeableManifest | undefined,
+  parse: ParsedManifest | undefined,
   options: MergeOptions = {},
-): MergeableManifest {
+): ParsedManifest {
   const base = parse ?? emptyParsedManifest();
   if (!server) {
     return base;
@@ -256,7 +232,7 @@ function invert(parents: DBTGraphType): DBTGraphType {
 }
 
 function graphFrom(
-  base: MergeableManifest,
+  base: ParsedManifest,
   nodeMetaMap: NodeMetaMap,
   serverNodes: ReadonlyMap<string, ServerNode>,
   parentIds: DBTGraphType,

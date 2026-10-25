@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { tableEdgeId } from "./edgeIds";
 import * as layered from "./layered";
+import type * as LayeredModule from "./layered";
 import type { LayeredNode } from "./layered";
 import { type LayeredFlowInput, layeredFlow } from "./layeredFlow";
 
 vi.mock("./layered", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./layered")>();
+  const actual = await importOriginal<typeof LayeredModule>();
   return { ...actual, layoutLayered: vi.fn(actual.layoutLayered) };
 });
 
@@ -22,7 +24,7 @@ const input = (
   start: "s",
   nodes,
   tableRoutes: pairs.map(([parent, child]) => ({
-    id: `t:${parent}->${child}`,
+    id: tableEdgeId(parent, child),
     parent,
     child,
   })),
@@ -52,13 +54,13 @@ describe("layeredFlow skip edges", () => {
       ),
     );
     const m = flow.positions.get("m")!;
-    const points = [
-      ...(flow.paths.get("t:s->d")?.d.matchAll(/[MLQ]\s*([\d.]+),([\d.]+)/g) ??
-        []),
-    ].map((match) => ({
-      x: Number(match[1]),
-      y: Number(match[2]),
-    }));
+    const points = Array.from(
+      flow.paths.get("t:s->d")?.d.matchAll(/[MLQ]\s*([\d.]+),([\d.]+)/g) ?? [],
+      (match) => ({
+        x: Number(match[1]),
+        y: Number(match[2]),
+      }),
+    );
     // No vertical run of the skip edge passes through m's box.
     const through = points.slice(1).filter((q, i) => {
       const p = points[i]!;

@@ -6,9 +6,11 @@ import type { GraphState, GraphStore } from "./graph";
 import {
   addNeighbours,
   collapse,
+  columnClick,
   drawnGraph,
   emptyGraph,
   expand,
+  expansionClick,
   hideColumns,
   lineageData,
   linkDrawn,
@@ -420,5 +422,67 @@ describe("folder grouping", () => {
     const asked = fetchEdges.mock.calls[0]?.[0] ?? [];
     expect(asked).toHaveLength(351);
     expect(asked[0]).toBe("hub");
+  });
+});
+
+describe("expander and column clicks", () => {
+  const open = (state: GraphState, patch: Partial<GraphState>): GraphState => ({
+    ...state,
+    ...patch,
+  });
+
+  describe("expansionClick", () => {
+    it("expands a closed expander", () => {
+      const state = emptyGraph(TABLES.b);
+      expect(expansionClick(state, "children", "b")).toBe("expand");
+      expect(expansionClick(state, "parents", "b")).toBe("expand");
+    });
+
+    it("collapses an open expander", () => {
+      const state = open(emptyGraph(TABLES.b), { expansions: ["c:b"] });
+      expect(expansionClick(state, "children", "b")).toBe("collapse");
+    });
+
+    it("collapses a pending expander, so a click cancels the fetch", () => {
+      const state = open(emptyGraph(TABLES.b), { pending: ["p:b"] });
+      expect(expansionClick(state, "parents", "b")).toBe("collapse");
+    });
+
+    it("judges each direction and table on its own", () => {
+      const state = open(emptyGraph(TABLES.b), {
+        expansions: ["c:b"],
+        pending: ["p:a"],
+      });
+      expect(expansionClick(state, "parents", "b")).toBe("expand");
+      expect(expansionClick(state, "children", "a")).toBe("expand");
+      expect(expansionClick(state, "parents", "a")).toBe("collapse");
+    });
+  });
+
+  describe("columnClick", () => {
+    const selected = (
+      column: [table: string, column: string] | undefined,
+    ): GraphState => open(emptyGraph(TABLES.b), { selectedColumn: column });
+
+    it("traces when no column is selected", () => {
+      expect(columnClick(selected(undefined), ["b", "id"])).toBe("trace");
+    });
+
+    it("clears a click on the selected column", () => {
+      expect(columnClick(selected(["b", "id"]), ["b", "id"])).toBe("clear");
+    });
+
+    it("clears a click that differs from the selected column only in case", () => {
+      expect(columnClick(selected(["b", "ID"]), ["b", "id"])).toBe("clear");
+      expect(columnClick(selected(["b", "id"]), ["b", "Id"])).toBe("clear");
+    });
+
+    it("traces a different column on the same table", () => {
+      expect(columnClick(selected(["b", "id"]), ["b", "name"])).toBe("trace");
+    });
+
+    it("traces the same column name on a different table", () => {
+      expect(columnClick(selected(["b", "id"]), ["c", "id"])).toBe("trace");
+    });
   });
 });

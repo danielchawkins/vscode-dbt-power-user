@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID, PANELS } from "./panels";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -15,12 +16,7 @@ import {
   showPanel,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
-const LINEAGE: PanelEntry = {
-  container: "workbench.view.extension.lineage_view",
-  command: "fusionPowerUser.Lineage.focus",
-  entry: "lineage",
-};
+const LINEAGE: PanelEntry = PANELS.lineage;
 const SETTINGS_CHECKBOXES = [
   "Show select (direct) column edges",
   "Show non-select (indirect) column edges",

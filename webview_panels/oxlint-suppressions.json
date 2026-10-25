@@ -70,6 +70,16 @@
       "count": 2
     }
   },
+  "src/modules/lineage/layered.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/relationshipMarks.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 2

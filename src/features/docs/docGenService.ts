@@ -155,7 +155,7 @@ export class DocGenService {
       };
     }
 
-    const modelPaths = project.getModelPaths();
+    const modelPaths = project.paths()?.modelPaths;
     if (
       !modelPaths?.some(
         (modelPath) =>

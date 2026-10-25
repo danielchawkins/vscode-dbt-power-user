@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { Uri } from "vscode";
 import {
   declaredProjectName,
+  type ProjectPaths,
   readDbtProjectFile,
 } from "../../core/snapshot/index";
 
@@ -19,19 +20,14 @@ export function isWithinRoot(root: string, fsPath: string): boolean {
   return fsPath === root || fsPath.startsWith(root + path.sep);
 }
 
-/** Model, macro and seed paths together; undefined until all three are known. */
-export function sourcePathsOf(paths: {
-  getModelPaths(): string[] | undefined;
-  getMacroPaths(): string[] | undefined;
-  getSeedPaths(): string[] | undefined;
-}): string[] | undefined {
-  const modelPaths = paths.getModelPaths();
-  const macroPaths = paths.getMacroPaths();
-  const seedPaths = paths.getSeedPaths();
-  if (!modelPaths || !macroPaths || !seedPaths) {
+/** Model, macro and seed paths together; undefined when the project has no paths yet. */
+export function sourcePathsOf(
+  paths: ProjectPaths | undefined,
+): string[] | undefined {
+  if (!paths) {
     return undefined;
   }
-  return [...modelPaths, ...macroPaths, ...seedPaths];
+  return [...paths.modelPaths, ...paths.macroPaths, ...paths.seedPaths];
 }
 
 /** The installed package `uri` belongs to; undefined outside `packagesInstallPath`. */

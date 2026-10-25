@@ -9,28 +9,17 @@ import {
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { clickFirstColumn, clickOnCard } from "./lineageProbes";
+import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import type { DocsState } from "./webviewInteractions";
 import { readDocsState, waitForDocsClean } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RENDER_TEST_RESULT = "fusionPowerUser.test.renderQueryResult";
-const RESULTS = {
-  container: "workbench.view.extension.dbt_preview_results",
-  command: "fusionPowerUser.PreviewResults.focus",
-  entry: "queryResults",
-};
-const DOCS = {
-  container: "workbench.view.extension.docs_edit_view",
-  command: "fusionPowerUser.DocsEdit.focus",
-  entry: "documentationEditor",
-};
-const OTHER_PANEL = "workbench.view.extension.lineage_view";
-const LINEAGE = {
-  container: OTHER_PANEL,
-  command: "fusionPowerUser.Lineage.focus",
-  entry: "lineage",
-};
+const RESULTS = PANELS.queryResults;
+const DOCS = PANELS.docsEdit;
+const LINEAGE = PANELS.lineage;
+const OTHER_PANEL = LINEAGE.container;
 
 /** The drawn tables, the tables with an open column list, the traced column edges and the page's load time. */
 const READ_LINEAGE = `(() => {
@@ -49,26 +38,6 @@ const READ_LINEAGE = `(() => {
       .sort(),
     timeOrigin: performance.timeOrigin,
   };
-})()`;
-
-/** Clicks the button labelled `label` (text or aria-label) on the `child` table node. */
-const clickOnChild = (label: string) => `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const node = document.querySelector("[data-table$='.child']");
-  const want = ${JSON.stringify(label)};
-  const button = [...(node?.querySelectorAll("button") ?? [])].find(
-    (b) => b.textContent.trim() === want || b.getAttribute("aria-label") === want,
-  );
-  button?.click();
-  return { entry: "lineage", clicked: Boolean(button) };
-})()`;
-
-/** Clicks the first column row of the `child` table node. */
-const CLICK_FIRST_COLUMN = `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const column = document.querySelector("[data-table$='.child'] [data-column]");
-  column?.click();
-  return { entry: "lineage", clicked: Boolean(column) };
 })()`;
 
 /** Types `text` into the model description the way React sees a keystroke. */
@@ -274,9 +243,17 @@ suite("Panel view state", function () {
       "drawn",
       (g) => g.tables.length === 2,
     );
-    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Hide 1 parents"));
+    await evaluatePanel(
+      port,
+      LINEAGE.entry,
+      clickOnCard("child", "Hide 1 parents"),
+    );
     await waitForLineage(port, "parents hidden", (g) => g.tables.length === 1);
-    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Show 1 parents"));
+    await evaluatePanel(
+      port,
+      LINEAGE.entry,
+      clickOnCard("child", "Show 1 parents"),
+    );
     await waitForLineage(port, "parents shown", (g) => g.tables.length === 2);
     // An earlier suite may leave the column list open, and the view state restores it after the graph is drawn.
     // "Columns" toggles, so click only on a closed list, then read again: a restore landing after a blind click
@@ -286,7 +263,11 @@ suite("Panel view state", function () {
       async () => {
         const state = await readLineage(port);
         if (state?.columnTables.length === 0) {
-          await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
+          await evaluatePanel(
+            port,
+            LINEAGE.entry,
+            clickOnCard("child", "Columns"),
+          );
           await sleep(500);
           return readLineage(port);
         }
@@ -295,7 +276,7 @@ suite("Panel view state", function () {
       (g): g is LineageState => g?.columnTables.length === 1,
     )) as LineageState;
     if (before.columns.length > 0 && before.traced.length === 0) {
-      await evaluatePanel(port, LINEAGE.entry, CLICK_FIRST_COLUMN);
+      await evaluatePanel(port, LINEAGE.entry, clickFirstColumn("child"));
       before = await waitForLineage(
         port,
         "column traced",
@@ -331,7 +312,7 @@ suite("Panel view state", function () {
     );
     assert.deepStrictEqual(after.traced, before.traced, "same traced edges");
 
-    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
+    await evaluatePanel(port, LINEAGE.entry, clickOnCard("child", "Columns"));
     await waitForLineage(
       port,
       "column list closed",

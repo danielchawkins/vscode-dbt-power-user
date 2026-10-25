@@ -4,18 +4,13 @@
  */
 import {
   type RelationshipRoute,
-  routeGutters,
   type RoutedPath,
+  routeGutters,
   type TableRoute,
 } from "./gutterRouter";
-import {
-  type LayerBand,
-  type LayeredNode,
-  layoutLayered,
-  OTHER_TAG,
-  type Point,
-  type Side,
-} from "./layered";
+import { type LayerBand, layoutLayered } from "./layered";
+import { type LayeredNode, type Point, type Side } from "./layeredMetrics";
+import { OTHER_TAG } from "./layerTags";
 
 /** A column edge, with each end's offset from its card's top. */
 export interface LayeredColumnEdge {

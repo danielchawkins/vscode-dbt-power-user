@@ -14,7 +14,7 @@ The gallery's counts were measured in a live browser run of `designs.html?round=
 
 The gallery's 12 `dbt` edges include the edge from `int_orders__enriched` to the hidden `audit_log`, which the panel does not draw (next section). With that edge added to the panel's input, `both` gives 17 edges, 13 crossings and 8 hops.
 
-The panel's `dbt` crossings are not zero because three edges skip a row whose card sits over the start card's corridor: the seed and the shop source into `int_orders__enriched` pass `stg_shop__orders`, and `int_orders__enriched` into `fct_orders` passes `dim_customers`. Through the corridor each would run under that card, so `spine` in `gutterRouter.ts` routes it through the nearest clear gap between the cards in the rows it skips, and it crosses other edges there. The parity test asserts that no edge runs under a card it does not join, under every Connections setting.
+The panel's `dbt` crossings are not zero because three edges skip a row whose card sits over the start card's corridor: the seed and the shop source into `int_orders__enriched` pass `stg_shop__orders`, and `int_orders__enriched` into `fct_orders` passes `dim_customers`. Through the corridor each would run under that card, so `spine` in `gutterPlan.ts` routes it through the nearest clear gap between the cards in the rows it skips, and it crosses other edges there. The parity test asserts that no edge runs under a card it does not join, under every Connections setting.
 
 ## Hidden tables keep their card and lose their edges
 

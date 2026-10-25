@@ -9,7 +9,7 @@ import {
   type useReactFlow,
   type Viewport,
 } from "@xyflow/react";
-import { OTHER_TAG } from "./layered";
+import { OTHER_TAG } from "./layerTags";
 import { type Box, type FitPadding, focusedViewport, geometry } from "./layout";
 import { ZOOM_OUT_BELOW } from "./semanticZoom";
 
