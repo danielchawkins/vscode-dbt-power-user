@@ -217,7 +217,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       terminal: this.dbtTerminal,
       queryManifestService: this.queryManifestService,
       dbtTestService: this.dbtTestService,
-      getProject: () => this.getProject(),
+      getProject: (uri) => this.projects.get(activeModelUri(uri)),
       post: (message) => this.post(message),
     });
   }

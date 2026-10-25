@@ -21,7 +21,6 @@ export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
     "getColumnValues" | "getColumnsOfSource" | "getColumnsOfModel"
   >;
 };
-import { activeModelUri } from "../../projects/registry/previewUri";
 import type { Handlers, MessageSink } from "../../webview/messageRouter";
 import { reply, replyError } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
@@ -49,8 +48,15 @@ export interface DocsEditHost {
     "getModelsInProject" | "getSourcesInProject"
   >;
   readonly dbtTestService: DbtTestService;
-  getProject(): DocsProject | undefined;
+  /** The project that answers for the document at `uri`, if one does. */
+  getProject(uri: Uri): DocsProject | undefined;
   post(message: HostMessage): Thenable<boolean> | undefined;
+}
+
+/** The active editor's document and the project that answers for it, resolved once per request. */
+export interface ActiveModel {
+  uri: Uri;
+  project: DocsProject;
 }
 
 interface Reply {
@@ -97,14 +103,17 @@ export class DocsEditRequests {
       : reply(sink, syncRequestId, data));
   }
 
-  /** Runs `callback` and answers `syncRequestId` with its result or its error. */
+  /**
+   * Runs `callback` and answers `syncRequestId` with its result or its error. A failure also shows an error
+   * notification for `notifyProject` when it is set.
+   */
   async handleSyncRequest<C extends RequestCommand>(
     syncRequestId: string | undefined,
     callback: () =>
       | documentationEditor.ResponseBodies[C]
       | PromiseLike<documentationEditor.ResponseBodies[C]>,
     command: C,
-    showErrorNotification?: boolean,
+    notifyProject?: DocsProject,
   ): Promise<void> {
     try {
       this.sendResponse({ syncRequestId, data: await callback() });
@@ -115,33 +124,33 @@ export class DocsEditRequests {
       } else {
         this.host.terminal.error(command, message, error);
       }
-      if (showErrorNotification) {
-        void notifyError(this.host.getProject(), message);
+      if (notifyProject) {
+        void notifyError(notifyProject, message);
       }
       this.sendResponse({ syncRequestId, error: message });
     }
   }
 
-  /** Runs `handler` with the active editor's project, or answers the request with why there is none. */
+  /** Runs `handler` with the active model, or answers the request with why there is none. */
   withProject<M extends { syncRequestId?: string | undefined }>(
-    handler: (message: M, project: DocsProject, modelPath: Uri) => unknown,
+    handler: (message: M, active: ActiveModel) => unknown,
   ): (message: M) => unknown {
     return (message) => {
-      if (!window.activeTextEditor) {
+      const uri = window.activeTextEditor?.document.uri;
+      if (!uri) {
         return this.sendResponse({
           syncRequestId: message.syncRequestId,
           error: "No active editor",
         });
       }
-      const modelPath = activeModelUri(window.activeTextEditor.document.uri);
-      const project = this.host.getProject();
+      const project = this.host.getProject(uri);
       if (!project) {
         return this.sendResponse({
           syncRequestId: message.syncRequestId,
           error: "No dbt project found for the active editor",
         });
       }
-      return handler(message, project, modelPath);
+      return handler(message, { uri, project });
     };
   }
 
@@ -178,15 +187,15 @@ export class DocsEditRequests {
   /** Answers with `read` of the active editor's URI. */
   private inProject<C extends RequestCommand>(
     command: C,
-    read: (uri: Uri | undefined) => documentationEditor.ResponseBodies[C],
+    read: (uri: Uri) => documentationEditor.ResponseBodies[C],
   ) {
     return this.withProject(
-      ({ syncRequestId }: { syncRequestId?: string | undefined }) =>
+      ({ syncRequestId }: { syncRequestId?: string | undefined }, active) =>
         this.handleSyncRequest(
           syncRequestId,
-          () => read(window.activeTextEditor?.document.uri),
+          () => read(active.uri),
           command,
-          command === "getSourcesInProject",
+          command === "getSourcesInProject" ? active.project : undefined,
         ),
     );
   }
@@ -211,7 +220,7 @@ export class DocsEditRequests {
         ),
       ),
       getDistinctColumnValues: this.withProject(
-        ({ syncRequestId, model, column }, project) =>
+        ({ syncRequestId, model, column }, { project }) =>
           this.handleSyncRequest(
             syncRequestId,
             () => {
@@ -221,11 +230,11 @@ export class DocsEditRequests {
               return project.queries.getColumnValues(model, column);
             },
             "getDistinctColumnValues",
-            true,
+            project,
           ),
       ),
       getColumnsOfSources: this.withProject(
-        ({ syncRequestId, source, table }, project) =>
+        ({ syncRequestId, source, table }, { project }) =>
           this.handleSyncRequest(
             syncRequestId,
             async () => ({
@@ -235,21 +244,22 @@ export class DocsEditRequests {
                 ) ?? [],
             }),
             "getColumnsOfSources",
-            true,
+            project,
           ),
       ),
-      getColumnsOfModel: this.withProject(({ syncRequestId, model }, project) =>
-        this.handleSyncRequest(
-          syncRequestId,
-          async () => ({
-            columns:
-              (await project.queries.getColumnsOfModel(model))?.map(
-                (c) => c.column,
-              ) ?? [],
-          }),
-          "getColumnsOfModel",
-          true,
-        ),
+      getColumnsOfModel: this.withProject(
+        ({ syncRequestId, model }, { project }) =>
+          this.handleSyncRequest(
+            syncRequestId,
+            async () => ({
+              columns:
+                (await project.queries.getColumnsOfModel(model))?.map(
+                  (c) => c.column,
+                ) ?? [],
+            }),
+            "getColumnsOfModel",
+            project,
+          ),
       ),
       getSourcesInProject: this.inProject("getSourcesInProject", (uri) => ({
         sources: host.queryManifestService.getSourcesInProject(uri),
