@@ -59,9 +59,21 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     queryStartRef.current = Date.now();
   }, [dispatch]);
 
+  /** Stops the elapsed-time interval; with `record`, also sets the final time, which an early result has not had. */
   const endQueryExecutionTimer = useCallback(
-    () => globalThis.clearInterval(queryExecutionTimerRef.current),
-    [],
+    (record: boolean) => {
+      if (queryExecutionTimerRef.current === undefined) {
+        return;
+      }
+      globalThis.clearInterval(queryExecutionTimerRef.current);
+      queryExecutionTimerRef.current = undefined;
+      if (record) {
+        const elapsedTime =
+          Math.round((Date.now() - queryStartRef.current) / 100) / 10;
+        dispatch(setQueryExecutionInfo({ elapsedTime }));
+      }
+    },
+    [dispatch],
   );
 
   const handleLoading = useCallback(() => {
@@ -94,7 +106,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
       dispatch(setPreview(message.preview));
       dispatch(setCompiledCodeMarkup(message.compiled_sql));
       clearHintInterval();
-      endQueryExecutionTimer();
+      endQueryExecutionTimer(true);
     },
     [dispatch, clearHintInterval, endQueryExecutionTimer],
   );
@@ -120,7 +132,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
       dispatch(setPreview(result.preview));
       dispatch(setCompiledCodeMarkup(result.compiled_sql));
       clearHintInterval();
-      endQueryExecutionTimer();
+      endQueryExecutionTimer(true);
     },
     [dispatch, clearHintInterval, endQueryExecutionTimer],
   );
@@ -128,7 +140,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   const handleResetState = useCallback(() => {
     clearData();
     clearHintInterval();
-    endQueryExecutionTimer();
+    endQueryExecutionTimer(false);
   }, [clearData, clearHintInterval, endQueryExecutionTimer]);
 
   const onMesssage = useCallback(
