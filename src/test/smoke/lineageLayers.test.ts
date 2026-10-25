@@ -79,7 +79,7 @@ const SNAPSHOT = `(() => document.body.dataset.entry === "lineage" ? {
     table: document.querySelectorAll(".react-flow__edge.lineage-table-edge").length,
   },
   busy: document.querySelectorAll('[aria-busy="true"]').length,
-  startExpanders: [...document.querySelectorAll('[data-table$=".int_orders__enriched"] button[aria-label]')]
+  startExpanders: [...document.querySelectorAll('[data-table$=".int_orders__enriched"] button[aria-label]:not(:disabled)')]
     .map((button) => button.getAttribute("aria-label"))
     .filter((label) => /^Show \\d+ (more )?(parents|children)$/.test(label)),
 } : null)()`;
