@@ -2,6 +2,7 @@ import { realpathSync } from "node:fs";
 import * as path from "node:path";
 import type { WorkspaceFolder } from "vscode";
 import { Uri } from "vscode";
+import { isStrictlyBelow } from "../../core/paths";
 import { hasDbtProjectFile } from "../../core/snapshot/index";
 
 const EXCLUDED_DIRECTORIES: ReadonlySet<string> = new Set([
@@ -59,11 +60,7 @@ function relativeWithin(folder: string, file: string): string | undefined {
 }
 
 function inside(folder: string, file: string): string | undefined {
-  const relative = path.relative(folder, file);
-  return relative === "" ||
-    relative === ".." ||
-    relative.startsWith(".." + path.sep) ||
-    path.isAbsolute(relative)
-    ? undefined
-    : relative;
+  return isStrictlyBelow(folder, file)
+    ? path.relative(folder, file)
+    : undefined;
 }

@@ -1,7 +1,7 @@
 import type { Disposable, Event, TextDocument } from "vscode";
 import { Uri } from "vscode";
 import type { Middleware } from "vscode-languageclient/node";
-import { isWithinRoot } from "./fusionDiagnostics";
+import { isAtOrBelow } from "../core/paths";
 
 /**
  * Excludes `file` URIs under a root declared strictly below `root`, so the outer project's server never receives
@@ -22,8 +22,8 @@ export class NestedRootGuard {
       this.nestedRoots().some(
         (nested) =>
           nested.fsPath !== this.root.fsPath &&
-          isWithinRoot(nested.fsPath, this.root.fsPath) &&
-          isWithinRoot(uri.fsPath, nested.fsPath),
+          isAtOrBelow(this.root.fsPath, nested.fsPath) &&
+          isAtOrBelow(nested.fsPath, uri.fsPath),
       )
     );
   }
