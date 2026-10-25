@@ -29,6 +29,8 @@ export interface QueryPanelStateProps {
       }
     | undefined;
   compiledCodeMarkup?: string | undefined;
+  /** The loader's hints in the order this run shows them; a copy of `HINTS`, shuffled per run. */
+  hints: { message: string; link: string }[];
   hintIndex: number;
   limit?: number | undefined;
   queryHistory: QueryHistory[];

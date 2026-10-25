@@ -1,9 +1,22 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import { typedReducer } from "@modules/app/typedReducer";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
-import type { QueryPanelStateProps } from "./types";
+import { HINTS } from "../constants";
+import type { QueryPanelStateProps, TableData } from "./types";
 import { DEFAULT_VIEW_TYPE } from "./types";
 
 type S = QueryPanelStateProps;
+type HostMessage = queryResults.HostMessage;
+
+/** A result as the panel shows it; a restored tab has no `raw_sql`. */
+interface ResultsPayload {
+  rows?: TableData | undefined;
+  columnNames?: string[] | undefined;
+  columnTypes?: (string | null)[] | undefined;
+  raw_sql?: string | undefined;
+  compiled_sql?: string | undefined;
+  preview?: queryResults.ModelPreview | undefined;
+}
 
 export const initialState: S = {
   viewType: DEFAULT_VIEW_TYPE,
@@ -12,6 +25,7 @@ export const initialState: S = {
   queryExecutionInfo: undefined,
   queryResultsError: undefined,
   compiledCodeMarkup: undefined,
+  hints: HINTS,
   hintIndex: -1,
   limit: undefined,
   queryHistory: [],
@@ -25,51 +39,86 @@ const set =
   <K extends keyof S>(key: K) =>
   (state: S, value: S[K]): S => ({ ...state, [key]: value });
 
+const clearResults = (state: S): S => ({
+  ...state,
+  queryResults: undefined,
+  queryExecutionInfo: undefined,
+  queryResultsError: undefined,
+  compiledCodeMarkup: undefined,
+  preview: undefined,
+  loading: false,
+});
+
+const withResults = (state: S, result: ResultsPayload): S => ({
+  ...state,
+  loading: false,
+  queryResults: {
+    data: result.rows,
+    columnNames: result.columnNames,
+    columnTypes: result.columnTypes,
+    raw_sql: result.raw_sql,
+  } as S["queryResults"],
+  preview: result.preview,
+  compiledCodeMarkup: result.compiled_sql,
+});
+
+/** The panel's state after one message from the host; the timers are the listener's concern. */
+const applyHostMessage = (state: S, message: HostMessage): S => {
+  switch (message.command) {
+    case "renderError":
+      return {
+        ...state,
+        loading: false,
+        queryResultsError: message.error as S["queryResultsError"],
+        preview: message.preview,
+        compiledCodeMarkup: message.compiled_sql,
+      };
+    case "renderQuery":
+      return withResults(state, message);
+    case "resetState":
+      return clearResults(state);
+    case "renderLoading":
+      return state.loading ? state : { ...clearResults(state), loading: true };
+    case "queryHistory":
+      return { ...state, queryHistory: message.args.body };
+    case "updateViewType":
+      return { ...state, viewType: message.args.body.type };
+    case "getContext":
+      return {
+        ...state,
+        limit: message.limit,
+        publication: message.publication,
+        activeEditor: message.activeEditor as S["activeEditor"],
+      };
+    // The app listener settles responses.
+    case "response":
+      return state;
+  }
+};
+
 const queryPanel = typedReducer<
   S,
   {
-    setActiveEditor: S["activeEditor"];
     resetData: undefined;
-    setViewType: S["viewType"];
+    setHints: S["hints"];
     setHintIndex: S["hintIndex"];
     setTabState: S["tabState"];
-    setQueryHistory: S["queryHistory"];
-    setCompiledCodeMarkup: S["compiledCodeMarkup"];
     setLimit: S["limit"];
-    setQueryResultsError: S["queryResultsError"];
     setQueryExecutionInfo: S["queryExecutionInfo"];
-    setQueryResults: S["queryResults"];
     setLoading: S["loading"];
-    setPublication: S["publication"];
-    setPreview: S["preview"];
+    hostMessage: HostMessage;
+    restoreResults: ResultsPayload;
   }
 >({
-  setActiveEditor: set("activeEditor"),
-  resetData: (state) => ({
-    ...state,
-    queryResults: undefined,
-    queryExecutionInfo: undefined,
-    queryResultsError: undefined,
-    compiledCodeMarkup: undefined,
-    preview: undefined,
-    loading: false,
-  }),
-  setViewType: set("viewType"),
+  resetData: clearResults,
+  setHints: set("hints"),
   setHintIndex: set("hintIndex"),
   setTabState: set("tabState"),
-  setQueryHistory: set("queryHistory"),
-  setCompiledCodeMarkup: set("compiledCodeMarkup"),
   setLimit: set("limit"),
-  setQueryResultsError: (state, queryResultsError) => ({
-    ...state,
-    loading: false,
-    queryResultsError,
-  }),
   setQueryExecutionInfo: set("queryExecutionInfo"),
-  setQueryResults: set("queryResults"),
   setLoading: set("loading"),
-  setPublication: set("publication"),
-  setPreview: set("preview"),
+  hostMessage: applyHostMessage,
+  restoreResults: withResults,
 });
 
 export const queryPanelReducer = queryPanel.reducer;
@@ -78,17 +127,12 @@ export type QueryPanelAction = Parameters<typeof queryPanelReducer>[1];
 const { resetData: resetDataAction, ...setters } = queryPanel.actions;
 export const resetData = (): QueryPanelAction => resetDataAction(undefined);
 export const {
-  setViewType,
+  setHints,
   setLoading,
   setHintIndex,
-  setCompiledCodeMarkup,
-  setQueryResultsError,
   setQueryExecutionInfo,
-  setQueryResults,
   setLimit,
-  setQueryHistory,
   setTabState,
-  setActiveEditor,
-  setPublication,
-  setPreview,
+  hostMessage,
+  restoreResults,
 } = setters;
