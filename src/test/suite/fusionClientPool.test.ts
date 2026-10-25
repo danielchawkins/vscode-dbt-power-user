@@ -16,13 +16,13 @@ import type {
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
-import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
-import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
 import type {
   FusionClient,
   FusionClientOptions,
   FusionProjectRef,
-} from "../../fusion/fusionLanguageClient";
+} from "../../fusion/fusionClient";
+import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
+import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
 import { onCurrentClientChange } from "../../projects/clients/clientChange";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
 import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";

@@ -26,23 +26,19 @@ import {
   validateDocumentSelectorPatterns,
 } from "../../fusion/documentSelector";
 import {
+  commandPrefixForProject,
   DISPOSAL_GRACE_MS,
+  FUSION_LSP_COMMANDS,
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
   prefixedCommand,
+  type FusionClient,
+  type FusionClientState,
 } from "../../fusion/fusionClient";
 import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "../../fusion/fusionDiagnostics";
-import type {
-  FusionClient,
-  FusionClientState,
-} from "../../fusion/fusionLanguageClient";
-import {
-  commandPrefixForProject,
-  FUSION_LSP_COMMANDS,
-} from "../../fusion/fusionLanguageClient";
 import {
   buildWorkspaceConfigurationResponse,
   mapCteLenses,

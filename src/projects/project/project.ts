@@ -8,6 +8,7 @@ import { dbtProjectFilePath } from "../../core/snapshot/index";
 import type { FusionCommandIntegrationFactory } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import type { FusionCli } from "../../fusion/fusionCli";
+import type { FusionClient } from "../../fusion/fusionClient";
 import {
   createFusionCommands,
   type FusionCommands,
@@ -16,7 +17,6 @@ import type {
   FusionExecutableResolver,
   ResolverEnvironment,
 } from "../../fusion/fusionExecutable";
-import type { FusionClient } from "../../fusion/fusionLanguageClient";
 import type { FusionVersion } from "../../fusion/fusionVersion";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
 import type { ManifestParsers } from "../manifest/manifest";

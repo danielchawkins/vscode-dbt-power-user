@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { FusionCommandError } from "../../core/lsp";
+import type { FusionClient } from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
-import type { FusionClient } from "../../fusion/fusionLanguageClient";
 
 function clientWith(
   request: (...args: unknown[]) => Promise<unknown>,

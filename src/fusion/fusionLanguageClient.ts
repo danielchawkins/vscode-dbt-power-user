@@ -55,14 +55,6 @@ import {
   listenForServer,
 } from "./reverseSocketTransport";
 
-export { commandPrefixForProject, FUSION_LSP_COMMANDS } from "./fusionClient";
-export type {
-  FusionClient,
-  FusionClientOptions,
-  FusionClientState,
-  FusionProjectRef,
-} from "./fusionClient";
-
 export type { FusionLanguageClientDependencies } from "./lspClientSupport";
 
 /** A Fusion Client over `vscode-languageclient`, which starts `dbt lsp` for one Declared Project. */

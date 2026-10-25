@@ -15,14 +15,14 @@ import {
 import { FusionCommandError, type ListNodesResult } from "../../core/lsp";
 import type { GraphMetaMap } from "../../core/manifest/types";
 import { failureSummary } from "../../core/text";
+import type {
+  FusionClient,
+  FusionClientState,
+} from "../../fusion/fusionClient";
 import {
   createFusionCommands,
   type FusionCommands,
 } from "../../fusion/fusionCommands";
-import type {
-  FusionClient,
-  FusionClientState,
-} from "../../fusion/fusionLanguageClient";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
