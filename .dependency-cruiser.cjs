@@ -86,6 +86,16 @@ module.exports = {
       },
     },
     {
+      name: "docs-pure",
+      severity: "error",
+      comment:
+        "The docs drafts store and the column proposal payload builders import neither vscode nor the docs host.",
+      from: {
+        path: "^src/features/docs/(docsDrafts|columnProposalPayloads)\\.ts$",
+      },
+      to: { path: "^vscode$|^node_modules/@types/vscode/" },
+    },
+    {
       name: "snapshot-reader-reads-only",
       severity: "error",
       comment:
