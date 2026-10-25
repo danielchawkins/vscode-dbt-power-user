@@ -150,6 +150,17 @@ module.exports = {
       to: { path: "^src/webview/" },
     },
     {
+      name: "fusion-language-client-is-adapter",
+      severity: "error",
+      comment:
+        "fusion/fusionLanguageClient.ts is the vscode-languageclient adapter; only languageClient/ and fusion/ import it. Import the port types from fusion/fusionClient.ts.",
+      from: {
+        path: "^src/",
+        pathNot: "^src/(languageClient|fusion)/|^src/test/",
+      },
+      to: { path: "^src/fusion/fusionLanguageClient\\.ts$" },
+    },
+    {
       name: "contract-is-pure",
       severity: "error",
       comment:

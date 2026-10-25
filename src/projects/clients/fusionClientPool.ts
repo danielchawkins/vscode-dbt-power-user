@@ -8,6 +8,11 @@ import {
   type ProjectSnapshot,
 } from "../../core/snapshot/index";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
+import {
+  commandPrefixForProject,
+  type FusionClient,
+  type FusionClientOptions,
+} from "../../fusion/fusionClient";
 import type {
   FusionExecutable,
   FusionExecutableResolver,
@@ -16,11 +21,6 @@ import {
   formatFusionExecutableResolutionFailure,
   isFusionExecutable,
 } from "../../fusion/fusionExecutable";
-import type {
-  FusionClient,
-  FusionClientOptions,
-} from "../../fusion/fusionLanguageClient";
-import { commandPrefixForProject } from "../../fusion/fusionLanguageClient";
 import type { SettingsChange } from "../../settings/index";
 import { onDidChangeSettings } from "../../settings/index";
 import type {

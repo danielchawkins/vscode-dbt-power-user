@@ -1,6 +1,6 @@
 import type { Disposable } from "vscode";
 import { commands, type DiagnosticCollection } from "vscode";
-import type { FusionClientState } from "../../fusion/fusionLanguageClient";
+import type { FusionClientState } from "../../fusion/fusionClient";
 import { testCommandsEnabled } from "../../settings/index";
 import type {
   DeclaredProjectOrigin,

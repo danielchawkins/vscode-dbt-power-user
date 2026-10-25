@@ -1,5 +1,5 @@
 import type { StaticAnalysisMode } from "../../core/snapshot";
-import type { FusionClient } from "../../fusion/fusionLanguageClient";
+import type { FusionClient } from "../../fusion/fusionClient";
 import type { FolderScope } from "./schemaOrigin";
 import { effectiveStaticAnalysis, whyNotStrict } from "./schemaOrigin";
 

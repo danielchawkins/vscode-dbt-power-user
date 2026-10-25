@@ -16,7 +16,7 @@ import {
   FUSION_LSP_COMMANDS,
   type FusionClient,
   type FusionClientState,
-} from "./fusionLanguageClient";
+} from "./fusionClient";
 
 type FusionCommandsState = FusionClientState | "notRunning";
 
