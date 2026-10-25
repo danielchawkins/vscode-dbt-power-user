@@ -537,6 +537,29 @@ describe("ProjectRegistry", () => {
     );
   });
 
+  it("contains rejects a sibling folder whose name extends the root's", async () => {
+    const single = makeFolder("single-project");
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    (workspace.workspaceFolders as any) = [single];
+
+    const registry = new ProjectRegistry(terminal);
+    await registry.initialize();
+
+    const root = single.uri.fsPath;
+    const sibling = `${root}s`;
+    expect(registry.projects[0].contains(Uri.file(sibling))).toBe(false);
+    expect(
+      registry.projects[0].contains(
+        Uri.file(path.join(sibling, "models/model.sql")),
+      ),
+    ).toBe(false);
+    expect(
+      registry.projects[0].contains(
+        Uri.file(path.join(root, "..scratch", "model.sql")),
+      ),
+    ).toBe(true);
+  });
+
   it("preserves registration order across folder and declaration order", async () => {
     const general = makeFolder("multi-root");
     vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
