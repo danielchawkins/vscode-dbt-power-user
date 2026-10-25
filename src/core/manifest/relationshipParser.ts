@@ -364,7 +364,7 @@ export class RelationshipParser {
     }
     const sourceMatch = SOURCE_PATTERN.exec(trimmed);
     if (sourceMatch) {
-      return index.bySourceKey.get(`${sourceMatch[1]}.${sourceMatch[2]}`);
+      return index.bySourceTable.get(`${sourceMatch[1]}.${sourceMatch[2]}`);
     }
     // Fully-qualified relation name lookup. Try exact and case-insensitive
     // matches because adapters quote/case differently.
