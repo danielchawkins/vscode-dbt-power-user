@@ -111,11 +111,6 @@
       "count": 1
     }
   },
-  "src/features/docs/docGenService.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/features/docs/docsEditHandlers.ts": {
     "max-params": {
       "count": 1
