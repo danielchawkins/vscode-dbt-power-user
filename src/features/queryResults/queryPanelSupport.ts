@@ -26,8 +26,8 @@ export function tabDataOf(entry: queryResults.QueryHistoryEntry) {
     },
     compiledCodeMarkup: entry.compiledSql,
     rawSql: entry.rawSql,
-    elapsedTime: { queryExecutionInfo: { elapsedTime: entry.duration } },
-  };
+    queryExecutionInfo: { elapsedTime: entry.duration },
+  } satisfies queryResults.QueryTabData;
 }
 
 /** The error the page renders for a failed query, and the compiled SQL it shows beside it. */
