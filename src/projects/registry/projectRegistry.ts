@@ -10,6 +10,7 @@ import type {
 } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../../core/log";
+import { isAtOrBelow } from "../../core/paths";
 import {
   declaredProjectName,
   hasDbtProjectFile,
@@ -375,10 +376,7 @@ class DeclaredProjectImpl implements DeclaredProject {
     if (!uri?.fsPath) {
       return false;
     }
-    return this.aliases.some(
-      (alias) =>
-        uri.fsPath === alias || uri.fsPath.startsWith(alias + path.sep),
-    );
+    return this.aliases.some((alias) => isAtOrBelow(alias, uri.fsPath));
   }
 
   dispose(): void {}

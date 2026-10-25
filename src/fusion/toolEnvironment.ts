@@ -1,13 +1,8 @@
 import { existsSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import which from "which";
+import { isStrictlyBelow } from "../core/paths";
 import { runProcessText } from "./process";
-
-/** Whether `path` is `dir` or lies anywhere beneath it, such as in `conf.d`. */
-function isInside(dir: string, path: string): boolean {
-  const rel = relative(dir, path);
-  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
-}
 
 /** `value` as one shell word, quoted only when it needs to be. */
 function quoteArg(value: string): string {
@@ -229,7 +224,9 @@ async function hasProjectConfig(
       if (typeof path !== "string") {
         return false;
       }
-      return !(files.includes(path) || dirs.some((dir) => isInside(dir, path)));
+      return !(
+        files.includes(path) || dirs.some((dir) => isStrictlyBelow(dir, path))
+      );
     });
   } catch {
     return false;

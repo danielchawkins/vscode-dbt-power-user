@@ -1,7 +1,8 @@
-import { dirname, isAbsolute, relative } from "node:path";
+import { dirname } from "node:path";
 import type { Disposable, Event, Uri, WorkspaceFolder } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../../core/log";
+import { isAtOrBelow } from "../../core/paths";
 import { projectDirVariable } from "../../core/snapshot/dbtEnvironment";
 import type { ToolEnvironment } from "../../fusion/toolEnvironment";
 import {
@@ -50,11 +51,6 @@ export const sameEnv = (
   return (
     keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
   );
-};
-
-const isAtOrBelow = (dir: string, path: string): boolean => {
-  const rel = relative(dir, path);
-  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 };
 
 /**

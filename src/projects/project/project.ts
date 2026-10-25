@@ -3,6 +3,7 @@ import { Disposable, EventEmitter, Uri } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import { type ManifestProject } from "../../core/manifest/index";
+import { isAtOrBelow } from "../../core/paths";
 import type { ProjectPaths, ResolvedDefer } from "../../core/snapshot/index";
 import { dbtProjectFilePath } from "../../core/snapshot/index";
 import type { FusionCommandIntegrationFactory } from "../../fusion/executableLifecycle";
@@ -40,7 +41,6 @@ import { refreshCliConfig } from "./projectCommands";
 import { ProjectDbtCommands } from "./projectDbtCommands";
 import { ProjectQueries } from "./projectQueries";
 import {
-  isWithinRoot,
   packageNameOf,
   projectNameAt,
   sourcePathsOf,
@@ -426,7 +426,7 @@ export class Project implements Disposable, ManifestProject {
   }
 
   contains(uri: Uri) {
-    return isWithinRoot(this.projectRoot.fsPath, uri.fsPath);
+    return isAtOrBelow(this.projectRoot.fsPath, uri.fsPath);
   }
 
   withRunResults<T>(

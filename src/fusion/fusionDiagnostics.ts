@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import * as path from "node:path";
 import type { Uri } from "vscode";
 import {
   type DiagnosticCollection,
@@ -7,20 +6,10 @@ import {
   RelativePattern,
   workspace,
 } from "vscode";
+import { isAtOrBelow } from "../core/paths";
 
 // Folder deletes fire one event for the folder path, so a file-extension glob would miss them.
 const WATCHED_PROJECT_FILES = "**/*";
-
-/** True when `fsPath` is `root` or lies under it, compared by path segments. */
-export function isWithinRoot(fsPath: string, root: string): boolean {
-  const relative = path.relative(root, fsPath);
-  return (
-    relative === "" ||
-    (relative !== ".." &&
-      !relative.startsWith(`..${path.sep}`) &&
-      !path.isAbsolute(relative))
-  );
-}
 
 /**
  * Forwards a `publishDiagnostics` URI when it is not a `file:` URI, was forwarded before, or names an existing
@@ -45,7 +34,7 @@ export class ProjectDiagnosticsFilter {
       this.forwarded.add(key);
       return true;
     }
-    const inProject = this.roots.some((root) => isWithinRoot(uri.fsPath, root));
+    const inProject = this.roots.some((root) => isAtOrBelow(root, uri.fsPath));
     if (inProject && this.exists(uri.fsPath)) {
       this.forwarded.add(key);
       return true;
@@ -72,7 +61,7 @@ export function clearDiagnosticsOnDelete(
     }
     const stale: Uri[] = [deleted];
     collection.forEach((uri) => {
-      if (uri.scheme === "file" && isWithinRoot(uri.fsPath, deleted.fsPath)) {
+      if (uri.scheme === "file" && isAtOrBelow(deleted.fsPath, uri.fsPath)) {
         stale.push(uri);
       }
     });
