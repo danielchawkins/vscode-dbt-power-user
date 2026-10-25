@@ -33,13 +33,10 @@ import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DBTDocumentation } from "./docGenTypes";
 import { DocsDrafts } from "./docsDrafts";
-import {
-  type DocsProject,
-  DocsEditRequests,
-  withProgress,
-} from "./docsEditHandlers";
+import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { registerDocsHarnessCommands } from "./docsHarnessCommands";
+import { withProgress } from "./progress";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
 type PanelProject = DocsProject &
