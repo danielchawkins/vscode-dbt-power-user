@@ -128,11 +128,10 @@ const useTestFormSave = (): {
     column: string,
     operation: TestOperation,
   ) => {
-    setIsSaving(true);
-
     if (!data.test) {
       return;
     }
+    setIsSaving(true);
 
     const testsData = await getUpdatedTestsData(data, column, operation);
     panelLogger.info("add/update test data", testsData);
