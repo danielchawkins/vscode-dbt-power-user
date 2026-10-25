@@ -564,6 +564,9 @@ function docsHarness() {
     getUncompiledDocumentationForCurrentActiveFile: vi.fn(async () => ({
       documentation: docs,
     })),
+    getUncompiledDocumentation: vi.fn(async (_filePath?: string) => ({
+      documentation: docs,
+    })),
   };
   const dbtTestService = {
     getTestsForCurrentModel: vi.fn(async () => []),
@@ -675,6 +678,13 @@ describe("documentation editor messages", () => {
     getTestCode: async () => {
       const h = docsHarness();
       const test = { key: "not_null_orders_id", column_name: "id" };
+      // The editor moves on while the request runs; the test config still comes from the model the request resolved.
+      h.dbtTestService.getConfigByTest.mockImplementationOnce(() => {
+        window.activeTextEditor = {
+          document: { uri: Uri.file("/p/models/customers.sql") },
+        } as never;
+        return { severity: "warn" };
+      });
       await h.send({
         command: "getTestCode",
         test,
@@ -684,7 +694,10 @@ describe("documentation editor messages", () => {
       expect(h.dbtTestService.getConfigByTest).toHaveBeenCalledWith(
         test,
         "orders",
-        "id",
+        {
+          columnNameFromTestMetadata: "id",
+          uri: Uri.file("/p/models/orders.sql"),
+        },
       );
       expect(h.postMessage).toHaveBeenCalledWith(
         response("g1", { config: { severity: "warn" } }),
@@ -807,6 +820,9 @@ describe("documentation editor messages", () => {
         syncRequestId: "sv1",
       });
       expect(workspace.applyEdit).toHaveBeenCalledTimes(1);
+      expect(h.docGenService.getUncompiledDocumentation).toHaveBeenCalledWith(
+        Uri.file("/p/models/orders.sql").fsPath,
+      );
       expect(h.postMessage).toHaveBeenCalledWith(
         response("sv1", expect.objectContaining({ saved: true })),
       );

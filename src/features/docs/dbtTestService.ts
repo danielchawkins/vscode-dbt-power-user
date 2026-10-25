@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
+import type { Uri } from "vscode";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
 import { getColumnTestConfigFromYml } from "../../core/manifest/testConfig";
@@ -122,9 +123,16 @@ export class DbtTestService {
   public getConfigByTest(
     test: TestMetaData,
     modelName: string,
-    columnNameFromTestMetadata?: string,
+    options: {
+      columnNameFromTestMetadata?: string | undefined;
+      /** The request's model; without it, the active editor's. */
+      uri?: Uri | undefined;
+    } = {},
   ) {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
+    const { columnNameFromTestMetadata, uri } = options;
+    const eventResult = uri
+      ? { event: this.queryManifestService.getEventByDocument(uri) }
+      : this.queryManifestService.getEventByCurrentProject();
     if (!eventResult?.event) {
       return;
     }
