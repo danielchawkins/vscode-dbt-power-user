@@ -47,14 +47,6 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/TableNode.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
