@@ -15,7 +15,7 @@ const ANSWERS: Record<string, unknown> = {
   getSourcesInProject: { sources: [] },
   getTestCode: { sql: "select order_id from orders", config: "version: 2" },
   getUnitTestCode: { yaml: "name: unit_totals" },
-  saveDocumentation: { saved: true, documentation: {}, tests: [] },
+  saveDocumentation: { saved: true },
   showInformationMessage: "Yes, overwrite",
 };
 const answerRequests = () =>

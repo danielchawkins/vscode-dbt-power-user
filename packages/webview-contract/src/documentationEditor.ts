@@ -176,14 +176,7 @@ export interface ResponseBodies {
   getModelsInProject: { models: string[] | undefined };
   showWarningMessage: string | undefined;
   showInformationMessage: string | undefined;
-  saveDocumentation:
-    | { saved: false }
-    | {
-        saved: true;
-        tests?: ModelTest[] | undefined;
-        unitTests?: UnitTest[] | undefined;
-        documentation?: Documentation | undefined;
-      };
+  saveDocumentation: { saved: boolean };
 }
 
 const isColumn = shape<DocumentationColumn>({
