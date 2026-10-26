@@ -252,6 +252,7 @@ describe("ColumnProposalService descriptions", () => {
 
     expect(listNodes).toHaveBeenCalledWith(
       columnLineageArgs(GRAND_TOTALS, "grand_total"),
+      { purpose: "columnLineage", token: expect.anything() },
     );
     expect(payload).toEqual({
       kind: "descriptions",

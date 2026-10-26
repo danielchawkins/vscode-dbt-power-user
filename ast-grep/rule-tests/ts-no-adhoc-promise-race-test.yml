@@ -1,0 +1,10 @@
+id: ts-no-adhoc-promise-race
+valid:
+  - 'const all = await Promise.all([a, b]);'
+  - 'const first = await Promise.any([a, b]);'
+  - 'const timer = setTimeout(() => cancel.cancel(), ceilingMs);'
+invalid:
+  - 'return await Promise.race([sent, deadline]);'
+  - 'await Promise.race([conn.sendRequest("shutdown"), sleep(5000)]);'
+  - 'timer = setTimeout(() => reject(new Error("timeout")), ceilingMs);'
+  - 'timer = setTimeout(() => { reject(new Error("timeout")); }, ceilingMs);'

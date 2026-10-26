@@ -1,3 +1,4 @@
+import { CancellationTokenSource } from "vscode";
 import {
   type ColumnRef,
   columnEdges,
@@ -26,7 +27,7 @@ export interface UpstreamDescriptionRequest {
   uniqueId: string;
   columns: readonly EditorColumn[];
   manifest: { nodeMetaMap: NodeMetaMap; sourceMetaMap: SourceMetaMap };
-  /** Aborts the column loop before the next `listNodes` call; an answer already asked for still arrives. */
+  /** Aborts the walk: the answer in flight is cancelled, and no further column is asked about. */
   signal?: AbortSignal;
 }
 
@@ -69,28 +70,43 @@ export async function resolveUpstreamDescriptions({
   const describe = (ref: ColumnRef) => declaredDescription(manifest, ref);
   const proposals: ColumnDescriptionProposal[] = [];
   const blank = columns.filter((c) => c.description.trim() === "");
-  for (const { name } of blank) {
-    if (signal?.aborted) {
-      break;
+  // The walk's requests share one token: an abort cancels the answer in flight and leaves the lane.
+  const cancel = new CancellationTokenSource();
+  const abort = () => cancel.cancel();
+  signal?.addEventListener("abort", abort, { once: true });
+  try {
+    for (const { name } of blank) {
+      if (signal?.aborted) {
+        break;
+      }
+      let answer: ListNodesResult;
+      try {
+        answer = await lsp.listNodes(columnLineageArgs(uniqueId, name), {
+          purpose: "columnLineage",
+          token: cancel.token,
+        });
+      } catch (error) {
+        if (signal?.aborted) {
+          break;
+        }
+        return {
+          kind: "failed",
+          message: errorMessage(error),
+          error,
+          proposals,
+        };
+      }
+      const edges = columnEdges(answer);
+      const candidates = toDescriptionProposal(
+        descriptionCandidates(edges, { uniqueId, column: name }, describe),
+      );
+      if (candidates.length > 0) {
+        proposals.push({ column: name, candidates });
+      }
     }
-    let answer: ListNodesResult;
-    try {
-      answer = await lsp.listNodes(columnLineageArgs(uniqueId, name));
-    } catch (error) {
-      return {
-        kind: "failed",
-        message: errorMessage(error),
-        error,
-        proposals,
-      };
-    }
-    const edges = columnEdges(answer);
-    const candidates = toDescriptionProposal(
-      descriptionCandidates(edges, { uniqueId, column: name }, describe),
-    );
-    if (candidates.length > 0) {
-      proposals.push({ column: name, candidates });
-    }
+  } finally {
+    signal?.removeEventListener("abort", abort);
+    cancel.dispose();
   }
   return { kind: "found", asked: blank.length, proposals };
 }

@@ -174,7 +174,7 @@ export class ColumnProposalService {
     return payloadOf(target, outcome, needs !== undefined);
   }
 
-  /** The upstream descriptions of the target's columns that have none. Fusion's answer is not cancellable, but the loop stops between answers. */
+  /** The upstream descriptions of the target's columns that have none. An abort cancels the answer in flight. */
   private async descriptionsFor(
     target: ProposalTarget,
     signal: AbortSignal,

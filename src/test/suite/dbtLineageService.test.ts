@@ -1,10 +1,13 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
-import { workspace } from "vscode";
+import { CancellationTokenSource, workspace } from "vscode";
 import {
   DbtLineageService,
   describeNoLineage,
 } from "../../features/lineage/dbtLineageService";
 import { lineageTable } from "../../features/lineage/lineageTables";
+import { createFusionCommands } from "../../fusion/fusionCommands";
+import { fakeFusionCommands } from "../fusionCommandsFake";
+import { manualToken } from "../manualToken";
 
 // Minimal NodeData-shaped edge.
 function node(key: string, edgeType?: "data" | "constraint") {
@@ -156,11 +159,22 @@ describe("DbtLineageService.getConnectedColumns", () => {
     } as any;
   }
 
-  const service = (client: unknown) =>
-    new DbtLineageService({
+  const service = (client: unknown) => {
+    const lineage = new DbtLineageService({
       queryManifestService: {} as any,
       currentClient: () => client as any,
+      currentLsp: () => fakeFusionCommands(() => client as any),
     });
+    return {
+      getConnectedColumns: (
+        request: Parameters<DbtLineageService["getConnectedColumns"]>[0],
+      ) =>
+        lineage.getConnectedColumns(
+          request,
+          new CancellationTokenSource().token,
+        ),
+    };
+  };
 
   const lineage = listNodes(
     ["model.p.b.total", ["model.p.a.x"], "mod"],
@@ -177,10 +191,11 @@ describe("DbtLineageService.getConnectedColumns", () => {
       upstreamExpansion: false,
     });
 
-    expect(request).toHaveBeenCalledWith("dbt.listNodes", [
-      "@model.p.b",
-      "+column:model.p.b.total+",
-    ]);
+    expect(request).toHaveBeenCalledWith(
+      "dbt.listNodes",
+      ["@model.p.b", "+column:model.p.b.total+"],
+      expect.anything(),
+    );
     expect(result).toEqual({
       kind: "lineage",
       columnLineage: [
@@ -246,27 +261,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
     });
   });
 
-  it.each([
-    [
-      "a RequestCancelled code",
-      Object.assign(new Error("x"), { code: -32800 }),
-    ],
-    ["an Operation cancelled message", new Error("Operation cancelled")],
-  ])("retries a request cancelled with %s once", async (_name, cancelled) => {
-    const request = vi
-      .fn<(...args: any[]) => Promise<any>>()
-      .mockRejectedValueOnce(cancelled)
-      .mockResolvedValueOnce(lineage);
-    const result = await service(fakeClient(request)).getConnectedColumns({
-      targets: [["model.p.b", "total"]],
-      upstreamExpansion: true,
-    });
-
-    expect(request).toHaveBeenCalledTimes(2);
-    expect(result.kind).toBe("lineage");
-  });
-
-  it("reports a request cancelled twice as failed", async () => {
+  it("reports a cancelled request as failed without retrying it", async () => {
     const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValue(new Error("Operation cancelled"));
@@ -275,10 +270,66 @@ describe("DbtLineageService.getConnectedColumns", () => {
       upstreamExpansion: true,
     });
 
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
       kind: "noLineage",
       reason: { kind: "failed", message: "Operation cancelled" },
+    });
+  });
+
+  it("passes the caller's token to each listNodes", async () => {
+    const { token } = manualToken();
+    const listNodes = vi.fn((..._args: unknown[]) => new Promise(() => {}));
+    const service = new DbtLineageService({
+      queryManifestService: {} as any,
+      currentClient: () => fakeClient(vi.fn()),
+      currentLsp: () => ({ state: "running", listNodes }) as any,
+    });
+
+    void service.getConnectedColumns(
+      {
+        targets: [
+          ["model.p.b", "total"],
+          ["model.p.c", "total"],
+        ],
+        upstreamExpansion: true,
+      },
+      token,
+    );
+
+    expect(listNodes).toHaveBeenCalledTimes(2);
+    expect(listNodes).toHaveBeenCalledWith(
+      ["@model.p.b", "+column:model.p.b.total+"],
+      expect.objectContaining({ purpose: "columnLineage", token }),
+    );
+    expect(listNodes).toHaveBeenCalledWith(
+      ["@model.p.c", "+column:model.p.c.total+"],
+      expect.objectContaining({ purpose: "columnLineage", token }),
+    );
+  });
+
+  it("settles the result as cancelled when the caller's token is cancelled", async () => {
+    const { token, cancel } = manualToken();
+    const request = vi.fn((..._args: unknown[]) => new Promise(() => {}));
+    const client = fakeClient(request);
+    const service = new DbtLineageService({
+      queryManifestService: {} as any,
+      currentClient: () => client,
+      currentLsp: () => createFusionCommands(() => client),
+    });
+
+    const pending = service.getConnectedColumns(
+      { targets: [["model.p.b", "total"]], upstreamExpansion: true },
+      token,
+    );
+    cancel();
+
+    expect(await pending).toEqual({
+      kind: "noLineage",
+      reason: { kind: "failed", message: "Request cancelled" },
+    });
+    expect(request.mock.calls[0]?.[2]).toMatchObject({
+      isCancellationRequested: true,
     });
   });
 
@@ -358,16 +409,20 @@ describe("DbtLineageService.getConnectedColumns", () => {
       const request = vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ error: null, nodes: [] });
+      const client = fakeClient(request, { staticAnalysis: setting });
       const result = await new DbtLineageService({
         queryManifestService: {} as any,
-        currentClient: () => fakeClient(request, { staticAnalysis: setting }),
+        currentClient: () => client,
         currentError: undefined,
-        currentLsp: undefined,
+        currentLsp: () => fakeFusionCommands(() => client),
         currentStrict: () => ({ strict }),
-      }).getConnectedColumns({
-        targets: [["model.p.a", "x"]],
-        upstreamExpansion: true,
-      });
+      }).getConnectedColumns(
+        {
+          targets: [["model.p.a", "x"]],
+          upstreamExpansion: true,
+        },
+        new CancellationTokenSource().token,
+      );
       expect(result).toEqual({
         kind: "noLineage",
         reason:
@@ -405,7 +460,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
         queryManifestService: {} as any,
         currentClient: () => client as any,
         currentError: undefined,
-        currentLsp: undefined,
+        currentLsp: () => fakeFusionCommands(() => client as any),
         currentStrict: () => ({ strict }),
       }).columnsNeedStrict();
     const request = vi.fn<(...args: any[]) => Promise<any>>();
@@ -474,11 +529,14 @@ describe("DbtLineageService.getInferredColumns", () => {
   const node = {
     node: { columns: { customer_id: { data_type: "integer" } } },
   };
-  const client = (request: Mock<(...args: any[]) => Promise<any>>) =>
-    new DbtLineageService({
+  const client = (request: Mock<(...args: any[]) => Promise<any>>) => {
+    const running = { state: "running", request } as any;
+    return new DbtLineageService({
       queryManifestService: {} as any,
-      currentClient: () => ({ state: "running", request }) as any,
+      currentClient: () => running,
+      currentLsp: () => fakeFusionCommands(() => running),
     });
+  };
 
   it("asks getCurrentNode with the project-relative path", async () => {
     const request = vi
@@ -488,9 +546,11 @@ describe("DbtLineageService.getInferredColumns", () => {
       "/p",
       "/p/models/a.sql",
     );
-    expect(request).toHaveBeenCalledWith("dbt.getCurrentNode", [
-      "models/a.sql",
-    ]);
+    expect(request).toHaveBeenCalledWith(
+      "dbt.getCurrentNode",
+      ["models/a.sql"],
+      undefined,
+    );
     expect(columns).toEqual([{ name: "customer_id", datatype: "integer" }]);
   });
 
@@ -513,6 +573,7 @@ describe("DbtLineageService.getInferredColumns", () => {
       await new DbtLineageService({
         queryManifestService: {} as any,
         currentClient: () => undefined,
+        currentLsp: () => fakeFusionCommands(() => undefined),
       }).getInferredColumns("/p", "/p/a.sql"),
     ).toBeUndefined();
     const request = vi
@@ -585,6 +646,7 @@ describe("DbtLineageService — merged value", () => {
   it("draws a server node the parse lacks with no tests", () => {
     const svc = new DbtLineageService({
       queryManifestService: { getProject: () => undefined } as any,
+      currentLsp: () => undefined,
     });
     const added = {
       unique_id: "model.p.new",

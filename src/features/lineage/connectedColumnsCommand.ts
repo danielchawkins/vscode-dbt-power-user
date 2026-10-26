@@ -1,4 +1,4 @@
-import { commands, Disposable } from "vscode";
+import { CancellationTokenSource, commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../../settings";
 import type {
   ConnectedColumnsRequest,
@@ -35,7 +35,10 @@ export function registerConnectedColumnsCommand(
     commands.registerCommand(
       CONNECTED_COLUMNS_COMMAND,
       (request: ConnectedColumnsRequest) =>
-        service.getConnectedColumns(request),
+        service.getConnectedColumns(
+          request,
+          new CancellationTokenSource().token,
+        ),
     ),
     commands.registerCommand(PARENT_TABLES_COMMAND, (table: string) =>
       service.getParentTables({ table }),

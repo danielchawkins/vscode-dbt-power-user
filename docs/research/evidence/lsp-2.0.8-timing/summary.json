@@ -1,0 +1,1503 @@
+{
+ "fusion": "2.0.8",
+ "note": "Intent: refactor-scout timing evidence. finance_general (995 models) copy, static analysis baseline, dummy Snowflake profile (no warehouse access); jaffle strict. Times in ms from server start. Progress reports omitted from timelines; counts kept.",
+ "finance": {
+  "timing": {
+   "A": {
+    "command": "dbt.listNodes",
+    "sentAt": 276,
+    "ms": 20736,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "B": [
+    {
+     "command": "dbt.listNodes",
+     "sentAt": 21016,
+     "ms": 452,
+     "result": "{\"error\":\"Operation cancelled\",\"grain\":\"unknown\",\"nodes\":[]}"
+    },
+    {
+     "command": "dbt.listNodes",
+     "sentAt": 21016,
+     "ms": 13373,
+     "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+    }
+   ],
+   "C_cancelAfter300": {
+    "command": "dbt.listNodes",
+    "sentAt": 34391,
+    "ms": 11861,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "C_followUp": {
+    "command": "dbt.listNodes",
+    "sentAt": 46252,
+    "ms": 10921,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "D": {
+    "command": "dbt.listNodes",
+    "sentAt": 57194,
+    "ms": 11138,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "E": [
+    {
+     "command": "dbt.listNodes",
+     "sentAt": 68333,
+     "ms": 12474,
+     "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+    },
+    {
+     "command": "dbt.getCurrentNode",
+     "sentAt": 68333,
+     "ms": 1,
+     "result": "{\"error\":null,\"node\":{\"columns\":{},\"database\":\"DEV_FINANCE_GENERAL_MARTS\",\"schema\":\"dimension\",\"static_analysis\":\"baseline\",\"unique_id\":\"model.finance_general.dim__commitment_types\"}}"
+    },
+    {
+     "command": "dbt.compileFile",
+     "sentAt": 68333,
+     "ms": 1,
+     "result": "{\"error\":null,\"file_uri\":\"file://<P>/target/.lsp/compiled/finance_general/models/31_marts/dimensions/dim__commitment_types.sql\"}"
+    }
+   ],
+   "F_clientWorkDoneToken": {
+    "command": "dbt.listNodes",
+    "sentAt": 80807,
+    "ms": 10102,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   }
+  },
+  "timeline": [
+   {
+    "t": 278,
+    "method": "window/workDoneProgress/create",
+    "token": "acbbdf63-e9c2-4053-a4da-f263c1f67a31:dbt/progress/listNodes"
+   },
+   {
+    "t": 279,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "acbbdf63-e9c2-4053-a4da-f263c1f67a31:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 287,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 292,
+    "method": "window/workDoneProgress/create",
+    "token": "da614663-00d9-48dd-989f-0afe13439429"
+   },
+   {
+    "t": 294,
+    "method": "$/progress",
+    "title": "",
+    "token": "da614663-00d9-48dd-989f-0afe13439429",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 5141,
+    "method": "$/progress",
+    "title": "",
+    "token": "da614663-00d9-48dd-989f-0afe13439429",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 5294,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 4862,
+     "models_count": 995,
+     "errors": 1
+    }
+   },
+   {
+    "t": 21016,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "acbbdf63-e9c2-4053-a4da-f263c1f67a31:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 21016,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 21016,
+    "method": "window/workDoneProgress/create",
+    "token": "d7e8ad7b-ef97-457b-b813-633a3865e767"
+   },
+   {
+    "t": 21017,
+    "method": "window/workDoneProgress/create",
+    "token": "9e5e6a8a-7d8d-43cf-a419-a3fe83ef706a:dbt/progress/listNodes"
+   },
+   {
+    "t": 21017,
+    "method": "window/workDoneProgress/create",
+    "token": "0d1c6cc0-7542-48d7-9254-275fa2d64754:dbt/progress/listNodes"
+   },
+   {
+    "t": 21017,
+    "method": "$/progress",
+    "title": "",
+    "token": "d7e8ad7b-ef97-457b-b813-633a3865e767",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 21017,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "9e5e6a8a-7d8d-43cf-a419-a3fe83ef706a:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 21017,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0d1c6cc0-7542-48d7-9254-275fa2d64754:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 21468,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "9e5e6a8a-7d8d-43cf-a419-a3fe83ef706a:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 23288,
+    "method": "$/progress",
+    "title": "",
+    "token": "d7e8ad7b-ef97-457b-b813-633a3865e767",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 23293,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 2280,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 23295,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 23296,
+    "method": "window/workDoneProgress/create",
+    "token": "be66a5e2-602c-451a-b576-8b537b0dbb86"
+   },
+   {
+    "t": 23296,
+    "method": "$/progress",
+    "title": "",
+    "token": "be66a5e2-602c-451a-b576-8b537b0dbb86",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 23391,
+    "method": "$/progress",
+    "title": "",
+    "token": "be66a5e2-602c-451a-b576-8b537b0dbb86",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 23557,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 119,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 34391,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0d1c6cc0-7542-48d7-9254-275fa2d64754:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 34391,
+    "method": "window/workDoneProgress/create",
+    "token": "548f1b0c-5de6-4c2a-93a4-84b1ee989ed6:dbt/progress/listNodes"
+   },
+   {
+    "t": 34391,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "548f1b0c-5de6-4c2a-93a4-84b1ee989ed6:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 34401,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 34401,
+    "method": "window/workDoneProgress/create",
+    "token": "542b42e6-0975-4296-a222-e7cf3d3f513f"
+   },
+   {
+    "t": 34402,
+    "method": "$/progress",
+    "title": "",
+    "token": "542b42e6-0975-4296-a222-e7cf3d3f513f",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 34516,
+    "method": "$/progress",
+    "title": "",
+    "token": "542b42e6-0975-4296-a222-e7cf3d3f513f",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 34678,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 128,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 46252,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "548f1b0c-5de6-4c2a-93a4-84b1ee989ed6:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 46252,
+    "method": "window/workDoneProgress/create",
+    "token": "8efaa380-47c0-4fe4-abe4-26ede19cb379:dbt/progress/listNodes"
+   },
+   {
+    "t": 46253,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "8efaa380-47c0-4fe4-abe4-26ede19cb379:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 46264,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 46264,
+    "method": "window/workDoneProgress/create",
+    "token": "9516d70c-f819-4a1d-845b-c792b05fabf2"
+   },
+   {
+    "t": 46264,
+    "method": "$/progress",
+    "title": "",
+    "token": "9516d70c-f819-4a1d-845b-c792b05fabf2",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 46364,
+    "method": "$/progress",
+    "title": "",
+    "token": "9516d70c-f819-4a1d-845b-c792b05fabf2",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 46529,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 103,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 57174,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "8efaa380-47c0-4fe4-abe4-26ede19cb379:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 57194,
+    "method": "window/workDoneProgress/create",
+    "token": "82935036-f72d-4117-9b1a-50f78a6d2e26:dbt/progress/listNodes"
+   },
+   {
+    "t": 57195,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "82935036-f72d-4117-9b1a-50f78a6d2e26:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 57197,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 57197,
+    "method": "window/workDoneProgress/create",
+    "token": "91118fbc-8781-443d-97a7-dcd6b59d72b0"
+   },
+   {
+    "t": 57197,
+    "method": "$/progress",
+    "title": "",
+    "token": "91118fbc-8781-443d-97a7-dcd6b59d72b0",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 57294,
+    "method": "$/progress",
+    "title": "",
+    "token": "91118fbc-8781-443d-97a7-dcd6b59d72b0",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 57432,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 103,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 68333,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "82935036-f72d-4117-9b1a-50f78a6d2e26:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 68333,
+    "method": "window/workDoneProgress/create",
+    "token": "2de5e535-5e73-47d2-b67a-f3ad551be79c:dbt/progress/listNodes"
+   },
+   {
+    "t": 68333,
+    "method": "window/workDoneProgress/create",
+    "token": "491d2dad-41ee-4504-a40e-b4d4fa5e612f:dbt/progress/getCurrentNode"
+   },
+   {
+    "t": 68333,
+    "method": "window/workDoneProgress/create",
+    "token": "58fcd598-c265-4a1f-baf0-fd3d7c9e7491:dbt/progress/compileFile"
+   },
+   {
+    "t": 68334,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "2de5e535-5e73-47d2-b67a-f3ad551be79c:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 68334,
+    "method": "$/progress",
+    "title": "Getting Columns",
+    "token": "491d2dad-41ee-4504-a40e-b4d4fa5e612f:dbt/progress/getCurrentNode",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Getting Columns"
+    }
+   },
+   {
+    "t": 68334,
+    "method": "$/progress",
+    "title": "Getting Columns",
+    "token": "491d2dad-41ee-4504-a40e-b4d4fa5e612f:dbt/progress/getCurrentNode",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 68335,
+    "method": "$/progress",
+    "title": "Compiling File",
+    "token": "58fcd598-c265-4a1f-baf0-fd3d7c9e7491:dbt/progress/compileFile",
+    "value": {
+     "kind": "begin",
+     "message": "file://<P>/models/31_marts/dimensions/dim__commitment_types.sql",
+     "title": "Compiling File"
+    }
+   },
+   {
+    "t": 68335,
+    "method": "$/progress",
+    "title": "Compiling File",
+    "token": "58fcd598-c265-4a1f-baf0-fd3d7c9e7491:dbt/progress/compileFile",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 68343,
+    "method": "window/workDoneProgress/create",
+    "token": "762e2473-0c62-418f-acdb-3bd6e01166af"
+   },
+   {
+    "t": 68343,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 68343,
+    "method": "$/progress",
+    "title": "",
+    "token": "762e2473-0c62-418f-acdb-3bd6e01166af",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 68438,
+    "method": "$/progress",
+    "title": "",
+    "token": "762e2473-0c62-418f-acdb-3bd6e01166af",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 68642,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 99,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 80807,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "2de5e535-5e73-47d2-b67a-f3ad551be79c:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 80807,
+    "method": "window/workDoneProgress/create",
+    "token": "ffe4a036-8f8e-4bfd-b940-2fe7f830f62c:dbt/progress/listNodes"
+   },
+   {
+    "t": 80807,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "ffe4a036-8f8e-4bfd-b940-2fe7f830f62c:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 80819,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 80819,
+    "method": "window/workDoneProgress/create",
+    "token": "efbc4e00-5be6-4946-8ef0-a4642c8dffec"
+   },
+   {
+    "t": 80819,
+    "method": "$/progress",
+    "title": "",
+    "token": "efbc4e00-5be6-4946-8ef0-a4642c8dffec",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 81013,
+    "method": "$/progress",
+    "title": "",
+    "token": "efbc4e00-5be6-4946-8ef0-a4642c8dffec",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 81184,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 197,
+     "models_count": 995,
+     "errors": 51
+    }
+   },
+   {
+    "t": 90910,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "ffe4a036-8f8e-4bfd-b940-2fe7f830f62c:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 92075,
+    "method": "dbt/lspBackgroundCompileStart",
+    "dbt": {
+     "compile_type": "full"
+    }
+   },
+   {
+    "t": 92075,
+    "method": "window/workDoneProgress/create",
+    "token": "08ccc12e-e301-4799-a1c0-9a5e1c35b9ae"
+   },
+   {
+    "t": 92076,
+    "method": "$/progress",
+    "title": "",
+    "token": "08ccc12e-e301-4799-a1c0-9a5e1c35b9ae",
+    "value": {
+     "kind": "begin",
+     "message": "Background Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 103368,
+    "method": "$/progress",
+    "title": "",
+    "token": "08ccc12e-e301-4799-a1c0-9a5e1c35b9ae",
+    "value": {
+     "kind": "end",
+     "message": "Background Analyzing"
+    }
+   },
+   {
+    "t": 103385,
+    "method": "dbt/lspBackgroundCompileComplete",
+    "dbt": {
+     "compile_type": "full",
+     "duration_ms": 11309,
+     "models_count": 995,
+     "errors": 151
+    }
+   }
+  ],
+  "progressReports": 2583,
+  "cost": {
+   "T1_table": {
+    "label": "T1 table",
+    "sentAt": 5579,
+    "ms": 134,
+    "nodes": 109,
+    "error": null,
+    "grain": "project",
+    "head": "{\"error\":null,\"error_kind\":null,\"grain\":\"project\",\"nodes\":[{\"config\":{\"access\":\"private\",\"group\":null,\"materialized\":\"function\"},\"depends_on\":{\"nodes\":[]},\"name…(49386 chars)"
+   },
+   "T2_column": {
+    "label": "T2 column",
+    "sentAt": 5713,
+    "ms": 11357,
+    "nodes": 0,
+    "error": null,
+    "grain": "column",
+    "head": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "T2b_column_again": {
+    "label": "T2b column again",
+    "sentAt": 17070,
+    "ms": 10010,
+    "nodes": 0,
+    "error": null,
+    "grain": "column",
+    "head": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "T3_two_targets": {
+    "label": "T3 two targets",
+    "sentAt": 27080,
+    "ms": 11946,
+    "nodes": 0,
+    "error": null,
+    "grain": "column",
+    "head": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "T5_projectInfo_during": {
+    "label": "T5 getProjectInfo during listNodes",
+    "sentAt": 39398,
+    "ms": 0,
+    "error": null,
+    "head": "{\"adapter_type\":\"snowflake\",\"models_count\":995,\"models_count_is_estimate\":false,\"project_name\":\"finance_general\"}"
+   },
+   "T4_cancelled": {
+    "label": "T4 cancelled",
+    "sentAt": 39026,
+    "ms": 468,
+    "nodes": 0,
+    "error": "Operation cancelled",
+    "grain": "unknown",
+    "head": "{\"error\":\"Operation cancelled\",\"grain\":\"unknown\",\"nodes\":[]}"
+   },
+   "T4b_after": {
+    "label": "T4b right after cancel",
+    "sentAt": 39347,
+    "ms": 20954,
+    "nodes": 0,
+    "error": null,
+    "grain": "column",
+    "head": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[],\"root_project\":\"finance_general\"}"
+   },
+   "progress": [
+    {
+     "t": 5580,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 5716,
+     "token": "dbt/progress/listNodes",
+     "kind": "end"
+    },
+    {
+     "t": 5716,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 17070,
+     "token": "dbt/progress/listNodes",
+     "kind": "end"
+    },
+    {
+     "t": 17071,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 27080,
+     "token": "dbt/progress/listNodes",
+     "kind": "end"
+    },
+    {
+     "t": 27080,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 39027,
+     "token": "dbt/progress/listNodes",
+     "kind": "end"
+    },
+    {
+     "t": 39027,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 39348,
+     "token": "dbt/progress/listNodes",
+     "kind": "begin"
+    },
+    {
+     "t": 39494,
+     "token": "dbt/progress/listNodes",
+     "kind": "end"
+    }
+   ],
+   "T2_longestServerSilenceMs": 11103,
+   "T2_serverMessages": 119
+  }
+ },
+ "jaffle": {
+  "timing": {
+   "A": {
+    "command": "dbt.listNodes",
+    "sentAt": 270,
+    "ms": 298,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[{\"is_primary_key\":false,\"materialized\":\"table\",\"name\":\"amount\",\"node_name\":\"orders\",\"op\":\"mod\",\"original_file_path\":\"models/orders.sql\",\"parents\":[\"model.jaffle_shop.stg_payments.amount\"],\"resource_type\":\"model\",\"transformation_type\":\"transfo…(975 chars)"
+   },
+   "B": [
+    {
+     "command": "dbt.listNodes",
+     "sentAt": 570,
+     "ms": 30,
+     "result": "{\"error\":\"Operation cancelled\",\"grain\":\"unknown\",\"nodes\":[]}"
+    },
+    {
+     "command": "dbt.listNodes",
+     "sentAt": 570,
+     "ms": 70,
+     "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[{\"is_primary_key\":false,\"materialized\":\"table\",\"name\":\"amount\",\"node_name\":\"orders\",\"op\":\"mod\",\"original_file_path\":\"models/orders.sql\",\"parents\":[\"model.jaffle_shop.stg_payments.amount\"],\"resource_type\":\"model\",\"transformation_type\":\"transfo…(975 chars)"
+    }
+   ],
+   "C": {
+    "command": "dbt.listNodes",
+    "sentAt": 640,
+    "ms": 96,
+    "result": "{\"error\":null,\"error_kind\":null,\"grain\":\"column\",\"nodes\":[{\"is_primary_key\":false,\"materialized\":\"table\",\"name\":\"amount\",\"node_name\":\"orders\",\"op\":\"mod\",\"original_file_path\":\"models/orders.sql\",\"parents\":[\"model.jaffle_shop.stg_payments.amount\"],\"resource_type\":\"model\",\"transformation_type\":\"transfo…(975 chars)"
+   }
+  },
+  "timeline": [
+   {
+    "t": 271,
+    "method": "window/workDoneProgress/create",
+    "token": "0926a766-daef-4cd0-a7cd-e7f286eb237d:dbt/progress/listNodes"
+   },
+   {
+    "t": 272,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0926a766-daef-4cd0-a7cd-e7f286eb237d:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 273,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 274,
+    "method": "window/workDoneProgress/create",
+    "token": "1148d3a7-61ca-4428-a96c-30cc28ba3a90"
+   },
+   {
+    "t": 274,
+    "method": "$/progress",
+    "title": "",
+    "token": "1148d3a7-61ca-4428-a96c-30cc28ba3a90",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 508,
+    "method": "$/progress",
+    "title": "",
+    "token": "1148d3a7-61ca-4428-a96c-30cc28ba3a90",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 518,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 236,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 570,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0926a766-daef-4cd0-a7cd-e7f286eb237d:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 570,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 570,
+    "method": "window/workDoneProgress/create",
+    "token": "1e1a53d6-39e9-4ad2-b979-f770bb5f8425"
+   },
+   {
+    "t": 570,
+    "method": "window/workDoneProgress/create",
+    "token": "0a6f969b-3743-40b9-95db-045c69bd8cd9:dbt/progress/listNodes"
+   },
+   {
+    "t": 571,
+    "method": "window/workDoneProgress/create",
+    "token": "edda2a34-553a-4862-a420-bd62c17e5a20:dbt/progress/listNodes"
+   },
+   {
+    "t": 571,
+    "method": "$/progress",
+    "title": "",
+    "token": "1e1a53d6-39e9-4ad2-b979-f770bb5f8425",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 571,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0a6f969b-3743-40b9-95db-045c69bd8cd9:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 571,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "edda2a34-553a-4862-a420-bd62c17e5a20:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 600,
+    "method": "$/progress",
+    "title": "",
+    "token": "1e1a53d6-39e9-4ad2-b979-f770bb5f8425",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 601,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 32,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 601,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "0a6f969b-3743-40b9-95db-045c69bd8cd9:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 608,
+    "method": "window/workDoneProgress/create",
+    "token": "86a84d3e-677a-4338-8155-0ba5a86fc16a"
+   },
+   {
+    "t": 608,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 608,
+    "method": "$/progress",
+    "title": "",
+    "token": "86a84d3e-677a-4338-8155-0ba5a86fc16a",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 618,
+    "method": "$/progress",
+    "title": "",
+    "token": "86a84d3e-677a-4338-8155-0ba5a86fc16a",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 627,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 18,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 640,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "edda2a34-553a-4862-a420-bd62c17e5a20:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 640,
+    "method": "window/workDoneProgress/create",
+    "token": "c51bd238-ee10-47d6-8958-795676e2d6ef:dbt/progress/listNodes"
+   },
+   {
+    "t": 640,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "c51bd238-ee10-47d6-8958-795676e2d6ef:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 652,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 652,
+    "method": "window/workDoneProgress/create",
+    "token": "b01221c6-1eff-4b39-8c70-9c515ab5ad11"
+   },
+   {
+    "t": 653,
+    "method": "$/progress",
+    "title": "",
+    "token": "b01221c6-1eff-4b39-8c70-9c515ab5ad11",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 667,
+    "method": "$/progress",
+    "title": "",
+    "token": "b01221c6-1eff-4b39-8c70-9c515ab5ad11",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 678,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 15,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 736,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "c51bd238-ee10-47d6-8958-795676e2d6ef:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 737,
+    "method": "window/workDoneProgress/create",
+    "token": "8b8e3c89-04e6-4c77-84a5-5467c96f6fce:dbt/progress/listNodes"
+   },
+   {
+    "t": 737,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "8b8e3c89-04e6-4c77-84a5-5467c96f6fce:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 752,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 752,
+    "method": "window/workDoneProgress/create",
+    "token": "2e17572b-f5e6-4585-8778-00ff64b7f172"
+   },
+   {
+    "t": 752,
+    "method": "$/progress",
+    "title": "",
+    "token": "2e17572b-f5e6-4585-8778-00ff64b7f172",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 771,
+    "method": "$/progress",
+    "title": "",
+    "token": "2e17572b-f5e6-4585-8778-00ff64b7f172",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 782,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 24,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 800,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "8b8e3c89-04e6-4c77-84a5-5467c96f6fce:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 822,
+    "method": "window/workDoneProgress/create",
+    "token": "ecab44fc-4da5-4177-9c53-712042250d81:dbt/progress/listNodes"
+   },
+   {
+    "t": 822,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "ecab44fc-4da5-4177-9c53-712042250d81:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 833,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 833,
+    "method": "window/workDoneProgress/create",
+    "token": "48625763-fbea-4bff-8757-b19ed759b6bb"
+   },
+   {
+    "t": 834,
+    "method": "$/progress",
+    "title": "",
+    "token": "48625763-fbea-4bff-8757-b19ed759b6bb",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 848,
+    "method": "$/progress",
+    "title": "",
+    "token": "48625763-fbea-4bff-8757-b19ed759b6bb",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 859,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 15,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 882,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "ecab44fc-4da5-4177-9c53-712042250d81:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 882,
+    "method": "window/workDoneProgress/create",
+    "token": "96bf4c47-cd7e-4539-921e-c50e67ca5c8c:dbt/progress/listNodes"
+   },
+   {
+    "t": 882,
+    "method": "window/workDoneProgress/create",
+    "token": "08c6d4a3-1da9-4963-970e-393106005fa2:dbt/progress/getCurrentNode"
+   },
+   {
+    "t": 882,
+    "method": "window/workDoneProgress/create",
+    "token": "777e36da-a2d7-4127-b88c-dcc7aeaeb769:dbt/progress/compileFile"
+   },
+   {
+    "t": 882,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "96bf4c47-cd7e-4539-921e-c50e67ca5c8c:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 882,
+    "method": "$/progress",
+    "title": "Getting Columns",
+    "token": "08c6d4a3-1da9-4963-970e-393106005fa2:dbt/progress/getCurrentNode",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Getting Columns"
+    }
+   },
+   {
+    "t": 883,
+    "method": "$/progress",
+    "title": "Getting Columns",
+    "token": "08c6d4a3-1da9-4963-970e-393106005fa2:dbt/progress/getCurrentNode",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 883,
+    "method": "$/progress",
+    "title": "Compiling File",
+    "token": "777e36da-a2d7-4127-b88c-dcc7aeaeb769:dbt/progress/compileFile",
+    "value": {
+     "kind": "begin",
+     "message": "file://<P>/models/orders.sql",
+     "title": "Compiling File"
+    }
+   },
+   {
+    "t": 883,
+    "method": "$/progress",
+    "title": "Compiling File",
+    "token": "777e36da-a2d7-4127-b88c-dcc7aeaeb769:dbt/progress/compileFile",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 891,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 892,
+    "method": "window/workDoneProgress/create",
+    "token": "a64996c4-8289-4538-bf4e-58ec33069198"
+   },
+   {
+    "t": 892,
+    "method": "$/progress",
+    "title": "",
+    "token": "a64996c4-8289-4538-bf4e-58ec33069198",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 905,
+    "method": "$/progress",
+    "title": "",
+    "token": "a64996c4-8289-4538-bf4e-58ec33069198",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 916,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 13,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 928,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "96bf4c47-cd7e-4539-921e-c50e67ca5c8c:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 928,
+    "method": "window/workDoneProgress/create",
+    "token": "afb1fb23-2aba-4dc5-b9f2-3ead85dd54f0:dbt/progress/listNodes"
+   },
+   {
+    "t": 928,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "afb1fb23-2aba-4dc5-b9f2-3ead85dd54f0:dbt/progress/listNodes",
+    "value": {
+     "kind": "begin",
+     "message": "Waiting for compilation to complete...",
+     "title": "Computing Lineage"
+    }
+   },
+   {
+    "t": 939,
+    "method": "dbt/lspCompileStart",
+    "dbt": {
+     "compile_type": "incremental"
+    }
+   },
+   {
+    "t": 939,
+    "method": "window/workDoneProgress/create",
+    "token": "4e3696af-0fec-4ec2-9f60-dafdc139b963"
+   },
+   {
+    "t": 939,
+    "method": "$/progress",
+    "title": "",
+    "token": "4e3696af-0fec-4ec2-9f60-dafdc139b963",
+    "value": {
+     "kind": "begin",
+     "message": "Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 953,
+    "method": "$/progress",
+    "title": "",
+    "token": "4e3696af-0fec-4ec2-9f60-dafdc139b963",
+    "value": {
+     "kind": "end",
+     "message": "Analyzing"
+    }
+   },
+   {
+    "t": 964,
+    "method": "dbt/lspCompileComplete",
+    "dbt": {
+     "compile_type": "incremental",
+     "duration_ms": 14,
+     "models_count": 7,
+     "errors": 0
+    }
+   },
+   {
+    "t": 975,
+    "method": "$/progress",
+    "title": "Computing Lineage",
+    "token": "afb1fb23-2aba-4dc5-b9f2-3ead85dd54f0:dbt/progress/listNodes",
+    "value": {
+     "kind": "end"
+    }
+   },
+   {
+    "t": 2171,
+    "method": "dbt/lspBackgroundCompileStart",
+    "dbt": {
+     "compile_type": "full"
+    }
+   },
+   {
+    "t": 2172,
+    "method": "window/workDoneProgress/create",
+    "token": "f8721657-e12f-45dc-be50-2a1c2150b109"
+   },
+   {
+    "t": 2172,
+    "method": "$/progress",
+    "title": "",
+    "token": "f8721657-e12f-45dc-be50-2a1c2150b109",
+    "value": {
+     "kind": "begin",
+     "message": "Background Analyzing",
+     "title": ""
+    }
+   },
+   {
+    "t": 2196,
+    "method": "$/progress",
+    "title": "",
+    "token": "f8721657-e12f-45dc-be50-2a1c2150b109",
+    "value": {
+     "kind": "end",
+     "message": "Background Analyzing"
+    }
+   },
+   {
+    "t": 2197,
+    "method": "dbt/lspBackgroundCompileComplete",
+    "dbt": {
+     "compile_type": "full",
+     "duration_ms": 38,
+     "models_count": 7,
+     "errors": 0
+    }
+   }
+  ]
+ }
+}

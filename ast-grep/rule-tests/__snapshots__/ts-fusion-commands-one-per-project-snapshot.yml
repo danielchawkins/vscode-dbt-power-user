@@ -1,0 +1,8 @@
+id: ts-fusion-commands-one-per-project
+snapshots:
+  const fallback = createFusionCommands(() => this.currentClient());:
+    labels:
+    - source: createFusionCommands(() => this.currentClient())
+      style: primary
+      start: 17
+      end: 65

@@ -1,0 +1,4 @@
+{"firstCompileAt":4587,"backgroundStartAt":5754,"backgroundDoneAt":18008,"backgroundMs":12254}
+{"i":0,"ms":13057,"nodes":0,"error":null,"compiles":["dbt/lspCompileStart:","dbt/lspCompileComplete:110"]}
+{"i":1,"ms":11385,"nodes":0,"error":null,"compiles":["dbt/lspCompileStart:","dbt/lspCompileComplete:258"]}
+{"i":2,"ms":10648,"nodes":0,"error":null,"compiles":["dbt/lspCompileStart:","dbt/lspCompileComplete:104"]}

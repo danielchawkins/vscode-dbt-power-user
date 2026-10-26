@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { Uri, workspace } from "vscode";
+import { type CancellationToken, Uri, workspace } from "vscode";
 import type { Table } from "../../core/dbt/domain";
 import type {
   ColumnEdge,
@@ -12,17 +12,14 @@ import {
   inferredColumns,
   toPanelLineage,
 } from "../../core/lineage";
-import { FusionCommandError, type ListNodesResult } from "../../core/lsp";
+import type { ListNodesResult } from "../../core/lsp";
 import type { GraphMetaMap } from "../../core/manifest/types";
 import { failureSummary } from "../../core/text";
 import type {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionClient";
-import {
-  createFusionCommands,
-  type FusionCommands,
-} from "../../fusion/fusionCommands";
+import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
@@ -106,16 +103,15 @@ export class DbtLineageService {
     queryManifestService: QueryManifestService;
     currentClient?: () => FusionClient | undefined;
     currentError?: () => string | undefined;
-    /** The Current Project's server commands; defaults to commands over `currentClient`. */
-    currentLsp?: () => FusionCommands | undefined;
+    /** The Current Project's server commands, which schedule the lineage requests. */
+    currentLsp: () => FusionCommands | undefined;
     currentStrict?: () => StrictInputs;
   }) {
     this.queryManifestService = queryManifestService;
     this.currentClient = currentClient;
     this.currentError = currentError;
     this.currentStrict = currentStrict;
-    const fallback = createFusionCommands(() => this.currentClient());
-    this.currentLsp = currentLsp ?? (() => fallback);
+    this.currentLsp = currentLsp;
   }
 
   private readonly currentLsp: () => FusionCommands | undefined;
@@ -123,10 +119,11 @@ export class DbtLineageService {
   /**
    * Answers the panel's column click from the Fusion Client's `dbt.listNodes`, one request per distinct target
    * column. Only edges with a requested column on the side the component expands from are kept, spelled as
-   * requested. A failed request drops only its target when another answered.
+   * requested. A failed request drops only its target when another answered. The token ends every wait early.
    */
   async getConnectedColumns(
     request: ConnectedColumnsRequest,
+    token: CancellationToken,
   ): Promise<ConnectedColumnsResult> {
     const client = this.currentClient();
     const lsp = this.currentLsp();
@@ -141,20 +138,13 @@ export class DbtLineageService {
       };
     }
     const targets = distinctTargets(request.targets);
-    const listNodes = async (table: string, column: string) => {
-      return lsp.listNodes(columnLineageArgs(table, column));
-    };
     const settled = await Promise.allSettled(
-      targets.map(async ([table, column]) => {
-        try {
-          return await listNodes(table, column);
-        } catch (error) {
-          if (!isCancelled(error)) {
-            throw error;
-          }
-          return await listNodes(table, column);
-        }
-      }),
+      targets.map(([table, column]) =>
+        lsp.listNodes(columnLineageArgs(table, column), {
+          purpose: "columnLineage",
+          token,
+        }),
+      ),
     );
     const results: ListNodesResult[] = [];
     const failures: TargetFailure[] = [];
@@ -228,7 +218,9 @@ export class DbtLineageService {
       .split(path.sep)
       .join("/");
     const ask = async () =>
-      inferredColumns(await lsp.getCurrentNode(relativePath));
+      inferredColumns(
+        await lsp.getCurrentNode(relativePath, { purpose: "columns" }),
+      );
     try {
       const columns = await ask();
       if (columns !== undefined) {
@@ -342,10 +334,6 @@ function distinctTargets(targets: [string, string][]): [string, string][] {
     }
   }
   return [...seen.values()];
-}
-
-function isCancelled(error: unknown): boolean {
-  return error instanceof FusionCommandError && error.kind === "cancelled";
 }
 
 function errorMessage(error: unknown): string {

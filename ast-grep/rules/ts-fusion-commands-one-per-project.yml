@@ -1,0 +1,18 @@
+# FusionCommands owns the request lanes of one Declared Project. A second instance over the same client is a second
+# set of lanes the first cannot see, so two listNodes reach the server at once and it cancels the older
+# (`{"error":"Operation cancelled"}`). The project builds the only instance; everything else reads `project.lsp`.
+id: ts-fusion-commands-one-per-project
+language: typescript
+severity: error
+message: >-
+  Read the project's `lsp` (FusionCommands) instead of building another; only src/projects/project/project.ts
+  calls createFusionCommands.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+  - src/projects/project/project.ts
+  - src/fusion/fusionCommands.ts
+rule:
+  pattern: createFusionCommands($$$)

@@ -1,0 +1,26 @@
+id: ts-no-adhoc-promise-race
+snapshots:
+  await Promise.race([conn.sendRequest("shutdown"), sleep(5000)]);:
+    labels:
+    - source: Promise.race([conn.sendRequest("shutdown"), sleep(5000)])
+      style: primary
+      start: 6
+      end: 63
+  return await Promise.race([sent, deadline]);:
+    labels:
+    - source: Promise.race([sent, deadline])
+      style: primary
+      start: 13
+      end: 43
+  timer = setTimeout(() => reject(new Error("timeout")), ceilingMs);:
+    labels:
+    - source: setTimeout(() => reject(new Error("timeout")), ceilingMs)
+      style: primary
+      start: 8
+      end: 65
+  timer = setTimeout(() => { reject(new Error("timeout")); }, ceilingMs);:
+    labels:
+    - source: setTimeout(() => { reject(new Error("timeout")); }, ceilingMs)
+      style: primary
+      start: 8
+      end: 70

@@ -136,7 +136,9 @@ async function inferredAttempt(
       .split(path.sep)
       .join("/");
     try {
-      const columns = dbColumnsFrom(await project.lsp.getCurrentNode(relative));
+      const columns = dbColumnsFrom(
+        await project.lsp.getCurrentNode(relative, { purpose: "columns" }),
+      );
       if (columns) {
         return {
           attempt: { source: "inferred", result: "answered" },
