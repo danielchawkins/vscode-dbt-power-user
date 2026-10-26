@@ -128,6 +128,19 @@ describe("schema YAML walker", () => {
     ).toEqual(["ok"]);
   });
 
+  it("keeps a name's text as written, even when it reads as a number or null", () => {
+    const text =
+      "models:\n  - name: 0123\n  - name: 1e3\n  - name: ~\nsources:\n  - name: 007\n    tables:\n      - name: 0123\n";
+    expect(modelNameKeys(text).map((key) => key.name)).toEqual([
+      "0123",
+      "1e3",
+      "~",
+    ]);
+    expect(sourceTables(text).map((t) => [t.source, t.table])).toEqual([
+      ["007", "0123"],
+    ]);
+  });
+
   it("keeps a model's name key on its own line when the text uses CRLF", () => {
     const text = "models:\r\n  - name: a\r\n  - name: b\r\n";
     const [, second] = modelNameKeys(text);

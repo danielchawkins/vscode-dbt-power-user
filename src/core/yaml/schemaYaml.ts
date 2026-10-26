@@ -115,7 +115,8 @@ export function sourceTables(text: string): SchemaSourceTable[] {
 function documentMaps(text: string): YAMLMap[] {
   try {
     const maps: YAMLMap[] = [];
-    for (const document of parseAllDocuments(text)) {
+    // The failsafe schema keeps every scalar as written: `0123`, `1e3`, `null` and `~` stay those strings.
+    for (const document of parseAllDocuments(text, { schema: "failsafe" })) {
       if (isMap(document.contents)) {
         maps.push(document.contents);
       }
@@ -149,10 +150,7 @@ function sourceMaps(text: string): YAMLMap[] {
   return documentMaps(text).flatMap((root) => mapsUnder(root, "sources"));
 }
 
-/**
- * The `key: scalar` entry of a mapping. `undefined` when the key is missing, or its value is null, a mapping or a
- * list.
- */
+/** The `key: scalar` entry of a mapping, with the scalar's text. `undefined` when the value is a mapping or a list. */
 function scalarEntry(map: YAMLMap, key: string): ScalarEntry | undefined {
   const pair = map.items.find(
     (item) => isScalar(item.key) && item.key.value === key,
@@ -161,15 +159,12 @@ function scalarEntry(map: YAMLMap, key: string): ScalarEntry | undefined {
     return undefined;
   }
   const value = pair.value.value;
-  if (
-    typeof value !== "string" &&
-    typeof value !== "number" &&
-    typeof value !== "boolean"
-  ) {
+  // An empty value (`name:`) is null in YAML; the failsafe schema reads it as "".
+  if (typeof value !== "string" || value === "") {
     return undefined;
   }
   return {
-    text: String(value),
+    text: value,
     key: [pair.key.range?.[0] ?? 0, pair.key.range?.[1] ?? 0],
     valueOffset: pair.value.range?.[0] ?? 0,
   };
