@@ -53,7 +53,7 @@
       "count": 2
     },
     "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "src/core/manifest/nodeParser.ts": {
