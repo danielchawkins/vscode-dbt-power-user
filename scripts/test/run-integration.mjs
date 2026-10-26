@@ -18,6 +18,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { signalExitCode } from "../smoke/launchSupport.mjs";
 import {
   labelLayout,
   labelsToPrepare,
@@ -65,14 +66,13 @@ const cleanup = () => {
 let child;
 let signalled = 0;
 let exitSignal;
-const signalCode = (signal) => (signal === "SIGINT" ? 130 : 143);
 const onSignal = (signal) => {
   signalled += 1;
   exitSignal = signal;
   if (child?.exitCode !== null || signalled > 1) {
     killGroup(child, "SIGKILL");
     cleanup();
-    process.exit(signalCode(signal));
+    process.exit(signalExitCode(signal));
   }
   // The child leads its own process group, so this reaches the VS Code host and its helpers.
   killGroup(child, signal);
@@ -151,7 +151,7 @@ try {
       failed ||= (await runVsixLaunch(label)) !== 0;
     }
   }
-  process.exitCode = exitSignal ? signalCode(exitSignal) : failed ? 1 : 0;
+  process.exitCode = exitSignal ? signalExitCode(exitSignal) : failed ? 1 : 0;
 } catch (error) {
   console.error("Failed to run integration tests:", error);
   process.exitCode = 1;

@@ -1,5 +1,6 @@
 import { createWriteStream, readdirSync, statSync } from "node:fs";
 import { createServer } from "node:net";
+import { constants } from "node:os";
 import path from "node:path";
 import { Writable } from "node:stream";
 
@@ -33,6 +34,15 @@ export function createTimestampedLog(file) {
       });
     },
   };
+}
+
+/** The shell exit status of a process that `signal` ended: 128 plus the signal's number. */
+export function signalExitCode(signal) {
+  const number = constants.signals[signal];
+  if (number === undefined) {
+    throw new RangeError(`Unknown signal ${signal}`);
+  }
+  return 128 + number;
 }
 
 /** Every `.log` file under `dir`, recursively; empty when `dir` does not exist. */
