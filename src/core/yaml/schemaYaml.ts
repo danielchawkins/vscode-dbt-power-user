@@ -8,11 +8,11 @@ export interface ModelNameKey {
 }
 
 /**
- * One table of a source. `offset` starts the table's mapping; `nameOffset` starts its `name:` value. The fields
- * the source and table can omit are `undefined`.
+ * One table of a named source. `offset` starts the table's mapping; `nameOffset` starts its `name:` value. The
+ * database, schema and identifier are `undefined` when the YAML omits them.
  */
 export interface SchemaSourceTable {
-  source: string | undefined;
+  source: string;
   database: string | undefined;
   schema: string | undefined;
   table: string;
@@ -28,7 +28,10 @@ interface ScalarEntry {
 }
 
 /** A 0-based line and character of `offset` in `text`, counting lines by `\n` as the YAML parser does. */
-export function positionAt(text: string, offset: number): { line: number; character: number } {
+export function positionAt(
+  text: string,
+  offset: number,
+): { line: number; character: number } {
   const lines = text.slice(0, offset).split("\n");
   return { line: lines.length - 1, character: (lines.at(-1) ?? "").length };
 }
@@ -46,7 +49,10 @@ export function modelNameKeys(text: string): ModelNameKey[] {
 }
 
 /** The name key of the model whose entry holds `offset`: the offset lies strictly between the entry's ends. */
-export function modelAt(text: string, offset: number): ModelNameKey | undefined {
+export function modelAt(
+  text: string,
+  offset: number,
+): ModelNameKey | undefined {
   for (const model of modelMaps(text)) {
     const key = modelNameKey(model);
     const range = model.range;
@@ -57,11 +63,14 @@ export function modelAt(text: string, offset: number): ModelNameKey | undefined 
   return undefined;
 }
 
-/** Every table of every source under the top-level `sources:` list, in document order. */
+/** Every table of every named source under the top-level `sources:` list, in document order. */
 export function sourceTables(text: string): SchemaSourceTable[] {
   const tables: SchemaSourceTable[] = [];
   for (const source of sourceMaps(text)) {
     const name = scalarEntry(source, "name")?.text;
+    if (name === undefined) {
+      continue;
+    }
     const database = scalarEntry(source, "database")?.text;
     const schema = scalarEntry(source, "schema")?.text;
     for (const table of mapsUnder(source, "tables")) {
@@ -126,12 +135,18 @@ function sourceMaps(text: string): YAMLMap[] {
  * list.
  */
 function scalarEntry(map: YAMLMap, key: string): ScalarEntry | undefined {
-  const pair = map.items.find((item) => isScalar(item.key) && item.key.value === key);
+  const pair = map.items.find(
+    (item) => isScalar(item.key) && item.key.value === key,
+  );
   if (pair === undefined || !isScalar(pair.key) || !isScalar(pair.value)) {
     return undefined;
   }
   const value = pair.value.value;
-  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
+  if (
+    typeof value !== "string" &&
+    typeof value !== "number" &&
+    typeof value !== "boolean"
+  ) {
     return undefined;
   }
   return {

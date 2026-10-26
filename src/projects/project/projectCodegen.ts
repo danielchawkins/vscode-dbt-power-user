@@ -86,8 +86,8 @@ export async function generateSchemaYML(
 export interface GenerateModelFromSourceParams {
   currentDoc: Uri;
   sourceName: string;
-  database: string;
-  schema: string;
+  database: string | undefined;
+  schema: string | undefined;
   tableName: string;
   tableIdentifier?: string | undefined;
 }
