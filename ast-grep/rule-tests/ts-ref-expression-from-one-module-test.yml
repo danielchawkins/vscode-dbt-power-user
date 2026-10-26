@@ -1,0 +1,9 @@
+id: ts-ref-expression-from-one-module
+valid:
+  - 'const parsed = parseRefExpression(constraint.to);'
+  - 'const RELATION = /^"?([^"]+)"?\."?([^"]+)"?$/;'
+  - 'const word = /\bpreference\b/;'
+invalid:
+  - 'const REF_PATTERN = /^ref\(\s*[''"]([^''"]+)[''"]\s*(?:,\s*[''"]([^''"]+)[''"]\s*)?\)$/;'
+  - 'const match = /source\s*\(\s*[''"]([^''"]+)/.exec(to);'
+  - 'const pattern = new RegExp(`ref\\s*\\(\\s*[''"]${escapeRegex(name)}`);'
