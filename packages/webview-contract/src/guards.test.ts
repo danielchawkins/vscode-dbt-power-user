@@ -357,17 +357,23 @@ const lineagePanel: Fixture[] = [
       ...params({
         targets: [["model.a", "id"]],
         upstreamExpansion: true,
+        trace: "model.a.id",
       }),
     },
     required: [
       "args.params.targets",
       "args.params.targets.0.1",
       "args.params.upstreamExpansion",
+      "args.params.trace",
     ],
     arrays: {
       "args.params.targets": ["array"],
       "args.params.targets.0": ["string"],
     },
+  },
+  {
+    message: { command: "cancelColumnTrace", trace: "model.a.id" },
+    required: ["trace"],
   },
   { message: { command: "getLineageSettings", ...params({}) }, required: [] },
   {

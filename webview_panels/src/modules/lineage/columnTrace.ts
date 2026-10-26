@@ -81,6 +81,7 @@ async function traceDirection(
     const body = await fetch({
       targets: frontier,
       upstreamExpansion,
+      trace: columnKey(column),
     });
     if (!sameColumn(store.get().selectedColumn, column)) {
       return false;
