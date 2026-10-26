@@ -1,0 +1,7 @@
+id: ts-no-adhoc-promise-race
+valid:
+  - 'const all = await Promise.all([a, b]);'
+  - 'const first = await Promise.any([a, b]);'
+invalid:
+  - 'return await Promise.race([sent, deadline]);'
+  - 'await Promise.race([conn.sendRequest("shutdown"), sleep(5000)]);'

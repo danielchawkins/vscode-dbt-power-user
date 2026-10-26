@@ -1,0 +1,20 @@
+id: ts-fusion-request-names-a-purpose
+snapshots:
+  const info = await this.lsp.getProjectInfo();:
+    labels:
+    - source: this.lsp.getProjectInfo()
+      style: primary
+      start: 19
+      end: 44
+  const { fileUri } = await lsp.compileFile(model);:
+    labels:
+    - source: lsp.compileFile(model)
+      style: primary
+      start: 26
+      end: 48
+  return lsp.listNodes(columnLineageArgs(table, column));:
+    labels:
+    - source: lsp.listNodes(columnLineageArgs(table, column))
+      style: primary
+      start: 7
+      end: 54

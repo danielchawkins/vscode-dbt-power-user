@@ -1,0 +1,5 @@
+id: ts-fusion-commands-one-per-project
+valid:
+  - 'const lsp = project.lsp;'
+invalid:
+  - 'const fallback = createFusionCommands(() => this.currentClient());'
