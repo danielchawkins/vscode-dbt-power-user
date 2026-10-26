@@ -1,11 +1,13 @@
-import type { CancellationToken, Uri } from "vscode";
+import type { CancellationToken, Disposable, Uri } from "vscode";
 import {
-  COMMAND_DEADLINE_MS,
   type CompileFileResult,
   type CurrentNodeResult,
+  ceilingMessage,
   FusionCommandError,
   type ListNodesResult,
   type ProjectInfo,
+  REQUEST_POLICIES,
+  type RequestPurpose,
   toCommandError,
   toCompileFileResult,
   toCurrentNodeResult,
@@ -20,23 +22,32 @@ import {
 
 type FusionCommandsState = FusionClientState | "notRunning";
 
+/** Why a request is sent, which picks its RequestPolicy, and the caller's token, which ends the wait early. */
+interface RequestOptions {
+  readonly purpose: RequestPurpose;
+  readonly token?: CancellationToken;
+}
+
 /**
  * Every server command the extension sends. Calls resolve the project's current client, so a restart never
- * leaves a stale reference. Rejects with {@link FusionCommandError}; `compileFile`, `getCurrentNode` and
- * `listNodes` time out after 5 s. Commands of one class are sent one at a time.
+ * leaves a stale reference. Rejects with {@link FusionCommandError}: `timeout` when the purpose's ceiling passes,
+ * `cancelled` when the caller's token is cancelled. Commands of one class are sent one at a time.
  */
 export interface FusionCommands {
   /** `notRunning` when the project has no client. */
   readonly state: FusionCommandsState;
   listNodes(
     selectors: readonly string[],
-    token?: CancellationToken,
+    request: RequestOptions,
   ): Promise<ListNodesResult>;
   /** `undefined`: the path is not a node. */
-  getCurrentNode(relativePath: string): Promise<CurrentNodeResult | undefined>;
-  compileFile(uri: Uri): Promise<CompileFileResult>;
+  getCurrentNode(
+    relativePath: string,
+    request: RequestOptions,
+  ): Promise<CurrentNodeResult | undefined>;
+  compileFile(uri: Uri, request: RequestOptions): Promise<CompileFileResult>;
   /** `undefined` until the first compile. */
-  getProjectInfo(): Promise<ProjectInfo | undefined>;
+  getProjectInfo(request: RequestOptions): Promise<ProjectInfo | undefined>;
 }
 
 type QueuedCommand = Exclude<
@@ -47,15 +58,15 @@ type QueuedCommand = Exclude<
 type Sender = (
   command: QueuedCommand,
   payload: unknown,
-  token: CancellationToken | undefined,
+  request: RequestOptions,
 ) => Promise<unknown>;
 
-/** Sends one command to the project's current client, failing after `deadlineMs`. */
-function senderFor(
-  clientOf: () => FusionClient | undefined,
-  deadlineMs: number,
-): Sender {
-  return async (command, payload, token) => {
+/**
+ * Sends one command to the project's current client. The wait ends when the server answers, when the purpose's
+ * ceiling passes, or when the caller's token is cancelled.
+ */
+function senderFor(clientOf: () => FusionClient | undefined): Sender {
+  return async (command, payload, { purpose, token }) => {
     const client = clientOf();
     if (client?.state !== "running") {
       throw new FusionCommandError(
@@ -67,45 +78,45 @@ function senderFor(
       throw new FusionCommandError("cancelled", "Request cancelled");
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () =>
-          reject(
-            new FusionCommandError(
-              "timeout",
-              `${command} did not answer within ${deadlineMs} ms`,
-            ),
-          ),
-        deadlineMs,
-      );
-    });
+    let subscription: Disposable | undefined;
     try {
-      const sent = token
-        ? client.request<unknown>(command, payload, token)
-        : client.request<unknown>(command, payload);
-      return await Promise.race([sent, deadline]);
+      return await new Promise<unknown>((resolve, reject) => {
+        // The ceiling rejects the caller and leaves the server request running; no token reaches the server here.
+        timer = setTimeout(
+          () =>
+            reject(new FusionCommandError("timeout", ceilingMessage(purpose))),
+          REQUEST_POLICIES[purpose].ceilingMs,
+        );
+        subscription = token?.onCancellationRequested(() =>
+          reject(new FusionCommandError("cancelled", "Request cancelled")),
+        );
+        const sent = token
+          ? client.request<unknown>(command, payload, token)
+          : client.request<unknown>(command, payload);
+        sent.then(resolve, reject);
+      });
     } catch (error) {
       throw toCommandError(error);
     } finally {
       clearTimeout(timer);
+      subscription?.dispose();
     }
   };
 }
 
 export function createFusionCommands(
   clientOf: () => FusionClient | undefined,
-  deadlineMs: number = COMMAND_DEADLINE_MS,
 ): FusionCommands {
   const queues = new Map<QueuedCommand, Promise<unknown>>();
-  const send = senderFor(clientOf, deadlineMs);
+  const send = senderFor(clientOf);
 
   const queued = (
     command: QueuedCommand,
     payload: unknown,
-    token?: CancellationToken,
+    request: RequestOptions,
   ): Promise<unknown> => {
     const sent = (queues.get(command) ?? Promise.resolve()).then(() =>
-      send(command, payload, token),
+      send(command, payload, request),
     );
     queues.set(
       command,
@@ -118,24 +129,32 @@ export function createFusionCommands(
     get state() {
       return clientOf()?.state ?? "notRunning";
     },
-    async listNodes(selectors, token) {
+    async listNodes(selectors, request) {
       return toListNodesResult(
-        await queued(FUSION_LSP_COMMANDS.listNodes, [...selectors], token),
+        await queued(FUSION_LSP_COMMANDS.listNodes, [...selectors], request),
       );
     },
-    async getCurrentNode(relativePath) {
+    async getCurrentNode(relativePath, request) {
       return toCurrentNodeResult(
-        await queued(FUSION_LSP_COMMANDS.getCurrentNode, [relativePath]),
+        await queued(
+          FUSION_LSP_COMMANDS.getCurrentNode,
+          [relativePath],
+          request,
+        ),
       );
     },
-    async compileFile(uri) {
+    async compileFile(uri, request) {
       return toCompileFileResult(
-        await queued(FUSION_LSP_COMMANDS.compileFile, [uri.toString()]),
+        await queued(
+          FUSION_LSP_COMMANDS.compileFile,
+          [uri.toString()],
+          request,
+        ),
       );
     },
-    async getProjectInfo() {
+    async getProjectInfo(request) {
       return toProjectInfo(
-        await queued(FUSION_LSP_COMMANDS.getProjectInfo, []),
+        await queued(FUSION_LSP_COMMANDS.getProjectInfo, [], request),
       );
     },
   };

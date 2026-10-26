@@ -142,7 +142,9 @@ export class DbtLineageService {
     }
     const targets = distinctTargets(request.targets);
     const listNodes = async (table: string, column: string) => {
-      return lsp.listNodes(columnLineageArgs(table, column));
+      return lsp.listNodes(columnLineageArgs(table, column), {
+        purpose: "columnLineage",
+      });
     };
     const settled = await Promise.allSettled(
       targets.map(async ([table, column]) => {
@@ -228,7 +230,9 @@ export class DbtLineageService {
       .split(path.sep)
       .join("/");
     const ask = async () =>
-      inferredColumns(await lsp.getCurrentNode(relativePath));
+      inferredColumns(
+        await lsp.getCurrentNode(relativePath, { purpose: "columns" }),
+      );
     try {
       const columns = await ask();
       if (columns !== undefined) {

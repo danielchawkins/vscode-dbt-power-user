@@ -57,7 +57,9 @@ describe("ServerMetadataSource", () => {
     const { source, compiled, listNodes, changes } = setup();
     compiled.fire();
     await source.refresh();
-    expect(listNodes).toHaveBeenCalledWith(["+package:p"]);
+    expect(listNodes).toHaveBeenCalledWith(["+package:p"], {
+      purpose: "graph",
+    });
     expect(changes).toHaveBeenCalledTimes(1);
     expect(source.current()?.nodes.map((n) => n.uniqueId)).toEqual([
       "model.p.a",

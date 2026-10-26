@@ -75,7 +75,9 @@ export async function resolveUpstreamDescriptions({
     }
     let answer: ListNodesResult;
     try {
-      answer = await lsp.listNodes(columnLineageArgs(uniqueId, name));
+      answer = await lsp.listNodes(columnLineageArgs(uniqueId, name), {
+        purpose: "columnLineage",
+      });
     } catch (error) {
       return {
         kind: "failed",

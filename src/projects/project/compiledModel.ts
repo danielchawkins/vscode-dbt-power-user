@@ -10,9 +10,9 @@ export async function compiledModelSql(
   lsp: Pick<FusionCommands, "getProjectInfo" | "compileFile">,
   model: Uri,
 ): Promise<string | undefined> {
-  if ((await lsp.getProjectInfo()) === undefined) {
+  if ((await lsp.getProjectInfo({ purpose: "projectInfo" })) === undefined) {
     return undefined;
   }
-  const { fileUri } = await lsp.compileFile(model);
+  const { fileUri } = await lsp.compileFile(model, { purpose: "compiledSql" });
   return readFileSync(Uri.parse(fileUri).fsPath, "utf8");
 }

@@ -2,9 +2,6 @@ import type { CurrentNodeResult, ListNodesResult } from "../lineage";
 
 export type { CurrentNodeResult, ListNodesResult };
 
-/** Deadline for `compileFile`, `getCurrentNode` and `listNodes`; the server answers them in under 100 ms. */
-export const COMMAND_DEADLINE_MS = 5_000;
-
 export type FusionCommandErrorKind =
   | "notRunning"
   | "cancelled"
@@ -63,10 +60,16 @@ function errorText(raw: Raw): string | undefined {
     : undefined;
 }
 
-/** `No nodes found` and `lineage_query_failed` are an empty result; any other `error` is the server's. */
+/** The server's in-band answer to a request it superseded; a cancel, not a server error. */
+const SUPERSEDED = "Operation cancelled";
+
+/** `No nodes found` and `lineage_query_failed` are an empty result; `Operation cancelled` is `cancelled`. */
 export function toListNodesResult(raw: unknown): ListNodesResult {
   const result = record(raw, "dbt.listNodes");
   const error = errorText(result);
+  if (error === SUPERSEDED) {
+    throw new FusionCommandError("cancelled", error);
+  }
   if (
     error !== undefined &&
     result.error_kind !== "lineage_query_failed" &&

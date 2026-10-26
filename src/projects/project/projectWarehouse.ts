@@ -61,7 +61,9 @@ export async function columnsOfModel(
       .split(sep)
       .join("/");
     try {
-      const columns = dbColumnsFrom(await project.lsp.getCurrentNode(relative));
+      const columns = dbColumnsFrom(
+        await project.lsp.getCurrentNode(relative, { purpose: "columns" }),
+      );
       if (columns) {
         return columns;
       }
