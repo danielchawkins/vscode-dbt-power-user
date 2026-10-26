@@ -6,8 +6,8 @@ export type RefExpression =
   | { kind: "ref"; name: string; package?: string; version?: string }
   | { kind: "source"; source: string; table: string };
 
-// Arguments are quoted with either quote character. The third argument is the version: `v=2` or `version=2`, or a
-// bare value, which lineage has always accepted.
+// Arguments are quoted with either quote character. The version is the last argument, after the name: `v=2`,
+// `version=2` or a bare value.
 const REF_CALL =
   /^ref\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?(?:\s*,\s*(?:(?:v|version)\s*=\s*)?([^,)]+?))?\s*\)$/;
 const SOURCE_CALL =

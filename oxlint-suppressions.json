@@ -45,11 +45,6 @@
       "count": 1
     }
   },
-  "src/core/manifest/childrenParentParser.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
   "src/core/manifest/graphParser.ts": {
     "complexity": {
       "count": 1

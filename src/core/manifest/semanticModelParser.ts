@@ -1,5 +1,6 @@
 import type { Log } from "../log";
 import type { ManifestProject } from "./manifestProject";
+import { type RelationIndex, resolveTarget } from "./relationIndex";
 import type {
   SemanticEntity,
   SemanticEntityType,
@@ -15,9 +16,6 @@ interface EntityResource {
   description?: string;
   role?: string;
 }
-
-const REF_PATTERN =
-  /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;
 
 /**
  * Parses dbt `semantic_models[]` entries from the manifest into a structured
@@ -39,14 +37,15 @@ export class SemanticModelParser {
   /**
    * Walks the manifest's `semantic_models` section and produces a map keyed
    * by semantic_model `unique_id`. Each entry captures the anchor model's
-   * `unique_id` (resolved via `depends_on.nodes`, falling back to the raw
-   * `ref('name')` expression) plus the entity definitions filtered to the
-   * four valid `SemanticEntityType`s. Malformed or unrecognized entries are
-   * silently skipped — `terminal.debug` records why.
+   * `unique_id`, resolved from `depends_on.nodes`, else from the `model` ref
+   * through `index`, else left unset, plus the entity definitions filtered to
+   * the four valid `SemanticEntityType`s. Malformed or unrecognized entries are
+   * silently skipped; `terminal.debug` records why.
    */
   createSemanticModelMetaMap(
     semanticModels: Record<string, SemanticModelResource> | null | undefined,
     project: ManifestProject,
+    index?: RelationIndex,
   ): Promise<SemanticModelMetaMap> {
     return new Promise((resolve) => {
       const projectRoot = project.getProjectRoot();
@@ -73,8 +72,12 @@ export class SemanticModelParser {
           package_name: sm.package_name,
           model_ref: modelRef,
           model_unique_id: this.resolveModelUniqueId(
-            modelRef,
-            sm.depends_on?.nodes,
+            {
+              modelRef,
+              dependsOnNodes: sm.depends_on?.nodes,
+              fromPackage: sm.package_name,
+            },
+            index,
           ),
           entities: this.parseEntities(sm.entities),
           description: sm.description,
@@ -93,29 +96,27 @@ export class SemanticModelParser {
 
   /**
    * The semantic_model's `depends_on.nodes` includes the anchor model. We
-   * pick the first `model.*` unique_id; if absent (rare), parse the
-   * `ref('name')` expression and look it up by package + name.
+   * pick the first `model.*` unique_id; if absent (rare), resolve the `model`
+   * ref through `resolveTarget`, from the semantic model's package.
    */
   private resolveModelUniqueId(
-    modelRef: string | undefined,
-    dependsOnNodes: string[] | undefined,
+    site: {
+      modelRef: string | undefined;
+      dependsOnNodes: string[] | undefined;
+      fromPackage: string;
+    },
+    index: RelationIndex | undefined,
   ): string | undefined {
-    if (Array.isArray(dependsOnNodes)) {
-      const modelNode = dependsOnNodes.find((n) => n.startsWith("model."));
+    if (Array.isArray(site.dependsOnNodes)) {
+      const modelNode = site.dependsOnNodes.find((n) => n.startsWith("model."));
       if (modelNode) {
         return modelNode;
       }
     }
-    if (!modelRef) {
+    if (!site.modelRef || !index) {
       return undefined;
     }
-    const match = REF_PATTERN.exec(modelRef.trim());
-    if (!match) {
-      return undefined;
-    }
-    // Without the package context we can't fully qualify; return the raw
-    // ref name and let consumers fall back to bare-name lookup.
-    return match[1];
+    return resolveTarget(site.modelRef, index, site.fromPackage);
   }
 
   private parseEntities(entities: unknown): SemanticEntity[] {
