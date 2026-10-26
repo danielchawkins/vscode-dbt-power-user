@@ -399,6 +399,10 @@
 
 .error {
   color: var(--vscode-errorForeground);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .flags {
@@ -563,6 +567,15 @@
 }
 
 .empty {
+  padding: 0 10px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 24px;
+}
+
+.tracing {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   padding: 0 10px;
   color: var(--vscode-descriptionForeground);
   line-height: 24px;

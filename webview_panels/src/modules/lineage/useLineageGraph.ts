@@ -3,7 +3,7 @@ import type { LineageViewState } from "@modules/app/viewState";
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { traceColumn } from "./columnTrace";
+import { columnKey, traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
 import { showMore } from "./expansionCap";
 import { closeGroup, openGroup, showMoreInGroup } from "./expansionGroups";
@@ -33,6 +33,13 @@ import { planRender, viewStateOf } from "./viewModel";
 
 const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);
+
+/** Traces `column` and then draws the tables its traced edges touch. */
+const traceSelected = (store: GraphStore, column: ColumnRef): void => {
+  traceColumn(store, column, fetchConnected)
+    .then((touched) => showColumns(store, touched, fetchColumns))
+    .catch(logError("column trace"));
+};
 
 /** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
 export interface ExpansionOptions {
@@ -116,9 +123,20 @@ const actionsFor = (
       s.update(clearColumn);
       return;
     }
-    traceColumn(s, ref, fetchConnected)
-      .then((touched) => showColumns(s, touched, fetchColumns))
-      .catch(logError("column trace"));
+    traceSelected(s, ref);
+  },
+  retryTrace: () => {
+    const s = store();
+    const column = s.get().selectedColumn;
+    if (column) {
+      traceSelected(s, column);
+    }
+  },
+  cancelTrace: () => {
+    const column = store().get().tracing?.column;
+    if (column) {
+      executeRequestInAsync("cancelColumnTrace", { trace: columnKey(column) });
+    }
   },
   openDetails,
   openFile,

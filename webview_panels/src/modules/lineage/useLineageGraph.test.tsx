@@ -296,4 +296,115 @@ describe("useLineageGraph", () => {
       ),
     );
   });
+
+  describe("column trace", () => {
+    const TRACE_B = "b\u0000id";
+    const TRACE_C = "c\u0000id";
+
+    type Held = { trace: string; release: (body: unknown) => void };
+
+    /** The trace a posted message names, if it names one. */
+    const traceOf = (message: unknown) =>
+      (message as { trace?: string; args?: { params?: { trace?: string } } })
+        .args?.params?.trace ?? (message as { trace?: string }).trace;
+
+    const tracesPosted = () =>
+      getVsCodeApiMock()
+        .postMessage.mock.calls.filter(
+          ([m]) => (m as Posted).command === "getConnectedColumns",
+        )
+        .map(([m]) => traceOf(m));
+
+    /** Holds every `getConnectedColumns` answer; each `held` entry releases its answer when the test chooses. */
+    const holdColumnRequests = (): Held[] => {
+      const held: Held[] = [];
+      const answer = getVsCodeApiMock().postMessage.getMockImplementation()!;
+      getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
+        const { command, syncRequestId } = message as Posted;
+        if (command === "getConnectedColumns" && syncRequestId) {
+          held.push({
+            trace: traceOf(message)!,
+            release: (body) =>
+              handleIncomingResponse({ syncRequestId, status: true, body }),
+          });
+          return;
+        }
+        answer(message);
+      });
+      return held;
+    };
+
+    it("a column selected while another is pending supersedes it: its request carries the new trace and no error appears", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() =>
+        expect(result.current.graph.tracing?.column).toEqual(["b", "id"]),
+      );
+      act(() => result.current.actions.selectColumn("c", "id"));
+      await waitFor(() => expect(tracesPosted()).toContain(TRACE_C));
+      expect(result.current.graph.tracing?.column).toEqual(["c", "id"]);
+      // The host answers the superseded trace as cancelled; that answer leaves the new column's trace alone.
+      const superseded = held.find((h) => h.trace === TRACE_B);
+      await act(async () =>
+        superseded?.release({ column_lineage: [], cancelled: true }),
+      );
+      expect(result.current.graph.tracing?.column).toEqual(["c", "id"]);
+      expect(result.current.graph.errors).toEqual({});
+    });
+
+    it("Cancel posts cancelColumnTrace for the pending trace, and its cancelled answer clears the pending state silently", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() => expect(held.length).toBeGreaterThan(0));
+      act(() => result.current.actions.cancelTrace());
+      expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
+        command: "cancelColumnTrace",
+        trace: TRACE_B,
+      });
+      await act(async () =>
+        held[0]?.release({ column_lineage: [], cancelled: true }),
+      );
+      await waitFor(() => expect(result.current.graph.tracing).toBeUndefined());
+      expect(result.current.graph.errors).toEqual({});
+    });
+
+    it("Retry traces the selected column again after a failed trace", async () => {
+      let failing = true;
+      answerRequests({
+        ...ANSWERS,
+        getConnectedColumns: (params: never) =>
+          failing
+            ? {
+                column_lineage: [],
+                errors: { b: ["Could not read column lineage for id: boom"] },
+              }
+            : ANSWERS.getConnectedColumns(params),
+      });
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() =>
+        expect(result.current.graph.errors).toEqual({
+          b: ["Could not read column lineage for id: boom"],
+        }),
+      );
+      failing = false;
+      const before = tracesPosted().filter((t) => t === TRACE_B).length;
+      act(() => result.current.actions.retryTrace());
+      await waitFor(() => expect(result.current.graph.tracing).toBeUndefined());
+      expect(
+        tracesPosted().filter((t) => t === TRACE_B).length,
+      ).toBeGreaterThan(before);
+      expect(result.current.graph.errors).toEqual({});
+    });
+  });
 });
