@@ -13,6 +13,7 @@ import {
   removeProtocol,
   stripANSI,
 } from "../../core/text";
+import { modelAt } from "../../core/yaml/schemaYaml";
 import {
   getCurrentlySelectedModelNameInYamlConfig,
   getDepthColor,
@@ -27,6 +28,7 @@ import { getFirstWorkspacePath } from "../../projects/registry/workspacePath";
 describe("text, column name, test config and workspace helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    (window as any).activeTextEditor = undefined;
   });
 
   it("getStringSizeInMb handles multibyte characters", () => {
@@ -61,17 +63,22 @@ describe("text, column name, test config and workspace helpers", () => {
     expect(getFirstWorkspacePath()).toBe("./");
   });
 
-  it("getCurrentlySelectedModelNameInYamlConfig returns model", () => {
+  it("modelAt names the model whose entry holds the offset", () => {
     const yaml = `models:\n  - name: model_a\n  - name: model_b`;
-    const lines = yaml.split("\n");
-    const document = {
-      languageId: "yaml",
-      getText: () => yaml,
-      offsetAt: ({ line, character }: any) =>
-        lines.slice(0, line).join("\n").length + (line > 0 ? 1 : 0) + character,
-    } as any;
+
+    expect(modelAt(yaml, yaml.indexOf("model_b") + 2)?.name).toBe("model_b");
+    expect(modelAt(yaml, yaml.indexOf("model_a") + 2)?.name).toBe("model_a");
+  });
+
+  it("getCurrentlySelectedModelNameInYamlConfig returns the model at the cursor", () => {
+    const yaml = `models:\n  - name: model_a\n  - name: model_b`;
+    const offset = yaml.indexOf("model_b") + 2;
     (window as any).activeTextEditor = {
-      document,
+      document: {
+        languageId: "yaml",
+        getText: () => yaml,
+        offsetAt: () => offset,
+      },
       selection: { active: { line: 2, character: 5 } },
     };
     expect(getCurrentlySelectedModelNameInYamlConfig()).toBe("model_b");
