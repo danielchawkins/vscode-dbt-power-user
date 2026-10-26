@@ -17,7 +17,6 @@ import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
 import type { LspLaunch } from "../../core/lsp";
-import { DBT_LSP_USE_TARGET_LSP } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/snapshot";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import { canonicalProjectRoot } from "../../fusion/canonicalProjectRoot";
@@ -58,6 +57,8 @@ import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionCl
 import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
+
+const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
 
 function channel() {
   return createMockLogOutputChannel("Fusion Power User: general");
