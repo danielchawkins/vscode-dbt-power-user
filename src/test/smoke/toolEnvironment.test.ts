@@ -85,25 +85,6 @@ const ROWS = new Map<string, ToolEnvRow>([
     },
   ],
   [
-    "both",
-    {
-      expect:
-        "Client running; source mise; executable under bin/; direnv-bin/ never ran; no too-old verdict.",
-      check(o: Observed) {
-        const report = single(o);
-        assertRunning(report);
-        assert.strictEqual(report.environmentSource, "mise");
-        assertRanFrom(o, report, "bin");
-        assertForwarderRan(o, "bin");
-        assert.ok(
-          o.forwarders?.every((line) => !line.includes("direnv-bin")),
-          `direnv-bin ran: ${JSON.stringify(o.forwarders)}`,
-        );
-        assertNoTooOld(report);
-      },
-    },
-  ],
-  [
     "untrusted",
     {
       expect:

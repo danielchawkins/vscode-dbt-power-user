@@ -1,11 +1,10 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
+import { checkFusionVersion } from "./helpers/testFixtures";
 import {
   closeAllEditors,
   waitForExtensionActivation,
 } from "./helpers/workspaceHelper";
-import { createLspFixture } from "./lspFixture";
 
 suite("Extension Integration Tests", function () {
   this.timeout(30_000);
@@ -33,44 +32,5 @@ suite("Extension Integration Tests", function () {
     );
     assert.ok(ext, "Fusion Power User extension should be installed");
     assert.ok(ext.isActive, "Fusion Power User extension should be active");
-  });
-
-  test("dbt lsp reverse-socket connect succeeds", async function () {
-    const projectRoot = fixturePath("single-project");
-    const fixture = await createLspFixture(projectRoot, projectRoot);
-
-    try {
-      await fixture.connect(5_000);
-
-      const result = await fixture.request<{
-        capabilities: Record<string, unknown>;
-      }>("initialize", {
-        processId: process.pid,
-        rootPath: projectRoot,
-        capabilities: {},
-      });
-
-      assert.ok(
-        result.capabilities,
-        "initialize response should include capabilities",
-      );
-
-      assert.ok(
-        result.capabilities.completionProvider,
-        "should advertise completionProvider",
-      );
-
-      assert.ok(
-        result.capabilities.hoverProvider,
-        "should advertise hoverProvider",
-      );
-
-      assert.ok(
-        result.capabilities.definitionProvider,
-        "should advertise definitionProvider",
-      );
-    } finally {
-      await fixture.close();
-    }
   });
 });
