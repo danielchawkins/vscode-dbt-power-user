@@ -14,6 +14,7 @@ import {
 } from "../../../webview_panels/src/test/fixtures/lineageLayers";
 import { inferLayer } from "../../core/manifest/modelLayer";
 import { esmDirname } from "../esmDirname";
+// ast-grep-ignore: ts-suite-no-harness-import -- reads the lineage layers expectations the smoke run checks
 import * as smoke from "../smoke/lineageLayersExpected";
 
 interface Relationship {

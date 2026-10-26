@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed suite selection rules of the harness
 import { selectSuites } from "../smoke/suiteSelection";
 
 const all = [
