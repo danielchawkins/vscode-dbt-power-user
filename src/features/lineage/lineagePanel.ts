@@ -86,7 +86,7 @@ export class LineagePanel
   private seenPublication:
     | { root: string; epoch: number | undefined }
     | undefined;
-  // The column trace whose requests are in flight; a new trace, a cancel or the panel's disposal ends them.
+  // The column trace whose requests are in flight; a new trace, a cancel, or the end of a page ends them.
   private readonly columnTraces = new ColumnTraceRequests();
 
   public constructor({
@@ -213,6 +213,12 @@ export class LineagePanel
   protected override onWebviewReady(page: WebviewView | WebviewPanel) {
     super.onWebviewReady(page);
     this.renderStartingNode();
+  }
+
+  /** A page that ends takes its column trace's requests with it, so no answer goes to a page that is gone. */
+  protected override endPage(page: WebviewView | WebviewPanel) {
+    this.columnTraces.cancel();
+    super.endPage(page);
   }
 
   init() {
