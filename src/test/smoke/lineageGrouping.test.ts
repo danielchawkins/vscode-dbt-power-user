@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import {
   evaluatePanel,
   validateSmokeHost,
@@ -71,20 +72,16 @@ async function snapshot(): Promise<Snapshot> {
 }
 
 /** Polls the webview until `done` holds for its snapshot, and fails with the last snapshot otherwise. */
-async function waitForSnapshot(
+function waitForSnapshot(
   what: string,
   done: (current: Snapshot) => boolean,
 ): Promise<Snapshot> {
-  const deadline = Date.now() + 10_000;
-  let last = await snapshot();
-  while (!done(last)) {
-    if (Date.now() >= deadline) {
-      throw new Error(`${what}; the last snapshot was ${JSON.stringify(last)}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    last = await snapshot();
-  }
-  return last;
+  return pollUntil(snapshot, done, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: (last) =>
+      `${what}; the last snapshot was ${JSON.stringify(last)}`,
+  });
 }
 
 /** Opens the named model, so the lineage view starts from it, and shows the tall lineage panel. */
@@ -118,26 +115,29 @@ const CHILDREN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
 } : null)()`;
 
 async function waitForChildrenExpander(count: number): Promise<string> {
-  const deadline = Date.now() + 60_000;
   let last: { labels: string[]; text: string } | undefined;
-  while (Date.now() < deadline) {
-    const match = await evaluatePanel<{
-      entry: string;
-      labels: string[];
-      text: string;
-    }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CHILDREN_STATE);
-    last = match?.value;
-    const label = last?.labels.find(
-      (l) => l === `Show ${count} children` || l === `Hide ${count} children`,
-    );
-    if (label) {
-      return label;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  throw new Error(
-    `the children expander with ${count} children never appeared in the lineage view; the view showed ${JSON.stringify(last ?? null)}`,
+  const label = await pollUntil(
+    async () => {
+      const match = await evaluatePanel<{
+        entry: string;
+        labels: string[];
+        text: string;
+      }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CHILDREN_STATE);
+      last = match?.value;
+      return last?.labels.find(
+        (l) => l === `Show ${count} children` || l === `Hide ${count} children`,
+      );
+    },
+    (found) => found !== undefined,
+    {
+      timeoutMs: 60_000,
+      intervalMs: 500,
+      describe: () =>
+        `the children expander with ${count} children never appeared in the lineage view; ` +
+        `the view showed ${JSON.stringify(last ?? null)}`,
+    },
   );
+  return label as string;
 }
 
 /** Each card's id (its last segment) with the title text its header shows. */
@@ -219,41 +219,30 @@ async function fanoutCard(): Promise<FanoutCard> {
 }
 
 /** Polls the fanout card until `done` holds, and fails with the last reading otherwise. */
-async function waitForFanoutCard(
+function waitForFanoutCard(
   what: string,
   done: (current: FanoutCard) => boolean,
 ): Promise<FanoutCard> {
-  const deadline = Date.now() + 10_000;
-  let last = await fanoutCard();
-  while (!done(last)) {
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `${what}; the last fanout card was ${JSON.stringify(last)}`,
-      );
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    last = await fanoutCard();
-  }
-  return last;
+  return pollUntil(fanoutCard, done, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: (last) =>
+      `${what}; the last fanout card was ${JSON.stringify(last)}`,
+  });
 }
 
 const readHub = () => readColumns(HUB);
 
 /** Polls the column state until `done` holds, and fails with the last state otherwise. */
-async function waitForColumns(
+function waitForColumns(
   what: string,
   done: (current: ColumnState) => boolean,
 ): Promise<ColumnState> {
-  const deadline = Date.now() + 10_000;
-  let last = await readHub();
-  while (!done(last)) {
-    if (Date.now() >= deadline) {
-      throw new Error(`${what}; the last state was ${JSON.stringify(last)}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    last = await readHub();
-  }
-  return last;
+  return pollUntil(readHub, done, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: (last) => `${what}; the last state was ${JSON.stringify(last)}`,
+  });
 }
 
 /**
@@ -261,22 +250,26 @@ async function waitForColumns(
  * Returns the column state once the click has traced an edge.
  */
 async function traceHubColumn(): Promise<ColumnState> {
-  const deadline = Date.now() + 10_000;
-  let state = await readHub();
-  while (!state.columnTables.includes(HUB)) {
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `the hub card's column list did not open; the last state was ${JSON.stringify(state)}`,
-      );
-    }
-    await evaluatePanel(
-      process.env.FPU_CDP_PORT!,
-      LINEAGE.entry,
-      clickOnCard(HUB, "Columns"),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    state = await readHub();
-  }
+  await pollUntil(
+    async () => {
+      const current = await readHub();
+      if (!current.columnTables.includes(HUB)) {
+        await evaluatePanel(
+          process.env.FPU_CDP_PORT!,
+          LINEAGE.entry,
+          clickOnCard(HUB, "Columns"),
+        );
+      }
+      return current;
+    },
+    (current) => current.columnTables.includes(HUB),
+    {
+      timeoutMs: 10_000,
+      intervalMs: 500,
+      describe: (last) =>
+        `the hub card's column list to open; the last state was ${JSON.stringify(last)}`,
+    },
+  );
   await waitForColumns(
     "the hub card should list its columns",
     (current) => current.cardColumns > 0,
@@ -510,15 +503,15 @@ suite("Lineage grouping", function () {
         "the hub's children should draw the marts card",
         (current) => current.cards.includes("mart_summary"),
       );
-      const deadline = Date.now() + 10_000;
-      let titles = await cardTitles();
-      while (titles.mart_summary !== "mart_summary") {
-        if (Date.now() >= deadline) {
-          throw new Error(`the titles were ${JSON.stringify(titles)}`);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        titles = await cardTitles();
-      }
+      const titles = await pollUntil(
+        cardTitles,
+        (current) => current.mart_summary === "mart_summary",
+        {
+          timeoutMs: 10_000,
+          intervalMs: 250,
+          describe: (last) => `the titles were ${JSON.stringify(last)}`,
+        },
+      );
       assert.ok(
         !Object.values(titles).includes("summary_mart"),
         `the alias still titled a card: ${JSON.stringify(titles)}`,

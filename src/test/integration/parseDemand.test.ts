@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { pollUntil, sleep } from "../async";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
 import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
@@ -13,7 +14,6 @@ import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 const SETTLE_MS = 4_000;
 const DEADLINE_MS = 60_000;
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const parses = (since: number) => dbtInvocationsSince(since, "parse");
 
 suite("dbt parse only while a parse-field view is showing", function () {
@@ -59,10 +59,15 @@ suite("dbt parse only while a parse-field view is showing", function () {
     await vscode.commands.executeCommand(
       "fusionPowerUser.goToDocumentationEditor",
     );
-    const deadline = Date.now() + DEADLINE_MS;
-    while (parses(before).length === 0 && Date.now() < deadline) {
-      await sleep(250);
-    }
+    await pollUntil(
+      () => parses(before),
+      (found) => found.length > 0,
+      {
+        timeoutMs: DEADLINE_MS,
+        intervalMs: 250,
+        describe: "a dbt parse after opening the documentation editor",
+      },
+    );
     await sleep(SETTLE_MS);
     assert.strictEqual(
       parses(before).length,

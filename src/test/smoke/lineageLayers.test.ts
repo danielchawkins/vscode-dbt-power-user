@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import {
@@ -142,22 +143,26 @@ function waitForStableColumns(what: string): Promise<ColumnState> {
  * Returns the column state once the click has traced an edge.
  */
 async function traceStartColumn(): Promise<ColumnState> {
-  const deadline = Date.now() + 10_000;
-  let state = await readStart();
-  while (!state.columnTables.includes(START)) {
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `the start card's column list did not open; the last state was ${JSON.stringify(state)}`,
-      );
-    }
-    await evaluatePanel(
-      cdpPort(),
-      LINEAGE.entry,
-      clickOnCard(START, "Columns"),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    state = await readStart();
-  }
+  await pollUntil(
+    async () => {
+      const current = await readStart();
+      if (!current.columnTables.includes(START)) {
+        await evaluatePanel(
+          cdpPort(),
+          LINEAGE.entry,
+          clickOnCard(START, "Columns"),
+        );
+      }
+      return current;
+    },
+    (current) => current.columnTables.includes(START),
+    {
+      timeoutMs: 10_000,
+      intervalMs: 500,
+      describe: (last) =>
+        `the start card's column list to open; the last state was ${JSON.stringify(last)}`,
+    },
+  );
   await waitForColumns(
     "the start card should list its columns",
     (current) => current.cardColumns > 0,

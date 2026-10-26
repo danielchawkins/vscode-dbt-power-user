@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
+import { pollUntil } from "../async";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
 
 /**
@@ -39,21 +40,16 @@ suite("server producer: the merged graph follows a saved ref", function () {
     await vscode.window.showTextDocument(vscode.Uri.file(parentFile));
     const spawned = dbtInvocations().length;
     fs.writeFileSync(child, "select * from {{ ref('order_totals') }}\n");
-    const start = Date.now();
-    let seen: string[] = [];
-    while (Date.now() - start < DEADLINE_MS) {
-      seen = await parents();
-      if (seen.includes(PARENT)) {
-        // The parse starts after the watcher's debounce; the edge must already be visible by then.
-        assert.deepStrictEqual(
-          dbtInvocationsSince(spawned, "parse"),
-          [],
-          "the edge appeared only after a dbt parse was spawned",
-        );
-        return;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-    assert.fail(`parents of ${CHILD} stayed ${JSON.stringify(seen)}`);
+    await pollUntil(parents, (seen) => seen.includes(PARENT), {
+      timeoutMs: DEADLINE_MS,
+      intervalMs: 100,
+      describe: `parents of ${CHILD} to include ${PARENT}`,
+    });
+    // The parse starts after the watcher's debounce; the edge must already be visible by then.
+    assert.deepStrictEqual(
+      dbtInvocationsSince(spawned, "parse"),
+      [],
+      "the edge appeared only after a dbt parse was spawned",
+    );
   });
 });

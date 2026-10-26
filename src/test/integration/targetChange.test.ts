@@ -4,6 +4,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
+import { pollUntil } from "../async";
 
 /**
  * Pins that a `fusionPowerUser.target` change applies without a reload: the project's Fusion Client
@@ -49,24 +50,28 @@ suite(
       done: (client: FusionClientStateReport) => boolean,
     ): Promise<FusionClientStateReport> {
       const start = Date.now();
-      let last: FusionClientStateReport | undefined;
       let logged = "";
-      while (Date.now() < start + TIMEOUT_MS) {
-        const reports = await vscode.commands.executeCommand<
-          FusionClientStateReport[]
-        >(FUSION_CLIENT_STATES_COMMAND);
-        last = reports[0];
-        const seen = JSON.stringify(last);
-        if (seen !== logged) {
-          logged = seen;
-          console.log(`[${MODE}] ${step} +${Date.now() - start}ms: ${seen}`);
-        }
-        if (last && done(last)) {
-          return last;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-      assert.fail(`${step}: client stayed ${JSON.stringify(last)}`);
+      const client = await pollUntil(
+        async () => {
+          const reports = await vscode.commands.executeCommand<
+            FusionClientStateReport[]
+          >(FUSION_CLIENT_STATES_COMMAND);
+          const seen = JSON.stringify(reports[0]);
+          if (seen !== logged) {
+            logged = seen;
+            console.log(`[${MODE}] ${step} +${Date.now() - start}ms: ${seen}`);
+          }
+          return reports[0];
+        },
+        (last) => !!last && done(last),
+        {
+          timeoutMs: TIMEOUT_MS,
+          intervalMs: 500,
+          describe: `${step}: the client`,
+        },
+      );
+      assert.ok(client);
+      return client;
     }
 
     async function untilCompiled(
@@ -74,22 +79,18 @@ suite(
       done: (sql: string) => boolean,
     ): Promise<string> {
       const start = Date.now();
-      let last = "";
-      while (Date.now() < start + TIMEOUT_MS) {
-        last = fs.existsSync(compiled)
-          ? fs.readFileSync(compiled, "utf-8")
-          : "";
-        if (done(last)) {
-          console.log(
-            `[${MODE}] ${step} +${Date.now() - start}ms: ${last.trim()}`,
-          );
-          return last;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-      assert.fail(
-        `${step}: compiled stg_orders.sql stayed ${JSON.stringify(last)}`,
+      const sql = await pollUntil(
+        () =>
+          fs.existsSync(compiled) ? fs.readFileSync(compiled, "utf-8") : "",
+        done,
+        {
+          timeoutMs: TIMEOUT_MS,
+          intervalMs: 500,
+          describe: `${step}: compiled stg_orders.sql`,
+        },
       );
+      console.log(`[${MODE}] ${step} +${Date.now() - start}ms: ${sql.trim()}`);
+      return sql;
     }
 
     test("relaunches the client with --target ci and compiles against ci", async function () {

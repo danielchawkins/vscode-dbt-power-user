@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil, sleep } from "../async";
 import type { ActivationMetric } from "./activationReport";
 import { readActivationMetric } from "./activationReport";
 import type { WebviewPaintMetric } from "./cdpClient";
@@ -398,13 +399,15 @@ const THEMES = [
 async function waitForColorThemeKind(
   kind: vscode.ColorThemeKind,
 ): Promise<vscode.ColorThemeKind> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (vscode.window.activeColorTheme.kind === kind) {
-      break;
-    }
-    await sleep(250);
-  }
-  return vscode.window.activeColorTheme.kind;
+  return pollUntil(
+    () => vscode.window.activeColorTheme.kind,
+    (current) => current === kind,
+    {
+      timeoutMs: 10_000,
+      intervalMs: 250,
+      describe: `the color theme kind ${kind}`,
+    },
+  );
 }
 
 interface PanelTheme {
@@ -576,16 +579,18 @@ async function waitForPanelTheme(
 }
 
 async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const timings = await vscode.commands.executeCommand<HostRuntimeTiming[]>(
-      RUNTIME_TIMINGS_COMMAND,
-    );
-    if (timings?.length === 3) {
-      return timings;
-    }
-    await sleep(100);
-  }
-  throw new Error("Expected resolve-to-ready timing for all three webviews");
+  return pollUntil(
+    async () =>
+      (await vscode.commands.executeCommand<HostRuntimeTiming[]>(
+        RUNTIME_TIMINGS_COMMAND,
+      )) ?? [],
+    (timings) => timings.length === 3,
+    {
+      timeoutMs: 10_000,
+      intervalMs: 100,
+      describe: "Expected resolve-to-ready timing for all three webviews",
+    },
+  );
 }
 
 async function openMeasuredPanel(
@@ -621,18 +626,15 @@ async function openPanel(panel: {
 async function waitForActiveLanguage(
   languageId: string,
 ): Promise<string | undefined> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const current = vscode.window.activeTextEditor?.document.languageId;
-    if (current === languageId) {
-      return current;
-    }
-    await sleep(100);
-  }
-  return vscode.window.activeTextEditor?.document.languageId;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return pollUntil(
+    () => vscode.window.activeTextEditor?.document.languageId,
+    (current) => current === languageId,
+    {
+      timeoutMs: 5_000,
+      intervalMs: 100,
+      describe: `the active editor to be ${languageId}`,
+    },
+  );
 }
 
 /** `ms` when an optional path is enabled, otherwise 0. */

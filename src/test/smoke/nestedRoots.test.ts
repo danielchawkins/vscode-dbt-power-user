@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
   assertNoWorkbenchNotifications,
@@ -118,24 +119,30 @@ suite("Nested-root smoke", function () {
 async function waitForPublished(): Promise<
   Map<string, FusionClientStateReport>
 > {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
   let last: FusionClientStateReport[] = [];
-  do {
-    last = await fusionClientStates();
-    const ready = last.filter(
-      (report) => report.state === "running" && report.compiles > 0,
-    );
-    const byName = new Map(ready.map((report) => [report.projectName, report]));
-    const outer = byName.get(OUTER);
-    const inner = byName.get(INNER);
-    if (outer && inner && (publishedAny(outer) || publishedAny(inner))) {
-      return byName;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `Timed out waiting for ${OUTER} and ${INNER} to compile and publish: ${JSON.stringify(last)}`,
+  const { byName } = await pollUntil(
+    async () => {
+      last = await fusionClientStates();
+      const ready = last.filter(
+        (report) => report.state === "running" && report.compiles > 0,
+      );
+      return {
+        byName: new Map(ready.map((report) => [report.projectName, report])),
+      };
+    },
+    ({ byName }) => {
+      const outer = byName.get(OUTER);
+      const inner = byName.get(INNER);
+      return !!outer && !!inner && (publishedAny(outer) || publishedAny(inner));
+    },
+    {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: () =>
+        `${OUTER} and ${INNER} to compile and publish: ${JSON.stringify(last)}`,
+    },
   );
+  return byName;
 }
 
 function publishedAny(report: FusionClientStateReport): boolean {
@@ -181,8 +188,4 @@ async function recordCheckpoint(
     },
   );
   console.log(`FPU_SMOKE_SCREENSHOT=${file}`);
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

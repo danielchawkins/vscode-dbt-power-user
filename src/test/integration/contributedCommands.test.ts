@@ -4,6 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { previewUriFor } from "../../projects/registry/previewUri";
+import { pollUntil } from "../async";
 import { createEntry } from "../fixtures/runHistory";
 import {
   dbtInvocations,
@@ -101,13 +102,11 @@ async function waitFor(
   holds: () => boolean,
   timeoutMs = 60_000,
 ): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!holds()) {
-    if (Date.now() >= deadline) {
-      assert.fail(`timed out after ${timeoutMs}ms waiting for ${description}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
+  await pollUntil(holds, (ok) => ok, {
+    timeoutMs,
+    intervalMs: 250,
+    describe: description,
+  });
 }
 
 /** Runs `action`, then waits for dbt to be invoked with `subcommand` after it started, and for that run to exit. */

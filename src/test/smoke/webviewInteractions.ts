@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil, sleep } from "../async";
 import type { SmokeHost } from "./cdpClient";
 import {
   captureWorkbenchScreenshot,
@@ -102,8 +103,6 @@ function inFrame(entry: string, body: string): string {
   })()`;
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /** Raises the panel, then waits until its webview has painted. */
 export async function showPanel(panel: PanelEntry): Promise<void> {
   await vscode.commands.executeCommand(panel.container);
@@ -129,30 +128,35 @@ async function locate(
   body: string,
   describe: string,
 ): Promise<{ frame: string; x: number; y: number }> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
   let last: Located | undefined;
   let previous: Located | undefined;
-  do {
-    const match = await evaluatePanel<Located & { entry: string }>(
-      cdpPort(),
-      panel.entry,
-      inFrame(panel.entry, body),
-    );
-    previous = last;
-    last = match?.value;
-    const settled =
-      previous?.found === true &&
-      Math.abs(previous.x - (last?.x ?? Number.NaN)) < 0.5 &&
-      Math.abs(previous.y - (last?.y ?? Number.NaN)) < 0.5;
-    if (match && last?.found && settled) {
-      return { frame: match.target, x: last.x, y: last.y };
-    }
-    await sleep(POLL_INTERVAL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `no clickable ${describe} in ${panel.entry}; rect and viewport: ${last?.detail ?? "no matching frame"}; ` +
-      `element: ${last?.html ?? ""}`,
+  const hit = await pollUntil(
+    async () => {
+      const match = await evaluatePanel<Located & { entry: string }>(
+        cdpPort(),
+        panel.entry,
+        inFrame(panel.entry, body),
+      );
+      previous = last;
+      last = match?.value;
+      const settled =
+        previous?.found === true &&
+        Math.abs(previous.x - (last?.x ?? Number.NaN)) < 0.5 &&
+        Math.abs(previous.y - (last?.y ?? Number.NaN)) < 0.5;
+      return match && last?.found && settled
+        ? { frame: match.target, x: last.x, y: last.y }
+        : undefined;
+    },
+    (found) => found !== undefined,
+    {
+      timeoutMs: POLL_TIMEOUT_MS,
+      intervalMs: POLL_INTERVAL_MS,
+      describe: () =>
+        `no clickable ${describe} in ${panel.entry}; rect and viewport: ${last?.detail ?? "no matching frame"}; ` +
+        `element: ${last?.html ?? ""}`,
+    },
   );
+  return hit!;
 }
 
 /** Element by role and name, or by selector; `offset` is measured from its top-left corner, else its centre. */
@@ -362,7 +366,7 @@ export async function zoomPastHalf(
       role: "button",
       name: direction === "out" ? "Zoom Out" : "Zoom In",
     });
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await sleep(400);
     last = await zoomState(panel);
   }
   return last;
@@ -387,22 +391,24 @@ export async function expectWebviewDom(
            (q.checked === undefined || node.checked === q.checked) &&
            (q.focused === undefined || (document.activeElement === node) === q.focused);
          return { ok, html: (node ?? document.body).outerHTML.slice(0, ${HTML_LIMIT}) };`;
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
   let last: { ok: boolean; html: string } | undefined;
-  do {
-    const match = await evaluatePanel<{
-      entry: string;
-      ok: boolean;
-      html: string;
-    }>(cdpPort(), panel.entry, inFrame(panel.entry, check));
-    last = match?.value;
-    if (last?.ok) {
-      return;
-    }
-    await sleep(POLL_INTERVAL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `expected ${JSON.stringify(query)} in ${panel.entry}; frame: ${last?.html ?? "no matching webview frame"}`,
+  await pollUntil(
+    async () => {
+      const match = await evaluatePanel<{
+        entry: string;
+        ok: boolean;
+        html: string;
+      }>(cdpPort(), panel.entry, inFrame(panel.entry, check));
+      last = match?.value;
+      return last?.ok === true;
+    },
+    (ok) => ok,
+    {
+      timeoutMs: POLL_TIMEOUT_MS,
+      intervalMs: POLL_INTERVAL_MS,
+      describe: () =>
+        `expected ${JSON.stringify(query)} in ${panel.entry}; frame: ${last?.html ?? "no matching webview frame"}`,
+    },
   );
 }
 
@@ -452,18 +458,17 @@ export async function readDocsState(
  * matches at once, so a restore waits on the editor's state rather than on the text alone.
  */
 export async function waitForDocsClean(port: string): Promise<DocsState> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-  let last: DocsState | undefined;
-  do {
-    last = await readDocsState(port);
-    if (last && !last.modified && !last.save) {
-      return last;
-    }
-    await sleep(POLL_INTERVAL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `the editor never reported clean; last value: ${JSON.stringify(last)}`,
+  const docs = await pollUntil(
+    () => readDocsState(port),
+    (last) => last !== undefined && !last.modified && !last.save,
+    {
+      timeoutMs: POLL_TIMEOUT_MS,
+      intervalMs: POLL_INTERVAL_MS,
+      describe: (last) =>
+        `the editor never reported clean; last value: ${JSON.stringify(last)}`,
+    },
   );
+  return docs!;
 }
 
 /**

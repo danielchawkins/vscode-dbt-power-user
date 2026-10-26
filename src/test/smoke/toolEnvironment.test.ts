@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil, sleep } from "../async";
 import {
   captureWorkbenchScreenshot,
   readWorkbenchNotificationTexts,
@@ -263,7 +264,7 @@ async function waitForNotificationText(
     if (texts.some((entry) => entry.includes(text))) {
       return texts;
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    await sleep(POLL_MS);
   } while (Date.now() < deadline);
   return texts;
 }
@@ -276,19 +277,17 @@ async function waitForClients(
     await sleep(DISABLED_SETTLE_MS);
     return readReports();
   }
-  const deadline = Date.now() + CLIENT_WAIT_TIMEOUT_MS;
-  let last: FusionClientStateReport[] = [];
-  do {
-    last = await readReports();
-    if (
+  return pollUntil(
+    readReports,
+    (last) =>
       last.length > 0 &&
-      last.every((r) => r.state === "running" || r.state === "failed")
-    ) {
-      return last;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(`no client settled: ${JSON.stringify(last)}`);
+      last.every((r) => r.state === "running" || r.state === "failed"),
+    {
+      timeoutMs: CLIENT_WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: (last) => `no client settled: ${JSON.stringify(last)}`,
+    },
+  );
 }
 
 function single(o: Observed): FusionClientStateReport {
@@ -425,8 +424,4 @@ function logFileContains(dir: string, needle: string): boolean {
       fs.readFileSync(file, "utf-8").includes(needle)
     );
   });
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

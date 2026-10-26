@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { pollUntil } from "../async";
 
 /**
  * Pins the CTE lenses against the pinned dbt: every CTE of a saved model gets an Execute lens built from the
@@ -21,19 +22,22 @@ suite("CTE lenses from the language server", function () {
       path.join(projectDir, "models", "cte_probe.sql"),
     );
     await vscode.window.showTextDocument(model);
-    let titles: string[] = [];
-    for (let attempt = 0; attempt < 60; attempt += 1) {
-      const lenses =
-        (await vscode.commands.executeCommand<vscode.CodeLens[]>(
-          "vscode.executeCodeLensProvider",
-          model,
-        )) ?? [];
-      titles = lenses.map((lens) => lens.command?.title ?? "");
-      if (titles.some((title) => title.includes("Execute CTE"))) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
+    const titles = await pollUntil(
+      async () => {
+        const lenses =
+          (await vscode.commands.executeCommand<vscode.CodeLens[]>(
+            "vscode.executeCodeLensProvider",
+            model,
+          )) ?? [];
+        return lenses.map((lens) => lens.command?.title ?? "");
+      },
+      (found) => found.some((title) => title.includes("Execute CTE")),
+      {
+        timeoutMs: 60_000,
+        intervalMs: 1_000,
+        describe: "a Execute CTE lens on the model",
+      },
+    );
     const executes = titles.filter((title) => title.includes("Execute CTE"));
     const profiles = titles.filter((title) => title.includes("Profile CTEs"));
     assert.ok(

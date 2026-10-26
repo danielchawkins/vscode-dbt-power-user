@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -50,21 +51,16 @@ const READ_COMPILED_SQL = `(() => document.body.dataset.entry === "queryResults"
 const runsHere = () => currentFixtureName() === "single-project";
 const host = () =>
   validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /** Polls until `done` holds; the effect of a click reaches the host or the editor asynchronously. */
 async function waitUntil(
   what: string,
   done: () => boolean | Promise<boolean>,
 ): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  do {
-    if (await done()) {
-      return;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(`timed out waiting for ${what}`);
+  await pollUntil(done, (ok) => ok, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: what,
+  });
 }
 
 async function createdBlobTypes(): Promise<string[]> {
