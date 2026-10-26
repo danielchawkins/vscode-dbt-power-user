@@ -5,12 +5,6 @@ import type { FusionClientStateReport } from "../../projects/clients/fusionClien
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  assertNoWorkbenchNotifications,
-  captureWorkbenchScreenshot,
-  revealWorkbench,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -19,6 +13,12 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  revealWorkbench,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const OUTER = "outer";
 const INNER = "inner";

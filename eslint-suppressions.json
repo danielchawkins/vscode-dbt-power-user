@@ -8,10 +8,5 @@
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
-  },
-  "src/test/smoke/cdpClient.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
   }
 }

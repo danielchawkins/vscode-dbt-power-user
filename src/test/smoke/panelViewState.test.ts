@@ -1,14 +1,14 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { sleep } from "../async";
+import { currentFixtureName } from "./fixtureContext";
+import { clickFirstColumn, clickOnCard } from "./lineageProbes";
 import {
   evaluatePanel,
   readWebviewHeap,
   waitForPanelGone,
   waitForWebviewPaint,
-} from "./cdpClient";
-import { currentFixtureName } from "./fixtureContext";
-import { clickFirstColumn, clickOnCard } from "./lineageProbes";
+} from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import { cdpPort, smokeHost } from "./smokeEnv";

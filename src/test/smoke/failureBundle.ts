@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { captureWorkbenchScreenshot } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import {
   diagnosticsDirectory,
@@ -9,6 +8,7 @@ import {
   testSlug,
   writeProbes,
 } from "./probeLog";
+import { captureWorkbenchScreenshot } from "./workbench";
 
 /** The parts of a Mocha test and error a failure bundle records. */
 interface FailedTest {

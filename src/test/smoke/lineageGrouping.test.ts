@@ -1,7 +1,6 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
-import { evaluatePanel, waitForPanelGone } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import type { ColumnState } from "./lineageProbes";
 import {
@@ -10,6 +9,7 @@ import {
   readColumns,
   tracedCardsListed,
 } from "./lineageProbes";
+import { evaluatePanel, waitForPanelGone } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";

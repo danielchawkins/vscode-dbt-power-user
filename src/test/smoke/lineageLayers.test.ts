@@ -1,7 +1,6 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
-import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import {
   CARD_IDS,
@@ -16,6 +15,7 @@ import {
   readColumns,
   tracedCardsListed,
 } from "./lineageProbes";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import { cdpPort, smokeHost } from "./smokeEnv";

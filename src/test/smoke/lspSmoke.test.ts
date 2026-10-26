@@ -6,13 +6,13 @@ import type { FusionClientStateReport } from "../../projects/clients/fusionClien
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  assertNoWorkbenchNotifications,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
 import * as smokeEnv from "./smokeEnv";
+import {
+  assertNoWorkbenchNotifications,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const EXPECTED_PROJECT_NAMES = ["general", "sox"];
 const LSP_WAIT_TIMEOUT_MS = 45_000;

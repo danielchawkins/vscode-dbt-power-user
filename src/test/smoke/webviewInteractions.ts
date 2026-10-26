@@ -2,18 +2,9 @@ import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { pollUntil, sleep } from "../async";
-import type { SmokeHost } from "./cdpClient";
-import {
-  captureWorkbenchScreenshot,
-  evidenceWindowSize,
-  evaluatePanel,
-  evaluateWorkbench,
-  readWorkbenchNotificationTexts,
-  revealWorkbench,
-  sendCommand,
-  waitForWebviewPaint,
-} from "./cdpClient";
+import { sendCommand } from "./cdpTransport";
 import { currentFixtureName } from "./fixtureContext";
+import { evaluatePanel, waitForWebviewPaint } from "./panelFrames";
 import { cdpPort, smokeHost } from "./smokeEnv";
 import type { VisualCheckpoint } from "./visualEvidence";
 import {
@@ -21,6 +12,14 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import type { SmokeHost } from "./workbench";
+import {
+  captureWorkbenchScreenshot,
+  evaluateWorkbench,
+  evidenceWindowSize,
+  readWorkbenchNotificationTexts,
+  revealWorkbench,
+} from "./workbench";
 
 /** A webview panel: the view container and command that show it, and the `body[data-entry]` its page sets. */
 export interface PanelEntry {
