@@ -18,6 +18,39 @@ function clientWith(
   return { state, request } as unknown as FusionClient;
 }
 
+/** A client whose state the test changes, which fires its state events as the real client does. */
+function stateClient(initial: string) {
+  let state = initial;
+  const listeners = new Set<() => void>();
+  const request = vi.fn((..._args: unknown[]) =>
+    Promise.resolve({ nodes: [] }),
+  );
+  const client = {
+    get state() {
+      return state;
+    },
+    request,
+    onDidChangeState: (listener: () => void) => {
+      listeners.add(listener);
+      return {
+        dispose: () => {
+          listeners.delete(listener);
+        },
+      };
+    },
+  } as unknown as FusionClient;
+  return {
+    client,
+    request,
+    setState(next: string) {
+      state = next;
+      listeners.forEach((listener) => {
+        listener();
+      });
+    },
+  };
+}
+
 const columnLineage = { purpose: "columnLineage" } as const;
 const columns = { purpose: "columns" } as const;
 
@@ -228,11 +261,12 @@ describe("FusionCommands", () => {
     } as unknown as CancellationToken;
     const answers: ((value: unknown) => void)[] = [];
     const rejections: ((error: unknown) => void)[] = [];
-    const request = vi.fn((..._args: unknown[]) =>
-      new Promise((resolve, reject) => {
-        answers.push(resolve);
-        rejections.push(reject);
-      }),
+    const request = vi.fn(
+      (..._args: unknown[]) =>
+        new Promise((resolve, reject) => {
+          answers.push(resolve);
+          rejections.push(reject);
+        }),
     );
     const commands = createFusionCommands(() => clientWith(request));
     const first = commands
@@ -251,7 +285,9 @@ describe("FusionCommands", () => {
     expect(request.mock.calls[0]?.[2]).toMatchObject({
       isCancellationRequested: true,
     });
-    rejections[0]?.(Object.assign(new Error("Request cancelled"), { code: -32800 }));
+    rejections[0]?.(
+      Object.assign(new Error("Request cancelled"), { code: -32800 }),
+    );
     await vi.advanceTimersByTimeAsync(0);
     expect(request).toHaveBeenCalledTimes(2);
     answers[1]?.({ nodes: [{ unique_id: "a" }] });
@@ -376,8 +412,111 @@ describe("FusionCommands", () => {
     cancel();
     expect(await first).toMatchObject({ kind: "cancelled" });
     // The server answers the cancelled request with RequestCancelled. Nobody wants it, so it is not sent again.
-    rejections[0]?.(Object.assign(new Error("Request cancelled"), { code: -32800 }));
+    rejections[0]?.(
+      Object.assign(new Error("Request cancelled"), { code: -32800 }),
+    );
     await vi.advanceTimersByTimeAsync(0);
     expect(request).toHaveBeenCalledTimes(1);
   });
+
+  it("sends one request for two identical callers, and both get its answer", async () => {
+    const answers: ((value: unknown) => void)[] = [];
+    const request = vi.fn(
+      (..._args: unknown[]) =>
+        new Promise((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    const commands = createFusionCommands(() => clientWith(request));
+    const first = commands.listNodes(["a"], columns);
+    const second = commands.listNodes(["a"], columns);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(1);
+    answers[0]?.({ nodes: [{ unique_id: "a" }] });
+    expect(await first).toMatchObject({ nodes: [expect.anything()] });
+    expect(await second).toMatchObject({ nodes: [expect.anything()] });
+  });
+
+  it("sends interactive requests before queued background ones, never pre-empting the one in flight", async () => {
+    const sent: string[] = [];
+    const answers: ((value: unknown) => void)[] = [];
+    const request = vi.fn((_command: unknown, payload: unknown) => {
+      sent.push((payload as string[])[0] ?? "");
+      return new Promise((resolve) => {
+        answers.push(resolve);
+      });
+    });
+    const commands = createFusionCommands(() => clientWith(request));
+    const graph = { purpose: "graph" } as const;
+    const background1 = commands.listNodes(["bg-1"], graph);
+    const background2 = commands.listNodes(["bg-2"], graph);
+    const interactive = commands.listNodes(["fg"], columnLineage);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent).toEqual(["bg-1"]);
+    answers[0]?.({ nodes: [] });
+    await background1;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent).toEqual(["bg-1", "fg"]);
+    answers[1]?.({ nodes: [] });
+    await interactive;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent).toEqual(["bg-1", "fg", "bg-2"]);
+    answers[2]?.({ nodes: [] });
+    await background2;
+  });
+
+  it("holds the lane after a cancel, so the next request waits for the server's answer", async () => {
+    const { token, cancel } = manualToken();
+    const answers: ((value: unknown) => void)[] = [];
+    const request = vi.fn(
+      (..._args: unknown[]) =>
+        new Promise((resolve) => {
+          answers.push(resolve);
+        }),
+    );
+    const commands = createFusionCommands(() => clientWith(request));
+    const cancelled = commands
+      .listNodes(["a"], { purpose: "columnLineage", token })
+      .catch((e: unknown) => e);
+    const next = commands.listNodes(["b"], columnLineage);
+    await vi.advanceTimersByTimeAsync(0);
+    cancel();
+    expect(await cancelled).toMatchObject({ kind: "cancelled" });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0]?.[2]).toMatchObject({
+      isCancellationRequested: true,
+    });
+    answers[0]?.({ nodes: [] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(2);
+    answers[1]?.({ nodes: [{ unique_id: "b" }] });
+    expect(await next).toMatchObject({ nodes: [expect.anything()] });
+  });
+
+  it("holds a waitForRunning request while starting, and sends it once running", async () => {
+    const fake = stateClient("starting");
+    const commands = createFusionCommands(() => fake.client);
+    const answer = commands.listNodes(["a"], columnLineage);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fake.request).not.toHaveBeenCalled();
+    fake.setState("running");
+    expect(await answer).toEqual({ nodes: [] });
+    expect(fake.request).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["stopped", "failed"])(
+    "fails a waitForRunning request held while the client starts once the client is %s",
+    async (state) => {
+      const fake = stateClient("starting");
+      const commands = createFusionCommands(() => fake.client);
+      const answer = commands
+        .listNodes(["a"], columnLineage)
+        .catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(0);
+      fake.setState(state);
+      expect(await answer).toMatchObject({ kind: "notRunning" });
+      expect(fake.request).not.toHaveBeenCalled();
+    },
+  );
 });

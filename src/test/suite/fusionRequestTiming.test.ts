@@ -3,7 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CancellationToken } from "vscode";
 import { FusionCommandError, REQUEST_POLICIES } from "../../core/lsp";
-import type { FusionClient } from "../../fusion/fusionClient";
+import {
+  FUSION_LSP_COMMANDS,
+  type FusionClient,
+} from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { FusionRequests } from "../../fusion/fusionRequests";
 import type { ClientHandle } from "../../fusion/lspClientSupport";
@@ -147,5 +150,18 @@ describe("Fusion request timing (characterization)", () => {
       .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(FusionCommandError);
     expect(error).toMatchObject({ kind: "cancelled" });
+  });
+
+  it("FusionRequests sends a second listNodes while the first is in flight", () => {
+    const sendRequest = vi.fn(() => new Promise(() => {}));
+    const requests = new FusionRequests(() => ({
+      client: { sendRequest } as unknown as ClientHandle,
+      state: "running",
+      commandPrefix: "",
+      uriConverters: undefined,
+    }));
+    void requests.request(FUSION_LSP_COMMANDS.listNodes, ["a"]);
+    void requests.request(FUSION_LSP_COMMANDS.listNodes, ["b"]);
+    expect(sendRequest).toHaveBeenCalledTimes(2);
   });
 });
