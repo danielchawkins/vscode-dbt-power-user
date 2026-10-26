@@ -34,5 +34,5 @@ ADR 0002 makes the Fusion language server authoritative for editor intelligence 
 - A model added or an edge changed appears without a `dbt parse` spawn.
 - Fields in `lsp-metadata-gaps.md` still cost a parse; a visible consumer can see two publications after a compile, each coherent.
 - Features depend on the client: when it is stopped or failed, server-owned fields are empty and the UI says why.
-- `FusionCommands` gives one typed façade over the server commands, with a 5 s deadline for `compileFile`, `getCurrentNode` and `listNodes`, and none for commands that run SQL.
+- `FusionCommands` gives one typed façade over the server commands, where each call names a purpose and the purpose's ceiling in `REQUEST_POLICIES` bounds the wait; commands that run SQL have none.
 - The result shapes are the server's, not a documented contract. Integration tests pin them against the pinned binary.

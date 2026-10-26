@@ -78,13 +78,14 @@ describe("Fusion request timing (characterization)", () => {
   });
 
   it.fails("cancels the server request when the caller gives up on it", async () => {
-    const { client, received } = slowServer(8_000);
+    const ceilingMs = REQUEST_POLICIES.columns.ceilingMs;
+    const { client, received } = slowServer(ceilingMs + 3_000);
     const commands = createFusionCommands(() => client);
     const settled = commands
       .listNodes(["a"], { purpose: "columns" })
       .catch((e: unknown) => e);
-    await vi.advanceTimersByTimeAsync(REQUEST_POLICIES.columns.ceilingMs);
-    await settled;
+    await vi.advanceTimersByTimeAsync(ceilingMs);
+    expect(await settled).toMatchObject({ kind: "timeout" });
     expect(received[0]?.token?.isCancellationRequested).toBe(true);
   });
 

@@ -81,7 +81,7 @@ function senderFor(clientOf: () => FusionClient | undefined): Sender {
     let subscription: Disposable | undefined;
     try {
       return await new Promise<unknown>((resolve, reject) => {
-        // The ceiling rejects the caller and leaves the server request running; no token reaches the server here.
+        // The ceiling has no token of its own: reaching it rejects the caller and leaves the server request running.
         timer = setTimeout(
           () =>
             reject(new FusionCommandError("timeout", ceilingMessage(purpose))),

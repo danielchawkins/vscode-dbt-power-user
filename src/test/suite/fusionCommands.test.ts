@@ -208,6 +208,23 @@ describe("FusionCommands", () => {
     expect(await settled).toMatchObject({ kind: "cancelled" });
   });
 
+  it("rejects a request whose caller already cancelled, without sending it", async () => {
+    const token = {
+      isCancellationRequested: true,
+      onCancellationRequested: () => ({ dispose: () => undefined }),
+    } as unknown as CancellationToken;
+    const request = vi.fn((..._args: unknown[]) =>
+      Promise.resolve({ nodes: [] }),
+    );
+    const commands = createFusionCommands(() => clientWith(request));
+    await expect(
+      commands.listNodes(["a"], { purpose: "columnLineage", token }),
+    ).rejects.toMatchObject({
+      kind: "cancelled",
+    });
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it("gives every purpose a finite ceiling", () => {
     const purposes = Object.keys(REQUEST_POLICIES) as RequestPurpose[];
     expect(purposes.sort()).toEqual([
