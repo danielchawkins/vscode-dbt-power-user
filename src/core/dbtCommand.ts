@@ -11,28 +11,11 @@ export interface DBTCommandExecutionStrategy {
 export class DBTCommand {
   public statusMessage: string;
   public args: string[];
-  public focus: boolean;
-  public showProgress: boolean;
-  public logToTerminal: boolean;
   public executionStrategy: DBTCommandExecutionStrategy | undefined;
-  public signal: AbortSignal | undefined;
 
-  constructor(
-    statusMessage: string,
-    args: string[],
-    focus: boolean = false,
-    showProgress: boolean = false,
-    logToTerminal: boolean = false,
-    executionStrategy?: DBTCommandExecutionStrategy,
-    signal?: AbortSignal,
-  ) {
+  constructor(statusMessage: string, args: string[]) {
     this.statusMessage = statusMessage;
     this.args = args;
-    this.focus = focus;
-    this.showProgress = showProgress;
-    this.logToTerminal = logToTerminal;
-    this.executionStrategy = executionStrategy;
-    this.signal = signal;
   }
 
   getCommandAsString() {

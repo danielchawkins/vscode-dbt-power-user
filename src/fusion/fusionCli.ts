@@ -60,30 +60,6 @@ function diskProbe(target: string): PathKind {
   }
 }
 
-function anySignal(
-  ...signals: (AbortSignal | undefined)[]
-): AbortSignal | undefined {
-  const present = signals.filter((s): s is AbortSignal => s !== undefined);
-  if (present.length <= 1) {
-    return present[0];
-  }
-  const controller = new AbortController();
-  const abort = () => {
-    for (const signal of present) {
-      signal.removeEventListener("abort", abort);
-    }
-    controller.abort();
-  };
-  if (present.some((s) => s.aborted)) {
-    controller.abort();
-    return controller.signal;
-  }
-  for (const signal of present) {
-    signal.addEventListener("abort", abort);
-  }
-  return controller.signal;
-}
-
 /** The command kinds Project queues. */
 export type QueuedCliCommand = Extract<
   CliCommand,
@@ -388,14 +364,11 @@ export class FusionCli {
     const command = new DBTCommand(
       queuedStatus(cli),
       toCliArgs(this.snapshot(), cli, diskProbe),
-      true,
-      true,
-      true,
     );
     command.setExecutionStrategy({
-      execute: (c, signal, onOutput) =>
+      execute: (_command, signal, onOutput) =>
         this.run(cli, {
-          signal: anySignal(signal, c.signal),
+          signal,
           onOutput: (chunk) => {
             this.terminal.output?.(chunk);
             onOutput?.(chunk);
