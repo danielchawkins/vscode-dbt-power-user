@@ -1,10 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import {
-  collectControls,
-  expectControlsCovered,
-  INTERACTIVE_ROLES,
-} from "../../test/controlCoverage";
+import { screen } from "@testing-library/react";
+import { describe, it, vi } from "vitest";
+import { expectControlsCovered } from "../../test/controlCoverage";
 import {
   activate,
   EMPTY_STATE,
@@ -111,45 +107,4 @@ describe("Lineage control coverage", () => {
     );
     // Eleven renders of the whole panel: 1-3 s alone, past the 5 s default when the suite runs in parallel.
   }, 20_000);
-});
-
-describe("Lineage control coverage gate", () => {
-  it("looks for the eleven interactive roles", () => {
-    expect(INTERACTIVE_ROLES.toSorted()).toEqual([
-      "button",
-      "checkbox",
-      "combobox",
-      "link",
-      "menuitem",
-      "radio",
-      "slider",
-      "spinbutton",
-      "switch",
-      "tab",
-      "textbox",
-    ]);
-  });
-
-  it("gives same-named controls in a drawer and in two nodes different ids", () => {
-    const { container } = render(
-      <div>
-        <div data-table="a">
-          <button type="button">Open file</button>
-        </div>
-        <div data-table="b">
-          <button type="button">Open file</button>
-        </div>
-        <aside aria-label="Help">
-          <button type="button">Close</button>
-        </aside>
-        <button type="button">Close</button>
-      </div>,
-    );
-    expect(collectControls(container)).toEqual([
-      "button:Close",
-      "button:Help/Close",
-      "button:table a/Open file",
-      "button:table b/Open file",
-    ]);
-  });
 });

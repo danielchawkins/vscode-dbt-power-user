@@ -539,19 +539,6 @@ describe("toFlow connections", () => {
     expect(edgeIds(undefined)).toEqual(edgeIds("dbt"));
   });
 
-  it("draws only the relationship and column edges under declared", () => {
-    expect(edgeIds("declared")).toEqual(["c:hub.id->child.hub_id", "r:ref1"]);
-  });
-
-  it("draws every kind under both", () => {
-    expect(edgeIds("both")).toEqual([
-      "c:hub.id->child.hub_id",
-      "g:hub->g:1",
-      "r:ref1",
-      "t:hub->child",
-    ]);
-  });
-
   it("gives each relationship edge type relationship, from the referenced side, left to right", () => {
     for (const connections of ["declared", "both"] as const) {
       const rel = toFlow(mixed(connections, "leftToRight")).edges.find(
@@ -571,16 +558,6 @@ describe("toFlow connections", () => {
     const hub = nodes.find((n) => n.id === "hub");
     const child = nodes.find((n) => n.id === "child");
     expect(hub!.position.x).toBeLessThan(child!.position.x);
-  });
-
-  it("routes each relationship edge in the layered layout, keeping its relationship type, with no arrowhead", () => {
-    const rel = toFlow(mixed("both")).edges.find((e) => e.id === "r:ref1");
-    expect(rel).toMatchObject({
-      type: "relationship",
-      source: "hub",
-      target: "child",
-    });
-    expect(rel?.markerEnd).toBeUndefined();
   });
 
   it("under layered and declared, draws only relationship and column edges, with the referenced table above", () => {

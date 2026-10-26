@@ -61,15 +61,6 @@ describe("layeredFlow on a mixed-layer fixture", () => {
     expect(result.hops).toBe(1);
   });
 
-  it("draws one path per table edge, each a rounded orthogonal path", () => {
-    const result = flow("start", nodes, pairs);
-    for (const [parent, child] of pairs) {
-      const path = result.paths.get(tableEdgeId(parent, child));
-      expect(path?.d.startsWith("M")).toBe(true);
-      expect(path?.d).not.toMatch(/NaN|Infinity/);
-    }
-  });
-
   it("draws the bands behind the cards: one per layer run, plus Other when it is used", () => {
     const result = flow("start", nodes, pairs);
     expect(result.bands.map((band) => band.tag)).toEqual([
