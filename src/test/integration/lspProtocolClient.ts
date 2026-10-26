@@ -85,8 +85,6 @@ class LspRequestError extends Error {
 
 export interface NotificationEntry {
   params: unknown;
-  receivedAtMs: number;
-  size: number;
   /** Absolute sequence index; stable across bounded-buffer shifts. */
   absoluteIndex: number;
 }
@@ -97,12 +95,6 @@ export interface ServerRequestEntry {
   receivedAtMs: number;
   size: number;
   /** Absolute sequence index; stable across bounded-buffer shifts. */
-  absoluteIndex: number;
-}
-
-export interface ConfigurationDeliveryEntry {
-  requestedSections: string[];
-  deliveredSections: string[];
   absoluteIndex: number;
 }
 
@@ -201,33 +193,13 @@ function notificationTimeoutError(method: string, timeoutMs: number): Error {
   return new Error(`LSP notification ${method} timed out after ${timeoutMs}ms`);
 }
 
-function configurationResponse(params: unknown): {
-  values: unknown[];
-  requestedSections: string[];
-  deliveredSections: string[];
-} {
+/** One unset (null) value per requested configuration item. */
+function configurationValues(params: unknown): unknown[] {
   const items =
     typeof params === "object" && params !== null && "items" in params
       ? (params as { items?: unknown[] }).items
       : undefined;
-  if (!Array.isArray(items)) {
-    return { values: [], requestedSections: [], deliveredSections: [] };
-  }
-  const requestedSections: string[] = [];
-  items.forEach((item) => {
-    const section =
-      typeof item === "object" && item !== null
-        ? (item as { section?: string }).section
-        : undefined;
-    if (typeof section === "string") {
-      requestedSections.push(section);
-    }
-  });
-  return {
-    values: items.map(() => null),
-    requestedSections,
-    deliveredSections: [],
-  };
+  return Array.isArray(items) ? items.map(() => null) : [];
 }
 
 function cloneCapturedValue<T>(value: T): T {
@@ -291,8 +263,7 @@ export function attachLspProtocolClient(
   let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
   let nextId = 1;
   let closed = false;
-  const configurationDeliveries =
-    emptyCaptureState<ConfigurationDeliveryEntry>();
+  let configurationDeliveries = 0;
 
   const pendingRequests = new Map<number, PendingRequest>();
   const notificationHandlers = new Map<string, Set<NotificationHandler>>();
@@ -345,15 +316,7 @@ export function attachLspProtocolClient(
 
   const recordNotification = (method: string, params: unknown): number => {
     const state = notificationState(method);
-    return pushBoundedCapture(
-      state,
-      {
-        params,
-        receivedAtMs: Date.now(),
-        size: paramsSize(params),
-      },
-      notificationsPerMethod,
-    );
+    return pushBoundedCapture(state, { params }, notificationsPerMethod);
   };
 
   const recordServerRequest = (method: string, params: unknown): void => {
@@ -485,16 +448,8 @@ export function attachLspProtocolClient(
     }
     if (method === "workspace/configuration") {
       return (params) => {
-        const response = configurationResponse(params);
-        pushBoundedCapture(
-          configurationDeliveries,
-          {
-            requestedSections: response.requestedSections,
-            deliveredSections: response.deliveredSections,
-          },
-          CAPTURE_LIMITS.serverRequestsPerMethod,
-        );
-        return response.values;
+        configurationDeliveries += 1;
+        return configurationValues(params);
       };
     }
     return undefined;
@@ -809,7 +764,7 @@ export function attachLspProtocolClient(
     },
 
     configurationDeliveryCount(): number {
-      return configurationDeliveries.totalReceived;
+      return configurationDeliveries;
     },
 
     getErrors(): readonly CapturedError[] {

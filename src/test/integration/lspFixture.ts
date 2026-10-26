@@ -27,61 +27,36 @@ import { attachLspProtocolClient, CAPTURE_LIMITS } from "./lspProtocolClient";
  * callers must redact before writing artifacts.
  */
 
-export interface LspFixture {
+export interface LspFixture extends Pick<
+  LspProtocolClient,
+  | "request"
+  | "notify"
+  | "onNotification"
+  | "onRequest"
+  | "waitForNotification"
+  | "notificationCount"
+  | "getNotificationsSince"
+  | "getServerRequestsSince"
+  | "configurationDeliveryCount"
+  | "getErrors"
+> {
   port: number;
   /** Temp copy root on disk; always the real, non-symlinked path. */
   readonly projectRoot: string;
-  /** Path actually passed as `--project-dir`; equals `projectRoot` unless overridden. */
-  readonly projectDirArg: string;
   /** argv passed to `dbt` at connect; empty until connected. */
   readonly launchArgs: readonly string[];
   connect(timeoutMs: number): Promise<void>;
   close(): Promise<void>;
-  request<T = unknown>(
-    method: string,
-    params: unknown,
-    timeoutMs?: number,
-  ): Promise<T>;
-  notify(method: string, params?: unknown): void;
-  onNotification(
-    method: string,
-    handler: (params: unknown) => void,
-  ): Disposable;
-  onRequest(
-    method: string,
-    handler: (params: unknown) => unknown | Promise<unknown>,
-  ): Disposable;
-  waitForNotification(
-    method: string,
-    predicate: (params: unknown) => boolean,
-    timeoutMs: number,
-    fromIndex?: number,
-  ): Promise<unknown>;
-  notificationCount(method: string): number;
-  getNotificationsSince(method: string, fromCursor: number): readonly unknown[];
-  getServerRequestsSince(
-    method: string,
-    fromCursor: number,
-  ): readonly ServerRequestEntry[];
-  configurationDeliveryCount(): number;
-  getErrors(): readonly CapturedError[];
 }
 
 export interface LspFixtureOptions {
   prepareProject?: (projectRoot: string) => void;
-  defaultRequestTimeoutMs?: number;
   /** Environment variables for `dbt lsp` spawn; merged over process.env. */
   env?: Record<string, string>;
   /** Fusion executable; defaults to `dbt` on PATH. */
   executable?: string;
   /** Spawn from the copied project root. */
   useProjectRootAsCwd?: boolean;
-  /**
-   * Overrides the `--project-dir` argument, given the real temp copy path.
-   * Used to reproduce the symlink hazard: Fusion canonicalizes `--project-dir`
-   * but not document URIs, so a symlinked root can desync the two.
-   */
-  projectDirOverride?: (projectRoot: string) => string;
 }
 
 function waitForExit(
@@ -162,7 +137,6 @@ export async function createLspFixture(
   let reverseServer: ReverseSocketServer | null = null;
   let stderr = "";
   let closed = false;
-  let projectDirArg = "";
   // realpathSync resolves macOS's /tmp -> /private/tmp symlink; Fusion canonicalizes
   // --project-dir but not document URIs, so a symlinked root can desync the two.
   const tempDir = fs.mkdtempSync(
@@ -197,10 +171,6 @@ export async function createLspFixture(
       return temporaryProjectRoot;
     },
 
-    get projectDirArg() {
-      return projectDirArg;
-    },
-
     get launchArgs() {
       return launchArgs;
     },
@@ -213,15 +183,12 @@ export async function createLspFixture(
       reverseServer = await listenForServer();
       port = reverseServer.port;
 
-      projectDirArg = options.projectDirOverride
-        ? options.projectDirOverride(temporaryProjectRoot)
-        : temporaryProjectRoot;
       const args = [
         "lsp",
         "--socket",
         String(port),
         "--project-dir",
-        projectDirArg,
+        temporaryProjectRoot,
       ];
       if (temporaryProfilesDir) {
         args.push("--profiles-dir", temporaryProfilesDir);
@@ -252,9 +219,7 @@ export async function createLspFixture(
           childProcessAdapter(childProcess, () => stderr),
           timeoutMs,
         );
-        client = attachLspProtocolClient(streams.reader as net.Socket, {
-          defaultRequestTimeoutMs: options.defaultRequestTimeoutMs,
-        });
+        client = attachLspProtocolClient(streams.reader as net.Socket);
       } catch (error) {
         reverseServer.dispose();
         reverseServer = null;
