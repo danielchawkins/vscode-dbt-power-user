@@ -406,5 +406,92 @@ describe("useLineageGraph", () => {
       ).toBeGreaterThan(before);
       expect(result.current.graph.errors).toEqual({});
     });
+
+    /** A hop answer whose edge leads from `b.id` to `c.id`, so the trace would go on to `c.id`. */
+    const EDGE_B_TO_C = {
+      column_lineage: [
+        { source: ["b", "id"], target: ["c", "id"], type: "direct" },
+      ],
+    };
+
+    it("a retry while a hop is pending replaces the trace; the old loop posts no more hops", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() => expect(held).toHaveLength(1));
+      act(() => result.current.actions.retryTrace());
+      await waitFor(() => expect(held).toHaveLength(2));
+      // The superseded hop answers with an edge that would make the old loop post another hop.
+      await act(async () => held[0]?.release(EDGE_B_TO_C));
+      expect(tracesPosted()).toHaveLength(2);
+      expect(result.current.graph.tracing?.column).toEqual(["b", "id"]);
+      // The retry's answers finish its two directions, and only then the pending line goes.
+      await act(async () => held[1]?.release({ column_lineage: [] }));
+      await waitFor(() => expect(held).toHaveLength(3));
+      await act(async () => held[2]?.release({ column_lineage: [] }));
+      await waitFor(() => expect(result.current.graph.tracing).toBeUndefined());
+      expect(tracesPosted()).toHaveLength(3);
+    });
+
+    it("Cancel ends the trace here, so a hop answered after it posts no later hop", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() => expect(held).toHaveLength(1));
+      act(() => result.current.actions.cancelTrace());
+      expect(result.current.graph.tracing).toBeUndefined();
+      // The hop's normal answer was already in flight when Cancel was clicked.
+      await act(async () => held[0]?.release(EDGE_B_TO_C));
+      expect(tracesPosted()).toEqual([TRACE_B]);
+      expect(result.current.graph.tracing).toBeUndefined();
+    });
+
+    it("clicking the pending selected column tells the host to cancel its trace", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() => expect(held).toHaveLength(1));
+      act(() => result.current.actions.selectColumn("b", "id"));
+      expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
+        command: "cancelColumnTrace",
+        trace: TRACE_B,
+      });
+      expect(result.current.graph.selectedColumn).toBeUndefined();
+      expect(result.current.graph.tracing).toBeUndefined();
+      await act(async () => held[0]?.release(EDGE_B_TO_C));
+      expect(tracesPosted()).toEqual([TRACE_B]);
+    });
+
+    it("hiding the pending selected column's table tells the host to cancel its trace", async () => {
+      answerRequests();
+      const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+      await postRender("b");
+      await waitFor(() => expect(result.current.drawnKey).toBe(1));
+      act(() => result.current.actions.toggleColumns("b"));
+      await waitFor(() =>
+        expect(result.current.graph.columnTables).toContain("b"),
+      );
+      const held = holdColumnRequests();
+      act(() => result.current.actions.selectColumn("b", "id"));
+      await waitFor(() => expect(held).toHaveLength(1));
+      act(() => result.current.actions.toggleColumns("b"));
+      expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
+        command: "cancelColumnTrace",
+        trace: TRACE_B,
+      });
+      expect(result.current.graph.selectedColumn).toBeUndefined();
+      expect(result.current.graph.tracing).toBeUndefined();
+      await act(async () => held[0]?.release(EDGE_B_TO_C));
+      expect(tracesPosted()).toEqual([TRACE_B]);
+    });
   });
 });

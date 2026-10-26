@@ -24,6 +24,7 @@ describe("LineagePanel", () => {
   let mockPostMessage: Mock;
   let queryManifestService: Record<string, Mock>;
   let send: (message: unknown) => Promise<unknown>;
+  let closePage: () => void;
 
   /** Sends a request as the page does, and returns the body the panel answered with. */
   const ask = async (message: Record<string, unknown>) => {
@@ -55,9 +56,11 @@ describe("LineagePanel", () => {
       },
       queryManifestService,
     });
-    const page = openPage(panel, fakeView(), false);
+    const view = fakeView();
+    const page = openPage(panel, view, false);
     mockPostMessage = page.page.webview.postMessage;
     send = page.send;
+    closePage = () => view.close();
   });
 
   describe("manifestChanged", () => {
@@ -674,6 +677,22 @@ describe("LineagePanel", () => {
       await vi.waitFor(() => expect(tokens).toHaveLength(1));
       expect(tokens[0].isCancellationRequested).toBe(false);
       panel.dispose();
+      expect(tokens[0].isCancellationRequested).toBe(true);
+    });
+
+    it("cancels the trace's requests when its page closes", async () => {
+      const tokens: { isCancellationRequested: boolean }[] = [];
+      (panel as any).dbtLineageService = {
+        getConnectedColumns: vi.fn((_request, token) => {
+          tokens.push(token);
+          return new Promise(() => undefined);
+        }),
+      };
+
+      void send(traced("a", "trace-a"));
+      await vi.waitFor(() => expect(tokens).toHaveLength(1));
+      expect(tokens[0].isCancellationRequested).toBe(false);
+      closePage();
       expect(tokens[0].isCancellationRequested).toBe(true);
     });
   });

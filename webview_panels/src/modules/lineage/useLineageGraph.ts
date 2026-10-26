@@ -41,6 +41,17 @@ const traceSelected = (store: GraphStore, column: ColumnRef): void => {
     .catch(logError("column trace"));
 };
 
+/** Cancels the trace in flight on the host and ends it here, so none of its later hops is posted. */
+const stopTrace = (store: GraphStore): void => {
+  const tracing = store.get().tracing;
+  if (tracing) {
+    executeRequestInAsync("cancelColumnTrace", {
+      trace: columnKey(tracing.column),
+    });
+    store.update((s) => ({ ...s, tracing: undefined }));
+  }
+};
+
 /** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
 export interface ExpansionOptions {
   cap: number;
@@ -111,6 +122,9 @@ const actionsFor = (
   toggleColumns: (table: string) => {
     const s = store();
     if (s.get().columnTables.includes(table)) {
+      if (s.get().selectedColumn?.[0] === table) {
+        stopTrace(s);
+      }
       s.update((g) => hideColumns(g, table));
       return;
     }
@@ -120,6 +134,7 @@ const actionsFor = (
     const s = store();
     const ref: ColumnRef = [table, column];
     if (columnClick(s.get(), ref) === "clear") {
+      stopTrace(s);
       s.update(clearColumn);
       return;
     }
@@ -132,12 +147,7 @@ const actionsFor = (
       traceSelected(s, column);
     }
   },
-  cancelTrace: () => {
-    const column = store().get().tracing?.column;
-    if (column) {
-      executeRequestInAsync("cancelColumnTrace", { trace: columnKey(column) });
-    }
-  },
+  cancelTrace: () => stopTrace(store()),
   openDetails,
   openFile,
 });

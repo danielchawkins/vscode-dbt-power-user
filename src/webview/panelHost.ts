@@ -319,8 +319,8 @@ export abstract class PanelHost<
     }
   }
 
-  /** Ends a page's subscription and demand, and forgets its readiness. */
-  private endPage(page: WebviewView | WebviewPanel) {
+  /** Ends a page's subscription and demand, and forgets its readiness. A subclass ends its own state here too. */
+  protected endPage(page: WebviewView | WebviewPanel) {
     for (const end of this.listening.get(page) ?? []) {
       end.dispose();
     }
