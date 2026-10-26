@@ -42,17 +42,21 @@ export class FusionStatus implements Disposable {
    */
   private readonly projectNotes: (project: DeclaredProject) => ProjectNotes;
 
-  constructor(
+  constructor({
+    registry,
+    clientPool,
+    optIns = () => undefined,
+    onDidChangeOptIns,
+    projectNotes = () => ({}),
+  }: {
     registry: {
       readonly projects: readonly DeclaredProject[];
-    },
-    clientPool: FusionClientPool,
-    optIns: (project: DeclaredProject) => ProjectOptIns | undefined = () =>
-      undefined,
-    onDidChangeOptIns?: Event<unknown>,
-
-    projectNotes: (project: DeclaredProject) => ProjectNotes = () => ({}),
-  ) {
+    };
+    clientPool: FusionClientPool;
+    optIns?: (project: DeclaredProject) => ProjectOptIns | undefined;
+    onDidChangeOptIns?: Event<unknown>;
+    projectNotes?: (project: DeclaredProject) => ProjectNotes;
+  }) {
     this.registry = registry;
     this.clientPool = clientPool;
     this.optIns = optIns;

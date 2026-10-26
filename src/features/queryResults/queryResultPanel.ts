@@ -81,13 +81,19 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
   declare protected queryManifestService: QueryManifestService;
   private readonly history: QueryHistoryStore;
 
-  public constructor(
-    extensionContext: ExtensionContextStore,
-    eventEmitterService: SharedStateService,
-    dbtTerminal: Log,
-    queryManifestService: QueryManifestService,
-    onDidRemoveProject: Event<Uri>,
-  ) {
+  public constructor({
+    extensionContext,
+    eventEmitterService,
+    dbtTerminal,
+    queryManifestService,
+    onDidRemoveProject,
+  }: {
+    extensionContext: ExtensionContextStore;
+    eventEmitterService: SharedStateService;
+    dbtTerminal: Log;
+    queryManifestService: QueryManifestService;
+    onDidRemoveProject: Event<Uri>;
+  }) {
     super(
       extensionContext,
       eventEmitterService,

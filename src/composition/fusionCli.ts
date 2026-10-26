@@ -14,12 +14,12 @@ export function cliFactoryFor(
   const processes = new CommandProcessExecutionFactory(log);
   return (executable) => {
     const source = environments.snapshotSource(declared, readProjectSnapshot);
-    return new FusionCli(
+    return new FusionCli({
       executable,
-      source.snapshot,
+      snapshot: source.snapshot,
       processes,
-      log,
-      source.ready,
-    );
+      terminal: log,
+      environmentReady: source.ready,
+    });
   };
 }

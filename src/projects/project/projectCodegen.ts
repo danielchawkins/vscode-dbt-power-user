@@ -93,13 +93,19 @@ export interface GenerateModelFromSourceParams {
 }
 
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
-export async function generateModel(
-  columns: Pick<ColumnSource, "getColumnsOfSource"> & NotifiableProject,
-  terminal: Pick<Log, "debug">,
-  sourceName: string,
-  tableName: string,
-  sourcePath: string,
-): Promise<void> {
+export async function generateModel({
+  columns,
+  terminal,
+  sourceName,
+  tableName,
+  sourcePath,
+}: {
+  columns: Pick<ColumnSource, "getColumnsOfSource"> & NotifiableProject;
+  terminal: Pick<Log, "debug">;
+  sourceName: string;
+  tableName: string;
+  sourcePath: string;
+}): Promise<void> {
   await window.withProgress(
     {
       location: ProgressLocation.Notification,

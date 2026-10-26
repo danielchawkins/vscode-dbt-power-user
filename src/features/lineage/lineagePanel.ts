@@ -86,14 +86,21 @@ export class LineagePanel
     | { root: string; epoch: number | undefined }
     | undefined;
 
-  public constructor(
-    extensionContext: ExtensionContextStore,
-    terminal: Log,
-    dbtLineageService: DbtLineageService,
-    eventEmitterService: SharedStateService,
-    queryManifestService: QueryManifestService,
-    parseDemand?: ParseDemand,
-  ) {
+  public constructor({
+    extensionContext,
+    terminal,
+    dbtLineageService,
+    eventEmitterService,
+    queryManifestService,
+    parseDemand,
+  }: {
+    extensionContext: ExtensionContextStore;
+    terminal: Log;
+    dbtLineageService: DbtLineageService;
+    eventEmitterService: SharedStateService;
+    queryManifestService: QueryManifestService;
+    parseDemand?: ParseDemand;
+  }) {
     super(
       extensionContext,
       eventEmitterService,

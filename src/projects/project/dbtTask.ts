@@ -93,13 +93,19 @@ export function taskName(
 }
 
 /** A dbt task scoped to `root`'s workspace folder that runs `execution`; `focus` reveals its terminal. */
-export function dbtTask(
-  definition: DbtTaskDefinition,
-  root: string,
-  name: string,
-  execution: CustomExecution,
+export function dbtTask({
+  definition,
+  root,
+  name,
+  execution,
   focus = true,
-): Task {
+}: {
+  definition: DbtTaskDefinition;
+  root: string;
+  name: string;
+  execution: CustomExecution;
+  focus?: boolean;
+}): Task {
   const task = new Task(
     definition,
     workspace.getWorkspaceFolder(Uri.file(root)) ?? TaskScope.Workspace,

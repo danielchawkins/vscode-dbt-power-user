@@ -110,14 +110,19 @@ export class FusionCli {
   /** Settles once the project's environment is resolved; every command awaits it before launching. */
   private readonly environmentReady: () => Promise<unknown>;
 
-  constructor(
-    executable: FusionCliExecutable,
-    snapshot: () => ProjectSnapshot,
-    processes: CommandProcessExecutionFactory,
-    terminal: Log,
-
-    environmentReady: () => Promise<unknown> = async () => undefined,
-  ) {
+  constructor({
+    executable,
+    snapshot,
+    processes,
+    terminal,
+    environmentReady = async () => undefined,
+  }: {
+    executable: FusionCliExecutable;
+    snapshot: () => ProjectSnapshot;
+    processes: CommandProcessExecutionFactory;
+    terminal: Log;
+    environmentReady?: () => Promise<unknown>;
+  }) {
     this.executable = executable;
     this.snapshot = snapshot;
     this.processes = processes;

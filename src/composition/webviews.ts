@@ -23,31 +23,31 @@ export function composeWebviews(
     projects,
     queryManifestService,
   } = graph;
-  const lineagePanel = new LineagePanel(
-    extensionContextStore,
+  const lineagePanel = new LineagePanel({
+    extensionContext: extensionContextStore,
     terminal,
     dbtLineageService,
-    sharedState,
+    eventEmitterService: sharedState,
     queryManifestService,
-    graph.parseDemand,
-  );
+    parseDemand: graph.parseDemand,
+  });
   if (graph.clients.pool) {
     lineagePanel.renderOn(
       onCurrentClientChange(graph.clients.pool, graph.currentProject),
     );
   }
   return new WebviewViewProviders(
-    new QueryResultPanel(
-      extensionContextStore,
-      sharedState,
-      terminal,
+    new QueryResultPanel({
+      extensionContext: extensionContextStore,
+      eventEmitterService: sharedState,
+      dbtTerminal: terminal,
       queryManifestService,
-      projects.onDidRemoveProject,
-    ),
-    new DocsEditViewPanel(
+      onDidRemoveProject: projects.onDidRemoveProject,
+    }),
+    new DocsEditViewPanel({
       projects,
-      extensionContextStore,
-      {
+      extensionContext: extensionContextStore,
+      services: {
         docGenService: new DocGenService(projects, queryManifestService),
         dbtTestService: new DbtTestService(queryManifestService),
         queryManifestService,
@@ -59,8 +59,8 @@ export function composeWebviews(
         columnProposalRequests,
       },
       terminal,
-      graph.parseDemand,
-    ),
+      parseDemand: graph.parseDemand,
+    }),
     new LineageViewProvider(lineagePanel, projects),
   );
 }

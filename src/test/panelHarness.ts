@@ -154,13 +154,13 @@ export function queryResultPanel(
   terminal: Log = spyLog(),
   queryManifestService: unknown = {},
 ): QueryResultPanel {
-  return new QueryResultPanel(
+  return new QueryResultPanel({
     extensionContext,
-    { eventEmitter: new EventEmitter<unknown>() } as never,
-    terminal,
-    queryManifestService as never,
-    new EventEmitter<Uri>().event,
-  );
+    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
+    dbtTerminal: terminal,
+    queryManifestService: queryManifestService as never,
+    onDidRemoveProject: new EventEmitter<Uri>().event,
+  });
 }
 
 /**
@@ -176,10 +176,10 @@ export function docsEditPanel(
     get: () => undefined,
   },
 ): DocsEditViewPanel {
-  return new DocsEditViewPanel(
-    projects as never,
+  return new DocsEditViewPanel({
+    projects: projects as never,
     extensionContext,
-    {
+    services: {
       docGenService: {
         getUncompiledDocumentationForCurrentActiveFile: vi.fn(async () => ({
           documentation: undefined,
@@ -195,7 +195,7 @@ export function docsEditPanel(
       ...services,
     } as never,
     terminal,
-  );
+  });
 }
 
 /**
@@ -209,13 +209,13 @@ export function lineagePanel(
     queryManifestService?: unknown;
   } = {},
 ): LineagePanel {
-  return new LineagePanel(
-    (services.extensionContext ?? extensionContext) as never,
+  return new LineagePanel({
+    extensionContext: (services.extensionContext ?? extensionContext) as never,
     terminal,
-    (services.dbtLineageService ?? {}) as never,
-    { eventEmitter: new EventEmitter<unknown>() } as never,
-    (services.queryManifestService ?? {}) as never,
-  );
+    dbtLineageService: (services.dbtLineageService ?? {}) as never,
+    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
+    queryManifestService: (services.queryManifestService ?? {}) as never,
+  });
 }
 
 /**

@@ -95,7 +95,13 @@ export class ProjectQueries {
   }
 
   generateModel(name: string, table: string, sourcePath: string) {
-    return generateModel(this.codegen, this.terminal, name, table, sourcePath);
+    return generateModel({
+      columns: this.codegen,
+      terminal: this.terminal,
+      sourceName: name,
+      tableName: table,
+      sourcePath,
+    });
   }
 
   executeSQLOnQueryPanel(

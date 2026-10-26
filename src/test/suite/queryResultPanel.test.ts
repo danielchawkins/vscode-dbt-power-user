@@ -35,13 +35,15 @@ function makePanel(
     getProjectByName: () => manifest.project,
     getOrPickProjectFromWorkspace: async () => manifest.picked,
   };
-  const panel = new QueryResultPanel(
-    { extensionUri: Uri.file("/ext") } as never,
-    { eventEmitter: { event: () => ({ dispose: vi.fn() }) } } as never,
-    silentLog(),
-    service as never,
-    () => ({ dispose: vi.fn() }),
-  );
+  const panel = new QueryResultPanel({
+    extensionContext: { extensionUri: Uri.file("/ext") } as never,
+    eventEmitterService: {
+      eventEmitter: { event: () => ({ dispose: vi.fn() }) },
+    } as never,
+    dbtTerminal: silentLog(),
+    queryManifestService: service as never,
+    onDidRemoveProject: () => ({ dispose: vi.fn() }),
+  });
   const view = fakeView();
   void panel.resolveWebviewView(
     view.page,

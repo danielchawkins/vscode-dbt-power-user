@@ -160,10 +160,16 @@ describe("dbt task definitions", () => {
     const execution = new CustomExecution(async () => undefined as never);
     const definition = definitionOf({ kind: "deps" }, "/p");
     expect(
-      dbtTask(definition, "/p", "deps", execution, true).presentationOptions
-        .reveal,
+      dbtTask({ definition, root: "/p", name: "deps", execution, focus: true })
+        .presentationOptions.reveal,
     ).toBe(TaskRevealKind.Always);
-    const silent = dbtTask(definition, "/p", "deps", execution, false);
+    const silent = dbtTask({
+      definition,
+      root: "/p",
+      name: "deps",
+      execution,
+      focus: false,
+    });
     expect(silent.presentationOptions.reveal).toBe(TaskRevealKind.Silent);
     expect([silent.name, silent.source]).toEqual(["deps", DBT_TASK_TYPE]);
   });
@@ -172,15 +178,15 @@ describe("dbt task definitions", () => {
 describe("executeTask", () => {
   function deps(onCreate?: (terminal: DbtTaskTerminal) => void) {
     let terminal: DbtTaskTerminal | undefined;
-    const task = dbtTask(
-      definitionOf({ kind: "deps" }, "/p"),
-      "/p",
-      "deps",
-      new CustomExecution(async () => {
+    const task = dbtTask({
+      definition: definitionOf({ kind: "deps" }, "/p"),
+      root: "/p",
+      name: "deps",
+      execution: new CustomExecution(async () => {
         terminal = new DbtTaskTerminal((t) => onCreate?.(t));
         return terminal;
       }),
-    );
+    });
     return { task, terminal: () => terminal! };
   }
 
@@ -206,16 +212,16 @@ describe("executeTask", () => {
 
   it("runs a new execution after an active task with the same definition ends", async () => {
     const terminals: DbtTaskTerminal[] = [];
-    const task = dbtTask(
-      definitionOf({ kind: "deps" }, "/p"),
-      "/p",
-      "deps",
-      new CustomExecution(async () => {
+    const task = dbtTask({
+      definition: definitionOf({ kind: "deps" }, "/p"),
+      root: "/p",
+      name: "deps",
+      execution: new CustomExecution(async () => {
         const terminal = new DbtTaskTerminal(() => undefined);
         terminals.push(terminal);
         return terminal;
       }),
-    );
+    });
     await executeTask(task);
 
     const second = executeTask(task);

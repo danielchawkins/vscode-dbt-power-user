@@ -54,12 +54,12 @@ export class ProjectTasks {
     const started = new Promise<
       () => Promise<CommandProcessResult | undefined>
     >((resolve) => (onStart = (run) => resolve(() => run)));
-    const task = dbtTask(
+    const task = dbtTask({
       definition,
-      this.deps.root,
-      this.taskName(cli),
-      this.execution(onStart),
-    );
+      root: this.deps.root,
+      name: this.taskName(cli),
+      execution: this.execution(onStart),
+    });
     try {
       const { ended } = await executeTask(task);
       return { started, ended };
@@ -112,7 +112,12 @@ export class ProjectTasks {
 
   /** A task named `name` that runs `definition` in this project. */
   task(definition: DbtTaskDefinition, name: string): Task {
-    return dbtTask(definition, this.deps.root, name, this.execution());
+    return dbtTask({
+      definition,
+      root: this.deps.root,
+      name,
+      execution: this.execution(),
+    });
   }
 
   /**

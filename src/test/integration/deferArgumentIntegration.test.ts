@@ -165,12 +165,12 @@ suite("Fusion defer argument integration", function () {
       },
       projectFile: readDbtProjectFile(projectDir),
     });
-    return new FusionCli(
-      { path: "dbt", env: {} },
-      () => snapshot,
-      new CommandProcessExecutionFactory(terminal),
+    return new FusionCli({
+      executable: { path: "dbt", env: {} },
+      snapshot: () => snapshot,
+      processes: new CommandProcessExecutionFactory(terminal),
       terminal,
-    );
+    });
   }
 
   test("runs a deferred model successfully once its dependency's table already exists", async function () {

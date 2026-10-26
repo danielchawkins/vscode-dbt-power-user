@@ -126,10 +126,10 @@ describe("CommandProcessExecution Tests", () => {
     "returns the same result with or without onOutput",
     async () => {
       const run = (onOutput?: (chunk: string) => void) =>
-        new CommandProcessExecution(mockTerminal, "sh", [
-          "-c",
-          "printf 'a\\n\\nb'; printf 'err\\n' >&2; exit 3",
-        ]).complete({ onOutput });
+        new CommandProcessExecution(mockTerminal, {
+          command: "sh",
+          args: ["-c", "printf 'a\\n\\nb'; printf 'err\\n' >&2; exit 3"],
+        }).complete({ onOutput });
       const plain = await run();
       const streamed = await run(() => undefined);
       expect(streamed).toEqual(plain);

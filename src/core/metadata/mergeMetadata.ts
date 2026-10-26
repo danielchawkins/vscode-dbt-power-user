@@ -99,7 +99,13 @@ export function mergeMetadata(
     serverNodes,
   );
   const childIds = invert(parentIds);
-  const graph = graphFrom(base, nodeMetaMap, serverNodes, parentIds, childIds);
+  const graph = graphFrom({
+    base,
+    nodeMetaMap,
+    serverNodes,
+    parentIds,
+    childIds,
+  });
   return {
     ...base,
     nodeMetaMap,
@@ -231,13 +237,19 @@ function invert(parents: DBTGraphType): DBTGraphType {
   return children;
 }
 
-function graphFrom(
-  base: ParsedManifest,
-  nodeMetaMap: NodeMetaMap,
-  serverNodes: ReadonlyMap<string, ServerNode>,
-  parentIds: DBTGraphType,
-  childIds: DBTGraphType,
-): Pick<GraphMetaMap, "parents" | "children"> {
+function graphFrom({
+  base,
+  nodeMetaMap,
+  serverNodes,
+  parentIds,
+  childIds,
+}: {
+  base: ParsedManifest;
+  nodeMetaMap: NodeMetaMap;
+  serverNodes: ReadonlyMap<string, ServerNode>;
+  parentIds: DBTGraphType;
+  childIds: DBTGraphType;
+}): Pick<GraphMetaMap, "parents" | "children"> {
   const resolve = nodeResolver(
     {
       sourceMetaMap: base.sourceMetaMap,

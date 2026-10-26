@@ -65,12 +65,12 @@ function projectWithParse(
   const project = buildTestProject(
     root,
     (executable, projectRoot) =>
-      new FusionCli(
+      new FusionCli({
         executable,
-        () => readProjectSnapshot(Uri.file(projectRoot)),
+        snapshot: () => readProjectSnapshot(Uri.file(projectRoot)),
         processes,
-        log,
-      ),
+        terminal: log,
+      }),
     { terminal: log, projectRoot: Uri.file(root) },
   );
   return { project, log };

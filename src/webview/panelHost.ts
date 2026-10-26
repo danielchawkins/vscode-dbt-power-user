@@ -264,18 +264,18 @@ export abstract class PanelHost<
     }
     const ends: Disposable[] = [
       page.webview.onDidReceiveMessage((message: unknown) =>
-        dispatchMessage(
-          this.viewType,
+        dispatchMessage({
+          source: this.viewType,
           message,
-          this.guard,
-          this.handlers(page),
-          {
+          guard: this.guard,
+          handlers: this.handlers(page),
+          sink: {
             log: this.dbtTerminal,
             // A reply records no replay slot, so it goes straight out rather than through `postTo`.
             reply: (response) =>
               postToWebview(page, response, this.dbtTerminal),
           },
-        ),
+        }),
       ),
     ];
     if (this.isWebviewView(page)) {

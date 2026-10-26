@@ -95,13 +95,19 @@ const settle = async (
  * and dropped; a handler failure is logged as an error. Either way, a message carrying a string `syncRequestId`
  * gets a `status: false` reply, so the panel's pending request settles. Never throws.
  */
-export async function dispatchMessage<M extends { command: string }>(
-  source: string,
-  message: unknown,
-  guard: (value: unknown) => value is M,
-  handlers: Handlers<M>,
-  sink: MessageSink,
-): Promise<void> {
+export async function dispatchMessage<M extends { command: string }>({
+  source,
+  message,
+  guard,
+  handlers,
+  sink,
+}: {
+  source: string;
+  message: unknown;
+  guard: (value: unknown) => value is M;
+  handlers: Handlers<M>;
+  sink: MessageSink;
+}): Promise<void> {
   const syncRequestId = requestIdOf(message);
   if (!guard(message)) {
     sink.log.warn(

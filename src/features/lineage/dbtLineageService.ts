@@ -96,17 +96,20 @@ export class DbtLineageService {
   /** Whether the Current Project opts into `+static_analysis: strict`, and the folder the strict fix changes. */
   private currentStrict: () => StrictInputs;
 
-  public constructor(
-    queryManifestService: QueryManifestService,
-
-    currentClient: () => FusionClient | undefined = () => undefined,
-
-    currentError: () => string | undefined = () => undefined,
+  public constructor({
+    queryManifestService,
+    currentClient = () => undefined,
+    currentError = () => undefined,
+    currentLsp,
+    currentStrict = () => ({ strict: false }),
+  }: {
+    queryManifestService: QueryManifestService;
+    currentClient?: () => FusionClient | undefined;
+    currentError?: () => string | undefined;
     /** The Current Project's server commands; defaults to commands over `currentClient`. */
-    currentLsp?: () => FusionCommands | undefined,
-
-    currentStrict: () => StrictInputs = () => ({ strict: false }),
-  ) {
+    currentLsp?: () => FusionCommands | undefined;
+    currentStrict?: () => StrictInputs;
+  }) {
     this.queryManifestService = queryManifestService;
     this.currentClient = currentClient;
     this.currentError = currentError;

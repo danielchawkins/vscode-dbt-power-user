@@ -225,13 +225,16 @@ describe("FusionStatus", () => {
         launches.get(project.root.fsPath) as LspLaunch | undefined,
       onDidChangeClients: poolChanged.event,
     } as unknown as FusionClientPool;
-    return new FusionStatus(
-      { projects },
+    return new FusionStatus({
+      registry: { projects },
       clientPool,
-      () => optIns,
-      optInsChanged.event,
-      () => ({ error: projectError, environment: environmentNote }),
-    );
+      optIns: () => optIns,
+      onDidChangeOptIns: optInsChanged.event,
+      projectNotes: () => ({
+        error: projectError,
+        environment: environmentNote,
+      }),
+    });
   }
 
   function items(): LanguageStatusItem[] {

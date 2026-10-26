@@ -176,17 +176,17 @@ export class Project implements Disposable, ManifestProject {
       onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
     });
     this.lifecycle = this.createLifecycle(options);
-    this.manifestRebuild = new ManifestRebuild(
-      this.lifecycle,
-      options.parsers,
-      this,
-      this.terminal,
-      {
+    this.manifestRebuild = new ManifestRebuild({
+      lifecycle: this.lifecycle,
+      parsers: options.parsers,
+      project: this,
+      terminal: this.terminal,
+      callbacks: {
         refreshConfig: (candidate) => this.refreshConfigWith(candidate, false),
         onStatus: (inProgress) => this.onRebuildStatus(inProgress),
         onParsed: (parsed) => this.publishParsedManifest(parsed),
       },
-    );
+    });
     this.subscribeLifecycle();
     this.disposables.push(
       this.diagnostics,
@@ -203,18 +203,18 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private createLifecycle(options: ProjectOptions): ExecutableLifecycle {
-    return new ExecutableLifecycle(
-      options.resolver,
-      options.cliFactory,
-      this.projectRoot.fsPath,
-      this.terminal,
-      {
+    return new ExecutableLifecycle({
+      resolver: options.resolver,
+      factory: options.cliFactory,
+      projectRoot: this.projectRoot.fsPath,
+      terminal: this.terminal,
+      hooks: {
         environment: options.environment,
         activate: (candidate, generation) =>
           this.manifestRebuild.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
       },
-    );
+    });
   }
 
   private createScheduler(demand: ParseDemand | undefined): ParseScheduler {
