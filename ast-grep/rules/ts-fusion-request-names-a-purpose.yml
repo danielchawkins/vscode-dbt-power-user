@@ -14,13 +14,6 @@ ignores:
   - src/test/**
   - "**/*.test.ts"
   - src/fusion/fusionCommands.ts
-  # Ratchet: remove each entry once its call sites pass a purpose.
-  - src/features/lineage/dbtLineageService.ts
-  - src/features/docs/upstreamDescriptionSource.ts
-  - src/features/docs/columnTypeSource.ts
-  - src/metadata/serverMetadataSource.ts
-  - src/projects/project/compiledModel.ts
-  - src/projects/project/projectWarehouse.ts
 rule:
   any:
     - pattern: $L.listNodes($A)

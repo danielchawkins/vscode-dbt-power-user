@@ -1,6 +1,7 @@
-# A `Promise.race` against a timer is an ad-hoc deadline: it rejects the caller but leaves the server request running
-# (no $/cancelRequest) and its queue slot held, which is how one slow `dbt.listNodes` made the next ones time out.
-# Bounds on server requests come from src/core/lsp/requestPolicy.ts and end the request through its token.
+# A `Promise.race` against a timer, or a timer that rejects a promise, is an ad-hoc deadline: it rejects the caller
+# but leaves the server request running (no $/cancelRequest) and its queue slot held, which is how one slow
+# `dbt.listNodes` made the next ones time out. Bounds on server requests come from src/core/lsp/requestPolicy.ts
+# and end the request through its token.
 id: ts-no-adhoc-promise-race
 language: typescript
 severity: error
@@ -17,7 +18,12 @@ ignores:
   - src/fusion/lspProcess.ts
   # Task start against task end; no timer involved.
   - src/projects/project/projectTasks.ts
-  # Ratchet: remove once the fixed command deadline is gone.
+  # Ratchet: the ceiling timer rejects the caller but does not yet cancel the server request. The lane scheduler
+  # (refactor 2) ends the request through its token; remove this entry then.
   - src/fusion/fusionCommands.ts
 rule:
-  pattern: Promise.race($$$)
+  any:
+    - pattern: Promise.race($$$)
+    # The same race written as a promise whose timer rejects it.
+    - pattern: setTimeout(() => reject($$$), $$$)
+    - pattern: setTimeout(() => { reject($$$) }, $$$)

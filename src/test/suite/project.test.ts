@@ -430,7 +430,9 @@ describe("Project Test Suite", () => {
         expect(await dbtProject.queries.getColumnsOfModel("my_model")).toEqual([
           { column: "ORDER_ID", dtype: "integer" },
         ]);
-        expect(getCurrentNode).toHaveBeenCalledWith("models/my_model.sql");
+        expect(getCurrentNode).toHaveBeenCalledWith("models/my_model.sql", {
+          purpose: "columns",
+        });
         expect(mockFusionCli.getColumnsOfModel).not.toHaveBeenCalled();
       });
 

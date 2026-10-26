@@ -107,9 +107,11 @@ export class ServerMetadataSource implements Disposable {
   private async fetch(): Promise<void> {
     this.stale = false;
     try {
-      const info = await this.lsp.getProjectInfo();
+      const info = await this.lsp.getProjectInfo({ purpose: "projectInfo" });
       const name = info?.projectName ?? this.projectName();
-      const nodes = await this.lsp.listNodes([`+package:${name}`]);
+      const nodes = await this.lsp.listNodes([`+package:${name}`], {
+        purpose: "graph",
+      });
       this.set(serverMetadataFrom(nodes, info, name));
     } catch (error) {
       if (error instanceof FusionCommandError && error.kind === "notRunning") {
