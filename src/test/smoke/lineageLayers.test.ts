@@ -211,7 +211,9 @@ async function settleStart(): Promise<Snapshot> {
       return current;
     },
     {
-      until: (current) => current.cards.length === CARD_IDS.length,
+      // Cards are drawn before their edges, so all ten cards can show with no edge yet.
+      until: (current) =>
+        current.cards.length === CARD_IDS.length && current.edges.total > 0,
       attempts: 40,
     },
   );
