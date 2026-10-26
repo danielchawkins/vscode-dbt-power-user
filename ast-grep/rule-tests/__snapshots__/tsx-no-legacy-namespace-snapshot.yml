@@ -1,0 +1,14 @@
+id: tsx-no-legacy-namespace
+snapshots:
+  const el = <a data-command="dbtPowerUser.openFile" />;:
+    labels:
+    - source: dbtPowerUser.openFile
+      style: primary
+      start: 28
+      end: 49
+  'post({ command: "dbtPowerUser.openFile" });':
+    labels:
+    - source: dbtPowerUser.openFile
+      style: primary
+      start: 17
+      end: 38

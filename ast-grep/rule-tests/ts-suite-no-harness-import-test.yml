@@ -1,0 +1,9 @@
+id: ts-suite-no-harness-import
+valid:
+  - 'import { parseRefExpression } from "../../core/manifest/refExpression";'
+  - 'import { esmDirname } from "../esmDirname";'
+  - 'import { withTimeout } from "../async";'
+invalid:
+  - 'import { selectSuites } from "../smoke/suiteSelection";'
+  - 'import type { ContextSlot } from "../smoke/cdpEvaluation";'
+  - 'import { installUiStubs } from "../integration/uiStubs";'

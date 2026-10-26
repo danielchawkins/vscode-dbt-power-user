@@ -1,0 +1,14 @@
+id: json-no-legacy-namespace
+snapshots:
+  '{ "command": "dbtPowerUser.runCurrentModel" }':
+    labels:
+    - source: dbtPowerUser.runCurrentModel
+      style: primary
+      start: 14
+      end: 42
+  '{ "properties": { "dbtPowerUser.queryLimit": { "type": "number" } } }':
+    labels:
+    - source: dbtPowerUser.queryLimit
+      style: primary
+      start: 19
+      end: 42

@@ -1,0 +1,19 @@
+# The smoke and integration harnesses (src/test/smoke, src/test/integration) are checked by running them; the
+# gated Vitest suite does not unit-test them. Lands with the deletion of the harness self-tests
+# (cdpEvaluation, smokeExtHostStart, smokeSuiteSelection, visualEvidence, uiStubs, ...); switch `severity`
+# to `error` in that revision. A suite test that reads harness data (for example the lineage layers
+# expectations) or pins a fail-closed rule of the harness carries an
+# `ast-grep-ignore: ts-suite-no-harness-import -- <why>` comment.
+id: ts-suite-no-harness-import
+language: typescript
+severity: off
+message: >-
+  A Vitest suite test imports smoke or integration harness code. The harness is checked by running it
+  (`just smoke`, `just test-integration`); test the product instead, or say why in an ast-grep-ignore comment.
+files:
+  - src/test/suite/**
+rule:
+  kind: import_statement
+  has:
+    field: source
+    regex: '^["''](\.\./)+(smoke|integration)/'
