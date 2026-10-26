@@ -1,7 +1,7 @@
 # `dbt.listNodes` answers a table graph in ~130 ms and a column lineage in ~11 s on the same 995-model project
 # (Fusion 2.0.8, scripts/spikes/lsp-timing). The command alone does not say how a request should be scheduled or
 # bounded, so every call names its purpose; FusionCommands looks the RequestPolicy up by it.
-# The `ignores` ratchet lists the call sites that still pass no purpose; each file leaves the list once it does.
+# The facade itself is ignored; every production call site passes a purpose.
 id: ts-fusion-request-names-a-purpose
 language: typescript
 severity: error
