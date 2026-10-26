@@ -16,7 +16,7 @@ import {
 } from "./types";
 
 import type { Log } from "../log";
-import { createFullPathForNode } from "./utils";
+import { resourcePaths } from "./utils";
 
 // Priority order for the model-preferred fallback when `lookupByBaseName` is
 // called without an explicit `resourceType`. Models take precedence so a
@@ -127,10 +127,7 @@ export class NodeParser {
     const nodesMaps = Object.values(nodesMap).filter((model) =>
       isResourceNode(model.resource_type),
     );
-    const packagePath = project.paths()?.packagesInstallPath;
-    if (packagePath === undefined) {
-      throw new Error("packagePath is not defined " + projectRoot);
-    }
+    const paths = resourcePaths(project);
     for (const nodesMap of nodesMaps) {
       const {
         name,
@@ -153,13 +150,7 @@ export class NodeParser {
         relation_name,
         tags,
       } = nodesMap;
-      const fullPath = createFullPathForNode(
-        projectName,
-        projectRoot,
-        package_name,
-        packagePath,
-        original_file_path,
-      );
+      const fullPath = paths.fileOf(package_name, original_file_path);
       const targetPath = project.paths()?.targetPath;
       if (fullPath) {
         const nodeResourceType = resource_type as NodeResourceType;

@@ -1,3 +1,5 @@
+import { escapeRegex } from "./utils";
+
 /**
  * The `ref()` and `source()` expressions that appear in constraint `to` fields, semantic-model `model` fields and
  * model bodies. Every consumer parses them here.
@@ -71,8 +73,4 @@ export function containsSourceCall(
     `source\\s*\\(\\s*['"]${escapeRegex(sourceName)}['"]\\s*,\\s*['"]${escapeRegex(tableName)}['"]\\s*\\)`,
   );
   return re.test(body);
-}
-
-function escapeRegex(s: string): string {
-  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

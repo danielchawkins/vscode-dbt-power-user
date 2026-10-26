@@ -55,11 +55,6 @@
       "count": 1
     }
   },
-  "src/core/manifest/utils.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
   "src/core/metadata/fieldOwners.ts": {
     "max-params": {
       "count": 1

@@ -4,7 +4,7 @@ import type { ManifestProject } from "./manifestProject";
 import type { MacroMetaMap, MacroResource, ManifestResources } from "./types";
 
 import type { Log } from "../log";
-import { createFullPathForNode } from "./utils";
+import { findDeclarationLine, resourcePaths } from "./utils";
 
 export class MacroParser {
   private terminal: Pick<Log, "debug">;
@@ -27,49 +27,39 @@ export class MacroParser {
     if (macros === null || macros === undefined) {
       return macroMetaMap;
     }
-    const packagePath = project.paths()?.packagesInstallPath;
-    if (packagePath === undefined) {
-      throw new Error("packagePath is not defined in " + projectRoot);
-    }
+    const paths = resourcePaths(project);
     for (const [key, macro] of Object.entries(macros)) {
       const { package_name, name, original_file_path, depends_on } = macro;
       const packageName = package_name;
       const macroName =
         packageName === projectName ? name : `${packageName}.${name}`;
-      const fullPath = createFullPathForNode(
-        projectName,
-        projectRoot,
-        packageName,
-        packagePath,
-        original_file_path,
-      );
+      const fullPath = paths.fileOf(packageName, original_file_path);
       if (!fullPath) {
         continue;
       }
       try {
         const macroFile: string = readFileSync(fullPath).toString("utf8");
-        const macroFileLines = macroFile.split("\n");
-
-        for (let index = 0; index < macroFileLines.length; index++) {
-          const currentLine = macroFileLines[index] ?? "";
-          if (
-            new RegExp(`macro\\s${name}\\(`).test(currentLine) ||
-            new RegExp(`test\\s${name.replace("test_", "")}\\(`).test(
-              currentLine,
-            )
-          ) {
-            macroMetaMap.set(macroName, {
-              path: fullPath,
-              line: index,
-              character: currentLine.indexOf(name),
-              unique_id: key,
-              description: macro.description,
-              arguments: macro.arguments,
-              name,
-              depends_on,
-            });
-            break;
-          }
+        const declared = [
+          findDeclarationLine(macroFile, "macro", `${name}(`),
+          findDeclarationLine(
+            macroFile,
+            "test",
+            `${name.replace("test_", "")}(`,
+          ),
+        ].filter((line) => line !== undefined);
+        if (declared.length > 0) {
+          const line = Math.min(...declared);
+          const currentLine = macroFile.split("\n")[line] ?? "";
+          macroMetaMap.set(macroName, {
+            path: fullPath,
+            line,
+            character: currentLine.indexOf(name),
+            unique_id: key,
+            description: macro.description,
+            arguments: macro.arguments,
+            name,
+            depends_on,
+          });
         }
       } catch (error) {
         this.terminal.debug(
