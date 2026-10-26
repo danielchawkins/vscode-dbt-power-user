@@ -11,12 +11,12 @@ import {
   resolveProjectSnapshot,
 } from "../../core/snapshot";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
-import { FusionCli } from "../../fusion/fusionCli";
 import {
   CompileSignal,
   subscribeToCompileComplete,
-  type ClientHandle,
-} from "../../fusion/lspClientSupport";
+} from "../../fusion/compileSignal";
+import { FusionCli } from "../../fusion/fusionCli";
+import type { ClientHandle } from "../../fusion/lspClientSupport";
 import { errorHint } from "../../projects/output/projectErrors";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";
@@ -79,12 +79,12 @@ suite("Configuration errors", function () {
       projectFile: readDbtProjectFile(projectDir),
     });
     const terminal = silentTerminal();
-    const cli = new FusionCli(
-      { path: dbt, env: {} },
-      () => snapshot,
-      new CommandProcessExecutionFactory(terminal),
+    const cli = new FusionCli({
+      executable: { path: dbt, env: {} },
+      snapshot: () => snapshot,
+      processes: new CommandProcessExecutionFactory(terminal),
       terminal,
-    );
+    });
     return cli.rebuildManifest().then(() => ({
       diagnostics: cli.getDiagnostics().rebuildManifestDiagnostics,
       invocation: snapshot.invocation,

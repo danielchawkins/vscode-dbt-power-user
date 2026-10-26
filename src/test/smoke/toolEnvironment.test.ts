@@ -4,19 +4,19 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import {
-  captureWorkbenchScreenshot,
-  readWorkbenchNotificationTexts,
-  validateSmokeHost,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
+import { pollUntil, sleep } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  captureWorkbenchScreenshot,
+  readWorkbenchNotificationTexts,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const TOOL_ENV_PREFIX = "tool-env-";
 const CLIENT_WAIT_TIMEOUT_MS = 45_000;
@@ -81,25 +81,6 @@ const ROWS = new Map<string, ToolEnvRow>([
         assertForwarderRan(o, "bin");
         assertNoTooOld(report);
         assertTrustHint(o, false);
-      },
-    },
-  ],
-  [
-    "both",
-    {
-      expect:
-        "Client running; source mise; executable under bin/; direnv-bin/ never ran; no too-old verdict.",
-      check(o: Observed) {
-        const report = single(o);
-        assertRunning(report);
-        assert.strictEqual(report.environmentSource, "mise");
-        assertRanFrom(o, report, "bin");
-        assertForwarderRan(o, "bin");
-        assert.ok(
-          o.forwarders?.every((line) => !line.includes("direnv-bin")),
-          `direnv-bin ran: ${JSON.stringify(o.forwarders)}`,
-        );
-        assertNoTooOld(report);
       },
     },
   ],
@@ -187,11 +168,8 @@ suite("Tool-environment smoke", function () {
     const row = ROWS.get(key);
     assert.ok(row, `unknown tool-environment fixture ${name}`);
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const resultsDir = process.env.FPU_SMOKE_RESULTS;
     assert.ok(resultsDir, "smoke requires FPU_SMOKE_RESULTS");
     const toolEnvTmp = process.env.FPU_SMOKE_TOOLENV_TMP;
@@ -211,9 +189,9 @@ suite("Tool-environment smoke", function () {
     // The untrusted row expects its trust hint to stay, so wait for it to appear rather than for the list to clear.
     const notifications =
       key === "untrusted"
-        ? await waitForNotificationText(cdpPort, smokeHost, "mise trust")
-        : (await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost),
-          await readWorkbenchNotificationTexts(cdpPort, smokeHost));
+        ? await waitForNotificationText(port, host, "mise trust")
+        : (await waitForWorkbenchNotificationsToSettle(port, host),
+          await readWorkbenchNotificationTexts(port, host));
     const observed: Observed = {
       reports,
       notifications,
@@ -231,8 +209,8 @@ suite("Tool-environment smoke", function () {
 
     const screenshots = screenshotDirectory();
     if (screenshots) {
-      const fixtureDir = path.join(screenshots, smokeHost, name);
-      const png = await captureWorkbenchScreenshot(cdpPort, smokeHost);
+      const fixtureDir = path.join(screenshots, host, name);
+      const png = await captureWorkbenchScreenshot(port, host);
       const file = writeCheckpoint(
         fixtureDir,
         checkpointCount(fixtureDir) + 1,
@@ -243,7 +221,7 @@ suite("Tool-environment smoke", function () {
         },
         png,
         {
-          host: smokeHost,
+          host,
           fixture: name,
           activeEditor:
             vscode.window.activeTextEditor?.document.uri.fsPath ?? null,
@@ -282,7 +260,7 @@ async function waitForNotificationText(
     if (texts.some((entry) => entry.includes(text))) {
       return texts;
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    await sleep(POLL_MS);
   } while (Date.now() < deadline);
   return texts;
 }
@@ -295,19 +273,17 @@ async function waitForClients(
     await sleep(DISABLED_SETTLE_MS);
     return readReports();
   }
-  const deadline = Date.now() + CLIENT_WAIT_TIMEOUT_MS;
-  let last: FusionClientStateReport[] = [];
-  do {
-    last = await readReports();
-    if (
+  return pollUntil(
+    readReports,
+    (last) =>
       last.length > 0 &&
-      last.every((r) => r.state === "running" || r.state === "failed")
-    ) {
-      return last;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(`no client settled: ${JSON.stringify(last)}`);
+      last.every((r) => r.state === "running" || r.state === "failed"),
+    {
+      timeoutMs: CLIENT_WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: (last) => `no client settled: ${JSON.stringify(last)}`,
+    },
+  );
 }
 
 function single(o: Observed): FusionClientStateReport {
@@ -444,8 +420,4 @@ function logFileContains(dir: string, needle: string): boolean {
       fs.readFileSync(file, "utf-8").includes(needle)
     );
   });
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

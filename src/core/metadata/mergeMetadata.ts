@@ -1,6 +1,6 @@
 import type { ParsedManifest } from "../dbt/domain";
 import type { Log } from "../log";
-import { GraphParser, type DBTGraphType } from "../manifest";
+import { type DBTGraphType, nodeResolver } from "../manifest";
 import type {
   GraphMetaMap,
   NodeData,
@@ -87,19 +87,25 @@ export function mergeMetadata(
     return base;
   }
   const serverNodes = new Map(server.nodes.map((n) => [n.uniqueId, n]));
-  const nodeMetaMap = mergeNodeMetaMap(
-    base.nodeMetaMap,
+  const nodeMetaMap = mergeNodeMetaMap({
+    parse: base.nodeMetaMap,
     serverNodes,
     server,
     options,
-  );
+  });
   const parentIds = mergedParentIds(
     base.graphMetaMap,
     removedIds(base.nodeMetaMap, serverNodes, server),
     serverNodes,
   );
   const childIds = invert(parentIds);
-  const graph = graphFrom(base, nodeMetaMap, serverNodes, parentIds, childIds);
+  const graph = graphFrom({
+    base,
+    nodeMetaMap,
+    serverNodes,
+    parentIds,
+    childIds,
+  });
   return {
     ...base,
     nodeMetaMap,
@@ -108,12 +114,17 @@ export function mergeMetadata(
   };
 }
 
-function mergeNodeMetaMap(
-  parse: NodeMetaMap,
-  serverNodes: ReadonlyMap<string, ServerNode>,
-  server: ServerMetadata,
-  options: MergeOptions,
-): NodeMetaMap {
+function mergeNodeMetaMap({
+  parse,
+  serverNodes,
+  server,
+  options,
+}: {
+  parse: NodeMetaMap;
+  serverNodes: ReadonlyMap<string, ServerNode>;
+  server: ServerMetadata;
+  options: MergeOptions;
+}): NodeMetaMap {
   const removed = removedIds(parse, serverNodes, server);
   const added = new Map<string, NodeMetaData>();
   for (const node of serverNodes.values()) {
@@ -231,18 +242,27 @@ function invert(parents: DBTGraphType): DBTGraphType {
   return children;
 }
 
-function graphFrom(
-  base: ParsedManifest,
-  nodeMetaMap: NodeMetaMap,
-  serverNodes: ReadonlyMap<string, ServerNode>,
-  parentIds: DBTGraphType,
-  childIds: DBTGraphType,
-): Pick<GraphMetaMap, "parents" | "children"> {
-  const resolve = new GraphParser(quiet).mapToNode(
-    base.sourceMetaMap,
-    nodeMetaMap,
-    base.testMetaMap,
-    base.functionMetaMap,
+function graphFrom({
+  base,
+  nodeMetaMap,
+  serverNodes,
+  parentIds,
+  childIds,
+}: {
+  base: ParsedManifest;
+  nodeMetaMap: NodeMetaMap;
+  serverNodes: ReadonlyMap<string, ServerNode>;
+  parentIds: DBTGraphType;
+  childIds: DBTGraphType;
+}): Pick<GraphMetaMap, "parents" | "children"> {
+  const resolve = nodeResolver(
+    {
+      sourceMetaMap: base.sourceMetaMap,
+      nodeMetaMap,
+      testMetaMap: base.testMetaMap,
+      functionMetaMap: base.functionMetaMap,
+    },
+    quiet,
   );
   const previous = new Map<string, NodeData>();
   for (const map of [base.graphMetaMap.parents, base.graphMetaMap.children]) {

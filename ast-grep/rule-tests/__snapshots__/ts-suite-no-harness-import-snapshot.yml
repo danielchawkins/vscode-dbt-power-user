@@ -1,0 +1,32 @@
+id: ts-suite-no-harness-import
+snapshots:
+  import type { ContextSlot } from "../smoke/cdpEvaluation";:
+    labels:
+    - source: import type { ContextSlot } from "../smoke/cdpEvaluation";
+      style: primary
+      start: 0
+      end: 58
+    - source: '"../smoke/cdpEvaluation"'
+      style: secondary
+      start: 33
+      end: 57
+  import { installUiStubs } from "../integration/uiStubs";:
+    labels:
+    - source: import { installUiStubs } from "../integration/uiStubs";
+      style: primary
+      start: 0
+      end: 56
+    - source: '"../integration/uiStubs"'
+      style: secondary
+      start: 31
+      end: 55
+  import { selectSuites } from "../smoke/suiteSelection";:
+    labels:
+    - source: import { selectSuites } from "../smoke/suiteSelection";
+      style: primary
+      start: 0
+      end: 55
+    - source: '"../smoke/suiteSelection"'
+      style: secondary
+      start: 29
+      end: 54

@@ -21,9 +21,9 @@ import type {
 import type { FusionVersion } from "../../fusion/fusionVersion";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
 import type { ManifestParsers } from "../manifest/manifest";
-import { ManifestTrigger } from "../manifest/manifest";
 import { ManifestRebuild } from "../manifest/manifestRebuild";
 import { ManifestState } from "../manifest/manifestState";
+import { ManifestTrigger } from "../manifest/manifestTrigger";
 import type { Manifest } from "../manifest/manifestTypes";
 import type { ParseDemand } from "../manifest/parseDemand";
 import { ParseScheduler } from "../manifest/parseScheduler";
@@ -147,12 +147,12 @@ export class Project implements Disposable, ManifestProject {
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
     );
-    this.errors = new ProjectErrors(
-      this.projectRoot,
-      () => this.getProjectName(),
-      () => readProjectSnapshot(this.projectRoot),
-      this.terminal,
-    );
+    this.errors = new ProjectErrors({
+      root: this.projectRoot,
+      projectName: () => this.getProjectName(),
+      snapshot: () => readProjectSnapshot(this.projectRoot),
+      terminal: this.terminal,
+    });
     this.commandDeps = this.createCommandDeps();
     this.tasks = new ProjectTasks({
       root,
@@ -176,17 +176,17 @@ export class Project implements Disposable, ManifestProject {
       onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
     });
     this.lifecycle = this.createLifecycle(options);
-    this.manifestRebuild = new ManifestRebuild(
-      this.lifecycle,
-      options.parsers,
-      this,
-      this.terminal,
-      {
+    this.manifestRebuild = new ManifestRebuild({
+      lifecycle: this.lifecycle,
+      parsers: options.parsers,
+      project: this,
+      terminal: this.terminal,
+      callbacks: {
         refreshConfig: (candidate) => this.refreshConfigWith(candidate, false),
         onStatus: (inProgress) => this.onRebuildStatus(inProgress),
         onParsed: (parsed) => this.publishParsedManifest(parsed),
       },
-    );
+    });
     this.subscribeLifecycle();
     this.disposables.push(
       this.diagnostics,
@@ -203,18 +203,18 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private createLifecycle(options: ProjectOptions): ExecutableLifecycle {
-    return new ExecutableLifecycle(
-      options.resolver,
-      options.cliFactory,
-      this.projectRoot.fsPath,
-      this.terminal,
-      {
+    return new ExecutableLifecycle({
+      resolver: options.resolver,
+      factory: options.cliFactory,
+      projectRoot: this.projectRoot.fsPath,
+      terminal: this.terminal,
+      hooks: {
         environment: options.environment,
         activate: (candidate, generation) =>
           this.manifestRebuild.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
       },
-    );
+    });
   }
 
   private createScheduler(demand: ParseDemand | undefined): ParseScheduler {
@@ -364,7 +364,14 @@ export class Project implements Disposable, ManifestProject {
     const sourcePaths = reportPaths
       ? () => sourcePathsOf(this.paths())
       : undefined;
-    if (await refreshCliConfig(delegate, this.terminal, label, sourcePaths)) {
+    if (
+      await refreshCliConfig({
+        cli: delegate,
+        terminal: this.terminal,
+        label,
+        sourcePaths,
+      })
+    ) {
       this.diagnostics.clearConfig();
       this.updateDiagnosticsInProblemsPanel();
     }
@@ -433,12 +440,12 @@ export class Project implements Disposable, ManifestProject {
     run: () => Promise<T>,
     launched?: readonly string[],
   ): Promise<T> {
-    return withRunResults(
-      this.runResultsReader,
-      this.runHistory,
+    return withRunResults({
+      reader: this.runResultsReader,
+      history: this.runHistory,
       run,
       launched,
-    );
+    });
   }
 
   async dispose(): Promise<void> {

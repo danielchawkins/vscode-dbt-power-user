@@ -1,5 +1,4 @@
 import type { ColumnProposalsPayload } from "./columnProposals.js";
-import { isColumnProposalsPayload } from "./columnProposals.js";
 import type {
   OpenProblemsTab,
   PanelNotice,
@@ -8,12 +7,7 @@ import type {
   ShowNotification,
   WebviewReady,
 } from "./common.js";
-import {
-  isPanelNotice,
-  isPanelNoticeActionId,
-  responseFields,
-  showNotificationFields,
-} from "./common.js";
+import { isPanelNoticeActionId, showNotificationFields } from "./common.js";
 import type { DocumentationColumn } from "./documentationColumn.js";
 import type { CommandFields, Fields } from "./guards.js";
 import {
@@ -161,6 +155,24 @@ export type PanelMessage =
       syncRequestId?: string | undefined;
     });
 
+/** The body the host answers each request with, by request command. */
+export interface ResponseBodies {
+  getTestCode: { sql?: string | undefined; config?: string | null | undefined };
+  getUnitTestCode: { yaml: string } | { error: string };
+  getDistinctColumnValues: unknown[];
+  getColumnsOfSources: { columns: string[] };
+  getColumnsOfModel: { columns: string[] };
+  /** Absent when the active file has no manifest. */
+  getSourcesInProject: {
+    sources: { name: string; tables: string[] }[] | undefined;
+  };
+  /** Absent when the active file has no manifest. */
+  getModelsInProject: { models: string[] | undefined };
+  showWarningMessage: string | undefined;
+  showInformationMessage: string | undefined;
+  saveDocumentation: { saved: boolean };
+}
+
 const isColumn = shape<DocumentationColumn>({
   name: isString,
   type: nullish(isString),
@@ -200,33 +212,12 @@ const isModelTest = shape<ModelTest>({
   ),
 });
 
-const isUnitTest = shape<UnitTest>({
-  name: isString,
-  path: optional(isString),
-});
-
 const isDocumentation = shape<Documentation>(documentationFields);
 
 const isDraft = shape<DocumentationDraft>({
   docs: isDocumentation,
   tests: optional(arrayOf(isModelTest)),
 });
-
-const hostFields: CommandFields<HostMessage> = {
-  response: responseFields,
-  renderError: {},
-  renderDocumentation: {
-    docs: optional(isDocumentation),
-    missingDocumentationMessage: optional(isPanelNotice),
-    tests: optional(arrayOf(isModelTest)),
-    unitTests: optional(arrayOf(isUnitTest)),
-    project: optional(isString),
-    docBlocks: arrayOf(shape({ name: isString, path: isString })),
-    publication: optional(isString),
-    draft: optional(isDraft),
-  },
-  renderColumnProposals: { payload: isColumnProposalsPayload },
-};
 
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
@@ -261,10 +252,8 @@ const panelFields: CommandFields<PanelMessage> = {
   },
 };
 
-export const isHostMessage = messageGuard<HostMessage>(hostFields);
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);
 
-export const hostCommands = Object.keys(hostFields) as HostMessage["command"][];
 export const panelCommands = Object.keys(
   panelFields,
 ) as PanelMessage["command"][];

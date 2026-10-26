@@ -56,12 +56,17 @@ async function chooseSchemaFile(
  * Writes `message` to its schema YAML. Resolves false when the user cancels the file dialog, there is no active
  * project, or the write fails; `onFailure` runs for a failure, not a cancel.
  */
-export async function saveDocumentation(
-  message: SaveMessage,
-  activeProject: unknown,
-  deps: SaveDeps,
-  onFailure: (error: unknown, patchPath: string | undefined) => void,
-): Promise<boolean> {
+export async function saveDocumentation({
+  message,
+  activeProject,
+  deps,
+  onFailure,
+}: {
+  message: SaveMessage;
+  activeProject: unknown;
+  deps: SaveDeps;
+  onFailure: (error: unknown, patchPath: string | undefined) => void;
+}): Promise<boolean> {
   let patchPath = message.patchPath ?? undefined;
   try {
     const projectByFilePath = deps.projects.get(Uri.file(message.filePath));
@@ -77,12 +82,12 @@ export async function saveDocumentation(
     }
     const target = patchPath;
     const written = await writeUserFile(Uri.file(target), (docFile) =>
-      withDocumentation(
+      withDocumentation({
         docFile,
         message,
-        projectByFilePath.getAdapterType(),
-        deps.testData,
-      ),
+        adapterType: projectByFilePath.getAdapterType(),
+        deps: deps.testData,
+      }),
     );
     if (written === "rejected") {
       throw new Error("the editor rejected the change");

@@ -178,16 +178,16 @@ describe("Metadata contract — shape and key set snapshot", () => {
         },
         manifest.sources,
       );
-    const graphMetaMap = new GraphParser(terminal).createGraphMetaMap(
-      adapter,
-      parentMaps.parentMetaMap,
-      parentMaps.childMetaMap,
+    const graphMetaMap = new GraphParser(terminal).createGraphMetaMap({
+      project: adapter,
+      parentMetaMap: parentMaps.parentMetaMap,
+      childMetaMap: parentMaps.childMetaMap,
       nodeMetaMap,
       sourceMetaMap,
       testMetaMap,
       functionMetaMap,
-      parentMaps.constraintOnlyParents,
-    );
+      constraintOnlyParents: parentMaps.constraintOnlyParents,
+    });
     const modelDepthMap = new Map<string, number>();
     const manifestEvents = new EventEmitter<ParsedManifest>();
     const project = {

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
+import type { Uri } from "vscode";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
 import { getColumnTestConfigFromYml } from "../../core/manifest/testConfig";
@@ -122,9 +123,16 @@ export class DbtTestService {
   public getConfigByTest(
     test: TestMetaData,
     modelName: string,
-    columnNameFromTestMetadata?: string,
+    options: {
+      columnNameFromTestMetadata?: string | undefined;
+      /** The request's model; without it, the active editor's. */
+      uri?: Uri | undefined;
+    } = {},
   ) {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
+    const { columnNameFromTestMetadata, uri } = options;
+    const eventResult = uri
+      ? { event: this.queryManifestService.getEventByDocument(uri) }
+      : this.queryManifestService.getEventByCurrentProject();
     if (!eventResult?.event) {
       return;
     }
@@ -198,12 +206,17 @@ export class DbtTestService {
   }
 
   // Find the file path of test macro
-  private getMacroFilePath = (
-    macros: [string],
-    projectName: string,
-    macroMetaMap: MacroMetaMap,
-    testName: string | undefined,
-  ) => {
+  private getMacroFilePath = ({
+    macros,
+    projectName,
+    macroMetaMap,
+    testName,
+  }: {
+    macros: [string];
+    projectName: string;
+    macroMetaMap: MacroMetaMap;
+    testName: string | undefined;
+  }) => {
     if (!testName) {
       return;
     }
@@ -289,12 +302,12 @@ export class DbtTestService {
           test_metadata,
         } = testData;
 
-        const macroFilepath = this.getMacroFilePath(
+        const macroFilepath = this.getMacroFilePath({
           macros,
           projectName,
           macroMetaMap,
-          test_metadata?.name,
-        );
+          testName: test_metadata?.name,
+        });
 
         return {
           ...testData,

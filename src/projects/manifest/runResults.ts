@@ -288,12 +288,17 @@ export class RunResultsReader {
 }
 
 /** Runs `run`, then records any run_results.json it wrote, using `launched` args as the fallback selection. */
-export async function withRunResults<T>(
-  reader: RunResultsReader,
-  history: RunResultsHistory,
-  run: () => Promise<T>,
-  launched?: readonly string[],
-): Promise<T> {
+export async function withRunResults<T>({
+  reader,
+  history,
+  run,
+  launched,
+}: {
+  reader: RunResultsReader;
+  history: RunResultsHistory;
+  run: () => Promise<T>;
+  launched?: readonly string[] | undefined;
+}): Promise<T> {
   const before = reader.observe();
   const result = await run();
   const entry = reader.readIfChanged(before, launched);

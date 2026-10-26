@@ -4,15 +4,15 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  assertNoWorkbenchNotifications,
-  validateSmokeHost,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import * as smokeEnv from "./smokeEnv";
+import {
+  assertNoWorkbenchNotifications,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const EXPECTED_PROJECT_NAMES = ["general", "sox"];
 const LSP_WAIT_TIMEOUT_MS = 45_000;
@@ -29,11 +29,8 @@ suite("Multi-root LSP smoke", function () {
       return;
     }
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -118,16 +115,23 @@ async function assertProjectUsedItsOwnProfilesDir(name: string): Promise<void> {
 
   const root = folder.uri.fsPath;
   const manifestPath = path.join(root, "target", "manifest.json");
-  const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;
-  while (!fs.existsSync(manifestPath) && Date.now() < deadline) {
-    await sleep(250);
-  }
   const dbtLog = path.join(root, "logs", "dbt.log");
-  const log = fs.existsSync(dbtLog) ? fs.readFileSync(dbtLog, "utf-8") : "";
-  assert.ok(
-    fs.existsSync(manifestPath),
-    `${name} parse must write target/manifest.json using its own profilesDir (${profilesDir}); ` +
-      `dbt.log tail: ${log.slice(-800)}`,
+  await pollUntil(
+    () => fs.existsSync(manifestPath),
+    (exists) => exists,
+    {
+      timeoutMs: LSP_WAIT_TIMEOUT_MS,
+      intervalMs: 250,
+      describe: () => {
+        const log = fs.existsSync(dbtLog)
+          ? fs.readFileSync(dbtLog, "utf-8")
+          : "";
+        return (
+          `${name} parse must write target/manifest.json using its own profilesDir (${profilesDir}); ` +
+          `dbt.log tail: ${log.slice(-800)}`
+        );
+      },
+    },
   );
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as {
     nodes: Record<string, unknown>;
@@ -139,27 +143,21 @@ async function assertProjectUsedItsOwnProfilesDir(name: string): Promise<void> {
 }
 
 async function waitForFusionClientStates(): Promise<FusionClientStateReport[]> {
-  const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;
-  let last: FusionClientStateReport[] = [];
-  do {
-    last = await vscode.commands.executeCommand<FusionClientStateReport[]>(
-      FUSION_CLIENT_STATES_COMMAND,
-    );
-    if (
+  return pollUntil(
+    () =>
+      vscode.commands.executeCommand<FusionClientStateReport[]>(
+        FUSION_CLIENT_STATES_COMMAND,
+      ),
+    (last) =>
       last.length === EXPECTED_PROJECT_NAMES.length &&
       last.every(
         (state) => state.state === "running" || state.state === "failed",
-      )
-    ) {
-      return last;
-    }
-    await sleep(LSP_WAIT_POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `Timed out waiting for the Fusion LSP initialize handshake: ${JSON.stringify(last)}`,
+      ),
+    {
+      timeoutMs: LSP_WAIT_TIMEOUT_MS,
+      intervalMs: LSP_WAIT_POLL_MS,
+      describe: (last) =>
+        `the Fusion LSP initialize handshake: ${JSON.stringify(last)}`,
+    },
   );
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

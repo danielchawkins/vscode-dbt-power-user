@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -30,8 +31,7 @@ const RELATIONSHIP_CHECKBOXES = [
 ];
 
 const runsHere = () => currentFixtureName() === "single-project";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /** A table card React Flow draws; the view has drawn the graph once one is present. */
 const TABLE_CARD = ".react-flow__node-table";
@@ -40,7 +40,7 @@ const SHOWN_PARENTS = `.react-flow__node button[title^="Hide "][title$="parents"
 
 async function nodeCount(): Promise<number> {
   const match = await evaluatePanel<{ entry: string; nodes: number }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     `(() => document.body.dataset.entry === "lineage"
       ? { entry: "lineage", nodes: document.querySelectorAll(".react-flow__node").length }
@@ -69,16 +69,11 @@ async function waitForNodeCount(
   what: string,
   done: (count: number) => boolean,
 ): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  let last = -1;
-  do {
-    last = await nodeCount();
-    if (done(last)) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  } while (Date.now() < deadline);
-  throw new Error(`${what}; the last node count was ${last}`);
+  await pollUntil(nodeCount, done, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: (last) => `${what}; the last node count was ${last}`,
+  });
 }
 
 const gear = { role: "button", name: "Settings" };

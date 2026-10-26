@@ -1,15 +1,22 @@
 import type { Log } from "../log";
 import type { ManifestProject } from "./manifestProject";
 import type {
+  DocMetaMap,
+  ExposureMetaMap,
   FunctionMetaMap,
   GraphMetaMap,
+  MacroMetaMap,
+  MetricMetaMap,
   NodeData,
   NodeGraphMap,
   NodeMetaMap,
+  NodeResourceType,
+  SemanticModelMetaMap,
   SourceMetaMap,
   TestMetaMap,
+  UnitTestMetaMap,
 } from "./types";
-import { RESOURCE_TYPE_METRIC, RESOURCE_TYPE_TEST } from "./types";
+import { RESOURCE_TYPE_SEMANTIC_MODEL, RESOURCE_TYPE_TEST } from "./types";
 
 const notEmpty = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;
@@ -44,6 +51,140 @@ function graphOfType(
   return result;
 }
 
+/** The resource maps one manifest parse produces. */
+export interface ParsedResourceMaps {
+  parentMetaMap: DBTGraphType;
+  childMetaMap: DBTGraphType;
+  constraintOnlyParents: DBTGraphType;
+  nodeMetaMap: NodeMetaMap;
+  macroMetaMap: MacroMetaMap;
+  metricMetaMap: MetricMetaMap;
+  semanticModelMetaMap: SemanticModelMetaMap;
+  sourceMetaMap: SourceMetaMap;
+  testMetaMap: TestMetaMap;
+  unitTestMetaMap: UnitTestMetaMap;
+  docMetaMap: DocMetaMap;
+  exposureMetaMap: ExposureMetaMap;
+  functionMetaMap: FunctionMetaMap;
+}
+
+/** The parts of {@link ParsedResourceMaps} the graph is built from, with the project they belong to. */
+export type GraphInput = Pick<
+  ParsedResourceMaps,
+  | "parentMetaMap"
+  | "childMetaMap"
+  | "constraintOnlyParents"
+  | "nodeMetaMap"
+  | "sourceMetaMap"
+  | "testMetaMap"
+  | "functionMetaMap"
+> & { project: ManifestProject };
+
+/** The manifest records a graph node's url and label come from. */
+type NodeMaps = Pick<
+  ParsedResourceMaps,
+  "sourceMetaMap" | "nodeMetaMap" | "testMetaMap" | "functionMetaMap"
+>;
+
+/** What the manifest holds for a node: the file it is defined in and, for a model, its alias. */
+interface NodeRecord {
+  path?: string | undefined;
+  alias?: string;
+}
+
+/** How one resource type becomes a graph node. */
+interface NodeKind {
+  /** The manifest record behind the node. `nodeName` has the type and package prefix removed. */
+  lookup: (
+    maps: NodeMaps,
+    nodeName: string,
+    uniqueId: string,
+  ) => NodeRecord | undefined;
+  label: (nodeName: string, record: NodeRecord | undefined) => string;
+  /** Drops the node when its record is missing, rather than keeping it without a url. */
+  requiresRecord?: boolean;
+}
+
+const labelFromName: NodeKind["label"] = (nodeName) => nodeName;
+const labelFromAlias: NodeKind["label"] = (_nodeName, record) =>
+  record?.alias ?? "";
+const byUniqueId: NodeKind["lookup"] = (maps, _nodeName, uniqueId) =>
+  maps.nodeMetaMap.lookupByUniqueId(uniqueId);
+const byBaseName =
+  (resourceType?: NodeResourceType): NodeKind["lookup"] =>
+  (maps, nodeName) =>
+    maps.nodeMetaMap.lookupByBaseName(nodeName, resourceType);
+
+const NODE_KINDS = new Map<string, NodeKind>([
+  [
+    "source",
+    {
+      lookup: (maps, nodeName) => {
+        const [sourceName, tableName] = nodeName.split(".");
+        return maps.sourceMetaMap
+          .get(sourceName ?? "")
+          ?.tables.find((table) => table.name === tableName);
+      },
+      label: (nodeName) => {
+        const [sourceName, tableName] = nodeName.split(".");
+        return `${tableName} (${sourceName})`;
+      },
+    },
+  ],
+  [
+    "model",
+    { lookup: byUniqueId, label: labelFromAlias, requiresRecord: true },
+  ],
+  ["seed", { lookup: byUniqueId, label: labelFromAlias, requiresRecord: true }],
+  [
+    "test",
+    {
+      // nodeName => more interesting label possibilities?
+      lookup: (maps, nodeName) =>
+        maps.testMetaMap.get(nodeName.split(".")[0] ?? ""),
+      label: labelFromName,
+    },
+  ],
+  ["analysis", { lookup: byBaseName("analysis"), label: labelFromName }],
+  ["snapshot", { lookup: byBaseName("snapshot"), label: labelFromName }],
+  ["exposure", { lookup: byBaseName(), label: labelFromName }],
+  ["semantic_model", { lookup: () => undefined, label: labelFromName }],
+  [
+    "function",
+    {
+      lookup: (maps, nodeName) => maps.functionMetaMap.get(nodeName),
+      label: labelFromName,
+    },
+  ],
+]);
+
+/** Resolves a `unique_id` to the graph node it names; undefined when the node's type is not in the graph. */
+export function nodeResolver(
+  maps: NodeMaps,
+  terminal: Pick<Log, "debug">,
+): (parentNodeName: string) => NodeData | undefined {
+  return (parentNodeName) => {
+    // Support dots in model names
+    const [nodeType, _nodePackage, ...restNodeName] = parentNodeName.split(".");
+    const nodeName = restNodeName.join(".");
+    const kind = NODE_KINDS.get(nodeType ?? "");
+    if (!kind) {
+      terminal.debug("GraphParser", `Node type '${nodeType}' not implemented`);
+      return undefined;
+    }
+    const record = kind.lookup(maps, nodeName, parentNodeName);
+    if (kind.requiresRecord && record === undefined) {
+      return undefined;
+    }
+    return {
+      label: kind.label(nodeName, record),
+      key: parentNodeName,
+      url: record?.path,
+      resourceType: nodeType ?? "",
+    };
+  };
+}
+
 export class GraphParser {
   private terminal: Pick<Log, "debug">;
 
@@ -56,16 +197,16 @@ export class GraphParser {
    * of kinds the server does not list (`analysis`). The other edges of `parents` and `children` come from the
    * Server Producer.
    */
-  createGraphMetaMap(
-    project: ManifestProject,
-    parentMap: DBTGraphType,
-    childrenMap: DBTGraphType,
-    nodeMetaMap: NodeMetaMap,
-    sourceMetaMap: SourceMetaMap,
-    testMetaMap: TestMetaMap,
-    functionMetaMap: FunctionMetaMap,
-    constraintOnlyParents: DBTGraphType = {},
-  ): GraphMetaMap {
+  createGraphMetaMap({
+    project,
+    parentMetaMap: parentMap,
+    childMetaMap: childrenMap,
+    constraintOnlyParents,
+    nodeMetaMap,
+    sourceMetaMap,
+    testMetaMap,
+    functionMetaMap,
+  }: GraphInput): GraphMetaMap {
     const projectRoot = project.getProjectRoot();
     const projectName = project.getProjectName();
     this.terminal.debug(
@@ -73,11 +214,9 @@ export class GraphParser {
       `Parsing graph for "${projectName}" at ${projectRoot}`,
     );
 
-    const resolve = this.mapToNode(
-      sourceMetaMap,
-      nodeMetaMap,
-      testMetaMap,
-      functionMetaMap,
+    const resolve = nodeResolver(
+      { sourceMetaMap, nodeMetaMap, testMetaMap, functionMetaMap },
+      this.terminal,
     );
     const parents: NodeGraphMap = new Map();
     Object.entries(parentMap)
@@ -101,7 +240,11 @@ export class GraphParser {
     const children: NodeGraphMap = new Map();
 
     const tests = graphOfType(childrenMap, resolve, RESOURCE_TYPE_TEST);
-    const metrics = graphOfType(childrenMap, resolve, RESOURCE_TYPE_METRIC);
+    const metrics = graphOfType(
+      childrenMap,
+      resolve,
+      RESOURCE_TYPE_SEMANTIC_MODEL,
+    );
 
     const graph = {
       parents,
@@ -115,121 +258,5 @@ export class GraphParser {
       graph,
     );
     return graph;
-  }
-
-  mapToNode(
-    sourceMetaMap: SourceMetaMap,
-    nodeMetaMap: NodeMetaMap,
-    testMetaMap: TestMetaMap,
-    functionMetaMap: FunctionMetaMap,
-  ): (parentNodeName: string) => NodeData | undefined {
-    return (parentNodeName) => {
-      // Support dots in model names
-      const [nodeType, _nodePackage, ...restNodeName] =
-        parentNodeName.split(".");
-      const nodeName = restNodeName.join(".");
-      switch (nodeType) {
-        case "source": {
-          const [sourceName, tableName] = nodeName.split(".");
-          const url = sourceMetaMap
-            .get(sourceName ?? "")
-            ?.tables.find((table) => table.name === tableName)?.path;
-          return {
-            label: `${tableName} (${sourceName})`,
-            key: parentNodeName,
-            url: url,
-            resourceType: "source",
-          };
-        }
-        case "model": {
-          // can this ever be not there?
-          const model = nodeMetaMap.lookupByUniqueId(parentNodeName);
-          if (!model) {
-            return;
-          }
-          const url = model.path;
-          return {
-            label: model.alias,
-            key: parentNodeName,
-            url: url,
-            resourceType: "model",
-          };
-        }
-        case "seed": {
-          // can this ever be not there?
-          const model = nodeMetaMap.lookupByUniqueId(parentNodeName);
-          if (!model) {
-            return;
-          }
-          const url = model.path;
-          return {
-            label: model.alias,
-            key: parentNodeName,
-            url: url,
-            resourceType: "seed",
-          };
-        }
-        case "test": {
-          // nodeName => more interesting label possibilities?
-          const url = testMetaMap.get(nodeName.split(".")[0] ?? "")?.path;
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            url: url,
-            resourceType: "test",
-          };
-        }
-        case "analysis": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName, "analysis")?.path;
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            url: url,
-            resourceType: "analysis",
-          };
-        }
-        case "snapshot": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName, "snapshot")?.path;
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            url: url,
-            resourceType: "snapshot",
-          };
-        }
-        case "exposure": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName)?.path;
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            url: url,
-            resourceType: "exposure",
-          };
-        }
-        case "semantic_model": {
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            resourceType: "semantic_model",
-          };
-        }
-        case "function": {
-          const url = functionMetaMap.get(nodeName)?.path;
-          return {
-            label: nodeName,
-            key: parentNodeName,
-            url: url,
-            resourceType: "function",
-          };
-        }
-        case undefined:
-        default:
-          this.terminal.debug(
-            "GraphParser",
-            `Node type '${nodeType}' not implemented`,
-          );
-          return undefined;
-      }
-    };
   }
 }

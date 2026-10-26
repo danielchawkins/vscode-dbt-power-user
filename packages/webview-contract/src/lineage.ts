@@ -5,15 +5,10 @@ import type {
   Response,
   WebviewReady,
 } from "./common.js";
-import {
-  isPanelNotice,
-  isPanelNoticeActionId,
-  responseFields,
-} from "./common.js";
+import { isPanelNoticeActionId } from "./common.js";
 import type { Check, CommandFields, Fields } from "./guards.js";
 import {
   arrayOf,
-  isAnything,
   isBoolean,
   isNumber,
   isString,
@@ -74,8 +69,8 @@ export interface LineageTable {
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: {
     key: string;
-    raw_sql?: string | undefined;
-    column_name?: string | undefined;
+    raw_sql?: string | null | undefined;
+    column_name?: string | null | undefined;
   }[];
   meta?: Record<string, unknown> | undefined;
 }
@@ -93,7 +88,7 @@ export interface TableColumns {
   id: string;
   purpose?: string | undefined;
   columns: LineageColumn[];
-  returns?: { datatype: string; description: string };
+  returns?: { datatype: string; description: string } | undefined;
   meta?: Record<string, unknown> | undefined;
 }
 
@@ -239,6 +234,23 @@ export type PanelMessage =
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", PersistedLineageSettings>;
 
+/**
+ * The body the host answers each request with, by request command. `getExposureDetails` and `getFunctionDetails`
+ * answer with manifest metadata this contract does not model, so they stay `unknown`.
+ */
+export interface ResponseBodies {
+  childTables: { tables?: LineageTable[] | undefined };
+  parentTables: { tables?: LineageTable[] | undefined };
+  tableEdges: { edges: [string, string][] };
+  getColumns: TableColumns | undefined;
+  getExposureDetails: unknown;
+  getFunctionDetails: unknown;
+  getRelationships: { refs: LineageRef[] };
+  getConnectedColumns: ConnectedColumns;
+  getLineageSettings: LineageSettings;
+  persistLineageSettings: { ok: true };
+}
+
 const request = <P>(params: Fields<NoInfer<P>>) => ({
   args: shape<{ params: P }>({ params: shape<P>(params) }),
   syncRequestId,
@@ -262,21 +274,6 @@ const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   semantic: optionalBoolean,
   inferred: optionalBoolean,
 });
-
-const hostFields: CommandFields<HostMessage> = {
-  response: responseFields,
-  render: {
-    args: optional(
-      shape<RenderArgs>({
-        node: isAnything,
-        missingLineageMessage: optional(isPanelNotice),
-        columnsNeedStrict: optional(isBoolean),
-        publication: optional(isString),
-      }),
-    ),
-  },
-  projectSaved: {},
-};
 
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
@@ -309,10 +306,8 @@ const panelFields: CommandFields<PanelMessage> = {
   }),
 };
 
-export const isHostMessage = messageGuard<HostMessage>(hostFields);
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);
 
-export const hostCommands = Object.keys(hostFields) as HostMessage["command"][];
 export const panelCommands = Object.keys(
   panelFields,
 ) as PanelMessage["command"][];

@@ -184,7 +184,7 @@ describe("Query panel tabs", () => {
     expect(shownCode()).toContain("select * from orders");
     expect(screen.queryByRole("grid")).toBeNull();
 
-    await press(user, "button", "Preview 2 rows in s");
+    await press(user, "button", "Preview 2 rows");
     expect(screen.getByRole("grid")).toBeInTheDocument();
   });
 });
@@ -278,7 +278,7 @@ describe("Query panel error", () => {
 
   it("shows the error's tab with no rows", async () => {
     const { user } = openQueryPanel(ERROR);
-    await press(user, "button", "Preview 0 rows in s");
+    await press(user, "button", "Preview 0 rows");
     expect(
       screen.getByRole("heading", { name: "Syntax error" }),
     ).toBeInTheDocument();

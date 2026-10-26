@@ -1,8 +1,8 @@
-import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
+import { pollUntil } from "../async";
 
 /**
  * Pins that the lineage panel's table edges follow manifest rebuilds: a model that adds a `ref` lists its
@@ -36,26 +36,26 @@ suite("Lineage table edges follow the rebuilt manifest", function () {
     done: (tables: string[]) => boolean,
   ): Promise<string[]> {
     const start = Date.now();
-    const deadline = start + 120_000;
-    let last: string[] = [];
     let logged = "";
-    while (Date.now() < deadline) {
-      const body = await vscode.commands.executeCommand<
-        { tables?: { table: string }[] } | undefined
-      >(PARENT_TABLES_COMMAND, EDGE_CHILD);
-      last = (body?.tables ?? []).map(({ table }) => table);
-      const seen = JSON.stringify(last);
-      if (seen !== logged) {
-        logged = seen;
-        console.log(`[${MODE}] ${step} +${Date.now() - start}ms: ${seen}`);
-      }
-      if (done(last)) {
-        return last;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
-    assert.fail(
-      `${step}: tables of ${EDGE_CHILD} stayed ${JSON.stringify(last)}`,
+    return pollUntil(
+      async () => {
+        const body = await vscode.commands.executeCommand<
+          { tables?: { table: string }[] } | undefined
+        >(PARENT_TABLES_COMMAND, EDGE_CHILD);
+        const tables = (body?.tables ?? []).map(({ table }) => table);
+        const seen = JSON.stringify(tables);
+        if (seen !== logged) {
+          logged = seen;
+          console.log(`[${MODE}] ${step} +${Date.now() - start}ms: ${seen}`);
+        }
+        return tables;
+      },
+      done,
+      {
+        timeoutMs: 120_000,
+        intervalMs: 1_000,
+        describe: `${step}: the tables of ${EDGE_CHILD}`,
+      },
     );
   }
 

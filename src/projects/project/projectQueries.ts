@@ -52,12 +52,12 @@ export class ProjectQueries {
 
   showRunSQL(modelPath: Uri) {
     const root = this.project.projectRoot.fsPath;
-    void findModelInTargetfolder(
-      root,
-      this.project.paths()?.targetPath,
+    void findModelInTargetfolder({
+      projectRoot: root,
+      targetPath: this.project.paths()?.targetPath,
       modelPath,
-      "run",
-    );
+      type: "run",
+    });
   }
 
   /** The compiled SQL of a saved model from the language server; `undefined` before its first compile. */
@@ -82,12 +82,12 @@ export class ProjectQueries {
   }
 
   async getColumnValues(model: string, column: string) {
-    return getColumnValues(
-      this.project.getFusionCli(),
-      this.terminal,
+    return getColumnValues({
+      cli: this.project.getFusionCli(),
+      terminal: this.terminal,
       model,
       column,
-    );
+    });
   }
 
   generateSchemaYML(modelPath: Uri, modelName: string) {
@@ -95,7 +95,13 @@ export class ProjectQueries {
   }
 
   generateModel(name: string, table: string, sourcePath: string) {
-    return generateModel(this.codegen, this.terminal, name, table, sourcePath);
+    return generateModel({
+      columns: this.codegen,
+      terminal: this.terminal,
+      sourceName: name,
+      tableName: table,
+      sourcePath,
+    });
   }
 
   executeSQLOnQueryPanel(
@@ -127,7 +133,7 @@ export class ProjectQueries {
     modelName: string,
     limit: number,
   ): Promise<QueryExecutionResult> {
-    return runNow(this.sqlDeps, query, modelName, limit);
+    return runNow({ deps: this.sqlDeps, query, modelName, limit });
   }
 
   mergeColumnsFromDB(

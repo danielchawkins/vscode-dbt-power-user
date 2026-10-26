@@ -1,7 +1,6 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
 import {
   CARD_IDS,
@@ -10,12 +9,18 @@ import {
   START,
 } from "./lineageLayersExpected";
 import type { ColumnState } from "./lineageProbes";
-import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
+import {
+  clickFirstColumn,
+  clickOnCard,
+  readColumns,
+  tracedCardsListed,
+} from "./lineageProbes";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
-  cdpPort,
   clickInWebview,
   interactionEvidence,
   maximizePanelFor,
@@ -27,8 +32,7 @@ import {
 const LINEAGE: PanelEntry = PANELS.lineage;
 
 const runsHere = () => currentFixtureName() === "lineage-layers";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /**
  * What the lineage webview draws now: the layer bands in draw order, every card with its title, file line and
@@ -113,15 +117,18 @@ function waitForColumns(
 }
 
 /**
- * Polls the column state until the traced edges and table edge paths hold still: two consecutive reads agree, and
- * at least one column edge is drawn. Edges can arrive in parts, so the first non-empty read is not a baseline.
+ * Polls the column state until the traced edges and table edge paths hold still: at least one column edge is drawn,
+ * every traced card lists its columns, and two consecutive reads agree.
  */
 function waitForStableColumns(what: string): Promise<ColumnState> {
   let previous: string | undefined;
   return waitFor(what, readStart, {
     until: (current) => {
       const key = JSON.stringify([current.traced, current.tableD]);
-      const stable = current.traced.length > 0 && key === previous;
+      const stable =
+        current.traced.length > 0 &&
+        tracedCardsListed(current) &&
+        key === previous;
       previous = key;
       return stable;
     },
@@ -134,22 +141,26 @@ function waitForStableColumns(what: string): Promise<ColumnState> {
  * Returns the column state once the click has traced an edge.
  */
 async function traceStartColumn(): Promise<ColumnState> {
-  const deadline = Date.now() + 10_000;
-  let state = await readStart();
-  while (!state.columnTables.includes(START)) {
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `the start card's column list did not open; the last state was ${JSON.stringify(state)}`,
-      );
-    }
-    await evaluatePanel(
-      cdpPort(),
-      LINEAGE.entry,
-      clickOnCard(START, "Columns"),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    state = await readStart();
-  }
+  await pollUntil(
+    async () => {
+      const current = await readStart();
+      if (!current.columnTables.includes(START)) {
+        await evaluatePanel(
+          cdpPort(),
+          LINEAGE.entry,
+          clickOnCard(START, "Columns"),
+        );
+      }
+      return current;
+    },
+    (current) => current.columnTables.includes(START),
+    {
+      timeoutMs: 10_000,
+      intervalMs: 500,
+      describe: (last) =>
+        `the start card's column list to open; the last state was ${JSON.stringify(last)}`,
+    },
+  );
   await waitForColumns(
     "the start card should list its columns",
     (current) => current.cardColumns > 0,
@@ -200,7 +211,9 @@ async function settleStart(): Promise<Snapshot> {
       return current;
     },
     {
-      until: (current) => current.cards.length === CARD_IDS.length,
+      // Cards are drawn before their edges, so all ten cards can show with no edge yet.
+      until: (current) =>
+        current.cards.length === CARD_IDS.length && current.edges.total > 0,
       attempts: 40,
     },
   );

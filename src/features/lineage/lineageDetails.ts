@@ -164,7 +164,13 @@ export class LineageDetails {
     }
     const splits = table.split(".");
     if (splits[0] === RESOURCE_TYPE_SOURCE) {
-      return this.sourceColumns(event.event, project, table, splits, refresh);
+      return this.sourceColumns({
+        event: event.event,
+        project,
+        table,
+        splits,
+        refresh,
+      });
     }
     if (splits[0] === RESOURCE_TYPE_FUNCTION) {
       return this.functionColumns(event.event, table, splits[2] ?? "");
@@ -188,13 +194,19 @@ export class LineageDetails {
     };
   }
 
-  private async sourceColumns(
-    event: Manifest,
-    project: DetailsProject,
-    table: string,
-    splits: string[],
-    refresh: boolean,
-  ): Promise<ColumnsBody | undefined> {
+  private async sourceColumns({
+    event,
+    project,
+    table,
+    splits,
+    refresh,
+  }: {
+    event: Manifest;
+    project: DetailsProject;
+    table: string;
+    splits: string[];
+    refresh: boolean;
+  }): Promise<ColumnsBody | undefined> {
     const node = event.sourceMetaMap.get(splits[2] ?? "");
     const sourceTable = node?.tables.find((t) => t.name === splits[3]);
     if (!node || !sourceTable) {

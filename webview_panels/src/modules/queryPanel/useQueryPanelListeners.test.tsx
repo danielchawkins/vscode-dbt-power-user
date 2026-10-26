@@ -200,4 +200,80 @@ describe("useQueryPanelListeners", () => {
       expect(latest?.queryExecutionInfo).toBeUndefined();
     });
   });
+
+  describe("the elapsed time of a run in the bottom panel", () => {
+    const post = (data: unknown) =>
+      globalThis.dispatchEvent(new MessageEvent("message", { data }));
+    const result = {
+      command: "renderQuery",
+      columnNames: ["id"],
+      columnTypes: ["NUMBER"],
+      rows: [{ id: 1 }],
+      raw_sql: "select 1",
+      compiled_sql: "select 1",
+    };
+
+    const TimeProbe = ({
+      onState,
+    }: {
+      onState: (state: QueryPanelStateProps) => void;
+    }): null => {
+      onState(useQueryPanelState());
+      useQueryPanelListeners();
+      return null;
+    };
+
+    const renderProbe = () => {
+      const seen: { latest?: QueryPanelStateProps } = {};
+      const Harness = (): React.JSX.Element => {
+        const [state, dispatch] = useReducer(queryPanelReducer, initialState);
+        return (
+          <QueryPanelContext value={{ state, dispatch }}>
+            <TimeProbe
+              onState={(current) => {
+                seen.latest = current;
+              }}
+            />
+          </QueryPanelContext>
+        );
+      };
+      render(<Harness />);
+      return seen;
+    };
+
+    it("records a time for a result that lands before the timer's first tick", async () => {
+      const seen = renderProbe();
+      post({ command: "renderLoading" });
+      await waitFor(() => {
+        expect(seen.latest?.loading).toBe(true);
+      });
+      post(result);
+      await waitFor(() => {
+        expect(seen.latest?.queryResults?.data).toEqual([{ id: 1 }]);
+      });
+      expect(seen.latest?.queryExecutionInfo?.elapsedTime).toEqual(
+        expect.any(Number),
+      );
+    });
+
+    it("leaves the time unset for a result that had no loading phase", async () => {
+      const seen = renderProbe();
+      post(result);
+      await waitFor(() => {
+        expect(seen.latest?.queryResults?.data).toEqual([{ id: 1 }]);
+      });
+      expect(seen.latest?.queryExecutionInfo).toBeUndefined();
+    });
+
+    it("leaves no time after a reset during a run", async () => {
+      const seen = renderProbe();
+      post({ command: "renderLoading" });
+      await waitFor(() => {
+        expect(seen.latest?.loading).toBe(true);
+      });
+      post({ command: "resetState" });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(seen.latest?.queryExecutionInfo).toBeUndefined();
+    });
+  });
 });

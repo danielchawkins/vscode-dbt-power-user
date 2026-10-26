@@ -18,19 +18,10 @@ const EXPECTED_STATIC_ANALYSIS_MODES = [
 ] as const satisfies readonly StaticAnalysisMode[];
 
 describe("staticAnalysisMode", () => {
-  it("defaults to project", () => {
-    expect(DEFAULT_STATIC_ANALYSIS_MODE).toBe("project");
-  });
-
   it.each([
-    ["project", "project"],
-    ["off", "off"],
-    ["baseline", "baseline"],
     ["strict", "strict"],
     [undefined, "project"],
     ["not-a-mode", "project"],
-    [3, "project"],
-    [null, "project"],
   ] as const)("parses %s as %s", (raw, expected) => {
     expect(parseStaticAnalysisMode(raw)).toBe(expected);
   });

@@ -158,12 +158,17 @@ export abstract class PanelHost<
   /** The parse demand each view follows; it ends with the view. */
   private readonly demands = new Map<WebviewView | WebviewPanel, Disposable>();
 
-  public constructor(
-    extensionContext: ExtensionContextStore,
-    emitterService: SharedStateService,
-    dbtTerminal: Log,
-    queryManifestService: QueryManifestService,
-  ) {
+  public constructor({
+    extensionContext,
+    emitterService,
+    dbtTerminal,
+    queryManifestService,
+  }: {
+    extensionContext: ExtensionContextStore;
+    emitterService: SharedStateService;
+    dbtTerminal: Log;
+    queryManifestService: QueryManifestService;
+  }) {
     this.extensionContext = extensionContext;
     this.emitterService = emitterService;
     this.dbtTerminal = dbtTerminal;
@@ -188,9 +193,13 @@ export abstract class PanelHost<
 
   /** Renders the panel's HTML; `listen` subscribes to the webview's messages once the page is attached. */
   protected renderWebviewView(webview: Webview) {
-    webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
-      entry: this.entry,
-      csp: this.csp,
+    webview.html = panelHtml({
+      webview,
+      extensionUri: this.extensionContext.extensionUri,
+      page: {
+        entry: this.entry,
+        csp: this.csp,
+      },
     });
   }
 
@@ -264,18 +273,18 @@ export abstract class PanelHost<
     }
     const ends: Disposable[] = [
       page.webview.onDidReceiveMessage((message: unknown) =>
-        dispatchMessage(
-          this.viewType,
+        dispatchMessage({
+          source: this.viewType,
           message,
-          this.guard,
-          this.handlers(page),
-          {
+          guard: this.guard,
+          handlers: this.handlers(page),
+          sink: {
             log: this.dbtTerminal,
             // A reply records no replay slot, so it goes straight out rather than through `postTo`.
             reply: (response) =>
               postToWebview(page, response, this.dbtTerminal),
           },
-        ),
+        }),
       ),
     ];
     if (this.isWebviewView(page)) {

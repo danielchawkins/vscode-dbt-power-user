@@ -442,7 +442,7 @@ export const RESOURCE_TYPE_EXPOSURE = "exposure";
 export const RESOURCE_TYPE_SEED = "seed";
 export const RESOURCE_TYPE_SNAPSHOT = "snapshot";
 export const RESOURCE_TYPE_TEST = "test";
-export const RESOURCE_TYPE_METRIC = "semantic_model";
+export const RESOURCE_TYPE_SEMANTIC_MODEL = "semantic_model";
 export const RESOURCE_TYPE_FUNCTION = "function";
 export const RESOURCE_TYPE_UNIT_TEST = "unit_test";
 

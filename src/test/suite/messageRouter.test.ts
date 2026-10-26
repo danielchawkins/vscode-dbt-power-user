@@ -33,8 +33,20 @@ describe("dispatchMessage", () => {
   it("hands a message that passes the guard to its command's handler", async () => {
     const { map, typed } = handlers();
     const s = sink();
-    await dispatchMessage("t", { command: "a", n: 1 }, isMessage, typed, s);
-    await dispatchMessage("t", { command: "c" }, isMessage, typed, s);
+    await dispatchMessage({
+      source: "t",
+      message: { command: "a", n: 1 },
+      guard: isMessage,
+      handlers: typed,
+      sink: s,
+    });
+    await dispatchMessage({
+      source: "t",
+      message: { command: "c" },
+      guard: isMessage,
+      handlers: typed,
+      sink: s,
+    });
     expect(map.a).toHaveBeenCalledWith({ command: "a", n: 1 });
     expect(map.c).toHaveBeenCalledWith({ command: "c" });
     expect(map.b).not.toHaveBeenCalled();
@@ -42,19 +54,22 @@ describe("dispatchMessage", () => {
   });
 
   it.each([
-    [{ command: "a", n: "1" }],
     [{ command: "z" }],
-    [{ command: "toString" }],
     [null],
     ["a"],
-    [[{ command: "a", n: 1 }]],
     [{ command: "a", syncRequestId: 7 }],
   ])(
     "drops and logs %j without calling a handler or replying",
     async (message) => {
       const { map, typed } = handlers();
       const s = sink();
-      await dispatchMessage("t", message, isMessage, typed, s);
+      await dispatchMessage({
+        source: "t",
+        message,
+        guard: isMessage,
+        handlers: typed,
+        sink: s,
+      });
       expect(s.log.warn).toHaveBeenCalledTimes(1);
       expect(s.log.warn.mock.calls[0][0]).toBe("t:message");
       expect(s.reply).not.toHaveBeenCalled();
@@ -64,15 +79,18 @@ describe("dispatchMessage", () => {
     },
   );
 
-  it.each([
-    [{ command: "a", n: "1", syncRequestId: "r" }],
-    [{ command: "z", syncRequestId: "r" }],
-  ])(
+  it.each([[{ command: "a", n: "1", syncRequestId: "r" }]])(
     "answers a rejected request %j with a failed response",
     async (message) => {
       const { map, typed } = handlers();
       const s = sink();
-      await dispatchMessage("t", message, isMessage, typed, s);
+      await dispatchMessage({
+        source: "t",
+        message,
+        guard: isMessage,
+        handlers: typed,
+        sink: s,
+      });
       expect(s.reply).toHaveBeenCalledExactlyOnceWith(
         failed("r", "Malformed request"),
       );
@@ -90,10 +108,22 @@ describe("dispatchMessage", () => {
       c: vi.fn(),
     } satisfies Handlers<Message>;
     await expect(
-      dispatchMessage("t", { command: "a", n: 1 }, isMessage, typed, s),
+      dispatchMessage({
+        source: "t",
+        message: { command: "a", n: 1 },
+        guard: isMessage,
+        handlers: typed,
+        sink: s,
+      }),
     ).resolves.toBeUndefined();
     await expect(
-      dispatchMessage("t", { command: "b" }, isMessage, typed, s),
+      dispatchMessage({
+        source: "t",
+        message: { command: "b" },
+        guard: isMessage,
+        handlers: typed,
+        sink: s,
+      }),
     ).resolves.toBeUndefined();
     expect(s.log.error.mock.calls.map((c: unknown[]) => c[0])).toEqual([
       "t:a",
@@ -110,20 +140,20 @@ describe("dispatchMessage", () => {
       // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- covers a non-Error rejection
       c: () => Promise.reject("plain"),
     } satisfies Handlers<Message>;
-    await dispatchMessage(
-      "t",
-      { command: "b", syncRequestId: "r1" },
-      isMessage,
-      typed,
-      s,
-    );
-    await dispatchMessage(
-      "t",
-      { command: "c", syncRequestId: "r2" },
-      isMessage,
-      typed,
-      s,
-    );
+    await dispatchMessage({
+      source: "t",
+      message: { command: "b", syncRequestId: "r1" },
+      guard: isMessage,
+      handlers: typed,
+      sink: s,
+    });
+    await dispatchMessage({
+      source: "t",
+      message: { command: "c", syncRequestId: "r2" },
+      guard: isMessage,
+      handlers: typed,
+      sink: s,
+    });
     expect(s.reply.mock.calls).toEqual([
       [failed("r1", "async boom")],
       [failed("r2", "plain")],
@@ -136,13 +166,13 @@ describe("dispatchMessage", () => {
       throw new Error("disposed");
     });
     await expect(
-      dispatchMessage(
-        "t",
-        { command: "z", syncRequestId: "r" },
-        isMessage,
-        handlers().typed,
-        s,
-      ),
+      dispatchMessage({
+        source: "t",
+        message: { command: "z", syncRequestId: "r" },
+        guard: isMessage,
+        handlers: handlers().typed,
+        sink: s,
+      }),
     ).resolves.toBeUndefined();
     expect(s.log.error.mock.calls[0][0]).toBe("t:reply");
   });

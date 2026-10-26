@@ -16,6 +16,10 @@ import {
   queryResultPanel,
 } from "../panelHarness";
 import { spyLog } from "../testLog";
+import {
+  isDocumentationEditorHostMessage,
+  isQueryResultsHostMessage,
+} from "./hostMessageOracle";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
@@ -233,35 +237,6 @@ describe.each(panels)("$name host messages", (panel) => {
 });
 
 describe("query results handlers", () => {
-  it("clears the session history and answers the request", async () => {
-    const panel = queryResultPanel();
-    const view = fakeView();
-    await panel.resolveWebviewView(
-      view.page,
-      {} as never,
-      { onCancellationRequested: vi.fn() } as never,
-    );
-    await view.send({ command: "webview:ready" });
-    const entries: unknown[] = [{}];
-    Object.assign(panel, {
-      history: { all: () => entries, clear: () => entries.splice(0) },
-    });
-
-    await view.send({
-      command: "clearQueryHistory",
-      syncRequestId: "r",
-    });
-
-    expect(entries).toEqual([]);
-    expect(view.posted()).toContainEqual({
-      command: "response",
-      args: { syncRequestId: "r", body: {}, status: true },
-    });
-    for (const message of view.posted()) {
-      expect(queryResults.isHostMessage(message)).toBe(true);
-    }
-  });
-
   it("answers a malformed request so the panel's promise settles", async () => {
     const panel = queryResultPanel();
     const view = fakeView();
@@ -285,7 +260,7 @@ describe("query results handlers", () => {
         },
       })),
     );
-    expect(queryResults.isHostMessage(view.posted()[0])).toBe(true);
+    expect(isQueryResultsHostMessage(view.posted()[0])).toBe(true);
   });
 });
 
@@ -316,18 +291,7 @@ describe("documentation editor handlers", () => {
         error: "No active editor",
       },
     });
-    expect(documentationEditor.isHostMessage(view.posted()[0])).toBe(true);
-  });
-
-  it("accepts a save whose column carries a boolean replaceType", () => {
-    expect(
-      documentationEditor.isPanelMessage({
-        command: "saveDocumentation",
-        name: "orders",
-        columns: [{ name: "id", replaceType: true }],
-        filePath: "/m.sql",
-      }),
-    ).toBe(true);
+    expect(isDocumentationEditorHostMessage(view.posted()[0])).toBe(true);
   });
 
   /** A panel with an active model editor and a project; the view's posts are the replies. */

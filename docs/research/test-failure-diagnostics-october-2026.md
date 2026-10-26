@@ -44,9 +44,9 @@ I read cdpClient.ts:312-381. The catch-and-continue, the bare elapsed time and t
 
 Citations:
 
-- [r1a](../../src/test/smoke/cdpClient.ts): "for (const frame of await panelFrames(port)) {"
-- [r1b](../../src/test/smoke/cdpClient.ts): "if (!(await evaluatePanel(port, entry, probe))) {"
-- [r1c](../../src/test/smoke/cdpClient.ts): "target.type === "iframe" && target.webSocketDebuggerUrl"
+- r1a (cdpClient.ts, before the split): "for (const frame of await panelFrames(port)) {"
+- r1b (cdpClient.ts, before the split): "if (!(await evaluatePanel(port, entry, probe))) {"
+- r1c (cdpClient.ts, before the split): "target.type === "iframe" && target.webSocketDebuggerUrl"
 - [r1d](../../src/test/smoke/cdpEvaluation.ts): "was destroyed before evaluation completed"
 - [r1e](../../src/test/smoke/panelViewState.test.ts): "const after = await waitForTabs(port, (tabs) => tabs.timeOrigin !== selected.timeOrigin &&"
 
@@ -54,9 +54,9 @@ Thesis (high): waitForPanelGone reports 'gone' as soon as evaluatePanel finds no
 
 Thesis citations:
 
-- [c1](../../src/test/smoke/cdpClient.ts): "for (const frame of await panelFrames(port)) {"
-- [c2](../../src/test/smoke/cdpClient.ts): "if (!(await evaluatePanel(port, entry, probe))) {"
-- [c3](../../src/test/smoke/cdpClient.ts): "return Date.now() - started;"
+- c1 (cdpClient.ts, before the split): "for (const frame of await panelFrames(port)) {"
+- c2 (cdpClient.ts, before the split): "if (!(await evaluatePanel(port, entry, probe))) {"
+- c3 (cdpClient.ts, before the split): "return Date.now() - started;"
 
 Antithesis: The thesis says a swallowed probe fault could look like a real teardown. That is true of the code, but it never connects it to the evidence. In the vscode-376 failure the final reads were answered by a live frame (the last state has 'active: Preview…' and a timeOrigin). So the failure was not a probe that cannot reach the frame. The open question is whether the earlier 'gone' return was false, and the thesis cannot answer it, because no failing wait logs its polls.
 
@@ -69,7 +69,7 @@ Antithesis: The thesis treats `evaluatePanel`'s catch-and-continue as the main d
 Counter-evidence:
 
 - [k1](../../src/test/smoke/cdpEvaluation.ts): "was destroyed before evaluation completed"
-- [k2](../../src/test/smoke/cdpClient.ts): "target.type === "iframe" && target.webSocketDebuggerUrl"
+- k2 (cdpClient.ts, before the split): "target.type === "iframe" && target.webSocketDebuggerUrl"
 
 ### 2. A 'gone' time of a few milliseconds is believable. These panels are WebviewViewProviders, and hiding a non-retained view calls OverlayWebview.release(), which clears the inner webview synchronously. The same function returns early without clearing if the caller no longer owns the webview, so the old page can survive with its old timeOrigin. The measured time is about one or two /json/list polls. It doesn't show which page was destroyed, or that any page was
 
@@ -102,7 +102,7 @@ Counter-evidence:
 
 - [k3](https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/workbench/contrib/webview/browser/overlayWebview.ts): "if (this._owner !== owner) {"
 - [k4](https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/workbench/contrib/webview/browser/overlayWebview.ts): "this._webview.clear();"
-- [k5](../../src/test/smoke/cdpClient.ts): "// Cursor can acknowledge Runtime.enable before reporting existing contexts."
+- k5 (cdpClient.ts, before the split): "// Cursor can acknowledge Runtime.enable before reporting existing contexts."
 
 ### 3. None of the three panels sets retainContextWhenHidden. The current architecture doc and the October research doc both say so, so the older audit doc and the test title 'opens retained panels' are out of date. Every real hide should therefore rebuild the page. The thesis named two cases: a page that wasn't rebuilt, or a probe reading the old page. The Cursor run adds a third: it failed before any hide happened (see 4). The vscode failure's last state, with 'Preview' active, is also odd. A page that survived the hide should still show 'SQL', so either something reset the tab or a rebuilt page failed to restore it
 
@@ -506,7 +506,7 @@ Each item answers a question the four failures left open: which wait failed, whi
 
 Citations:
 
-- [r16a](../../src/test/smoke/cdpClient.ts): "return Date.now() - started;"
+- r16a (cdpClient.ts, before the split): "return Date.now() - started;"
 
 Thesis (medium): A failure bundle per failing test should hold: a failure screenshot, the probe trace with frame id, targetId and timeOrigin per poll, the webview console, the extension host and renderer logs copied before cleanup, the Mocha error and stack, and a process list. Together these let a failure be read without a rerun.
 
@@ -535,7 +535,7 @@ Thesis (medium): Ranked plan. (1) Make evaluatePanel record each frame's error a
 
 Thesis citations:
 
-- [c1](../../src/test/smoke/cdpClient.ts): "for (const frame of await panelFrames(port)) {"
+- c1 (cdpClient.ts, before the split): "for (const frame of await panelFrames(port)) {"
 - [c25](../../scripts/test/run-integration.mjs): "child.on("exit", (exitCode) => {"
 - [c24](../../.github/workflows/ci.yml): "runs-on: macos-latest timeout-minutes: 45"
 

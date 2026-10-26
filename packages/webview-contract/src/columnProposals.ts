@@ -1,7 +1,5 @@
 import type { PanelNotice } from "./common.js";
-import { isPanelNotice } from "./common.js";
 import type { DocumentationColumn } from "./documentationColumn.js";
-import { arrayOf, isString, optional, oneOf, shape } from "./guards.js";
 
 /** Where a proposal's types came from: the target or the deferred state's relation, or the language server. */
 export type ProposalSource =
@@ -62,69 +60,6 @@ export interface DescriptionProposalsPayload {
 export type ColumnProposalsPayload =
   | TypeProposalsPayload
   | DescriptionProposalsPayload;
-
-const isTargetSource = shape<Extract<ProposalSource, { kind: "target" }>>({
-  kind: oneOf("target"),
-  target: isString,
-  relation: isString,
-});
-
-const isDeferredSource = shape<Extract<ProposalSource, { kind: "deferred" }>>({
-  kind: oneOf("deferred"),
-  target: isString,
-  relation: isString,
-  state: isString,
-});
-
-const isInferredSource = shape<Extract<ProposalSource, { kind: "inferred" }>>({
-  kind: oneOf("inferred"),
-});
-
-const isProposalSource = (value: unknown): value is ProposalSource =>
-  isTargetSource(value) || isDeferredSource(value) || isInferredSource(value);
-
-const isTypeProposal = shape<TypeProposal>({
-  column: isString,
-  type: isString,
-  change: oneOf("fill", "add", "overwrite"),
-  current: optional(isString),
-});
-
-const isTypeProposalsPayload = shape<TypeProposalsPayload>({
-  kind: oneOf("types"),
-  model: isString,
-  source: optional(isProposalSource),
-  proposals: arrayOf(isTypeProposal),
-  notFound: arrayOf(isString),
-  notice: optional(isPanelNotice),
-});
-
-const isColumnRef = shape<ColumnRef>({
-  uniqueId: isString,
-  column: isString,
-});
-
-const isDescriptionCandidate = shape<DescriptionCandidate>({
-  description: isString,
-  sources: arrayOf(isColumnRef),
-});
-
-const isDescriptionProposal = shape<DescriptionProposal>({
-  column: isString,
-  candidates: arrayOf(isDescriptionCandidate),
-});
-
-const isDescriptionProposalsPayload = shape<DescriptionProposalsPayload>({
-  kind: oneOf("descriptions"),
-  model: isString,
-  proposals: arrayOf(isDescriptionProposal),
-  notice: optional(isPanelNotice),
-});
-
-export const isColumnProposalsPayload = (
-  value: unknown,
-): value is ColumnProposalsPayload =>
-  isTypeProposalsPayload(value) || isDescriptionProposalsPayload(value);
 
 const isBlank = (value: string | null | undefined) =>
   (value ?? "").trim() === "";

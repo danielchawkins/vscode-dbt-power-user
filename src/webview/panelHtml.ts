@@ -113,12 +113,17 @@ function readManifest(extensionUri: Uri): ViteManifest {
 }
 
 /** The only HTML document any panel renders; `manifest` defaults to the built one. */
-export function panelHtml(
-  webview: Webview,
-  extensionUri: Uri,
-  page: PanelPage,
-  manifest: ViteManifest = readManifest(extensionUri),
-): string {
+export function panelHtml({
+  webview,
+  extensionUri,
+  page,
+  manifest = readManifest(extensionUri),
+}: {
+  webview: Webview;
+  extensionUri: Uri;
+  page: PanelPage;
+  manifest?: ViteManifest;
+}): string {
   const dist = Uri.joinPath(extensionUri, "webview_panels", "dist");
   const asset = (file: string) =>
     webview.asWebviewUri(Uri.joinPath(dist, file));

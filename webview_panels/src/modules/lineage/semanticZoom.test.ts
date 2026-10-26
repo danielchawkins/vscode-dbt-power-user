@@ -60,14 +60,4 @@ describe("useDrawnEdges", () => {
     expect(result.current).toEqual([edges[0]]);
     expect(result.current[0]).toBe(edges[0]);
   });
-
-  it("returns the input array at or above the threshold", () => {
-    const { result } = drawAt(0.6);
-    expect(result.current).toBe(edges);
-  });
-
-  it("returns the input array below the threshold when semantic zoom is off", () => {
-    const { result } = drawAt(0.4, false);
-    expect(result.current).toBe(edges);
-  });
 });

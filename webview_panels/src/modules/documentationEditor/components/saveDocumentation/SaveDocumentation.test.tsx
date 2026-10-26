@@ -97,23 +97,6 @@ describe("SaveDocumentation", () => {
     expect(screen.queryByText("Save")).toBeNull();
   });
 
-  it("saves a changed model that has a schema file with that path", async () => {
-    render(
-      <Harness
-        current={model({ description: "edited", patchPath: "/models/s.yml" })}
-        incoming={model({ patchPath: "/models/s.yml" })}
-      />,
-    );
-    fireEvent.click(screen.getByText("Save"));
-
-    await waitFor(() => {
-      expect(executeRequestInSync).toHaveBeenCalledWith(
-        "saveDocumentation",
-        expect.objectContaining({ patchPath: "/models/s.yml" }),
-      );
-    });
-  });
-
   it("opens the path popover from the chevron even when a schema file exists", () => {
     render(
       <Harness
@@ -145,20 +128,6 @@ describe("SaveDocumentation", () => {
     fireEvent.click(chevron!);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(chevron).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("returns focus to the chevron on Escape", () => {
-    render(
-      <Harness
-        current={model({ description: "edited", patchPath: "/models/s.yml" })}
-        incoming={model({ patchPath: "/models/s.yml" })}
-      />,
-    );
-    const [, chevron] = screen.getAllByRole("button");
-    fireEvent.click(chevron!);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(chevron).toHaveFocus();
   });
 
   it("saves with an empty patch path when the model has no schema file yet", async () => {

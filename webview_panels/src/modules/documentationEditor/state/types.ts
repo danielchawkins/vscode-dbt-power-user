@@ -25,7 +25,7 @@ export interface DBTDocumentation {
   description: string;
   columns: DBTDocumentationColumn[];
   generated: boolean;
-  /** The model's SQL file; the host sends it and `saveDocumentation` returns it. */
+  /** The model's SQL file, as the host sends it. */
   filePath: string;
   patchPath?: string | undefined;
   uniqueId?: string | undefined;

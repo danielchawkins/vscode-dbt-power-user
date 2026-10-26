@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
@@ -14,24 +15,16 @@ import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 const TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 250;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function poll<T>(
   query: () => Thenable<T | undefined>,
   accept: (value: T) => boolean,
 ): Promise<T | undefined> {
-  const deadline = Date.now() + TIMEOUT_MS;
-  let last: T | undefined;
-  while (Date.now() < deadline) {
-    last = await query();
-    if (last !== undefined && accept(last)) {
-      return last;
-    }
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return last;
+  return pollUntil(query, (value) => value !== undefined && accept(value), {
+    timeoutMs: TIMEOUT_MS,
+    intervalMs: POLL_INTERVAL_MS,
+    describe: (last) =>
+      `the language feature to answer; last answer was ${JSON.stringify(last)}`,
+  });
 }
 
 function hoverText(hovers: vscode.Hover[]): string {

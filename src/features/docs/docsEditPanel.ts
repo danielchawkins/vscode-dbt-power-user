@@ -20,6 +20,7 @@ import type { SharedStateService } from "../../projects/project/sharedStateServi
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
+import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
   ColumnProposalRequests,
@@ -32,13 +33,11 @@ import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DBTDocumentation } from "./docGenTypes";
-import {
-  type DocsProject,
-  DocsEditRequests,
-  withProgress,
-} from "./docsEditHandlers";
+import { DocsDrafts } from "./docsDrafts";
+import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { registerDocsHarnessCommands } from "./docsHarnessCommands";
+import { withProgress } from "./progress";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
 type PanelProject = DocsProject &
@@ -60,11 +59,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   protected readonly guard = documentationEditor.isPanelMessage;
   protected override panelDescription = "Edit model documentation";
   private documentation: DBTDocumentation | undefined;
-  /** Unsaved drafts by model file path; host memory only, never webview state. */
-  private readonly drafts = new Map<
-    string,
-    documentationEditor.DocumentationDraft
-  >();
+  private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;
   private readonly columnProposals: ColumnProposalService;
@@ -72,9 +67,15 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   private projects: PanelProjects;
   private parseDemand: ParseDemand | undefined;
 
-  public constructor(
-    projects: PanelProjects,
-    extensionContext: ExtensionContextStore,
+  public constructor({
+    projects,
+    extensionContext,
+    services,
+    terminal,
+    parseDemand,
+  }: {
+    projects: PanelProjects;
+    extensionContext: ExtensionContextStore;
     services: {
       docGenService: DocGenService;
       dbtTestService: DbtTestService;
@@ -82,16 +83,16 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       emitterService: SharedStateService;
       columnProposals: ColumnProposalService;
       columnProposalRequests: ColumnProposalRequests;
-    },
-    terminal: Log,
-    parseDemand?: ParseDemand,
-  ) {
-    super(
+    };
+    terminal: Log;
+    parseDemand?: ParseDemand;
+  }) {
+    super({
       extensionContext,
-      services.emitterService,
-      terminal,
-      services.queryManifestService,
-    );
+      emitterService: services.emitterService,
+      dbtTerminal: terminal,
+      queryManifestService: services.queryManifestService,
+    });
     this.projects = projects;
     this.parseDemand = parseDemand;
     this.docGenService = services.docGenService;
@@ -103,13 +104,18 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       dbtTestService: this.dbtTestService,
       drafts: this.drafts,
       proposalTarget: () => this.proposalTarget(),
-      save: (message) => this.saveAndReply(message),
+      save: async (message) => {
+        const uri = window.activeTextEditor?.document.uri;
+        if (uri) {
+          await this.saveAndReply(message, this.projectOf(uri), uri);
+        }
+      },
     });
     this._disposables.push(...harness);
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {
-        this.forgetDrafts(root);
+        this.drafts.forgetProject(root.fsPath);
         void this.onManifestChanged();
       }),
       services.columnProposalRequests.onDidRequest(
@@ -133,52 +139,42 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     if (!window.activeTextEditor) {
       return undefined;
     }
-    const currentFilePath = activeModelUri(
-      window.activeTextEditor.document.uri,
-    );
-    return this.projects.get(currentFilePath);
+    return this.projectOf(window.activeTextEditor.document.uri);
+  }
+
+  /** The project that answers for the document at `uri`, with no read of the active editor. */
+  private projectOf(uri: Uri): PanelProject | undefined {
+    return this.projects.get(activeModelUri(uri));
   }
 
   private async transmitError() {
     await this.post({ command: "renderError" });
   }
 
-  private forgetDrafts(root: Uri) {
-    const prefix = root.fsPath.endsWith(path.sep)
-      ? root.fsPath
-      : root.fsPath + path.sep;
-    for (const model of this.drafts.keys()) {
-      if (model.startsWith(prefix)) {
-        this.drafts.delete(model);
-      }
-    }
-  }
-
   private saveDraft({ model, draft }: MessageOf<PanelMessage, "saveDraft">) {
-    if (draft) {
-      this.drafts.set(model, draft);
-    } else {
-      this.drafts.delete(model);
-    }
+    this.drafts.set(model, draft);
   }
 
-  /** Model paths with an unsaved draft in host memory; the smoke suites check that none leak between them. */
   heldDrafts(): string[] {
-    return [...this.drafts.keys()];
+    return this.drafts.held();
   }
 
   /** The active model's columns for a proposal: the draft's and the YAML's, with the project that answers. */
   private async proposalTarget(
-    project = this.getProject(),
+    uri = window.activeTextEditor?.document.uri,
   ): Promise<ProposalTarget | undefined> {
-    const { documentation } =
-      await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
+    const project = uri && this.projectOf(uri);
+    const { documentation } = uri
+      ? await this.docGenService.getUncompiledDocumentation(
+          activeModelUri(uri).fsPath,
+        )
+      : { documentation: undefined };
     if (!documentation || !project) {
       return undefined;
     }
     return proposalTargetOf({
       documentation,
-      draft: this.drafts.get(documentation.filePath)?.docs.columns,
+      draft: this.drafts.draftColumns(documentation.filePath),
       project,
       manifest: this.queryManifestService.manifestFor(),
     });
@@ -239,7 +235,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       terminal: this.dbtTerminal,
       queryManifestService: this.queryManifestService,
       dbtTestService: this.dbtTestService,
-      getProject: () => this.getProject(),
+      getProject: (uri) => this.projectOf(uri),
       post: (message) => this.post(message),
     });
   }
@@ -256,55 +252,55 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
-      proposeColumns: ({ kind }) => this.propose(kind, this.getProject()),
+      proposeColumns: ({ kind }) =>
+        this.propose(kind, window.activeTextEditor?.document.uri),
       runNoticeAction: () =>
         commands.executeCommand(
           USE_STRICT_ANALYSIS_COMMAND,
           this.getProject()?.projectRoot,
         ),
-      saveDocumentation: requests.withProject((message) =>
-        withProgress("Saving documentation", () => this.saveAndReply(message)),
+      saveDocumentation: requests.withProject((message, active) =>
+        withProgress("Saving documentation", () =>
+          this.saveAndReply(message, this.projectOf(active.uri), active.uri),
+        ),
       ),
     };
   }
 
-  /** Saves, then answers the request with the reloaded documentation and tests. */
-  private async saveAndReply(message: SaveMessage): Promise<void> {
+  /** Saves, then answers the request with whether the save was confirmed. */
+  private async saveAndReply(
+    message: SaveMessage,
+    project: PanelProject | undefined,
+    uri: Uri,
+  ): Promise<void> {
     const { syncRequestId } = message;
-    const saved = await this.saveDocumentation(message);
+    const saved = await this.saveDocumentation(message, project);
     if (!saved) {
       // The panel keeps its edits dirty until a save is confirmed.
       if (syncRequestId) {
-        await this.post({
-          command: "response",
-          args: { syncRequestId, body: { saved: false }, status: true },
-        });
+        await reply(
+          { reply: (response) => this.post(response) },
+          syncRequestId,
+          {
+            saved: false,
+          } satisfies documentationEditor.ResponseBodies["saveDocumentation"],
+        );
       }
       return;
     }
-    this.drafts.delete(message.filePath);
-    await this.reloadDocumentationFromManifest();
+    this.drafts.forget(message.filePath);
+    await this.reloadDocumentationFromManifest(uri);
     if (!syncRequestId) {
       return;
     }
-    await this.post({
-      command: "response",
-      args: {
-        syncRequestId,
-        body: {
-          saved: true,
-          tests: await this.dbtTestService.getTestsForCurrentModel(),
-          unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
-          documentation: this.documentation,
-        },
-        status: true,
-      },
-    });
+    await reply({ reply: (response) => this.post(response) }, syncRequestId, {
+      saved: true,
+    } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);
   }
 
   /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
-  private async propose(kind: ProposalKind, project: PanelProject | undefined) {
-    const target = await this.proposalTarget(project);
+  private async propose(kind: ProposalKind, uri: Uri | undefined) {
+    const target = await this.proposalTarget(uri);
     const payload =
       target && (await this.columnProposals.propose(kind, target));
     if (payload) {
@@ -320,35 +316,39 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       );
       return;
     }
-    const activeFile =
-      window.activeTextEditor &&
-      activeModelUri(window.activeTextEditor.document.uri).fsPath;
+    const uri = window.activeTextEditor?.document.uri;
+    const activeFile = uri && activeModelUri(uri).fsPath;
     if (!this.documentation || this.documentation.filePath !== activeFile) {
       await this.transmitData();
     }
-    const project = this.getProject();
-    if (!project) {
+    if (!uri || !this.projectOf(uri)) {
       const model = activeFile ? path.basename(activeFile, ".sql") : "(none)";
       void window.showWarningMessage(`No dbt project for the model ${model}`);
       return;
     }
-    await this.propose(kind, project);
+    await this.propose(kind, uri);
   }
 
-  private async reloadDocumentationFromManifest() {
+  /** Reloads the documentation of the model at `uri`, the one the save request resolved. */
+  private async reloadDocumentationFromManifest(uri: Uri) {
     // Force reload from manifest after manifest refresh
     this.loadedFromManifest = false;
     this.documentation = (
-      await this.docGenService.getUncompiledDocumentationForCurrentActiveFile()
+      await this.docGenService.getUncompiledDocumentation(
+        activeModelUri(uri).fsPath,
+      )
     ).documentation;
   }
 
   /** Writes `message` to its schema YAML; false when the user cancels the file dialog or the write fails. */
-  private saveDocumentation(message: SaveMessage): Promise<boolean> {
-    return saveDocumentation(
+  private saveDocumentation(
+    message: SaveMessage,
+    project: PanelProject | undefined,
+  ): Promise<boolean> {
+    return saveDocumentation({
       message,
-      this.getProject(),
-      {
+      activeProject: project,
+      deps: {
         projects: this.projects,
         terminal: this.dbtTerminal,
         testData: {
@@ -356,10 +356,10 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
           dbtTestService: this.dbtTestService,
         },
       },
-      (error, patchPath) => {
+      onFailure: (error, patchPath) => {
         void this.transmitError();
         void notifyError(
-          this.getProject(),
+          project,
           `Could not save documentation to ${patchPath}`,
           error,
         );
@@ -369,7 +369,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
           error,
         );
       },
-    );
+    });
   }
 
   private async onManifestChanged() {

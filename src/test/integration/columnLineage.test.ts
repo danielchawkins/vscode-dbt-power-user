@@ -11,6 +11,7 @@ import type {
   ConnectedColumnsRequest,
   ConnectedColumnsResult,
 } from "../../features/lineage/dbtLineageService";
+import { pollUntil } from "../async";
 
 /**
  * Pins column lineage from the language server against the pinned dbt: the extension's service sends
@@ -58,16 +59,17 @@ suite("Column lineage from the language server", function () {
     body: ConnectedColumnsRequest,
     done: (lineage: ColumnLineage[]) => boolean,
   ): Promise<ColumnLineage[]> {
-    const deadline = Date.now() + 120_000;
-    let last: ConnectedColumnsResult | undefined;
-    while (Date.now() < deadline) {
-      last = await request(body);
-      if (last?.kind === "lineage" && done(last.columnLineage)) {
-        return last.columnLineage;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
-    assert.fail(`no matching lineage: ${JSON.stringify(last)}`);
+    const last = await pollUntil(
+      () => request(body),
+      (result) => result?.kind === "lineage" && done(result.columnLineage),
+      {
+        timeoutMs: 120_000,
+        intervalMs: 1_000,
+        describe: (seen) => `no matching lineage: ${JSON.stringify(seen)}`,
+      },
+    );
+    assert.ok(last?.kind === "lineage");
+    return last.columnLineage;
   }
 
   const edges = (lineage: ColumnLineage[]) =>
@@ -122,40 +124,44 @@ suite("Column lineage from the language server", function () {
 
   /** The panel's columns of `table` as `name datatype`, once the manifest and server know it. */
   async function columnsOf(table: string): Promise<string[]> {
-    const deadline = Date.now() + 120_000;
-    let columns: string[] = [];
-    while (Date.now() < deadline) {
-      const body = await vscode.commands.executeCommand<
-        { columns: { name: string; datatype: string }[] } | undefined
-      >(LINEAGE_COLUMNS_COMMAND, table);
-      columns = (body?.columns ?? []).map((c) => `${c.name} ${c.datatype}`);
-      if (columns.length > 0) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
-    return columns;
+    const body = await pollUntil(
+      () =>
+        vscode.commands.executeCommand<
+          { columns: { name: string; datatype: string }[] } | undefined
+        >(LINEAGE_COLUMNS_COMMAND, table),
+      (found) => (found?.columns ?? []).length > 0,
+      {
+        timeoutMs: 120_000,
+        intervalMs: 1_000,
+        describe: `the panel's columns of ${table}`,
+      },
+    );
+    return (body?.columns ?? []).map((c) => `${c.name} ${c.datatype}`);
   }
 
   /** Both directions requested together, reissued while the server cancels them to reanalyze the written file. */
   async function concurrentPair(): Promise<
     (ConnectedColumnsResult | undefined)[]
   > {
-    const deadline = Date.now() + 60_000;
-    for (;;) {
-      const pair = await Promise.all(
-        [false, true].map((upstreamExpansion) =>
-          request({ targets: [[ORDER_TOTALS, "total"]], upstreamExpansion }),
+    return pollUntil(
+      () =>
+        Promise.all(
+          [false, true].map((upstreamExpansion) =>
+            request({ targets: [[ORDER_TOTALS, "total"]], upstreamExpansion }),
+          ),
         ),
-      );
-      const cancelled = pair.some((result) =>
-        (JSON.stringify(result) ?? "undefined").includes("Operation cancelled"),
-      );
-      if (!cancelled || Date.now() > deadline) {
-        return pair;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
+      (pair) =>
+        !pair.some((result) =>
+          (JSON.stringify(result) ?? "undefined").includes(
+            "Operation cancelled",
+          ),
+        ),
+      {
+        timeoutMs: 60_000,
+        intervalMs: 1_000,
+        describe: "the concurrent requests to finish without cancellation",
+      },
+    );
   }
 
   test("answers concurrent upstream and downstream requests for one column", async function () {

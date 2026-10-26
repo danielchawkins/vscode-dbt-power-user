@@ -6,24 +6,18 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil, sleep } from "../async";
 import type { ActivationMetric } from "./activationReport";
 import { readActivationMetric } from "./activationReport";
-import type { WebviewPaintMetric } from "./cdpClient";
-import {
-  assertNoWorkbenchNotifications,
-  captureWorkbenchScreenshot,
-  evidenceWindowSize,
-  evaluatePanel,
-  evaluateWorkbench,
-  readCspViolations,
-  readWorkbenchNotificationTexts,
-  revealWorkbench,
-  validateSmokeHost,
-  waitForWebviewPaint,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
+import type { WebviewPaintMetric } from "./cdpEvaluation";
 import { currentFixtureName } from "./fixtureContext";
+import {
+  evaluatePanel,
+  readCspViolations,
+  waitForWebviewPaint,
+} from "./panelFrames";
 import { DBT_VIEW_CONTAINER, EXTENSION_ID, PANELS } from "./panels";
+import * as smokeEnv from "./smokeEnv";
 import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
@@ -35,6 +29,15 @@ import {
   restorePanelSize,
   webviewSize,
 } from "./webviewInteractions";
+import {
+  assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  evaluateWorkbench,
+  evidenceWindowSize,
+  readWorkbenchNotificationTexts,
+  revealWorkbench,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
@@ -88,11 +91,8 @@ suite("Pinned-host VSIX smoke", function () {
         whenEnabled(runtimeEnabled, 184_000) +
         whenEnabled(evidenceEnabled, 766_000),
     );
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -263,14 +263,12 @@ suite("Pinned-host VSIX smoke", function () {
   });
 
   test("renders each panel in the light, dark and high-contrast themes", async function () {
-    const cdpPort = process.env.FPU_CDP_PORT;
-    if (currentFixtureName() !== "single-project" || !cdpPort) {
+    if (currentFixtureName() !== "single-project") {
       this.skip();
       return;
     }
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
     const evidence = visualEvidence(cdpPort, smokeHost);
     // Default path, in seconds: active language 5, color theme 3 x 10, panel theme read 9 x 20 (one per panel per
     // theme), lineage column wait 3 x 15. That is 260, so the limit is 290.
@@ -398,13 +396,15 @@ const THEMES = [
 async function waitForColorThemeKind(
   kind: vscode.ColorThemeKind,
 ): Promise<vscode.ColorThemeKind> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (vscode.window.activeColorTheme.kind === kind) {
-      break;
-    }
-    await sleep(250);
-  }
-  return vscode.window.activeColorTheme.kind;
+  return pollUntil(
+    () => vscode.window.activeColorTheme.kind,
+    (current) => current === kind,
+    {
+      timeoutMs: 10_000,
+      intervalMs: 250,
+      describe: `the color theme kind ${kind}`,
+    },
+  );
 }
 
 interface PanelTheme {
@@ -576,16 +576,18 @@ async function waitForPanelTheme(
 }
 
 async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const timings = await vscode.commands.executeCommand<HostRuntimeTiming[]>(
-      RUNTIME_TIMINGS_COMMAND,
-    );
-    if (timings?.length === 3) {
-      return timings;
-    }
-    await sleep(100);
-  }
-  throw new Error("Expected resolve-to-ready timing for all three webviews");
+  return pollUntil(
+    async () =>
+      (await vscode.commands.executeCommand<HostRuntimeTiming[]>(
+        RUNTIME_TIMINGS_COMMAND,
+      )) ?? [],
+    (timings) => timings.length === 3,
+    {
+      timeoutMs: 10_000,
+      intervalMs: 100,
+      describe: "Expected resolve-to-ready timing for all three webviews",
+    },
+  );
 }
 
 async function openMeasuredPanel(
@@ -621,18 +623,15 @@ async function openPanel(panel: {
 async function waitForActiveLanguage(
   languageId: string,
 ): Promise<string | undefined> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const current = vscode.window.activeTextEditor?.document.languageId;
-    if (current === languageId) {
-      return current;
-    }
-    await sleep(100);
-  }
-  return vscode.window.activeTextEditor?.document.languageId;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return pollUntil(
+    () => vscode.window.activeTextEditor?.document.languageId,
+    (current) => current === languageId,
+    {
+      timeoutMs: 5_000,
+      intervalMs: 100,
+      describe: `the active editor to be ${languageId}`,
+    },
+  );
 }
 
 /** `ms` when an optional path is enabled, otherwise 0. */

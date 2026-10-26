@@ -37,21 +37,21 @@ export function composeFusion(graph: ProjectsGraph) {
     },
   );
   graph.clients.pool = fusionClientPool;
-  const dbtLineageService = new DbtLineageService(
-    graph.queryManifestService,
-    () => {
+  const dbtLineageService = new DbtLineageService({
+    queryManifestService: graph.queryManifestService,
+    currentClient: () => {
       const project = currentProject.current;
       return project ? fusionClientPool.get(project) : undefined;
     },
-    () => {
+    currentError: () => {
       const project = currentProject.current;
       return project ? projects.get(project.root)?.errors.current : undefined;
     },
-    () => {
+    currentLsp: () => {
       const project = currentProject.current;
       return project ? projects.get(project.root)?.lsp : undefined;
     },
-    () => {
+    currentStrict: () => {
       const root = currentProject.current?.root;
       const optIns = root && projects.get(root)?.projectOptIns();
       return {
@@ -59,21 +59,21 @@ export function composeFusion(graph: ProjectsGraph) {
         folder: currentProject.folderScope(),
       };
     },
-  );
-  const fusionStatus = new FusionStatus(
-    graph.projectRegistry,
-    fusionClientPool,
-    (declared) => projects.get(declared.root)?.projectOptIns(),
-    (listener) =>
+  });
+  const fusionStatus = new FusionStatus({
+    registry: graph.projectRegistry,
+    clientPool: fusionClientPool,
+    optIns: (declared) => projects.get(declared.root)?.projectOptIns(),
+    onDidChangeOptIns: (listener) =>
       Disposable.from(
         projects.onDidChangeManifest(listener),
         projects.onDidChangeErrors(listener),
       ),
-    (declared) => ({
+    projectNotes: (declared) => ({
       error: projects.get(declared.root)?.errors.current,
       environment: graph.projectEnvironments.peek(declared)?.projectDirNotice,
     }),
-  );
+  });
   return {
     fusionClientPool,
     fusionOutputChannel,

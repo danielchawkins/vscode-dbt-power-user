@@ -20,12 +20,12 @@ models:
 
 /** `schema` written for `message`, parsed back to its models. */
 function write(message: Partial<SaveInput>, docFile = schema) {
-  const saved = withDocumentation(
+  const saved = withDocumentation({
     docFile,
-    { name: "orders", columns: [], ...message },
-    "duckdb",
+    message: { name: "orders", columns: [], ...message },
+    adapterType: "duckdb",
     deps,
-  );
+  });
   return parse(saved).models as {
     name: string;
     columns: { name: string; data_type?: string }[];

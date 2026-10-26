@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { pollUntil } from "../async";
 import { dbtInvocations, waitForDbtExits } from "./helpers/dbtSpy";
 import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
@@ -19,25 +20,6 @@ import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 const ACTIVATION_TIMEOUT_MS = 20_000;
 const COMMAND_ARTIFACT_TIMEOUT_MS = 20_000;
 const POLL_INTERVAL_MS = 250;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitUntil(
-  predicate: () => boolean,
-  timeoutMs: number,
-  description: string,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (predicate()) {
-      return;
-    }
-    await sleep(POLL_INTERVAL_MS);
-  }
-  assert.ok(predicate(), `Timed out waiting for: ${description}`);
-}
 
 function workspaceRoot(): string {
   const folder = vscode.workspace.workspaceFolders?.[0];
@@ -86,10 +68,14 @@ suite("Artifact production (extension)", function () {
     const root = workspaceRoot();
     const manifestPath = path.join(root, "target", "manifest.json");
 
-    await waitUntil(
+    await pollUntil(
       () => fs.existsSync(manifestPath),
-      ACTIVATION_TIMEOUT_MS,
-      "target/manifest.json to exist after activation",
+      (exists) => exists,
+      {
+        timeoutMs: ACTIVATION_TIMEOUT_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        describe: "target/manifest.json to exist after activation",
+      },
     );
 
     const manifest = readJson(manifestPath);
@@ -153,10 +139,14 @@ suite("Artifact production (extension)", function () {
 
     await vscode.commands.executeCommand("fusionPowerUser.compileCurrentModel");
 
-    await waitUntil(
+    await pollUntil(
       () => fs.existsSync(compiledPath),
-      COMMAND_ARTIFACT_TIMEOUT_MS,
-      "target/compiled/single_project/models/child.sql to exist",
+      (exists) => exists,
+      {
+        timeoutMs: COMMAND_ARTIFACT_TIMEOUT_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        describe: "target/compiled/single_project/models/child.sql to exist",
+      },
     );
     const compiled = fs.readFileSync(compiledPath, "utf-8");
     assert.ok(
@@ -188,13 +178,18 @@ suite("Artifact production (extension)", function () {
 
     await vscode.commands.executeCommand("fusionPowerUser.buildCurrentModel");
 
-    await waitUntil(
+    await pollUntil(
       () =>
         fs.existsSync(runResultsPath) &&
         fs.statSync(runResultsPath).mtimeMs > previousMtimeMs &&
         reportedModels(runResultsPath).includes("model.single_project.base"),
-      COMMAND_ARTIFACT_TIMEOUT_MS,
-      "target/run_results.json to be rewritten by buildCurrentModel with model.single_project.base",
+      (written) => written,
+      {
+        timeoutMs: COMMAND_ARTIFACT_TIMEOUT_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        describe:
+          "target/run_results.json to be rewritten by buildCurrentModel with model.single_project.base",
+      },
     );
     assert.deepStrictEqual(
       await waitForDbtExits(dbtMark, COMMAND_ARTIFACT_TIMEOUT_MS),

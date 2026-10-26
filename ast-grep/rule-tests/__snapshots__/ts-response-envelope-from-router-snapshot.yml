@@ -1,0 +1,44 @@
+id: ts-response-envelope-from-router
+snapshots:
+  'await this.post({ command: "response", args: { syncRequestId, body: { saved }, status: true } });':
+    labels:
+    - source: 'command: "response"'
+      style: primary
+      start: 18
+      end: 37
+    - source: command
+      style: secondary
+      start: 18
+      end: 25
+    - source: '"response"'
+      style: secondary
+      start: 27
+      end: 37
+  'const message = { "command": "response", args };':
+    labels:
+    - source: '"command": "response"'
+      style: primary
+      start: 18
+      end: 39
+    - source: '"command"'
+      style: secondary
+      start: 18
+      end: 27
+    - source: '"response"'
+      style: secondary
+      start: 29
+      end: 39
+  'deps.post({ command: "response", args: { syncRequestId, status: false, error } });':
+    labels:
+    - source: 'command: "response"'
+      style: primary
+      start: 12
+      end: 31
+    - source: command
+      style: secondary
+      start: 12
+      end: 19
+    - source: '"response"'
+      style: secondary
+      start: 21
+      end: 31

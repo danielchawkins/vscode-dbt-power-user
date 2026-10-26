@@ -73,12 +73,17 @@ function formatCliStatus(
  * Refreshes `cli`'s project config for the project `label` names; returns whether it succeeded.
  * `sourcePaths`, when given, is read afterwards to report whether the paths resolved.
  */
-export async function refreshCliConfig(
-  cli: FusionCli,
-  terminal: Log,
-  label: string,
-  sourcePaths?: () => string[] | undefined,
-): Promise<boolean> {
+export async function refreshCliConfig({
+  cli,
+  terminal,
+  label,
+  sourcePaths,
+}: {
+  cli: FusionCli;
+  terminal: Log;
+  label: string;
+  sourcePaths?: (() => string[] | undefined) | undefined;
+}): Promise<boolean> {
   terminal.debug(
     LOG_SOURCE,
     `Going to refresh the project ${label} configuration`,

@@ -1,0 +1,6 @@
+id: tsx-no-legacy-namespace
+valid:
+  - 'post({ command: "fusionPowerUser.openFile" });'
+invalid:
+  - 'post({ command: "dbtPowerUser.openFile" });'
+  - 'const el = <a data-command="dbtPowerUser.openFile" />;'

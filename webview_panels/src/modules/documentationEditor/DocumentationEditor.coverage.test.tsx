@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import type userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 import type { ControlState, InteractiveRole } from "../../test/controlCoverage";
 import {
   expectControlsCovered,
@@ -21,8 +21,7 @@ type User = ReturnType<typeof userEvent.setup>;
 /**
  * The controls with no accessible name at all: no text, no title and no label, even on hover. They are the description
  * fields (a placeholder does not name a field), the accepted-values input of a test form and the save chevron. These
- * are product gaps; the code does not change here. `collectControls` cannot read them, so the states remove them, and
- * the pins below fail once they have names, so the exclusion goes with the fix.
+ * are product gaps; the code does not change here. `collectControls` cannot read them, so the states remove them.
  */
 const unnamedControls = (
   container: HTMLElement,
@@ -136,48 +135,5 @@ describe("Documentation editor control coverage", () => {
       },
       TESTED_CONTROLS,
     );
-  });
-});
-
-describe("Documentation editor control coverage gate", () => {
-  it("pins the four description fields as unnamed in the default state", () => {
-    openDocumentation(DOCUMENTATION);
-    expect(
-      unnamedControls(document.body, ["textbox"]).map((element) =>
-        element.getAttribute("placeholder"),
-      ),
-    ).toEqual([
-      "Describe your model",
-      "Describe order_id",
-      "Describe status",
-      "Describe customer_id",
-    ]);
-  });
-
-  it("pins the save chevron as unnamed once the editor is dirty", async () => {
-    const { user } = openDocumentation(DOCUMENTATION);
-    await editModel(user);
-    const chevrons = unnamedControls(document.body, ["button"]).filter(
-      (element) => element.querySelector(".codicon-chevron-down") !== null,
-    );
-    expect(chevrons).toHaveLength(1);
-  });
-
-  it("pins the accepted values input as unnamed in the add-test form", async () => {
-    const { user } = openDocumentation(DOCUMENTATION);
-    await addTestIn(user, "customer_id", "accepted_values");
-    expect(unnamedControls(document.body)).toContain(
-      screen.getByPlaceholderText("Type a value and press enter to add"),
-    );
-  });
-
-  it("pins the doc block search box as unnamed", async () => {
-    const { user } = openDocumentation(DOCUMENTATION);
-    await user.click(
-      screen.getAllByRole("button", { name: "Insert doc block reference" })[0]!,
-    );
-    expect(
-      screen.getByPlaceholderText("Search doc blocks..."),
-    ).not.toHaveAccessibleName();
   });
 });

@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+// ast-grep-ignore: ts-suite-no-harness-import -- a spy that counts zero would pass the no-extra-invocation asserts
 import {
   DBT_SPY_LOG_ENV,
   dbtInvocations,

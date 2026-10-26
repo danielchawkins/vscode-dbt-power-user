@@ -50,13 +50,13 @@ export function errorHint(
     return `fusionPowerUser.profilesDir is ${invocation.profilesDir}, which has no profiles.yml.`;
   }
   if (message.includes("No profiles.yml found") && search) {
-    const dir = resolveProfilesDir(
-      undefined,
-      search.environment,
-      search.root,
-      search.home,
-      search.exists,
-    );
+    const dir = resolveProfilesDir({
+      setting: undefined,
+      env: search.environment,
+      root: search.root,
+      home: search.home,
+      exists: search.exists,
+    });
     const shadowed = shadowedProfiles(dir, search);
     return `dbt looked for profiles.yml in ${dir}.${shadowed ? ` ${shadowed}` : ""}`;
   }
@@ -100,13 +100,13 @@ function profileNotFoundHint(
   profilesDir: string | undefined,
   search: ProfilesSearch,
 ): string {
-  const dir = resolveProfilesDir(
-    profilesDir,
-    search.environment,
-    search.root,
-    search.home,
-    search.exists,
-  );
+  const dir = resolveProfilesDir({
+    setting: profilesDir,
+    env: search.environment,
+    root: search.root,
+    home: search.home,
+    exists: search.exists,
+  });
   const chosenBy = profilesDir
     ? "fusionPowerUser.profilesDir"
     : profilesDirVariable(search);
@@ -132,12 +132,17 @@ export class ProjectErrors implements Disposable {
   private readonly snapshot: () => ProjectSnapshot;
   private readonly terminal: Log;
 
-  constructor(
-    root: Uri,
-    projectName: () => string,
-    snapshot: () => ProjectSnapshot,
-    terminal: Log,
-  ) {
+  constructor({
+    root,
+    projectName,
+    snapshot,
+    terminal,
+  }: {
+    root: Uri;
+    projectName: () => string;
+    snapshot: () => ProjectSnapshot;
+    terminal: Log;
+  }) {
     this.root = root;
     this.projectName = projectName;
     this.snapshot = snapshot;

@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
-import type { Disposable, FileSystemWatcher, Uri } from "vscode";
-import { RelativePattern, workspace } from "vscode";
+import { isAbsolute, join } from "node:path";
 import type { ParsedManifest } from "../../core/dbt/domain";
 import { MANIFEST_FILE } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
@@ -15,12 +13,14 @@ import type {
   MacroParser,
   MetricParser,
   NodeParser,
+  ParsedResourceMaps,
   SemanticModelParser,
   SourceParser,
   TestParser,
   UnitTestParser,
 } from "../../core/manifest/index";
 import { type ManifestProject } from "../../core/manifest/index";
+import { buildRelationIndex } from "../../core/manifest/relationIndex";
 import type {
   ExposureResource,
   FunctionResource,
@@ -28,14 +28,6 @@ import type {
   ManifestResources,
   SemanticModelResource,
 } from "../../core/manifest/types";
-import { isStrictlyBelow } from "../../core/paths";
-import {
-  DBT_PROJECT_FILE,
-  isDbtProjectFilePath,
-} from "../../core/snapshot/index";
-
-/** Delay between the last watched file event and the rebuild it triggers. */
-const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
 
 /** Reports more than this many consecutive unreadable manifests as an error. */
 const READ_FAILURE_REPORT_THRESHOLD = 3;
@@ -110,24 +102,30 @@ interface ManifestJson {
  * Reads `<targetPath>/manifest.json` and runs every parser over it.
  * Returns undefined when the file is absent or unparsable.
  */
-export async function buildManifest(
-  parsers: ManifestParsers,
-  project: ManifestProject,
-  targetPath: string,
-  terminal: Log,
-  readFailures: ManifestReadFailures,
-): Promise<BuiltManifest | undefined> {
+export async function buildManifest({
+  parsers,
+  project,
+  targetPath,
+  terminal,
+  readFailures,
+}: {
+  parsers: ManifestParsers;
+  project: ManifestProject;
+  targetPath: string;
+  terminal: Log;
+  readFailures: ManifestReadFailures;
+}): Promise<BuiltManifest | undefined> {
   const projectRoot = project.getProjectRoot();
   terminal.debug(
     "Manifest",
     `Going to parse manifest for project at ${projectRoot}`,
   );
-  const manifestJson = readManifestFile(
+  const manifestJson = readManifestFile({
     projectRoot,
     targetPath,
     terminal,
     readFailures,
-  );
+  });
   if (manifestJson === undefined) {
     return undefined;
   }
@@ -146,16 +144,16 @@ export async function buildManifest(
     exposureMetaMap,
     functionMetaMap,
   } = await parseResourceMaps(parsers, project, manifestJson);
-  const graphMetaMap = parsers.graphParser.createGraphMetaMap(
+  const graphMetaMap = parsers.graphParser.createGraphMetaMap({
     project,
     parentMetaMap,
     childMetaMap,
+    constraintOnlyParents,
     nodeMetaMap,
     sourceMetaMap,
     testMetaMap,
     functionMetaMap,
-    constraintOnlyParents,
-  );
+  });
   return {
     adapterType: (manifestJson.metadata?.adapter_type ?? "") || undefined,
     parsed: {
@@ -179,7 +177,7 @@ async function parseResourceMaps(
   parsers: ManifestParsers,
   project: ManifestProject,
   manifestJson: ManifestJson,
-) {
+): Promise<ParsedResourceMaps> {
   const {
     nodes,
     sources,
@@ -195,7 +193,6 @@ async function parseResourceMaps(
     nodeMetaMap,
     macroMetaMap,
     metricMetaMap,
-    semanticModelMetaMap,
     sourceMetaMap,
     testMetaMap,
     unitTestMetaMap,
@@ -210,10 +207,6 @@ async function parseResourceMaps(
     parsers.nodeParser.createNodeMetaMap(nodes, project),
     parsers.macroParser.createMacroMetaMap(macros, project),
     parsers.metricParser.createMetricMetaMap(semanticModels, project),
-    parsers.semanticModelParser.createSemanticModelMetaMap(
-      semanticModels,
-      project,
-    ),
     parsers.sourceParser.createSourceMetaMap(sources, project),
     parsers.testParser.createTestMetaMap(nodes, project),
     parsers.unitTestParser.createUnitTestMetaMap(unitTests ?? {}, project),
@@ -224,6 +217,13 @@ async function parseResourceMaps(
       project,
     ),
   ]);
+  // Semantic models resolve their `model` ref against the nodes and sources parsed above.
+  const semanticModelMetaMap =
+    await parsers.semanticModelParser.createSemanticModelMetaMap(
+      semanticModels,
+      project,
+      buildRelationIndex(nodeMetaMap, sourceMetaMap),
+    );
   return {
     ...parentMaps,
     nodeMetaMap,
@@ -239,12 +239,17 @@ async function parseResourceMaps(
   };
 }
 
-function readManifestFile(
-  projectRoot: string,
-  targetPath: string,
-  terminal: Log,
-  readFailures: ManifestReadFailures,
-): ManifestJson | undefined {
+function readManifestFile({
+  projectRoot,
+  targetPath,
+  terminal,
+  readFailures,
+}: {
+  projectRoot: string;
+  targetPath: string;
+  terminal: Log;
+  readFailures: ManifestReadFailures;
+}): ManifestJson | undefined {
   const segments = isAbsolute(targetPath)
     ? [targetPath]
     : [projectRoot, targetPath];
@@ -270,129 +275,5 @@ function readManifestFile(
       );
     }
     return undefined;
-  }
-}
-
-/** Files at the project root whose change always calls for a config refresh and a parse. */
-const PROJECT_LEVEL_FILES = [
-  "profiles.yml",
-  "packages.yml",
-  "dependencies.yml",
-  "selectors.yml",
-];
-
-export interface ManifestTriggerHandlers {
-  /** Model, macro and seed paths; read on every event. */
-  sourcePaths(): string[] | undefined;
-  /** Runs after `dbt_project.yml` is created, changed or deleted. */
-  onProjectFileChanged(): Promise<void>;
-  /** Runs after a `.sql`, `.yml`, `.yaml` or `.csv` file under a source path changes. */
-  onSourceFileChanged(): Promise<void>;
-}
-
-/** Debounced file events under one Declared Project root that call for a manifest rebuild. */
-export class ManifestTrigger implements Disposable {
-  private watcher: FileSystemWatcher | undefined;
-  private subscriptions: Disposable[] = [];
-  private projectFileTimer: ReturnType<typeof setTimeout> | undefined;
-  private sourceFileTimer: ReturnType<typeof setTimeout> | undefined;
-  private readonly projectRoot: string;
-  private readonly terminal: Log;
-  private readonly handlers: ManifestTriggerHandlers;
-
-  constructor(
-    projectRoot: string,
-    terminal: Log,
-    handlers: ManifestTriggerHandlers,
-  ) {
-    this.projectRoot = projectRoot;
-    this.terminal = terminal;
-    this.handlers = handlers;
-  }
-
-  /** Starts watching; a no-op while already watching. */
-  start(): void {
-    if (this.watcher) {
-      return;
-    }
-    const watcher = workspace.createFileSystemWatcher(
-      new RelativePattern(this.projectRoot, "**/*.{sql,yml,yaml,csv}"),
-    );
-    const onEvent = (uri: Uri) => this.handle(uri.fsPath);
-    this.watcher = watcher;
-    this.subscriptions = [
-      watcher.onDidCreate(onEvent),
-      watcher.onDidChange(onEvent),
-      watcher.onDidDelete(onEvent),
-    ];
-  }
-
-  /** Stops watching and drops pending events. */
-  stop(): void {
-    clearTimeout(this.projectFileTimer);
-    clearTimeout(this.sourceFileTimer);
-    this.projectFileTimer = undefined;
-    this.sourceFileTimer = undefined;
-    for (const subscription of this.subscriptions) {
-      subscription.dispose();
-    }
-    this.subscriptions = [];
-    this.watcher?.dispose();
-    this.watcher = undefined;
-  }
-
-  dispose(): void {
-    this.stop();
-  }
-
-  private handle(fsPath: string): void {
-    if (
-      isDbtProjectFilePath(this.projectRoot, fsPath) ||
-      PROJECT_LEVEL_FILES.some(
-        (name) => fsPath === join(this.projectRoot, name),
-      )
-    ) {
-      this.terminal.debug(
-        "ManifestTrigger",
-        `${DBT_PROJECT_FILE} changed in ${this.projectRoot}`,
-      );
-      clearTimeout(this.projectFileTimer);
-      this.projectFileTimer = setTimeout(() => {
-        this.projectFileTimer = undefined;
-        void this.run("project config refresh", () =>
-          this.handlers.onProjectFileChanged(),
-        );
-      }, MANIFEST_TRIGGER_DEBOUNCE_MS);
-      return;
-    }
-    if (!this.isUnderSourcePath(fsPath)) {
-      return;
-    }
-    this.terminal.debug("ManifestTrigger", `Source file changed: ${fsPath}`);
-    clearTimeout(this.sourceFileTimer);
-    this.sourceFileTimer = setTimeout(() => {
-      this.sourceFileTimer = undefined;
-      void this.run("manifest rebuild", () =>
-        this.handlers.onSourceFileChanged(),
-      );
-    }, MANIFEST_TRIGGER_DEBOUNCE_MS);
-  }
-
-  private isUnderSourcePath(fsPath: string): boolean {
-    return (this.handlers.sourcePaths() ?? []).some((sourcePath) =>
-      isStrictlyBelow(resolve(this.projectRoot, sourcePath), fsPath),
-    );
-  }
-
-  private async run(label: string, handler: () => Promise<void>) {
-    try {
-      await handler();
-    } catch (error) {
-      this.terminal.error(
-        "ManifestTrigger",
-        `Failed ${label} after file change in ${this.projectRoot}`,
-        error,
-      );
-    }
   }
 }

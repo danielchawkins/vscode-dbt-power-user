@@ -1,65 +1,13 @@
 import { window } from "vscode";
-import { parseDocument } from "yaml";
-
-interface YamlModel {
-  key?: { value: string };
-  value?: { items?: Array<YamlModelItem> };
-}
-
-interface YamlModelItem {
-  items?: Array<{
-    key?: { value: string };
-    value?: { toString(): string };
-  }>;
-  range?: [number, number];
-}
+import { modelAt } from "../../core/yaml/schemaYaml";
 
 export function getCurrentlySelectedModelNameInYamlConfig(): string {
-  if (window.activeTextEditor?.document.languageId !== "yaml") {
+  const editor = window.activeTextEditor;
+  if (editor?.document.languageId !== "yaml") {
     return "";
   }
-
-  try {
-    const parsedYaml = parseDocument(
-      window.activeTextEditor.document.getText(),
-    );
-    if (parsedYaml.contents === null) {
-      return "";
-    }
-    const cursorPosition = window.activeTextEditor.selection.active;
-    const offset = window.activeTextEditor.document.offsetAt(cursorPosition);
-
-    const contents = parsedYaml.contents as { items?: Array<YamlModel> };
-    if (!contents.items) {
-      return "";
-    }
-
-    const modelsNode = contents.items.find(
-      (item) => item?.key?.value === "models",
-    );
-    if (!modelsNode?.value?.items) {
-      return "";
-    }
-
-    // Find a model at the current position
-    for (const model of modelsNode.value.items) {
-      if (!model?.items) {
-        continue;
-      }
-
-      const nameNode = model.items.find((item) => item?.key?.value === "name");
-      if (!nameNode?.value) {
-        continue;
-      }
-
-      if (model.range && model.range[0] < offset && offset < model.range[1]) {
-        return nameNode.value.toString();
-      }
-    }
-  } catch {
-    // A YAML document mid-edit does not parse; no model is selected.
-  }
-  return "";
+  const offset = editor.document.offsetAt(editor.selection.active);
+  return modelAt(editor.document.getText(), offset)?.name ?? "";
 }
 
 const MEDIUM_DEPTH_THRESHOLD = 5;

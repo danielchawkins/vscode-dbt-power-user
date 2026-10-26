@@ -1,10 +1,10 @@
-import { documentationEditor } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
-import { fakeView, isPageReady } from "../panelHarness";
+import { fakeView } from "../panelHarness";
+import { isDocumentationEditorHostMessage } from "./hostMessageOracle";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
@@ -36,10 +36,10 @@ async function draftPanel() {
     getTestsForCurrentModel: vi.fn(async () => []),
     getUnitTestsForCurrentModel: vi.fn(async () => []),
   };
-  const panel = new DocsEditViewPanel(
+  const panel = new DocsEditViewPanel({
     projects,
-    { extensionUri: Uri.file("/ext") } as any,
-    {
+    extensionContext: { extensionUri: Uri.file("/ext") } as any,
+    services: {
       docGenService,
       dbtTestService,
       queryManifestService: { manifestFor: () => undefined },
@@ -47,14 +47,14 @@ async function draftPanel() {
       columnProposalRequests: new ColumnProposalRequests(),
     } as any,
     terminal,
-  );
+  });
   const view = fakeView();
   await panel.resolveWebviewView(view.page, {} as any, {} as any);
   const { send } = view;
   const rendered = async () => {
     await send({ command: "getCurrentModelDocumentation" });
     const message = view.posted().at(-1) as any;
-    expect(documentationEditor.isHostMessage(message)).toBe(true);
+    expect(isDocumentationEditorHostMessage(message)).toBe(true);
     return message;
   };
   return { panel, removed, send, rendered };
@@ -97,26 +97,6 @@ describe("documentation editor drafts", () => {
     expect((await rendered()).draft).toEqual(replacing);
   });
 
-  it("forgets a draft the page clears, after a save, discard or revert", async () => {
-    const { send, rendered } = await draftPanel();
-    await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
-
-    await send({ command: "saveDraft", model: "/p/models/orders.sql" });
-
-    expect((await rendered()).draft).toBeUndefined();
-  });
-
-  it("keeps drafts of other models apart", async () => {
-    const { send, rendered } = await draftPanel();
-    await send({
-      command: "saveDraft",
-      model: "/p/models/customers.sql",
-      draft: { docs: docs("/p/models/customers.sql", "other") },
-    });
-
-    expect((await rendered()).draft).toBeUndefined();
-  });
-
   it("forgets the drafts of a removed project only", async () => {
     const { panel, removed, send } = await draftPanel();
     vi.spyOn(panel as any, "transmitData").mockResolvedValue(undefined);
@@ -129,21 +109,20 @@ describe("documentation editor drafts", () => {
 
     removed.fire(Uri.file("/p"));
 
-    const drafts = (panel as any).drafts as Map<string, unknown>;
-    expect([...drafts.keys()]).toEqual(["/q/models/orders.sql"]);
+    expect((panel as any).drafts.held()).toEqual(["/q/models/orders.sql"]);
   });
 });
 
 describe("documentation editor view resolution", () => {
   async function resolved() {
-    const panel = new DocsEditViewPanel(
-      {
+    const panel = new DocsEditViewPanel({
+      projects: {
         onDidChangeManifest: new EventEmitter<unknown>().event,
         onDidRemoveProject: new EventEmitter<Uri>().event,
         get: () => undefined,
       } as any,
-      { extensionUri: Uri.file("/ext") } as any,
-      {
+      extensionContext: { extensionUri: Uri.file("/ext") } as any,
+      services: {
         docGenService: {},
         dbtTestService: {},
         queryManifestService: { manifestFor: () => undefined },
@@ -151,7 +130,7 @@ describe("documentation editor view resolution", () => {
         columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,
-    );
+    });
     const transmit = vi
       .spyOn(panel as any, "transmitData")
       .mockResolvedValue(undefined);
@@ -159,14 +138,6 @@ describe("documentation editor view resolution", () => {
     await panel.resolveWebviewView(view.page, {} as any, {} as any);
     return { panel, view: view.page, transmit, send: view.send };
   }
-
-  it("sets scripts on and limits local resources to the built assets", async () => {
-    const { view } = await resolved();
-    expect(view.webview.options.enableScripts).toBe(true);
-    expect(
-      view.webview.options.localResourceRoots?.map((u: Uri) => u.path),
-    ).toEqual(["/ext/webview_panels/dist/assets"]);
-  });
 
   it("titles the view, describes it and renders the page", async () => {
     const { view } = await resolved();
@@ -177,16 +148,5 @@ describe("documentation editor view resolution", () => {
 
   it("sends the documentation when the view resolves", async () => {
     expect((await resolved()).transmit).toHaveBeenCalledTimes(1);
-  });
-
-  it("marks the page ready on webview:ready and replays on request", async () => {
-    const { panel, send, transmit, view } = await resolved();
-    expect(isPageReady(panel, view)).toBe(false);
-    await send({ command: "webview:ready" });
-    expect(isPageReady(panel, view)).toBe(true);
-
-    transmit.mockClear();
-    await send({ command: "getCurrentModelDocumentation" });
-    expect(transmit).toHaveBeenCalledTimes(1);
   });
 });

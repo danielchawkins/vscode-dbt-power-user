@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import { sleep } from "../../async";
 
 /** Environment variable naming the log the integration runner's `dbt` wrapper appends to. */
 export const DBT_SPY_LOG_ENV = "FPU_DBT_SPY_LOG";
@@ -94,10 +95,6 @@ function runningSince(records: SpyRecord[], since: number): DbtInvocation[] {
     );
 }
 
-function pause(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * Waits until every `dbt` invocation started since `since` (a count from `dbtInvocations()`) has exited, except the
  * long-running subcommands, or until `timeoutMs` passes. Resolves with the invocations still running, so an empty
@@ -110,7 +107,7 @@ export async function waitForDbtExits(
   const deadline = Date.now() + timeoutMs;
   let running = runningSince(spyRecords(), since);
   while (running.length > 0 && Date.now() < deadline) {
-    await pause(POLL_MS);
+    await sleep(POLL_MS);
     running = runningSince(spyRecords(), since);
   }
   return running;
@@ -135,7 +132,7 @@ export async function waitForDbtQuiet(
     if (running.length === 0 && Date.now() - quietSince >= quietMs) {
       break;
     }
-    await pause(POLL_MS);
+    await sleep(POLL_MS);
     const latest = spyRecords();
     running = runningSince(latest, since);
     if (latest.length !== records.length || running.length > 0) {

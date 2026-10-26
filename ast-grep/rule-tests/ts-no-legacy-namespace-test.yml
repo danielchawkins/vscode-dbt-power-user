@@ -1,0 +1,9 @@
+id: ts-no-legacy-namespace
+valid:
+  - 'commands.registerCommand("fusionPowerUser.runCurrentModel", run);'
+  - 'const key = `fusionPowerUser.${leaf}`;'
+  - 'const label = "dbt Power User";'
+invalid:
+  - 'commands.registerCommand("dbtPowerUser.runCurrentModel", run);'
+  - "context.workspaceState.get('dbtPowerUser.projectSelected');"
+  - 'const key = `dbtPowerUser.${leaf}`;'

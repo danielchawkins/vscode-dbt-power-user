@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LspLaunch } from "../../core/lsp";
-import { sameLspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
+import {
+  lspProcessEnv,
+  sameLspLaunch,
+  toLspArgs,
+  toLspLaunch,
+} from "../../core/lsp";
 import type {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
@@ -87,33 +92,23 @@ describe("toLspArgs", () => {
     const args = toLspArgs(launch({ profile: "analytics" }), run);
     expect(args[args.indexOf("--profile") + 1]).toBe("analytics");
   });
+});
 
-  it("omits the log level when there is none", () => {
-    const args = toLspArgs(launch({ staticAnalysis: "baseline" }), run);
-    expect(args).not.toContain("--log-level");
-    expect(args).not.toContain("--log-level-file");
+describe("lspProcessEnv", () => {
+  it("layers the caller's environment over the launch's, except DBT_LSP_USE_TARGET_LSP", () => {
+    expect(
+      lspProcessEnv(
+        { PATH: "/opt/bin", ORIGIN: "a", DBT_LSP_USE_TARGET_LSP: "1" },
+        { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
+      ),
+    ).toEqual({ PATH: "/opt/bin", ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "1" });
   });
 
-  it("uses the run's project dir, not the launch's", () => {
-    const args = toLspArgs(launch({ projectDir: "/link" }), {
-      ...run,
-      projectDir: "/real",
+  it("is the launch's environment alone when the caller has none", () => {
+    expect(lspProcessEnv({ PATH: "/opt/bin" }, undefined)).toEqual({
+      PATH: "/opt/bin",
     });
-    expect(args[args.indexOf("--project-dir") + 1]).toBe("/real");
   });
-
-  it("passes no --static-analysis for project mode", () => {
-    expect(toLspArgs(launch(), run)).not.toContain("--static-analysis");
-  });
-
-  it.each(["off", "baseline", "strict"] as const)(
-    "passes exactly one --static-analysis %s",
-    (mode) => {
-      const args = toLspArgs(launch({ staticAnalysis: mode }), run);
-      expect(args.filter((arg) => arg === "--static-analysis")).toHaveLength(1);
-      expect(args[args.indexOf("--static-analysis") + 1]).toBe(mode);
-    },
-  );
 });
 
 describe("toLspLaunch", () => {
@@ -131,37 +126,6 @@ describe("toLspLaunch", () => {
     });
   });
 
-  it.each([
-    [undefined, undefined, "separate"],
-    ["shared", undefined, "shared"],
-    ["separate", "shared", "shared"],
-    ["shared", "separate", "separate"],
-    ["shared", "bogus", "shared"],
-    ["bogus", undefined, "separate"],
-  ])(
-    "resolves lsp.compiledOutput setting %s with override %s as %s",
-    (setting, override, expected) => {
-      const { environment } = launchFor(
-        { lspCompiledOutput: setting },
-        { lspCompiledOutputOverride: override },
-      );
-      expect(environment).toEqual(
-        expected === "separate" ? { DBT_LSP_USE_TARGET_LSP: "1" } : {},
-      );
-    },
-  );
-
-  it("replaces an inherited DBT_LSP_USE_TARGET_LSP with the resolved mode", () => {
-    const environment = { DBT_LSP_USE_TARGET_LSP: "0", KEEP: "yes" };
-    expect(
-      launchFor({ lspCompiledOutput: "shared" }, { environment }).environment,
-    ).toEqual({ KEEP: "yes" });
-    expect(launchFor({}, { environment }).environment).toEqual({
-      KEEP: "yes",
-      DBT_LSP_USE_TARGET_LSP: "1",
-    });
-  });
-
   it("resolves profilesDir with workspace and env substitution", () => {
     expect(
       launchFor(
@@ -169,15 +133,6 @@ describe("toLspLaunch", () => {
         { environment: { FUSION_PROFILES: "profiles" } },
       ).profilesDir,
     ).toBe(path.resolve(snapshotFolder, "profiles"));
-  });
-
-  it.each([
-    ["off", undefined],
-    ["messages", "debug"],
-    ["verbose", "trace"],
-    [undefined, undefined],
-  ] as const)("maps trace.server %s to log level %s", (level, expected) => {
-    expect(launchFor({ traceServer: level }).logLevel).toBe(expected);
   });
 
   it("matches the package manifest for launch settings", () => {

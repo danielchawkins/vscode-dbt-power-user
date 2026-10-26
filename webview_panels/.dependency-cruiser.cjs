@@ -5,6 +5,14 @@
 // The lineage modules that hold plain data and pure functions: graph state, grouping, the card model, and both
 // layouts with the gutter router. Their tests run without React, so they import no React, React Flow, CSS, UI kit,
 // panel messaging, or a lineage module outside this list.
+// The documentation-editor and query-results state: reducers, their types and the pure helpers they call. Their
+// tests run without React, so they import no React, CSS, UI kit or panel messaging, and no module outside this list.
+const PANEL_STATE_PURE =
+  "^src/modules/(app/typedReducer|" +
+  "documentationEditor/(state/(documentationReducer|entityType|types|incomingDocs)|proposals/proposalsReducer|utils|" +
+  "types|components/tests/(testEdits|types))|" +
+  "queryPanel/(constants|context/(queryPanelReducer|types)|components/QueryPanelContents/types))\\.ts$";
+
 const LINEAGE_PURE =
   "^src/modules/lineage/(card|channels|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|" +
   "groupEdges|grouping|gutterPlan|gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredInput|" +
@@ -12,6 +20,18 @@ const LINEAGE_PURE =
 
 module.exports = {
   forbidden: [
+    {
+      name: "panel-state-is-pure",
+      severity: "error",
+      comment:
+        "Panel state (PANEL_STATE_PURE) imports only itself, the contract and plain packages; never React or CSS. Type-only imports erase at build time, so they are allowed.",
+      from: { path: PANEL_STATE_PURE },
+      to: {
+        path: "^src/|node_modules/(react|react-dom)/|\\.css$",
+        pathNot: PANEL_STATE_PURE,
+        dependencyTypesNot: ["type-only"],
+      },
+    },
     {
       name: "no-circular",
       severity: "error",

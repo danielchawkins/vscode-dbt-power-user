@@ -3,6 +3,7 @@ import { relationTables } from "./relationIndex";
 import type {
   Cardinality,
   Meta,
+  NodeMetaData,
   NodeMetaMap,
   Ref,
   SourceMetaMap,
@@ -48,12 +49,17 @@ export function isIgnoredByMeta(meta: Meta): boolean {
  * Honors `meta.ignore_in_erd` per column. Sources excluded by default
  * (set `includeSources: true` to include them).
  */
-export function inferRefs(
-  terminal: Pick<Log, "debug">,
-  nodeMetaMap: NodeMetaMap,
-  sourceMetaMap: SourceMetaMap | undefined,
-  options: InferenceOptions = {},
-): Ref[] {
+export function inferRefs({
+  terminal,
+  nodeMetaMap,
+  sourceMetaMap,
+  options = {},
+}: {
+  terminal: Pick<Log, "debug">;
+  nodeMetaMap: NodeMetaMap;
+  sourceMetaMap: SourceMetaMap | undefined;
+  options?: InferenceOptions;
+}): Ref[] {
   if (!nodeMetaMap) {
     return [];
   }
@@ -61,18 +67,11 @@ export function inferRefs(
   const includeSources = options.includeSources ?? false;
   const allowSelfReference = options.allowSelfReference ?? false;
 
-  // Index candidate targets by their base name (singular and plural variants).
-  const targets = new Map<string, InferenceTarget>();
-  for (const table of relationTables(nodeMetaMap, sourceMetaMap)) {
-    if (table.source_name === undefined || includeSources) {
-      indexTarget(targets, table.name, {
-        unique_id: table.unique_id,
-        baseName: table.name,
-        columns: Object.keys(table.columns),
-      });
-    }
-  }
-
+  const ctx: ColumnInference = {
+    targets: inferenceTargets(nodeMetaMap, sourceMetaMap, includeSources),
+    minConfidence,
+    allowSelfReference,
+  };
   const refs: Ref[] = [];
   for (const node of nodeMetaMap.nodes()) {
     if (isIgnoredByMeta(node.meta)) {
@@ -83,31 +82,10 @@ export function inferRefs(
       if (isIgnoredByMeta(cols[colName]?.meta)) {
         continue;
       }
-      const candidate = matchColumnToTarget(colName, targets);
-      if (!candidate) {
-        continue;
+      const ref = inferColumnRef(node, colName, ctx);
+      if (ref) {
+        refs.push(ref);
       }
-      if (
-        !allowSelfReference &&
-        candidate.target.unique_id === node.unique_id
-      ) {
-        continue;
-      }
-      if (candidate.confidence < minConfidence) {
-        continue;
-      }
-      const toColumn = pickTargetColumn(colName, candidate.target);
-      if (!toColumn) {
-        continue;
-      }
-      refs.push({
-        id: `inferred:${node.unique_id}.${colName}->${candidate.target.unique_id}.${toColumn}`,
-        from: { table: node.unique_id, columns: [colName] },
-        to: { table: candidate.target.unique_id, columns: [toColumn] },
-        cardinality: DEFAULT_CARDINALITY,
-        source: "inferred",
-        confidence: candidate.confidence,
-      });
     }
   }
   terminal.debug(
@@ -115,6 +93,71 @@ export function inferRefs(
     `Derived ${refs.length} refs from naming inference (minConfidence=${minConfidence})`,
   );
   return refs;
+}
+
+/**
+ * Index the candidate FK targets by base name (singular and plural variants).
+ * Sources are only indexed when `includeSources` is set.
+ */
+function inferenceTargets(
+  nodeMetaMap: NodeMetaMap,
+  sourceMetaMap: SourceMetaMap | undefined,
+  includeSources: boolean,
+): Map<string, InferenceTarget> {
+  const targets = new Map<string, InferenceTarget>();
+  for (const table of relationTables(nodeMetaMap, sourceMetaMap)) {
+    if (table.source_name === undefined || includeSources) {
+      indexTarget(targets, table.name, {
+        unique_id: table.unique_id,
+        baseName: table.name,
+        columns: Object.keys(table.columns),
+      });
+    }
+  }
+  return targets;
+}
+
+interface ColumnInference {
+  targets: Map<string, InferenceTarget>;
+  minConfidence: number;
+  allowSelfReference: boolean;
+}
+
+/**
+ * The inferred ref for one column of `node`, or `undefined` when no candidate
+ * target matches, the match is self-referencing or below `minConfidence`, or
+ * no target column can be picked.
+ */
+function inferColumnRef(
+  node: NodeMetaData,
+  colName: string,
+  ctx: ColumnInference,
+): Ref | undefined {
+  const candidate = matchColumnToTarget(colName, ctx.targets);
+  if (!candidate) {
+    return undefined;
+  }
+  if (
+    !ctx.allowSelfReference &&
+    candidate.target.unique_id === node.unique_id
+  ) {
+    return undefined;
+  }
+  if (candidate.confidence < ctx.minConfidence) {
+    return undefined;
+  }
+  const toColumn = pickTargetColumn(colName, candidate.target);
+  if (!toColumn) {
+    return undefined;
+  }
+  return {
+    id: `inferred:${node.unique_id}.${colName}->${candidate.target.unique_id}.${toColumn}`,
+    from: { table: node.unique_id, columns: [colName] },
+    to: { table: candidate.target.unique_id, columns: [toColumn] },
+    cardinality: DEFAULT_CARDINALITY,
+    source: "inferred",
+    confidence: candidate.confidence,
+  };
 }
 
 function indexTarget(

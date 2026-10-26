@@ -13,10 +13,6 @@ export class DiagnosticsOutputChannel {
     this.outputChannel.show(true);
   }
 
-  log(message: string): void {
-    this.outputChannel.appendLine(stripANSI(message));
-  }
-
   logNewLine(): void {
     this.outputChannel.appendLine("");
   }

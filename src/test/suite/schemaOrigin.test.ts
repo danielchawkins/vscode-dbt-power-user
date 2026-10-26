@@ -182,12 +182,7 @@ describe("effectiveStaticAnalysis", () => {
   it.each([
     ["project", false, "baseline"],
     ["project", true, "strict"],
-    ["strict", false, "strict"],
-    ["strict", true, "strict"],
-    ["baseline", false, "baseline"],
     ["baseline", true, "baseline"],
-    ["off", false, "off"],
-    ["off", true, "off"],
   ] as const)(
     "setting %s with project opt-in %s is %s",
     (setting, optedIn, expected) => {

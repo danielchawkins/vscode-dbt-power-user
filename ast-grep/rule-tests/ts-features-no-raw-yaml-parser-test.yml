@@ -1,0 +1,20 @@
+id: ts-features-no-raw-yaml-parser
+valid:
+  - 'import { modelAt } from "../../core/yaml/schemaYaml";'
+  - 'const model = modelAt(text, offset);'
+  - 'const parser = new SomeParser(options);'
+  - 'const parts = path.parse(file);'
+  - 'const kind = CSTNode.kind;'
+  - 'const doc = parseDocumentSafe(text);'
+invalid:
+  - 'const parser = new Parser(lineCounter.addNewLine);'
+  - 'const doc = parseDocument(text);'
+  - 'const doc = parseDocument<YAMLSeq<string>>(text);'
+  - 'const doc = YAML.parseDocument(text);'
+  - 'const doc = YAML.parseDocument<YAMLSeq<string>>(text);'
+  - 'const parser = new YAML.Parser(lineCounter.addNewLine);'
+  - 'if (CST.isScalar(item.key)) { return; }'
+  - 'if (YAML.CST.isScalar(item.key)) { return; }'
+  - 'const alias = YAML.CST;'
+  - 'function f(item: CST.CollectionItem) { return item; }'
+  - 'let token: YAML.CST.Token;'

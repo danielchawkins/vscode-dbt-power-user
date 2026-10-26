@@ -1,0 +1,12 @@
+# The manifest contributes every command, view, submenu and setting under `fusionPowerUser.*`
+# (docs/settings-migration.md). Replaces the package.json scan in src/test/suite/namespaceGuard.test.ts.
+id: json-no-legacy-namespace
+language: json
+severity: error
+message: >-
+  `dbtPowerUser.*` IDs were renamed to `fusionPowerUser.*` with no fallback (docs/settings-migration.md).
+files:
+  - package.json
+rule:
+  kind: string_content
+  regex: 'dbtPowerUser\.'

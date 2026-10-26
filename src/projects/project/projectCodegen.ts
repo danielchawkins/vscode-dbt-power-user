@@ -86,20 +86,26 @@ export async function generateSchemaYML(
 export interface GenerateModelFromSourceParams {
   currentDoc: Uri;
   sourceName: string;
-  database: string;
-  schema: string;
+  database: string | undefined;
+  schema: string | undefined;
   tableName: string;
   tableIdentifier?: string | undefined;
 }
 
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
-export async function generateModel(
-  columns: Pick<ColumnSource, "getColumnsOfSource"> & NotifiableProject,
-  terminal: Pick<Log, "debug">,
-  sourceName: string,
-  tableName: string,
-  sourcePath: string,
-): Promise<void> {
+export async function generateModel({
+  columns,
+  terminal,
+  sourceName,
+  tableName,
+  sourcePath,
+}: {
+  columns: Pick<ColumnSource, "getColumnsOfSource"> & NotifiableProject;
+  terminal: Pick<Log, "debug">;
+  sourceName: string;
+  tableName: string;
+  sourcePath: string;
+}): Promise<void> {
   await window.withProgress(
     {
       location: ProgressLocation.Notification,
@@ -171,12 +177,17 @@ export async function generateModel(
 }
 
 /** Opens beside the editor the `type` artifact in the target folder that matches the model's path. */
-export async function findModelInTargetfolder(
-  projectRoot: string,
-  targetPath: string | undefined,
-  modelPath: Uri,
-  type: string,
-): Promise<void> {
+export async function findModelInTargetfolder({
+  projectRoot,
+  targetPath,
+  modelPath,
+  type,
+}: {
+  projectRoot: string;
+  targetPath: string | undefined;
+  modelPath: Uri;
+  type: string;
+}): Promise<void> {
   if (!targetPath) {
     return;
   }

@@ -1,40 +1,19 @@
-import type { Command, Event, LanguageStatusItem, Uri } from "vscode";
-import {
-  commands,
-  Disposable,
-  languages,
-  LanguageStatusSeverity,
-} from "vscode";
-import type { StaticAnalysisMode } from "../../core/snapshot/index";
+import type { Event, LanguageStatusItem, Uri } from "vscode";
+import { commands, Disposable, languages } from "vscode";
 import { projectRootDigest } from "../../core/snapshot/index";
-import { failureSummary } from "../../core/text";
 import { vscodeDocumentSelectorForProject } from "../../fusion/documentSelector";
-import type {
-  FusionClient,
-  FusionClientState,
-} from "../../fusion/fusionClient";
+import type { FusionClient } from "../../fusion/fusionClient";
 import { addDeclaredProjectRoot } from "../registry/projectConfiguration";
 import type { DeclaredProject } from "../registry/projectRegistry";
-import type { FolderScope, SchemaOriginStatus } from "../registry/schemaOrigin";
-import {
-  effectiveStaticAnalysis,
-  folderScopeOf,
-  USE_STRICT_ANALYSIS_COMMAND,
-  whyNotStrict,
-} from "../registry/schemaOrigin";
+import { folderScopeOf } from "../registry/schemaOrigin";
 import type { FusionClientPool } from "./fusionClientPool";
-
-/** What a project has opted into in its own project file. */
-export interface ProjectOptIns {
-  strict: boolean;
-  schemaOrigin: SchemaOriginStatus;
-}
-
-/** One missing column-lineage opt-in; `command` adds it after that command's own confirmation. */
-interface OptInLine {
-  text: string;
-  command?: Command;
-}
+import {
+  clientItemView,
+  optInLines,
+  type ProjectNotes,
+  type ProjectOptIns,
+  staticText,
+} from "./fusionStatusText";
 
 type ProjectStatus = {
   project: DeclaredProject;
@@ -45,14 +24,6 @@ type ProjectStatus = {
   targetItem: LanguageStatusItem | undefined;
   originItem: LanguageStatusItem | undefined;
 };
-
-/** What the status shows beside a project's client state. */
-interface ProjectNotes {
-  /** The current configuration error, in full. */
-  error?: string | undefined;
-  /** A note on the project's resolved environment. */
-  environment?: string | undefined;
-}
 
 /** Language status items per Declared Project with a client, scoped to that project's documents. */
 export class FusionStatus implements Disposable {
@@ -71,17 +42,21 @@ export class FusionStatus implements Disposable {
    */
   private readonly projectNotes: (project: DeclaredProject) => ProjectNotes;
 
-  constructor(
+  constructor({
+    registry,
+    clientPool,
+    optIns = () => undefined,
+    onDidChangeOptIns,
+    projectNotes = () => ({}),
+  }: {
     registry: {
       readonly projects: readonly DeclaredProject[];
-    },
-    clientPool: FusionClientPool,
-    optIns: (project: DeclaredProject) => ProjectOptIns | undefined = () =>
-      undefined,
-    onDidChangeOptIns?: Event<unknown>,
-
-    projectNotes: (project: DeclaredProject) => ProjectNotes = () => ({}),
-  ) {
+    };
+    clientPool: FusionClientPool;
+    optIns?: (project: DeclaredProject) => ProjectOptIns | undefined;
+    onDidChangeOptIns?: Event<unknown>;
+    projectNotes?: (project: DeclaredProject) => ProjectNotes;
+  }) {
     this.registry = registry;
     this.clientPool = clientPool;
     this.optIns = optIns;
@@ -254,28 +229,17 @@ export class FusionStatus implements Disposable {
 
   private render(status: ProjectStatus): void {
     const { project, client, clientItem } = status;
-    const failure =
-      client.state === "failed"
-        ? failureSummary(client.failureReason)
-        : undefined;
-    const notes = this.projectNotes(project);
-    const error = failure ? undefined : notes.error;
-    clientItem.text = error ? clientText("failed") : clientText(client.state);
-    clientItem.severity = error
-      ? LanguageStatusSeverity.Error
-      : clientSeverity(client.state);
-    clientItem.busy =
-      client.state === "starting" || client.state === "restarting";
-    const problem = failure ?? error;
-    const detail = problem ? `${project.name}: ${problem}` : project.name;
-    clientItem.detail = notes.environment
-      ? `${detail} · ${notes.environment}`
-      : detail;
-    clientItem.command = {
-      title: "Show output",
-      command: "fusionPowerUser.showFusionOutput",
-      arguments: [project.root],
-    };
+    const view = clientItemView({
+      projectName: project.name,
+      state: client.state,
+      failureReason: client.failureReason,
+      notes: this.projectNotes(project),
+    });
+    clientItem.text = view.text;
+    clientItem.severity = view.severity;
+    clientItem.busy = view.busy;
+    clientItem.detail = view.detail;
+    clientItem.command = { ...view.command, arguments: [project.root] };
 
     this.renderStatic(status);
     this.renderOrigin(status);
@@ -295,96 +259,5 @@ export class FusionStatus implements Disposable {
     }
     status.targetItem.text = `target: ${target}`;
     status.targetItem.detail = project.name;
-  }
-}
-
-/**
- * The missing column-lineage opt-ins, each with the command that adds it when one exists.
- * `setting` is the configured `fusionPowerUser.staticAnalysis`; it decides whether the project file matters.
- * `folder` names the folder the strict fix changes.
- * @internal
- */
-export function optInLines(
-  optIns: ProjectOptIns | undefined,
-  setting: StaticAnalysisMode,
-  folder?: FolderScope,
-): OptInLine[] {
-  if (!optIns) {
-    return [];
-  }
-  const lines: OptInLine[] = [];
-  if (effectiveStaticAnalysis(setting, optIns.strict) !== "strict") {
-    lines.push({
-      text: whyNotStrict(setting, folder),
-      command: {
-        title: "Use strict analysis",
-        command: USE_STRICT_ANALYSIS_COMMAND,
-      },
-    });
-  }
-  const origin = optIns.schemaOrigin;
-  switch (origin.kind) {
-    case "local":
-      break;
-    case "noHook":
-      lines.push({
-        text: "Sources read their schemas from the warehouse.",
-        command: {
-          title: "Add schema-origin hook",
-          command: "fusionPowerUser.addSchemaOriginHook",
-        },
-      });
-      break;
-    case "untypedSources":
-      lines.push({
-        text:
-          `${origin.missing.length} source column(s) or table(s) lack a data_type, ` +
-          "so strict analysis still needs the warehouse.",
-      });
-      break;
-  }
-  return lines;
-}
-
-/** The static-analysis status text: the setting, or under `project` the mode the project file selects. */
-function staticText(
-  setting: StaticAnalysisMode,
-  projectStrict: boolean,
-): string {
-  const mode = effectiveStaticAnalysis(setting, projectStrict);
-  return setting === "project"
-    ? `static: ${mode} (project)`
-    : `static: ${mode}`;
-}
-
-/** @internal */
-export function clientText(state: FusionClientState): string {
-  switch (state) {
-    case "starting":
-      return "$(sync~spin) dbt Fusion starting";
-    case "restarting":
-      return "$(sync~spin) dbt Fusion restarting";
-    case "running":
-      return "$(check) dbt Fusion";
-    case "failed":
-      return "$(error) dbt Fusion";
-    case "stopped":
-      return "$(debug-disconnect) dbt Fusion";
-  }
-}
-
-/** @internal */
-export function clientSeverity(
-  state: FusionClientState,
-): LanguageStatusSeverity {
-  switch (state) {
-    case "failed":
-      return LanguageStatusSeverity.Error;
-    case "stopped":
-      return LanguageStatusSeverity.Warning;
-    case "starting":
-    case "running":
-    case "restarting":
-      return LanguageStatusSeverity.Information;
   }
 }

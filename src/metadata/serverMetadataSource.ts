@@ -40,12 +40,17 @@ export class ServerMetadataSource implements Disposable {
   private readonly projectName: () => string;
   private readonly log: Pick<Log, "debug" | "warn">;
 
-  constructor(
-    lsp: FusionCommands,
-    projectName: () => string,
-    triggers: ServerMetadataTriggers,
-    log: Pick<Log, "debug" | "warn">,
-  ) {
+  constructor({
+    lsp,
+    projectName,
+    triggers,
+    log,
+  }: {
+    lsp: FusionCommands;
+    projectName: () => string;
+    triggers: ServerMetadataTriggers;
+    log: Pick<Log, "debug" | "warn">;
+  }) {
     this.lsp = lsp;
     this.projectName = projectName;
     this.log = log;

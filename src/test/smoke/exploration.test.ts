@@ -3,19 +3,19 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import {
-  captureWorkbenchScreenshot,
-  readWorkbenchNotificationTexts,
-  validateSmokeHost,
-} from "./cdpClient";
+import { sleep } from "../async";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  captureWorkbenchScreenshot,
+  readWorkbenchNotificationTexts,
+} from "./workbench";
 
 const SETTLE_MS = 20_000;
 
@@ -39,10 +39,8 @@ suite("Exploration", function () {
       open: string;
       editor: boolean;
     }[];
-    const port = process.env.FPU_CDP_PORT ?? "";
-    const host = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     await (
       await ext?.activate()
@@ -61,7 +59,7 @@ suite("Exploration", function () {
       if (step.editor) {
         await vscode.window.showTextDocument(document);
       }
-      await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+      await sleep(SETTLE_MS);
       await record(port, host, step.name);
     }
   });
@@ -73,7 +71,7 @@ async function record(port: string, host: string, name: string) {
       FUSION_CLIENT_STATES_COMMAND,
     )) ?? [];
   await vscode.commands.executeCommand("notifications.showList");
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await sleep(500);
   const notifications = await readWorkbenchNotificationTexts(port, host);
   const measured = {
     projects: states.map((s) => ({

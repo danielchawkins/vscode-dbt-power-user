@@ -3,23 +3,23 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  assertNoWorkbenchNotifications,
-  captureWorkbenchScreenshot,
-  evaluateWorkbench,
-  revealWorkbench,
-  validateSmokeHost,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  evaluateWorkbench,
+  revealWorkbench,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 /** The project's dbt name; the folder is `projects/analytics`. */
 const PROJECT_NAME = "nested_analytics";
@@ -49,11 +49,8 @@ suite("Opened-file smoke", function () {
       return;
     }
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -101,16 +98,16 @@ suite("Opened-file smoke", function () {
       "the project should be declared by the opened file",
     );
 
-    await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost);
-    await assertNoWorkbenchNotifications(cdpPort, smokeHost);
-    await revealWorkbench(cdpPort, smokeHost);
-    const hover = await waitForHover(cdpPort, smokeHost);
+    await waitForWorkbenchNotificationsToSettle(port, host);
+    await assertNoWorkbenchNotifications(port, host);
+    await revealWorkbench(port, host);
+    const hover = await waitForHover(port, host);
     assert.ok(
       hover?.includes(DECLARED_TEXT),
       `the language status should say "${DECLARED_TEXT}": ${hover ?? "no hover"}`,
     );
 
-    await recordCheckpoint(cdpPort, smokeHost, { hover, report });
+    await recordCheckpoint(port, host, { hover, report });
   });
 });
 
@@ -123,41 +120,41 @@ async function fusionClientStates(): Promise<FusionClientStateReport[]> {
 }
 
 async function waitForProjectRunning(): Promise<FusionClientStateReport> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
   let last: FusionClientStateReport[] = [];
-  do {
-    last = await fusionClientStates();
-    const report = last.find(
-      (candidate) => candidate.projectName === PROJECT_NAME,
-    );
-    if (report?.state === "running") {
-      return report;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `Timed out waiting for ${PROJECT_NAME} to run: ${JSON.stringify(last)}`,
+  const { report } = await pollUntil(
+    async () => {
+      last = await fusionClientStates();
+      return {
+        report: last.find(
+          (candidate) => candidate.projectName === PROJECT_NAME,
+        ),
+      };
+    },
+    ({ report }) => report?.state === "running",
+    {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: () => `${PROJECT_NAME} to run: ${JSON.stringify(last)}`,
+    },
   );
+  return report as FusionClientStateReport;
 }
 
 /** The first call opens the language status hover; later calls read its text. */
-async function waitForHover(
+function waitForHover(
   cdpPort: string,
   host: string,
 ): Promise<string | undefined> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
-  do {
-    const text = await evaluateWorkbench<string>(
-      cdpPort,
-      host,
-      LANGUAGE_STATUS_HOVER,
-    );
-    if (text?.includes(DECLARED_TEXT)) {
-      return text;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  return undefined;
+  return pollUntil(
+    () => evaluateWorkbench<string>(cdpPort, host, LANGUAGE_STATUS_HOVER),
+    (text) => text?.includes(DECLARED_TEXT) ?? false,
+    {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: (last) =>
+        `the language status hover; last hover was ${JSON.stringify(last)}`,
+    },
+  );
 }
 
 /** Writes one checkpoint with the hover open, when `FPU_SMOKE_SCREENSHOTS` names a directory. */
@@ -191,8 +188,4 @@ async function recordCheckpoint(
     },
   );
   console.log(`FPU_SMOKE_SCREENSHOT=${file}`);
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

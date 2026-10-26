@@ -7,6 +7,7 @@ import { FusionCommandError } from "../../core/lsp";
 import type { FusionClient } from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
+import { sleep } from "../async";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture, type LspFixture } from "./lspFixture";
 
@@ -21,7 +22,6 @@ const LAST_REPORT_WAIT_MS = 4_000;
 const SETTLE_MS = 6_000;
 
 const fileUri = (fsPath: string): string => pathToFileURL(fsPath).href;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function openCompiledProject(): Promise<{
   fixture: LspFixture;
@@ -137,16 +137,16 @@ suite("Compile reports caused by our own requests", function () {
         }
       },
     } as unknown as FusionClient;
-    const source = new ServerMetadataSource(
-      createFusionCommands(() => client),
-      () => "single_project",
-      {
+    const source = new ServerMetadataSource({
+      lsp: createFusionCommands(() => client),
+      projectName: () => "single_project",
+      triggers: {
         compileComplete: reports.event,
         sourceChanged: sourceChanged.event,
         clientChanged: clientChanged.event,
       },
-      { debug: () => undefined, warn: () => undefined },
-    );
+      log: { debug: () => undefined, warn: () => undefined },
+    });
     try {
       reports.fire();
       await sleep(SETTLE_MS);

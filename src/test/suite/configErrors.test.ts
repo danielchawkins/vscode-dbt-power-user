@@ -6,13 +6,13 @@ import { commands, languages, Uri, window, workspace } from "vscode";
 import { firstLogLine } from "../../core/cli";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
-import { FusionCli } from "../../fusion/fusionCli";
-import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
 import {
   CompileSignal,
   subscribeToCompileComplete,
-  type ClientHandle,
-} from "../../fusion/lspClientSupport";
+} from "../../fusion/compileSignal";
+import { FusionCli } from "../../fusion/fusionCli";
+import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
+import type { ClientHandle } from "../../fusion/lspClientSupport";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import {
   errorHint,
@@ -65,12 +65,12 @@ function projectWithParse(
   const project = buildTestProject(
     root,
     (executable, projectRoot) =>
-      new FusionCli(
+      new FusionCli({
         executable,
-        () => readProjectSnapshot(Uri.file(projectRoot)),
+        snapshot: () => readProjectSnapshot(Uri.file(projectRoot)),
         processes,
-        log,
-      ),
+        terminal: log,
+      }),
     { terminal: log, projectRoot: Uri.file(root) },
   );
   return { project, log };
@@ -439,17 +439,17 @@ describe("ProjectErrors", () => {
   });
 
   const projectErrors = (invocation?: object) =>
-    new ProjectErrors(
-      Uri.file("/p"),
-      () => "p",
-      () => {
+    new ProjectErrors({
+      root: Uri.file("/p"),
+      projectName: () => "p",
+      snapshot: () => {
         if (!invocation) {
           throw new Error("no snapshot");
         }
         return { invocation } as ProjectSnapshot;
       },
-      spyLog(),
-    );
+      terminal: spyLog(),
+    });
 
   it.each([
     [

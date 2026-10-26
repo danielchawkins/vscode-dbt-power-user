@@ -1,14 +1,5 @@
 import type { Fields } from "./guards.js";
-import {
-  arrayOf,
-  isAnything,
-  isBoolean,
-  isString,
-  oneOf,
-  optional,
-  shape,
-  syncRequestId,
-} from "./guards.js";
+import { arrayOf, isString, oneOf, optional, syncRequestId } from "./guards.js";
 
 /** The `args` of a host reply to a request that carried `syncRequestId`. */
 export interface ResponseArgs<B = unknown> {
@@ -57,15 +48,6 @@ export interface PanelNoticeAction {
   action: PanelNoticeActionId;
 }
 
-export const responseFields: Fields<Omit<Response, "command">> = {
-  args: shape<ResponseArgs>({
-    syncRequestId,
-    body: isAnything,
-    status: isBoolean,
-    error: optional(isString),
-  }),
-};
-
 export const showNotificationFields: Fields<Omit<ShowNotification, "command">> =
   {
     infoMessage: isString,
@@ -74,16 +56,3 @@ export const showNotificationFields: Fields<Omit<ShowNotification, "command">> =
   };
 
 export const isPanelNoticeActionId = oneOf("useStrictAnalysis");
-
-export const isPanelNotice = shape<PanelNotice>({
-  message: isString,
-  type: oneOf("warning", "error"),
-  actions: optional(
-    arrayOf(
-      shape<PanelNoticeAction>({
-        title: isString,
-        action: isPanelNoticeActionId,
-      }),
-    ),
-  ),
-});

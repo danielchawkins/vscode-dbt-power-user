@@ -15,23 +15,21 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
-  writeSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   createTimestampedLog,
   findAvailablePort,
-  listLogs,
+  signalExitCode,
 } from "./launchSupport.mjs";
 import { resolveOnPath, TOOL_ENV_FIXTURES } from "./toolEnvFixtures.mjs";
+import { armWatchdog } from "./watchdog.mjs";
 
 const __dirname = import.meta.dirname;
 const root = path.resolve(__dirname, "../..");
 const SURVIVING_PROCESS_TIMEOUT_MS = 5_000;
 const SURVIVING_PROCESS_POLL_MS = 250;
-// Mocha's own timeout runs inside the extension host, so a blocked host never reports it.
-const HOST_WATCHDOG_MS = Number(process.env.FPU_SMOKE_WATCHDOG_MS ?? 240_000);
 // Directories every tool-environment host keeps on PATH: enough for the host's own shell tools, nothing else.
 const SYSTEM_PATH = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"];
 
@@ -133,9 +131,7 @@ process.once("exit", cleanup);
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.once(signal, () => {
     cleanup();
-    process.exit(
-      128 + (signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1),
-    );
+    process.exit(signalExitCode(signal));
   });
 }
 
@@ -171,61 +167,12 @@ if (install.status !== 0) {
   process.exit(install.status ?? 1);
 }
 
-const watchdog = setTimeout(() => {
-  // Synchronous writes: process.exit discards pending async output on a piped stderr.
-  const out = (text) => writeSync(2, `${text}\n`);
-  out(
-    `FPU_SMOKE_WATCHDOG: ${host} did not finish within ${HOST_WATCHDOG_MS} ms`,
-  );
-  const ps = spawnSync("ps", ["-eo", "pid,ppid,pcpu,etime,command"], {
-    encoding: "utf-8",
-  });
-  // On Linux the host lives in its install directory (e.g. .../usr/share/cursor), not a .app bundle.
-  const bundle =
-    process.platform === "linux"
-      ? path.dirname(hostApp)
-      : hostApp.slice(0, hostApp.indexOf(".app") + 4);
-  const hostLines = ps.stdout
-    .split("\n")
-    .filter((line) =>
-      process.platform === "linux"
-        ? line.includes(bundle)
-        : /Cursor|Code|dbt|Electron/.test(line),
-    );
-  out(hostLines.join("\n"));
-  const logs = listLogs(path.join(diagnosticsDir, "logs")).sort(
-    (a, b) =>
-      Number(/renderer|exthost\.log|Fusion|dbt/i.test(b)) -
-      Number(/renderer|exthost\.log|Fusion|dbt/i.test(a)),
-  );
-  for (const file of logs) {
-    const lines = readFileSync(file, "utf-8").split("\n");
-    out(`FPU_SMOKE_LOG ${path.relative(diagnosticsDir, file)}`);
-    out(lines.slice(-80).join("\n"));
-  }
-  // The busiest processes of the host under test are the likeliest to be spinning; native stacks name the
-  // loop. Helper processes retitle themselves, so match the bundle path or a helper title.
-  const busiest = hostLines
-    .filter((line) =>
-      line.includes(bundle) ? true : /(Cursor|Code) Helper/.test(line),
-    )
-    .map((line) => line.trim().split(/\s+/))
-    .sort((a, b) => Number(b[2]) - Number(a[2]))
-    .slice(0, 2);
-  for (const [pid, , cpu] of process.platform === "darwin" ? busiest : []) {
-    const sample = spawnSync("sample", [pid, "3"], { encoding: "utf-8" });
-    out(`FPU_SMOKE_SAMPLE pid=${pid} cpu=${cpu}`);
-    out(
-      ([sample.stdout, sample.stderr].find(Boolean) ?? sample.stderr)
-        .split("\n")
-        .slice(0, 150)
-        .join("\n"),
-    );
-  }
-  cleanup();
-  process.exit(124);
-}, HOST_WATCHDOG_MS);
-watchdog.unref();
+const watchdog = armWatchdog({
+  host,
+  hostApp,
+  diagnosticsDir,
+  cleanup,
+});
 
 try {
   const launchEpochMs = Date.now();

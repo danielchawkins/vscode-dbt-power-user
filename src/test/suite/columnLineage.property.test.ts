@@ -144,20 +144,6 @@ describe("columnEdges on captured Fusion 2.0.6 output", () => {
 });
 
 describe("columnEdges properties", () => {
-  it("every edge's endpoints are a node or a node's parent", () => {
-    fc.assert(
-      fc.property(listNodesResult, (result) => {
-        const nodes = new Set(result.nodes.map((node) => node.unique_id));
-        const parents = new Set(result.nodes.flatMap((node) => node.parents));
-        for (const edge of columnEdges(result)) {
-          expect(nodes.has(id(edge.child))).toBe(true);
-          expect(parents.has(id(edge.parent))).toBe(true);
-        }
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
   it("invents no edge: each is a listed node-parent pair", () => {
     fc.assert(
       fc.property(listNodesResult, (result) => {

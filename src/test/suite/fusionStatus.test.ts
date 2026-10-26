@@ -15,13 +15,13 @@ import type {
   FusionClientState,
 } from "../../fusion/fusionClient";
 import type { FusionClientPool } from "../../projects/clients/fusionClientPool";
-import type { ProjectOptIns } from "../../projects/clients/fusionStatus";
+import { FusionStatus } from "../../projects/clients/fusionStatus";
 import {
   clientSeverity,
   clientText,
-  FusionStatus,
   optInLines,
-} from "../../projects/clients/fusionStatus";
+  type ProjectOptIns,
+} from "../../projects/clients/fusionStatusText";
 import type * as projectConfigurationModule from "../../projects/registry/projectConfiguration";
 import { addDeclaredProjectRoot } from "../../projects/registry/projectConfiguration";
 import type { DeclaredProject } from "../../projects/registry/projectRegistry";
@@ -225,13 +225,16 @@ describe("FusionStatus", () => {
         launches.get(project.root.fsPath) as LspLaunch | undefined,
       onDidChangeClients: poolChanged.event,
     } as unknown as FusionClientPool;
-    return new FusionStatus(
-      { projects },
+    return new FusionStatus({
+      registry: { projects },
       clientPool,
-      () => optIns,
-      optInsChanged.event,
-      () => ({ error: projectError, environment: environmentNote }),
-    );
+      optIns: () => optIns,
+      onDidChangeOptIns: optInsChanged.event,
+      projectNotes: () => ({
+        error: projectError,
+        environment: environmentNote,
+      }),
+    });
   }
 
   function items(): LanguageStatusItem[] {

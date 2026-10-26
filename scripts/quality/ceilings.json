@@ -1,7 +1,7 @@
 {
-  "suppressions.host": 7,
+  "suppressions.host": 2,
   "suppressions.webview": 0,
-  "internalTags": 55,
+  "internalTags": 54,
   "coverage.host": {
     "lines": 80,
     "branches": 72,
@@ -19,14 +19,14 @@
     "vsix": 800000,
     "webview_panels/dist/assets/chunk-shared.js": 282300,
     "webview_panels/dist/assets/documentationEditor.css": 8760,
-    "webview_panels/dist/assets/documentationEditor.js": 39572,
+    "webview_panels/dist/assets/documentationEditor.js": 39770,
     "webview_panels/dist/assets/lineage.css": 36000,
     "webview_panels/dist/assets/lineage.js": 295637,
     "webview_panels/dist/assets/queryResults.css": 9800,
     "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200
   },
-  "oxlintSuppressions.host": 132,
-  "oxlintSuppressions.webview": 30,
+  "oxlintSuppressions.host": 59,
+  "oxlintSuppressions.webview": 27,
   "plannedTags": 0
 }

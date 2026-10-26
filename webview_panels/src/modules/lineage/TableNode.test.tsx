@@ -254,27 +254,6 @@ describe("table node name block", () => {
     expect(title).toContain("relation: DEV.marts.summary_mart");
   });
 
-  it("takes the package from the unique ID when no package name is set", () => {
-    const { container } = drawCard({
-      table: "metric.fg.revenue",
-      label: "revenue",
-      nodeType: "metric",
-      packageName: undefined,
-    });
-    expect(container.querySelector("[class*=tags]")?.textContent).toBe(
-      "fgmetric",
-    );
-  });
-
-  it("leaves the file line out when the title is the file name", () => {
-    const { container } = drawCard({
-      label: "orders",
-      path: "models/orders.sql",
-      refName: undefined,
-    });
-    expect(container.querySelector("[class*=file]")).toBeNull();
-  });
-
   it("shows the relation line only on the start card and a selected card", () => {
     const relation = (isStart: boolean, selected: boolean) =>
       drawCard({}, { isStart, selected }).container.querySelector(

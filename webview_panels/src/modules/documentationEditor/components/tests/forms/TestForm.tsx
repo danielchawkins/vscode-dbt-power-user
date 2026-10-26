@@ -10,8 +10,9 @@ import {
 } from "@uicore";
 import type { SubmitEvent } from "react";
 import { useEffect, useEffectEvent } from "react";
-import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
+import useTestFormSave from "../hooks/useTestFormSave";
 import useTestFormValues from "../hooks/useTestFormValues";
+import { TestOperation } from "../testEdits";
 import AcceptedValues from "./AcceptedValues";
 import { isTestFormComplete } from "./isTestFormComplete";
 import Relationships from "./Relationships";

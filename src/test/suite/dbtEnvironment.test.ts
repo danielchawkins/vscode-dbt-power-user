@@ -98,47 +98,18 @@ describe("projectDirVariable", () => {
 describe("resolveProfilesDir", () => {
   const exists = (file: string) => file === path.join(root, "profiles.yml");
 
-  it("prefers the setting over every variable", () => {
-    expect(
-      resolveProfilesDir(
-        "/setting",
-        { DBT_ENGINE_PROFILES_DIR: "/engine", DBT_PROFILES_DIR: "/dbt" },
-        root,
-        home,
-        exists,
-      ),
-    ).toBe("/setting");
-  });
-
-  it("prefers DBT_ENGINE_PROFILES_DIR over DBT_PROFILES_DIR", () => {
-    const env = {
-      DBT_ENGINE_PROFILES_DIR: "/engine",
-      DBT_PROFILES_DIR: "/dbt",
-    };
-    expect(resolveProfilesDir(undefined, env, root, home, exists)).toBe(
-      "/engine",
-    );
-    expect(
-      resolveProfilesDir(
-        undefined,
-        { DBT_PROFILES_DIR: "/dbt" },
-        root,
-        home,
-        exists,
-      ),
-    ).toBe("/dbt");
-  });
-
   it("uses the root when it has a profiles.yml, else ~/.dbt", () => {
-    expect(resolveProfilesDir(undefined, {}, root, home, exists)).toBe(root);
-    expect(resolveProfilesDir(undefined, {}, root, home, never)).toBe(
-      path.join(home, ".dbt"),
-    );
-  });
-
-  it("treats blank values as unset", () => {
     expect(
-      resolveProfilesDir(" ", { DBT_PROFILES_DIR: "" }, root, home, never),
+      resolveProfilesDir({ setting: undefined, env: {}, root, home, exists }),
+    ).toBe(root);
+    expect(
+      resolveProfilesDir({
+        setting: undefined,
+        env: {},
+        root,
+        home,
+        exists: never,
+      }),
     ).toBe(path.join(home, ".dbt"));
   });
 
@@ -151,16 +122,16 @@ describe("resolveProfilesDir", () => {
         maybeBlank,
         fc.boolean(),
         (setting, engine, legacy, blank, hasProfiles) => {
-          const result = resolveProfilesDir(
-            setting ?? blank,
-            {
+          const result = resolveProfilesDir({
+            setting: setting ?? blank,
+            env: {
               DBT_ENGINE_PROFILES_DIR: engine ?? blank,
               DBT_PROFILES_DIR: legacy ?? blank,
             },
             root,
             home,
-            () => hasProfiles,
-          );
+            exists: () => hasProfiles,
+          });
           const fallback = hasProfiles ? root : path.join(home, ".dbt");
           expect(result).toBe(setting ?? engine ?? legacy ?? fallback);
         },

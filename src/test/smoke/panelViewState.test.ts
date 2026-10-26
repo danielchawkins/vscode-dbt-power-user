@@ -1,19 +1,22 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
+import { sleep } from "../async";
+import { currentFixtureName } from "./fixtureContext";
+import { clickFirstColumn, clickOnCard } from "./lineageProbes";
 import {
   evaluatePanel,
   readWebviewHeap,
-  validateSmokeHost,
   waitForPanelGone,
   waitForWebviewPaint,
-} from "./cdpClient";
-import { currentFixtureName } from "./fixtureContext";
-import { clickFirstColumn, clickOnCard } from "./lineageProbes";
+} from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
-import type { DocsState } from "./webviewInteractions";
-import { readDocsState, waitForDocsClean } from "./webviewInteractions";
+import { cdpPort, smokeHost } from "./smokeEnv";
+import {
+  type DocsState,
+  readDocsState,
+  waitForDocsClean,
+} from "./webviewInteractions";
 
 const RENDER_TEST_RESULT = "fusionPowerUser.test.renderQueryResult";
 const RESULTS = PANELS.queryResults;
@@ -121,11 +124,8 @@ suite("Panel view state", function () {
       this.skip();
       return;
     }
-    const port = process.env.FPU_CDP_PORT;
-    assert.ok(port, "smoke requires CDP port");
-    const host = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const api = await vscode.extensions.getExtension(EXTENSION_ID)!.activate();
     await api.ready;
 
@@ -181,10 +181,8 @@ suite("Panel view state", function () {
       this.skip();
       return;
     }
-    const port = process.env.FPU_CDP_PORT!;
-    const host = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const folder = vscode.workspace.workspaceFolders![0];
     await vscode.window.showTextDocument(
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
@@ -229,10 +227,8 @@ suite("Panel view state", function () {
       this.skip();
       return;
     }
-    const port = process.env.FPU_CDP_PORT!;
-    const host = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const folder = vscode.workspace.workspaceFolders![0];
     await vscode.window.showTextDocument(
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
@@ -326,10 +322,8 @@ suite("Panel view state", function () {
       this.skip();
       return;
     }
-    const port = process.env.FPU_CDP_PORT!;
-    const host = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     await showResults(port, host);
     await vscode.commands.executeCommand(RENDER_TEST_RESULT, rows);
     const samples = [await sampleHeaps(port, rows)];
@@ -433,8 +427,4 @@ async function waitForTabs(
       (await evaluatePanel<Tabs>(port, RESULTS.entry, READ_TABS))?.value,
     (tabs): tabs is Tabs => tabs !== undefined && done(tabs),
   ) as Promise<Tabs>;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

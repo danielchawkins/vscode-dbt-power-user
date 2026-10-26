@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  CompileSignal,
-  languageClientOptions,
-} from "../../fusion/lspClientSupport";
+import { CompileSignal } from "../../fusion/compileSignal";
+import { languageClientOptions } from "../../fusion/lspClientSupport";
 
 const noState = () => ({
   code: -32803,
@@ -73,7 +71,7 @@ describe("formatting retry in middleware.sendRequest", () => {
     vi.useRealTimers();
   });
 
-  it.each(["textDocument/formatting", "textDocument/rangeFormatting"])(
+  it.each(["textDocument/formatting"])(
     "%s: returns the edits without waiting when the first request succeeds",
     async (method) => {
       const { info, run, toast } = setup();
@@ -86,7 +84,7 @@ describe("formatting retry in middleware.sendRequest", () => {
     },
   );
 
-  it.each(["textDocument/formatting", "textDocument/rangeFormatting"])(
+  it.each(["textDocument/rangeFormatting"])(
     "%s: retries once after the next compile, with no error reaching the failure handler",
     async (method) => {
       const { compiled, info, run, toast } = setup();

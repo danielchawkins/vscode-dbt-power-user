@@ -26,12 +26,12 @@ export function composeCommands(
     extensionContext: extensionContextStore,
     runModel: new RunModel(projects, graph.currentProject),
     runTest: new RunTest(projects, graph.queryManifestService),
-    projectSetupCommands: new ProjectSetupCommands(
+    projectSetupCommands: new ProjectSetupCommands({
       projects,
-      extensionContextStore,
-      graph.projectQuickPick,
-      graph.outputChannels,
-    ),
+      extensionContext: extensionContextStore,
+      projectQuickPick: graph.projectQuickPick,
+      outputChannels: graph.outputChannels,
+    }),
     log: terminal,
     diagnosticsOutputChannel: new DiagnosticsOutputChannel(
       graph.outputChannels.createDiagnosticsChannel(),

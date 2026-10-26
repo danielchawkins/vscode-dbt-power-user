@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -70,52 +71,45 @@ interface SummaryReading {
 
 /** Polls the summary until its source label or its notice is shown, then returns both as read. */
 async function waitForSummary(): Promise<SummaryReading> {
-  const deadline = Date.now() + 60_000;
-  let last: SummaryReading | undefined;
-  do {
-    const match = await evaluatePanel<SummaryReading>(
-      process.env.FPU_CDP_PORT!,
-      DOCS.entry,
-      READ_SUMMARY,
-    );
-    last = match?.value ?? undefined;
-    if (last?.sourceLabel || last?.notice) {
-      return last;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `the summary never showed a source label or a notice: ${JSON.stringify(last)}`,
+  const summary = await pollUntil(
+    async () => {
+      const match = await evaluatePanel<SummaryReading>(
+        cdpPort(),
+        DOCS.entry,
+        READ_SUMMARY,
+      );
+      return match?.value ?? undefined;
+    },
+    (last) => Boolean(last?.sourceLabel) || Boolean(last?.notice),
+    {
+      timeoutMs: 60_000,
+      intervalMs: 250,
+      describe: "the summary to show a source label or a notice",
+    },
   );
+  return summary!;
 }
 
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const host = smokeHost;
 
 /** Polls the description until `done` holds; the editor loads it asynchronously. */
 async function waitForDescription(
   done: (text: string) => boolean,
 ): Promise<string> {
-  const deadline = Date.now() + 10_000;
-  let last: string | null = null;
-  do {
-    const docs = await readDocsState(process.env.FPU_CDP_PORT!);
-    last = docs?.description ?? null;
-    if (last !== null && done(last)) {
-      return last;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(`the description never matched; last value: ${last}`);
+  const text = await pollUntil(
+    async () => (await readDocsState(cdpPort()))?.description ?? null,
+    (last) => last !== null && done(last),
+    {
+      timeoutMs: 10_000,
+      intervalMs: 250,
+      describe: "the description to match",
+    },
+  );
+  return text!;
 }
 
 async function setDescription(text: string): Promise<void> {
-  await evaluatePanel(
-    process.env.FPU_CDP_PORT!,
-    DOCS.entry,
-    typeDescription(text),
-  );
+  await evaluatePanel(cdpPort(), DOCS.entry, typeDescription(text));
 }
 
 interface ChevronState {
@@ -127,7 +121,7 @@ interface ChevronState {
 
 async function readChevron(): Promise<ChevronState> {
   const match = await evaluatePanel<ChevronState>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     DOCS.entry,
     READ_CHEVRON,
   );
@@ -248,7 +242,7 @@ suite("Documentation editor interactions", function () {
       try {
         await setDescription(original);
         await waitForDescription((text) => text === original);
-        await waitForDocsClean(process.env.FPU_CDP_PORT!);
+        await waitForDocsClean(cdpPort());
         // A clean page is not enough: the host keeps drafts in memory and sends one with the next render, so a
         // draft it still holds would open the next suite's editor dirty.
         await waitFor(

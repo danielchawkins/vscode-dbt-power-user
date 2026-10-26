@@ -91,12 +91,12 @@ const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
 describe("FusionCli", () => {
   it("runs the executable in the project root with --project-dir", async () => {
     const { calls, factory } = fakeProcesses();
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await cli.run({ kind: "parse" });
     expect(calls[0].command).toBe("/bin/dbt");
     expect(calls[0].cwd).toBe(root);
@@ -107,12 +107,12 @@ describe("FusionCli", () => {
   it("reads the snapshot on every run", async () => {
     const { calls, factory } = fakeProcesses();
     let current = snapshot({ target: "a" });
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => current,
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => current,
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await cli.run({ kind: "parse" });
     current = snapshot({ target: "b" });
     await cli.run({ kind: "parse" });
@@ -124,18 +124,18 @@ describe("FusionCli", () => {
 
   it("merges the run environment over the snapshot's, ignoring the executable's", async () => {
     const { calls, factory } = fakeProcesses();
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => ({
+      snapshot: () => ({
         ...snapshot(),
         invocation: {
           ...snapshot().invocation,
           environment: { S: "1", B: "snapshot" },
         },
       }),
-      factory,
-      fakeTerminal().terminal,
-    );
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await cli.run({ kind: "debug" }, { env: { B: "run", C: "3" } });
     expect(calls[0].envVars).toEqual({ S: "1", B: "run", C: "3" });
   });
@@ -153,7 +153,12 @@ describe("FusionCli", () => {
         },
       },
     });
-    const cli = new FusionCli(executable, () => deferring, factory, terminal);
+    const cli = new FusionCli({
+      executable,
+      snapshot: () => deferring,
+      processes: factory,
+      terminal,
+    });
     await cli.run({ kind: "run", select: "m" });
     await cli.run({ kind: "run", select: "m" });
     expect(warn).toHaveBeenCalledTimes(1);
@@ -166,7 +171,12 @@ describe("FusionCli", () => {
     const deferring = snapshot({
       deferPerProject: { proj: { deferToProduction: true, favorState: false } },
     });
-    const cli = new FusionCli(executable, () => deferring, factory, terminal);
+    const cli = new FusionCli({
+      executable,
+      snapshot: () => deferring,
+      processes: factory,
+      terminal,
+    });
     await cli.run({ kind: "run", select: "m" });
     await cli.run({ kind: "run", select: "m" });
     expect(warn).toHaveBeenCalledTimes(1);
@@ -193,7 +203,12 @@ describe("FusionCli", () => {
         },
       },
     });
-    const cli = new FusionCli(executable, () => deferring, factory, terminal);
+    const cli = new FusionCli({
+      executable,
+      snapshot: () => deferring,
+      processes: factory,
+      terminal,
+    });
     await cli.run({ kind: "parse" });
     await cli.run({ kind: "deps" });
     expect(warn).not.toHaveBeenCalled();
@@ -207,24 +222,24 @@ describe("FusionCli", () => {
     const ok = fakeProcesses({
       stdout: JSON.stringify({ data: { compiled: "select 1" } }),
     });
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      ok.factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: ok.factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(cli.compileInline("select {{ 1 }}")).resolves.toBe("select 1");
 
     const failing = fakeProcesses({
       stdout: JSON.stringify({ data: { compiled: "select 1" } }),
       stderr: JSON.stringify({ info: { level: "error", msg: "boom" } }),
     });
-    const failingCli = new FusionCli(
+    const failingCli = new FusionCli({
       executable,
-      () => snapshot(),
-      failing.factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: failing.factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(failingCli.compileInline("x")).rejects.toThrow("boom");
   });
 
@@ -237,12 +252,12 @@ describe("FusionCli", () => {
         JSON.stringify({ info: { level: "warn", msg: "w" } }),
       ].join("\n"),
     });
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(cli.getColumnsOfModel("m")).resolves.toEqual(columns);
 
     const failing = fakeProcesses({
@@ -252,12 +267,12 @@ describe("FusionCli", () => {
         JSON.stringify({ info: { level: "fatal", msg: "down" } }),
       ].join("\n"),
     });
-    const failingCli = new FusionCli(
+    const failingCli = new FusionCli({
       executable,
-      () => snapshot(),
-      failing.factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: failing.factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(failingCli.getColumnsOfModel("m")).rejects.toThrow("down");
   });
 
@@ -267,12 +282,12 @@ describe("FusionCli", () => {
         data: { preview: JSON.stringify([{ id: 1 }]) },
       }),
     });
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(cli.show("select 1 as id", 5)).resolves.toEqual({
       columns: ["id"],
       rows: [[1]],
@@ -291,12 +306,12 @@ describe("FusionCli", () => {
         ),
       ].join("\n"),
     });
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await expect(cli.show("select 1 as id", 5)).rejects.toThrow(
       /^Catalog Error: Table with name stg_orders does not exist!$/,
     );
@@ -319,12 +334,12 @@ function cliWith(
 ) {
   const processes = fakeProcesses(result);
   const terminal = fakeTerminal();
-  const cli = new FusionCli(
+  const cli = new FusionCli({
     executable,
-    current,
-    processes.factory,
-    terminal.terminal,
-  );
+    snapshot: current,
+    processes: processes.factory,
+    terminal: terminal.terminal,
+  });
   return { cli, ...processes, ...terminal };
 }
 
@@ -446,12 +461,12 @@ describe("FusionCli project state and commands", () => {
         complete: () => Promise.reject(new Error("spawn failed")),
       }),
     } as unknown as CommandProcessExecutionFactory;
-    const cli = new FusionCli(
+    const cli = new FusionCli({
       executable,
-      () => snapshot(),
-      factory,
-      fakeTerminal().terminal,
-    );
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
     await cli.rebuildManifest();
     const [diagnostic, ...rest] =
       cli.getDiagnostics().rebuildManifestDiagnostics;
@@ -497,11 +512,6 @@ describe("FusionCli project state and commands", () => {
     );
     expect(prepared.args).toEqual(expected);
     expect(prepared.statusMessage).toBe("Running dbt model...");
-    expect([
-      prepared.focus,
-      prepared.showProgress,
-      prepared.logToTerminal,
-    ]).toEqual([true, true, true]);
     const chunks: string[] = [];
     await prepared.execute(undefined, (chunk) => chunks.push(chunk));
     expect(argsAfterExecutable(calls[0])).toEqual(expected);

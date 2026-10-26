@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Log } from "../../core/log";
 import type { ManifestProject } from "../../core/manifest";
@@ -46,6 +49,44 @@ describe("manifest parsers", () => {
     await expect(
       new DocParser(logger).createDocMetaMap(docs as never, project(undefined)),
     ).rejects.toThrow("packagePath is not defined");
+  });
+
+  it("keep parsing later docs when an earlier doc's package is not installed", async () => {
+    const root = mkdtempSync(join(tmpdir(), "doc-parser-"));
+    try {
+      mkdirSync(join(root, "docs"));
+      writeFileSync(
+        join(root, "docs", "d.md"),
+        "{% docs d %}\nbody\n{% enddocs %}\n",
+      );
+      const rootProject: ManifestProject = {
+        getProjectRoot: () => root,
+        getProjectName: () => "p",
+        paths: () => ({
+          packagesInstallPath: join(root, "dbt_packages"),
+          targetPath: join(root, "target"),
+        }),
+      };
+      const map = await new DocParser(logger).createDocMetaMap(
+        {
+          "doc.other.x": {
+            package_name: "other",
+            name: "x",
+            original_file_path: "docs/x.md",
+          },
+          "doc.p.d": {
+            package_name: "p",
+            name: "d",
+            original_file_path: "docs/d.md",
+          },
+        } as never,
+        rootProject,
+      );
+      expect([...map.keys()]).toEqual(["d"]);
+      expect(map.get("d")?.line).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("return an empty map for an absent section", async () => {

@@ -18,12 +18,17 @@ export class FailedFusionClient implements FusionClient {
   readonly outputChannel: LogOutputChannel;
 
   /** Writes `message` to `outputChannel`, which it never disposes. */
-  constructor(
-    project: FusionProjectRef,
-    message: string,
-    staticAnalysis: StaticAnalysisMode,
-    outputChannel: LogOutputChannel,
-  ) {
+  constructor({
+    project,
+    message,
+    staticAnalysis,
+    outputChannel,
+  }: {
+    project: FusionProjectRef;
+    message: string;
+    staticAnalysis: StaticAnalysisMode;
+    outputChannel: LogOutputChannel;
+  }) {
     this.project = project;
     this.message = message;
     this.outputChannel = outputChannel;

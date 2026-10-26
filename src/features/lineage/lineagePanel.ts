@@ -22,12 +22,13 @@ import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigi
 import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
+import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
 import type { DbtLineageService } from "./dbtLineageService";
 import { connectedColumnsBody } from "./lineageBodies";
+import { detailRequestHandlers } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
-import { persistLineageSettings, readLineageSettings } from "./lineageSettings";
 import type { ResolvedSourceTable } from "./lineageSources";
 import {
   resolveSourceStartingNode,
@@ -85,20 +86,27 @@ export class LineagePanel
     | { root: string; epoch: number | undefined }
     | undefined;
 
-  public constructor(
-    extensionContext: ExtensionContextStore,
-    terminal: Log,
-    dbtLineageService: DbtLineageService,
-    eventEmitterService: SharedStateService,
-    queryManifestService: QueryManifestService,
-    parseDemand?: ParseDemand,
-  ) {
-    super(
+  public constructor({
+    extensionContext,
+    terminal,
+    dbtLineageService,
+    eventEmitterService,
+    queryManifestService,
+    parseDemand,
+  }: {
+    extensionContext: ExtensionContextStore;
+    terminal: Log;
+    dbtLineageService: DbtLineageService;
+    eventEmitterService: SharedStateService;
+    queryManifestService: QueryManifestService;
+    parseDemand?: ParseDemand;
+  }) {
+    super({
       extensionContext,
-      eventEmitterService,
-      terminal,
+      emitterService: eventEmitterService,
+      dbtTerminal: terminal,
       queryManifestService,
-    );
+    });
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
     this.parseDemand = parseDemand;
@@ -229,12 +237,79 @@ export class LineagePanel
     });
   }
 
-  /** Answers a panel request. */
-  private respond(syncRequestId: string | undefined, body: unknown): void {
-    this.post({
-      command: "response",
-      args: { syncRequestId, body, status: true },
-    });
+  /**
+   * Answers a panel request with `body`. `_command` names the request, so `body` is held to its `ResponseBodies`
+   * entry; it is not sent.
+   */
+  private respond<C extends keyof lineage.ResponseBodies>(
+    _command: C,
+    syncRequestId: string | undefined,
+    body: lineage.ResponseBodies[C],
+  ): void {
+    void reply(
+      { reply: (response) => this.post(response) },
+      syncRequestId,
+      body,
+    );
+  }
+
+  /** The handlers that answer a lineage query; each body is typed by the command it answers. */
+  private queryRequestHandlers(): Pick<
+    Handlers<PanelMessage>,
+    | "childTables"
+    | "parentTables"
+    | "tableEdges"
+    | "getColumns"
+    | "getRelationships"
+    | "getConnectedColumns"
+  > {
+    return {
+      childTables: ({ args, syncRequestId }) =>
+        this.respond(
+          "childTables",
+          syncRequestId,
+          this.dbtLineageService.getChildTables(args.params),
+        ),
+      parentTables: ({ args, syncRequestId }) =>
+        this.respond(
+          "parentTables",
+          syncRequestId,
+          this.dbtLineageService.getParentTables(args.params),
+        ),
+      tableEdges: ({ args, syncRequestId }) =>
+        this.respond(
+          "tableEdges",
+          syncRequestId,
+          this.dbtLineageService.getTableEdges(args.params),
+        ),
+      getColumns: async ({ args, syncRequestId }) =>
+        this.respond(
+          "getColumns",
+          syncRequestId,
+          await this.getColumns({
+            table: args.params.table,
+            refresh: args.params.refresh ?? false,
+          }),
+        ),
+      getRelationships: ({ args, syncRequestId }) =>
+        this.respond(
+          "getRelationships",
+          syncRequestId,
+          this.details.getRelationships(args?.params),
+        ),
+      getConnectedColumns: async ({ args, syncRequestId }) => {
+        const { targets, upstreamExpansion } = args.params;
+        const result = await this.dbtLineageService.getConnectedColumns({
+          targets,
+          upstreamExpansion,
+        });
+        this.respond(
+          "getConnectedColumns",
+          syncRequestId,
+          connectedColumnsBody(result, targets),
+        );
+      },
+    };
   }
 
   /** One handler per lineage panel command. */
@@ -253,58 +328,13 @@ export class LineagePanel
           preview: false,
           preserveFocus: true,
         }),
-      childTables: ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          this.dbtLineageService.getChildTables(args.params),
-        ),
-      parentTables: ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          this.dbtLineageService.getParentTables(args.params),
-        ),
-      tableEdges: ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          this.dbtLineageService.getTableEdges(args.params),
-        ),
-      getColumns: async ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          await this.getColumns({
-            table: args.params.table,
-            refresh: args.params.refresh ?? false,
-          }),
-        ),
-      getExposureDetails: async ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          await this.details.getExposureDetails(args.params),
-        ),
-      getRelationships: ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          this.details.getRelationships(args?.params),
-        ),
-      getFunctionDetails: async ({ args, syncRequestId }) =>
-        this.respond(
-          syncRequestId,
-          await this.details.getFunctionDetails(args.params),
-        ),
-      getConnectedColumns: async ({ args, syncRequestId }) => {
-        const { targets, upstreamExpansion } = args.params;
-        const result = await this.dbtLineageService.getConnectedColumns({
-          targets,
-          upstreamExpansion,
-        });
-        this.respond(syncRequestId, connectedColumnsBody(result, targets));
-      },
-      getLineageSettings: ({ syncRequestId }) =>
-        this.respond(syncRequestId, readLineageSettings(this.extensionContext)),
-      persistLineageSettings: async ({ args, syncRequestId }) => {
-        await persistLineageSettings(this.extensionContext, args.params);
-        this.respond(syncRequestId, { ok: true });
-      },
+      ...this.queryRequestHandlers(),
+      ...detailRequestHandlers({
+        details: this.details,
+        extensionContext: this.extensionContext,
+        respond: (command, syncRequestId, body) =>
+          this.respond(command, syncRequestId, body),
+      }),
     };
   }
 

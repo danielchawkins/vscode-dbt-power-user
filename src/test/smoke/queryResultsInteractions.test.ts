@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -48,28 +49,22 @@ const READ_COMPILED_SQL = `(() => document.body.dataset.entry === "queryResults"
   : null)()`;
 
 const runsHere = () => currentFixtureName() === "single-project";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
+const host = smokeHost;
 /** Polls until `done` holds; the effect of a click reaches the host or the editor asynchronously. */
 async function waitUntil(
   what: string,
   done: () => boolean | Promise<boolean>,
 ): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  do {
-    if (await done()) {
-      return;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(`timed out waiting for ${what}`);
+  await pollUntil(done, (ok) => ok, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: what,
+  });
 }
 
 async function createdBlobTypes(): Promise<string[]> {
   const match = await evaluatePanel<{ entry: string; types: string[] }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     RESULTS.entry,
     READ_BLOB_TYPES,
   );
@@ -86,7 +81,7 @@ const SYNTHETIC_COMPILED_SQL = "select synthetic /* compiled */";
 
 async function compiledSqlText(): Promise<string> {
   const match = await evaluatePanel<{ entry: string; text: string }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     RESULTS.entry,
     READ_COMPILED_SQL,
   );
@@ -128,7 +123,7 @@ suite("Query results interactions", function () {
     await clickWebviewPoint(RESULTS, { selector: PREVIEW_TAB });
     await expectWebviewDom(RESULTS, { role: "grid" });
 
-    await evaluatePanel(process.env.FPU_CDP_PORT!, RESULTS.entry, WATCH_BLOBS);
+    await evaluatePanel(cdpPort(), RESULTS.entry, WATCH_BLOBS);
     await clickInWebview(RESULTS, { role: "button", name: "Export CSV" });
     await waitUntil("the CSV blob", async () =>
       (await createdBlobTypes()).includes("text/csv"),

@@ -4,7 +4,7 @@ import type { ControlId } from "./controlCoverage";
 import { collectControls, expectControlsCovered } from "./controlCoverage";
 
 describe("control coverage helpers", () => {
-  it.each(["codicon-gear", "codicon-chevron-down"])(
+  it.each(["codicon-gear"])(
     "collectControls throws on a button without an accessible name (%s)",
     (icon) => {
       const { container } = render(

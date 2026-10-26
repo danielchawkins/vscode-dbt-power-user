@@ -1,25 +1,10 @@
-import type {
-  CancellationToken,
-  Disposable,
-  Event,
-  LogOutputChannel,
-  Uri,
-} from "vscode";
+import type { CancellationToken, Event, LogOutputChannel, Uri } from "vscode";
 import { EventEmitter } from "vscode";
-import {
-  State,
-  type LanguageClientOptions,
-  type ServerOptions,
-} from "vscode-languageclient/node";
-import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
-import { canonicalProjectRoot } from "./canonicalProjectRoot";
 import { projectFileAvailable } from "./clientLifecycle";
-import { documentSelectorForProject } from "./documentSelector";
+import { CompileSignal } from "./compileSignal";
 import {
-  DISPOSAL_GRACE_MS,
-  languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
   type FusionClient,
   type FusionClientOptions,
@@ -27,33 +12,11 @@ import {
   type FusionLspCommand,
   type FusionProjectRef,
 } from "./fusionClient";
-import {
-  clearDiagnosticsOnDelete,
-  ProjectDiagnosticsFilter,
-} from "./fusionDiagnostics";
 import { FusionRequests } from "./fusionRequests";
-import {
-  CompileSignal,
-  defaultCreateLanguageClient,
-  defaultSpawn,
-  languageClientOptions,
-  subscribeToCompileComplete,
-  type ClientHandle,
-  type FusionLanguageClientDependencies,
-} from "./lspClientSupport";
-import {
-  BACKOFF_BASE_MS,
-  BACKOFF_CAP_MS,
-  CONNECTION_TIMEOUT_MS,
-  SpawnedLspProcess,
-  terminateProcess,
-} from "./lspProcess";
+import { type FusionLanguageClientDependencies } from "./lspClientSupport";
+import { BACKOFF_BASE_MS, BACKOFF_CAP_MS } from "./lspProcess";
+import { LspTransport } from "./lspTransport";
 import { ClientNestedRoots } from "./nestedRoots";
-import type { ReverseSocketServer } from "./reverseSocketTransport";
-import {
-  acceptWithProcessExit,
-  listenForServer,
-} from "./reverseSocketTransport";
 
 export type { FusionLanguageClientDependencies } from "./lspClientSupport";
 
@@ -69,10 +32,6 @@ class FusionLanguageClientImpl implements FusionClient {
   private _state: FusionClientState = "stopped";
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
-  private languageClient: ClientHandle | undefined;
-  private deletionWatcher: Disposable | undefined;
-  private reverseSocket: ReverseSocketServer | undefined;
-  private childProcess: SpawnedLspProcess | undefined;
   private exitAttempts = 0;
   private restartChain: Promise<void> = Promise.resolve();
   private stopPromise: Promise<void> | undefined;
@@ -80,18 +39,15 @@ class FusionLanguageClientImpl implements FusionClient {
   /** Whether the client is stopping or stopped; its notifications are then dropped. */
   private readonly isInactive = (): boolean =>
     this.stopPromise !== undefined || this._state === "stopped";
-  private stateListener: Disposable | undefined;
-  private processExitListener: (() => void) | undefined;
-  private transportGeneration = 0;
   private unexpectedStopHandledGeneration = 0;
-  private uriConverters: LanguageClientOptions["uriConverters"];
   private readonly requests = new FusionRequests(() => ({
-    client: this.languageClient,
+    client: this.transport.languageClient,
     state: this._state,
     commandPrefix: this.options.commandPrefix,
-    uriConverters: this.uriConverters,
+    uriConverters: this.transport.uriConverters,
   }));
   private readonly nestedRoots: ClientNestedRoots | undefined;
+  private readonly transport: LspTransport;
   private readonly options: FusionClientOptions;
   private readonly deps: FusionLanguageClientDependencies;
 
@@ -104,8 +60,16 @@ class FusionLanguageClientImpl implements FusionClient {
     this.nestedRoots =
       options.nestedRoots &&
       new ClientNestedRoots(options.project.root, options.nestedRoots, (uri) =>
-        this.release(uri),
+        this.transport.release(uri),
       );
+    this.transport = new LspTransport(options, deps, {
+      compiled: this.compiled,
+      nestedRoots: this.nestedRoots,
+      isInactive: this.isInactive,
+      isDisposed: () => this.disposed,
+      sleep: (ms) => this.sleep(ms),
+      onUnexpectedStop: (generation) => this.scheduleUnexpectedStop(generation),
+    });
     void this.begin();
   }
 
@@ -134,7 +98,7 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   get diagnostics() {
-    return this.languageClient?.diagnostics;
+    return this.transport.languageClient?.diagnostics;
   }
 
   readonly compiled = new CompileSignal();
@@ -194,7 +158,7 @@ class FusionLanguageClientImpl implements FusionClient {
     }
 
     this.setState(reason === "initial" ? "starting" : "restarting");
-    await this.teardownTransport();
+    await this.transport.teardownTransport();
 
     if (this.disposed) {
       return;
@@ -217,7 +181,7 @@ class FusionLanguageClientImpl implements FusionClient {
     }
 
     try {
-      await this.startTransport();
+      await this.transport.startTransport();
       this._failureReason = undefined;
       this.setState("running");
     } catch (error) {
@@ -231,99 +195,8 @@ class FusionLanguageClientImpl implements FusionClient {
           `Failed to start Fusion LSP for ${this.options.project.name}: ${message}`,
         );
       }
-      await this.teardownTransport();
+      await this.transport.teardownTransport();
       this.setState("failed");
-    }
-  }
-
-  private async startTransport(): Promise<void> {
-    const listen = this.deps.listenForServer ?? listenForServer;
-    const accept = this.deps.acceptWithProcessExit ?? acceptWithProcessExit;
-    const spawnServer = this.deps.spawnProcess ?? defaultSpawn;
-
-    const { launch } = this.options;
-    const selector = documentSelectorForProject(this.options.project.root);
-    const { launchRoot, uriConverters } = canonicalProjectRoot(
-      this.options.project.root.fsPath,
-    );
-    this.uriConverters = uriConverters;
-    const diagnosticsFilter = new ProjectDiagnosticsFilter([
-      this.options.project.root.fsPath,
-      launchRoot,
-    ]);
-
-    const server = await listen();
-    this.reverseSocket = server;
-
-    try {
-      const args = toLspArgs(launch, {
-        port: server.port,
-        projectDir: launchRoot,
-        commandPrefix: this.options.commandPrefix,
-      });
-      const { [DBT_LSP_USE_TARGET_LSP]: _ignored, ...callerEnv } =
-        this.options.env ?? {};
-      const env = { ...launch.environment, ...callerEnv };
-
-      const child = spawnServer(
-        this.options.executable.path,
-        args,
-        env,
-        launchRoot,
-      );
-      const processAdapter = new SpawnedLspProcess(child, (line) => {
-        this.outputChannel.appendLine(line);
-      });
-      this.childProcess = processAdapter;
-
-      const createLanguageClient =
-        this.deps.createLanguageClient ?? defaultCreateLanguageClient;
-
-      const serverOptions: ServerOptions = async () => {
-        return accept(server, processAdapter, CONNECTION_TIMEOUT_MS);
-      };
-
-      // vscode-languageclient ProgressFeature owns window workDone progress UI.
-      const client = await createLanguageClient(
-        languageClientIdForProject(this.options.project),
-        `dbt Fusion (${this.options.project.name})`,
-        serverOptions,
-        languageClientOptions({
-          project: this.options.project,
-          selector,
-          uriConverters,
-          outputChannel: this.outputChannel,
-          diagnosticsFilter,
-          config: launch,
-          compiled: this.compiled,
-          nestedRoots: this.nestedRoots,
-          isInactive: this.isInactive,
-        }),
-      );
-
-      this.languageClient = client;
-      this.deletionWatcher = clearDiagnosticsOnDelete(
-        this.options.project.root,
-        () => client.diagnostics,
-      );
-      const { onCompileErrors } = this.options;
-      subscribeToCompileComplete(client, this.compiled, onCompileErrors);
-      await client.start();
-
-      const generation = (this.transportGeneration += 1);
-      this.stateListener?.dispose();
-      this.processExitListener = () => {
-        this.scheduleUnexpectedStop(generation);
-      };
-      this.stateListener = client.onDidChangeState((event) => {
-        if (event.newState === State.Stopped && !this.disposed) {
-          this.scheduleUnexpectedStop(generation);
-        }
-      });
-      processAdapter.on("exit", this.processExitListener);
-    } catch (error) {
-      await this.teardownTransport();
-      throw error;
     }
   }
 
@@ -332,7 +205,7 @@ class FusionLanguageClientImpl implements FusionClient {
       this.disposed ||
       this.stopPromise ||
       this._state !== "running" ||
-      signalGeneration !== this.transportGeneration ||
+      signalGeneration !== this.transport.transportGeneration ||
       this.unexpectedStopHandledGeneration === signalGeneration
     ) {
       return;
@@ -351,80 +224,16 @@ class FusionLanguageClientImpl implements FusionClient {
         `Fusion LSP for ${this.options.project.name} stopped after ${MAX_UNEXPECTED_EXIT_RETRIES} unexpected exit retries`,
       );
       this.setState("failed");
-      await this.teardownTransport();
+      await this.transport.teardownTransport();
       return;
     }
     await this.scheduleRestart("unexpected");
   }
 
-  private async teardownTransport(): Promise<void> {
-    this.stateListener?.dispose();
-    this.stateListener = undefined;
-    this.nestedRoots?.openDocuments.clear();
-
-    const processAdapter = this.childProcess;
-    if (processAdapter && this.processExitListener) {
-      processAdapter.removeListener("exit", this.processExitListener);
-    }
-    this.processExitListener = undefined;
-
-    this.deletionWatcher?.dispose();
-    this.deletionWatcher = undefined;
-
-    await this.shutdownLanguageClient();
-
-    this.reverseSocket?.dispose();
-    this.reverseSocket = undefined;
-
-    this.childProcess = undefined;
-    if (!processAdapter) {
-      return;
-    }
-
-    await terminateProcess(processAdapter, {
-      graceMs: DISPOSAL_GRACE_MS,
-      sleep: (ms) => this.sleep(ms),
-      warn: (message) => this.outputChannel.warn(message),
-      name: this.options.project.name,
-    });
-  }
-
-  /** Closes a document a later-declared root now excludes, and drops the diagnostics this server published for it. */
-  private release(uri: Uri): void {
-    this.languageClient?.diagnostics?.delete(uri);
-    const protocol = this.uriConverters?.code2Protocol(uri) ?? uri.toString();
-    const textDocument = { uri: protocol };
-    this.languageClient
-      ?.sendNotification("textDocument/didClose", { textDocument })
-      .catch((error: unknown) => {
-        this.outputChannel.warn(
-          `Could not close a document moved to a nested root: ${errorText(error)}`,
-        );
-      });
-  }
-
-  private async shutdownLanguageClient(): Promise<void> {
-    const client = this.languageClient;
-    if (!client) {
-      return;
-    }
-    this.languageClient = undefined;
-    try {
-      await client.stop();
-    } catch {
-      // Best-effort shutdown before transport teardown.
-    }
-    try {
-      void client.dispose();
-    } catch {
-      // Best-effort disposal after stop.
-    }
-  }
-
   private async doStop(): Promise<void> {
     await this.restartChain;
     this.setState("stopped");
-    await this.teardownTransport();
+    await this.transport.teardownTransport();
   }
 
   private recordFailure(message: string): void {

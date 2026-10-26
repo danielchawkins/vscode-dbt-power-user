@@ -48,7 +48,10 @@ const QueryPanelTitle = ({
           >
             Preview{" "}
             <span>
-              {queryResultsRowCount} rows in {queryExecutionInfo?.elapsedTime}s
+              {queryResultsRowCount} rows
+              {queryExecutionInfo
+                ? ` in ${queryExecutionInfo.elapsedTime}s`
+                : ""}
             </span>
           </NavLink>
         </NavItem>

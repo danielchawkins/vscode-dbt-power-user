@@ -25,7 +25,10 @@ import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
 import { onCurrentClientChange } from "../../projects/clients/clientChange";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
-import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import {
+  createFusionClientPool,
+  type FusionClientPoolImpl,
+} from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
   DeclaredProject,
@@ -34,6 +37,7 @@ import type {
 import { schemaOriginLaunchEnv } from "../../projects/registry/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { flushAsync as flushMicrotasks } from "../async";
+import { makeExecutable } from "../fusionClientHarness";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject, fakeProjectEnvironments } from "../projectHarness";
 
@@ -151,11 +155,7 @@ describe("FusionClientPool", () => {
     environments = fakeProjectEnvironments({ TOOL: "mise" });
     registry = new FakeRegistry();
     resolver = {
-      resolve: vi.fn().mockResolvedValue({
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      }),
+      resolve: vi.fn().mockResolvedValue(makeExecutable()),
     };
     factory = {
       create: vi.fn(
@@ -184,12 +184,12 @@ describe("FusionClientPool", () => {
   });
 
   function createPool(): FusionClientPoolImpl {
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: channelFor,
@@ -263,11 +263,7 @@ describe("FusionClientPool", () => {
 
   it("clears pool.get before awaiting client stop on removal", async () => {
     const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
+    resolver.resolve.mockResolvedValue(makeExecutable());
 
     let releaseStop: (() => void) | undefined;
     const stopGate = new Promise<void>((resolve) => {
@@ -311,11 +307,7 @@ describe("FusionClientPool", () => {
       if (call === 1) {
         await firstResolveGate;
       }
-      return {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      };
+      return makeExecutable();
     });
 
     let releaseStop: (() => void) | undefined;
@@ -351,11 +343,7 @@ describe("FusionClientPool", () => {
 
   it("creates two clients for two projects and removes one on registry shrink", async () => {
     const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
+    resolver.resolve.mockResolvedValue(makeExecutable());
 
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
@@ -408,11 +396,7 @@ describe("FusionClientPool", () => {
     });
     resolver.resolve.mockImplementation(async () => {
       await resolveBlocked;
-      return {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      };
+      return makeExecutable();
     });
 
     const project = makeProject("general", "/workspace/general");
@@ -434,11 +418,7 @@ describe("FusionClientPool", () => {
     });
     resolver.resolve.mockImplementation(async () => {
       await resolveBlocked;
-      return {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      };
+      return makeExecutable();
     });
 
     const project = makeProject("general", "/workspace/general");
@@ -503,11 +483,7 @@ describe("FusionClientPool", () => {
   });
 
   it("re-resolves executable when fusionPath changes", async () => {
-    const executable = (dbt: string) => ({
-      path: dbt,
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
+    const executable = (dbt: string) => makeExecutable({ path: dbt });
     resolver.resolve.mockResolvedValue(executable("/opt/dbt-old"));
     const project = makeProject("general", "/workspace/general");
     const {
@@ -523,11 +499,7 @@ describe("FusionClientPool", () => {
   });
 
   it("replaces the client when a settings change re-resolves a different dbt for a path-source project", async () => {
-    const executable = (dbt: string) => ({
-      path: dbt,
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
+    const executable = (dbt: string) => makeExecutable({ path: dbt });
     settings.target = "dev";
     resolver.resolve.mockResolvedValue(executable("/mise/1/bin/dbt"));
     const project = makeProject("general", "/workspace/general");
@@ -614,12 +586,12 @@ describe("FusionClientPool", () => {
         }),
     );
     const readSnapshot = vi.fn(readProjectSnapshot);
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot,
         environments,
         outputChannel: channelFor,
@@ -733,11 +705,7 @@ describe("FusionClientPool", () => {
     );
     expect(factory.create).not.toHaveBeenCalled();
 
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
+    resolver.resolve.mockResolvedValue(makeExecutable());
     registry.setProjects([project]);
     await flushAsync();
 
@@ -831,11 +799,9 @@ describe("FusionClientPool", () => {
   });
 
   it("launches remote before a parse, relaunches local after a typed parse, and not when stable", async () => {
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: { FUSION_POWER_USER_SCHEMA_ORIGIN: "local" },
-    });
+    resolver.resolve.mockResolvedValue(
+      makeExecutable({ env: { FUSION_POWER_USER_SCHEMA_ORIGIN: "local" } }),
+    );
     const dbtProject = {
       snapshot: undefined as unknown,
       get manifest(): unknown {
@@ -847,12 +813,12 @@ describe("FusionClientPool", () => {
     const resolve = vi.fn((_project: DeclaredProject) =>
       schemaOriginLaunchEnv(dbtProject),
     );
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: channelFor,

@@ -1,4 +1,10 @@
 import type { DBTGraphType } from "./graphParser";
+import {
+  containsRefCall,
+  containsSourceCall,
+  parseRefExpression,
+} from "./refExpression";
+import { addRelationNames } from "./relationIndex";
 import type { ModelLevelConstraint } from "./types";
 
 /** What the graph classification reads of a node, source, exposure or function. */
@@ -21,6 +27,19 @@ interface GraphResource {
 
 type ManifestResources = Record<string, GraphResource>;
 type ManifestResource = GraphResource;
+
+/** What the classification resolves a constraint `to` against. */
+interface LineageIndex {
+  /** Node unique_ids by `refKey`: name, package and version, each alone or combined. */
+  refs: Map<string, string[]>;
+  /** Source table unique_ids by `sourceKey`. */
+  sources: Map<string, string>;
+  /**
+   * unique_ids by relation name, as written and unquoted. After `dbt compile`, `constraints[].to` is rewritten from
+   * `ref('X')` to the relation_name, so this lookup is needed too.
+   */
+  relations: Map<string, string>;
+}
 
 export interface ChildrenParentMetaMap {
   /** Full `depends_on.nodes` parent graph — nothing removed. */
@@ -45,9 +64,14 @@ export class ChildrenParentParser {
     const childMetaMap: DBTGraphType = {};
     const constraintOnlyParents: DBTGraphType = {};
 
-    const refIndex = buildRefIndex(nodesMap);
-    const sourceIndex = buildSourceIndex(sourcesMap);
-    const relationIndex = buildRelationIndex(nodesMap, sourcesMap);
+    const index: LineageIndex = {
+      refs: buildRefIndex(nodesMap),
+      sources: buildSourceIndex(sourcesMap),
+      relations: addRelationNames(new Map(), [
+        ...Object.values(nodesMap),
+        ...Object.values(sourcesMap ?? {}),
+      ]),
+    };
 
     Object.values(nodesMap).forEach((node) => {
       const dependsOn: string[] = node.depends_on?.nodes ?? [];
@@ -55,12 +79,7 @@ export class ChildrenParentParser {
       parentMetaMap[node.unique_id] = dependsOn;
 
       // Classify (don't drop) edges that exist only because of a FK constraint.
-      const constraintTargets = collectConstraintTargets(
-        node,
-        refIndex,
-        sourceIndex,
-        relationIndex,
-      );
+      const constraintTargets = collectConstraintTargets(node, index);
       if (constraintTargets.size === 0) {
         return;
       }
@@ -137,36 +156,6 @@ function buildSourceIndex(sourcesMap?: ManifestResources): Map<string, string> {
   return index;
 }
 
-function buildRelationIndex(
-  nodesMap: ManifestResources,
-  sourcesMap?: ManifestResources,
-): Map<string, string> {
-  // Maps a normalized relation_name (e.g. `"db"."schema"."table"`) to unique_id.
-  // After `dbt compile`, the `constraints[].to` field is rewritten from
-  // `ref('X')` to the relation_name, so we need this lookup too.
-  const index = new Map<string, string>();
-  const add = (relation: unknown, uniqueId: unknown) => {
-    if (typeof relation !== "string" || typeof uniqueId !== "string") {
-      return;
-    }
-    index.set(relation, uniqueId);
-    // Also index the unquoted form for adapters that don't quote.
-    const unquoted = relation.replaceAll('"', "");
-    if (unquoted !== relation) {
-      index.set(unquoted, uniqueId);
-    }
-  };
-  Object.values(nodesMap).forEach((node) =>
-    add(node?.relation_name, node?.unique_id),
-  );
-  if (sourcesMap) {
-    Object.values(sourcesMap).forEach((src) =>
-      add(src?.relation_name, src?.unique_id),
-    );
-  }
-  return index;
-}
-
 function addToIndex(index: Map<string, string[]>, key: string, value: string) {
   const existing = index.get(key);
   if (existing) {
@@ -184,9 +173,7 @@ function addToIndex(index: Map<string, string[]>, key: string, value: string) {
 
 function collectConstraintTargets(
   node: ManifestResource,
-  refIndex: Map<string, string[]>,
-  sourceIndex: Map<string, string>,
-  relationIndex: Map<string, string>,
+  index: LineageIndex,
 ): Set<string> {
   const targets = new Set<string>();
 
@@ -198,12 +185,7 @@ function collectConstraintTargets(
     if (typeof to !== "string" || to.length === 0) {
       return;
     }
-    const resolved = resolveConstraintTo(
-      to,
-      refIndex,
-      sourceIndex,
-      relationIndex,
-    );
+    const resolved = resolveConstraintTo(to, index);
     resolved.forEach((id) => targets.add(id));
   };
 
@@ -223,47 +205,23 @@ function collectConstraintTargets(
   return targets;
 }
 
-function resolveConstraintTo(
-  to: string,
-  refIndex: Map<string, string[]>,
-  sourceIndex: Map<string, string>,
-  relationIndex: Map<string, string>,
-): string[] {
+function resolveConstraintTo(to: string, index: LineageIndex): string[] {
   // After `dbt compile`, `to` is rewritten to the relation_name like
   // `"db"."schema"."table"` (or unquoted on adapters that don't quote).
-  const direct = relationIndex.get(to);
+  const direct = index.relations.get(to);
   if (direct) {
     return [direct];
   }
 
-  // Parse-time form: `ref('name')`, `ref('pkg', 'name')`, or
-  // `source('src', 'tbl')`. Strip whitespace and try regex.
-  const trimmed = to.trim();
-
-  const refMatch = trimmed.match(
-    /^ref\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?(?:\s*,\s*v?=?\s*([^)]+))?\s*\)$/,
-  );
-  if (refMatch) {
-    const a = refMatch[1] ?? "";
-    const b = refMatch[2];
-    const v = refMatch[3]?.trim().replaceAll(/['"]/g, "");
-    // ref('name') → a=name, b=undefined
-    // ref('pkg', 'name') → a=pkg, b=name
-    const name = b ?? a;
-    const pkg = b ? a : undefined;
-    return lookupRef(refIndex, { name, package: pkg, version: v });
+  // Parse-time form: `ref('name')`, `ref('pkg', 'name')`, or `source('src', 'tbl')`.
+  const expr = parseRefExpression(to);
+  if (expr?.kind === "ref") {
+    return lookupRef(index.refs, expr);
   }
-
-  const sourceMatch = trimmed.match(
-    /^source\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/,
-  );
-  if (sourceMatch) {
-    const id = sourceIndex.get(
-      sourceKey(sourceMatch[1] ?? "", sourceMatch[2] ?? ""),
-    );
+  if (expr?.kind === "source") {
+    const id = index.sources.get(sourceKey(expr.source, expr.table));
     return id ? [id] : [];
   }
-
   return [];
 }
 
@@ -323,16 +281,8 @@ function parentAppearsInBody(
   if (!parent || body === null) {
     return true; // conservatively treat as data flow
   }
-
-  const relation = parent.relation_name;
-  if (typeof relation === "string" && relation.length > 0) {
-    if (body.text.includes(relation)) {
-      return true;
-    }
-    const unquoted = relation.replaceAll('"', "");
-    if (unquoted !== relation && body.text.includes(unquoted)) {
-      return true;
-    }
+  if (relationAppears(parent, body.text)) {
+    return true;
   }
 
   // After `dbt compile`, all Jinja is resolved into relation names. A `ref(...)`
@@ -346,62 +296,43 @@ function parentAppearsInBody(
   // `{{ source(...) }}` patterns. Accepts false positives from SQL comments;
   // acceptable trade-off because the manifest path that lacks `compiled_code`
   // is the parse-only path before the user has compiled.
+  return refCallAppears(parent, body.text);
+}
+
+/** True when the body names the parent's relation, quoted or unquoted. */
+function relationAppears(parent: ManifestResource, text: string): boolean {
+  const relation = parent.relation_name;
+  if (typeof relation !== "string" || relation.length === 0) {
+    return false;
+  }
+  if (text.includes(relation)) {
+    return true;
+  }
+  const unquoted = relation.replaceAll('"', "");
+  return unquoted !== relation && text.includes(unquoted);
+}
+
+/** True when the body calls `ref()` on the parent's name, or `source()` on its source table. */
+function refCallAppears(parent: ManifestResource, text: string): boolean {
   const name = parent.name;
   const pkg = parent.package_name;
   if (
     typeof name === "string" &&
     name.length > 0 &&
-    containsRefCall(body.text, name, pkg)
+    containsRefCall(text, name, pkg)
   ) {
     return true;
   }
 
   const sourceName = parent.source_name;
   const sourceTable = parent.name;
-  if (
+  return (
     typeof sourceName === "string" &&
     sourceName.length > 0 &&
     typeof sourceTable === "string" &&
     sourceTable.length > 0 &&
-    containsSourceCall(body.text, sourceName, sourceTable)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function containsRefCall(body: string, name: string, pkg?: string): boolean {
-  const e = escapeRegex;
-  const simple = new RegExp(`ref\\s*\\(\\s*['"]${e(name)}['"]\\s*[,)]`);
-  if (simple.test(body)) {
-    return true;
-  }
-  if (pkg) {
-    const qualified = new RegExp(
-      `ref\\s*\\(\\s*['"]${e(pkg)}['"]\\s*,\\s*['"]${e(name)}['"]\\s*[,)]`,
-    );
-    if (qualified.test(body)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function containsSourceCall(
-  body: string,
-  sourceName: string,
-  tableName: string,
-): boolean {
-  const e = escapeRegex;
-  const re = new RegExp(
-    `source\\s*\\(\\s*['"]${e(sourceName)}['"]\\s*,\\s*['"]${e(tableName)}['"]\\s*\\)`,
+    containsSourceCall(text, sourceName, sourceTable)
   );
-  return re.test(body);
-}
-
-function escapeRegex(s: string): string {
-  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // -----------------------------------------------------------------------------

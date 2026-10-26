@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { sleep } from "../async";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 /**
@@ -23,10 +24,6 @@ interface Probe {
   file: string;
   find: string;
   offset: number;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function errorText(error: unknown): string {

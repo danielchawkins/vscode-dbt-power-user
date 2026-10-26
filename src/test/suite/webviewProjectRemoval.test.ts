@@ -44,15 +44,15 @@ describe("webview panels on project removal", () => {
       .spyOn(DocsEditViewPanel.prototype as any, "transmitData")
       .mockImplementation(() => undefined);
     const { removed, value } = projectsDouble();
-    const panel = new DocsEditViewPanel(
-      value,
-      {} as any,
-      {
+    const panel = new DocsEditViewPanel({
+      projects: value,
+      extensionContext: {} as any,
+      services: {
         emitterService: { eventEmitter: { event: vi.fn() } },
         columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,
-    );
+    });
     (panel as any)._panel = {};
 
     removed.fire(Uri.file("/a"));

@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DbtTestService } from "../../features/docs/dbtTestService";
 
 const SCHEMA = [
@@ -78,6 +78,7 @@ const setup = (over: { event?: unknown; document?: string } = {}) => {
       event,
       currentDocument: { uri: { fsPath: over.document ?? "/x/orders.sql" } },
     }),
+    getEventByDocument: () => event,
     getProject: () => project,
   } as never);
   return { service };
@@ -102,7 +103,7 @@ describe("DbtTestService", () => {
           },
         } as never,
         "orders",
-        "status",
+        { columnNameFromTestMetadata: "status" },
       );
       expect(yaml).toBe("severity: warn\n");
     });
@@ -133,7 +134,7 @@ describe("DbtTestService", () => {
           },
         } as never,
         "orders",
-        "status",
+        { columnNameFromTestMetadata: "status" },
       );
       expect(yaml).toBe("where: x > 1\n");
     });
@@ -141,6 +142,33 @@ describe("DbtTestService", () => {
     it("returns undefined for an unknown model", () => {
       const { service } = setup();
       expect(service.getConfigByTest({} as never, "nope")).toBeUndefined();
+    });
+
+    it("reads the given model's manifest, not the active editor's", () => {
+      const { service } = setup();
+      const current = vi.spyOn(
+        (
+          service as unknown as {
+            queryManifestService: { getEventByCurrentProject: () => unknown };
+          }
+        ).queryManifestService,
+        "getEventByCurrentProject",
+      );
+      const yaml = service.getConfigByTest(
+        {
+          test_metadata: {
+            name: "accepted_values",
+            kwargs: { column_name: "status", values: ["a", "b"] },
+          },
+        } as never,
+        "orders",
+        {
+          columnNameFromTestMetadata: "status",
+          uri: { fsPath: "/x/orders.sql" } as never,
+        },
+      );
+      expect(yaml).toBe("severity: warn\n");
+      expect(current).not.toHaveBeenCalled();
     });
   });
 

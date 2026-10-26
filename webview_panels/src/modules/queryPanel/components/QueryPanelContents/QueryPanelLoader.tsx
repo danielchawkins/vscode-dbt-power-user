@@ -1,13 +1,12 @@
 import { LoadingSpinner } from "@assets/icons";
-import { HINTS } from "@modules/queryPanel/constants";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button, Stack } from "@uicore";
 import classes from "../../querypanel.module.css";
 
 const QueryPanelLoader = (): React.JSX.Element => {
-  const { hintIndex } = useQueryPanelState();
-  const hint = HINTS[hintIndex];
+  const { hints, hintIndex } = useQueryPanelState();
+  const hint = hints[hintIndex];
   const handleCancelQuery = () => {
     executeRequestInAsync("cancelQuery");
   };

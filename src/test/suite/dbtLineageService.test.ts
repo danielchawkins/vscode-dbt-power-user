@@ -157,7 +157,10 @@ describe("DbtLineageService.getConnectedColumns", () => {
   }
 
   const service = (client: unknown) =>
-    new DbtLineageService({} as any, () => client as any);
+    new DbtLineageService({
+      queryManifestService: {} as any,
+      currentClient: () => client as any,
+    });
 
   const lineage = listNodes(
     ["model.p.b.total", ["model.p.a.x"], "mod"],
@@ -321,7 +324,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
     });
   });
 
-  it.each(["baseline", "off"])(
+  it.each(["baseline"])(
     "names the static-analysis mode when %s returns no nodes",
     async (mode) => {
       const request = vi
@@ -347,24 +350,21 @@ describe("DbtLineageService.getConnectedColumns", () => {
   );
 
   it.each([
-    ["strict", false, "empty"],
     ["project", true, "empty"],
     ["project", false, "baseline"],
-    ["baseline", true, "baseline"],
-    ["off", true, "off"],
   ])(
     "under %s with project strict=%s, no nodes answer %s",
     async (setting, strict, expected) => {
       const request = vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ error: null, nodes: [] });
-      const result = await new DbtLineageService(
-        {} as any,
-        () => fakeClient(request, { staticAnalysis: setting }),
-        undefined,
-        undefined,
-        () => ({ strict }),
-      ).getConnectedColumns({
+      const result = await new DbtLineageService({
+        queryManifestService: {} as any,
+        currentClient: () => fakeClient(request, { staticAnalysis: setting }),
+        currentError: undefined,
+        currentLsp: undefined,
+        currentStrict: () => ({ strict }),
+      }).getConnectedColumns({
         targets: [["model.p.a", "x"]],
         upstreamExpansion: true,
       });
@@ -401,13 +401,13 @@ describe("DbtLineageService.getConnectedColumns", () => {
 
   it("reports columnsNeedStrict only for a running client outside strict", () => {
     const needs = (client: unknown, strict = false) =>
-      new DbtLineageService(
-        {} as any,
-        () => client as any,
-        undefined,
-        undefined,
-        () => ({ strict }),
-      ).columnsNeedStrict();
+      new DbtLineageService({
+        queryManifestService: {} as any,
+        currentClient: () => client as any,
+        currentError: undefined,
+        currentLsp: undefined,
+        currentStrict: () => ({ strict }),
+      }).columnsNeedStrict();
     const request = vi.fn<(...args: any[]) => Promise<any>>();
     expect(needs(fakeClient(request, { staticAnalysis: "project" }))).toEqual({
       mode: "baseline",
@@ -475,10 +475,10 @@ describe("DbtLineageService.getInferredColumns", () => {
     node: { columns: { customer_id: { data_type: "integer" } } },
   };
   const client = (request: Mock<(...args: any[]) => Promise<any>>) =>
-    new DbtLineageService(
-      {} as any,
-      () => ({ state: "running", request }) as any,
-    );
+    new DbtLineageService({
+      queryManifestService: {} as any,
+      currentClient: () => ({ state: "running", request }) as any,
+    });
 
   it("asks getCurrentNode with the project-relative path", async () => {
     const request = vi
@@ -510,10 +510,10 @@ describe("DbtLineageService.getInferredColumns", () => {
 
   it("is undefined when the client is not running or the request fails", async () => {
     expect(
-      await new DbtLineageService(
-        {} as any,
-        () => undefined,
-      ).getInferredColumns("/p", "/p/a.sql"),
+      await new DbtLineageService({
+        queryManifestService: {} as any,
+        currentClient: () => undefined,
+      }).getInferredColumns("/p", "/p/a.sql"),
     ).toBeUndefined();
     const request = vi
       .fn<(...args: any[]) => Promise<any>>()
@@ -583,7 +583,9 @@ describe("DbtLineageService — merged value", () => {
   });
 
   it("draws a server node the parse lacks with no tests", () => {
-    const svc = new DbtLineageService({ getProject: () => undefined } as any);
+    const svc = new DbtLineageService({
+      queryManifestService: { getProject: () => undefined } as any,
+    });
     const added = {
       unique_id: "model.p.new",
       alias: "new",

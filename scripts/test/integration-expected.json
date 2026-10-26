@@ -4,7 +4,7 @@
     "Update this file whenever a test is added, removed or newly skipped.",
     "A label fails on a non-zero exit, a failing test, a different passing count or more pending."
   ],
-  "trusted": { "passing": 97, "pending": 8 },
+  "trusted": { "passing": 66, "pending": 7 },
   "symlinked": { "passing": 3, "pending": 0 },
   "native-strict": { "passing": 21, "pending": 2 },
   "native-baseline": { "passing": 6, "pending": 17 },

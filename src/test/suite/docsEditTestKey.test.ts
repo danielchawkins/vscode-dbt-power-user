@@ -60,9 +60,19 @@ function applied(edit: WorkspaceEdit, before: string): string {
 
 describe("docs editor test key", () => {
   const model = (message: object, existing?: object) =>
-    getTestDataByModel(message, "orders", existing, deps);
+    getTestDataByModel({
+      message,
+      modelName: "orders",
+      existingModel: existing,
+      deps,
+    });
   const column = (message: object, existing?: object) =>
-    getTestDataByColumn(message, "id", existing, deps);
+    getTestDataByColumn({
+      message,
+      columnNameFromWebview: "id",
+      existingColumn: existing,
+      deps,
+    });
 
   it("writes data_tests for a model whose YAML has no tests key", () => {
     const message = { updatedTests: [modelTest] };
@@ -110,14 +120,17 @@ describe("docs editor save", () => {
   afterEach(() => rmSync(root, { recursive: true, force: true }));
 
   const save = (patchPath?: string, dialogType?: string) =>
-    panel.saveDocumentation({
-      name: "orders",
-      filePath: path.join(root, "models", "orders.sql"),
-      patchPath,
-      dialogType,
-      columns: [{ name: "id" }],
-      updatedTests: [columnTest],
-    });
+    panel.saveDocumentation(
+      {
+        name: "orders",
+        filePath: path.join(root, "models", "orders.sql"),
+        patchPath,
+        dialogType,
+        columns: [{ name: "id" }],
+        updatedTests: [columnTest],
+      },
+      panel.getProject(),
+    );
 
   it("writes data_tests for a column added to a model that already has YAML", async () => {
     expect(await save("project://models/schema.yml")).toBe(true);
@@ -182,5 +195,6 @@ describe("docs editor save", () => {
 });
 
 interface SavePanel {
-  saveDocumentation(message: unknown): Promise<boolean>;
+  saveDocumentation(message: unknown, project: unknown): Promise<boolean>;
+  getProject(): unknown;
 }

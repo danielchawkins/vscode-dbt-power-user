@@ -15,7 +15,8 @@ import {
 import { useRef, useState } from "react";
 import classes from "../../styles.module.css";
 import TestForm from "./forms/TestForm";
-import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
+import useTestFormSave from "./hooks/useTestFormSave";
+import { TestOperation } from "./testEdits";
 
 interface Props {
   title: string;

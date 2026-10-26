@@ -4,7 +4,7 @@ import type {
 } from "@fusion-power-user/webview-contract";
 import { existsSync, readFileSync } from "node:fs";
 import type { Uri } from "vscode";
-import { ProgressLocation, window } from "vscode";
+import { window } from "vscode";
 import { parse, stringify } from "yaml";
 import { UserInputError } from "../../core/errors";
 import type { Log } from "../../core/log";
@@ -21,8 +21,8 @@ export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
     "getColumnValues" | "getColumnsOfSource" | "getColumnsOfModel"
   >;
 };
-import { activeModelUri } from "../../projects/registry/previewUri";
-import type { Handlers } from "../../webview/messageRouter";
+import type { Handlers, MessageSink } from "../../webview/messageRouter";
+import { reply, replyError } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
 
 type HostMessage = documentationEditor.HostMessage;
@@ -48,8 +48,15 @@ export interface DocsEditHost {
     "getModelsInProject" | "getSourcesInProject"
   >;
   readonly dbtTestService: DbtTestService;
-  getProject(): DocsProject | undefined;
+  /** The project that answers for the document at `uri`, if one does. */
+  getProject(uri: Uri): DocsProject | undefined;
   post(message: HostMessage): Thenable<boolean> | undefined;
+}
+
+/** The active editor's document and the project that answers for it, resolved once per request. */
+export interface ActiveModel {
+  uri: Uri;
+  project: DocsProject;
 }
 
 interface Reply {
@@ -86,21 +93,33 @@ export class DocsEditRequests {
     this.host = host;
   }
 
-  /** Answers a panel request. */
+  /** Answers a panel request: with `error` as a failure, otherwise with `data` as the body. */
   sendResponse({ data, error, syncRequestId }: Reply): void {
-    void this.host.post({
-      command: "response",
-      args: { syncRequestId, body: data, status: !error, error },
-    });
+    const sink: Pick<MessageSink, "reply"> = {
+      reply: (response) => this.host.post(response),
+    };
+    void (error
+      ? replyError(sink, syncRequestId, error)
+      : reply(sink, syncRequestId, data));
   }
 
-  /** Runs `callback` and answers `syncRequestId` with its result or its error. */
-  async handleSyncRequest(
-    syncRequestId: string | undefined,
-    callback: () => unknown,
-    command: string,
-    showErrorNotification?: boolean,
-  ): Promise<void> {
+  /**
+   * Runs `callback` and answers `syncRequestId` with its result or its error. A failure also shows an error
+   * notification for `notifyProject` when it is set.
+   */
+  async handleSyncRequest<C extends RequestCommand>({
+    syncRequestId,
+    callback,
+    command,
+    notifyProject,
+  }: {
+    syncRequestId: string | undefined;
+    callback: () =>
+      | documentationEditor.ResponseBodies[C]
+      | PromiseLike<documentationEditor.ResponseBodies[C]>;
+    command: C;
+    notifyProject?: DocsProject | undefined;
+  }): Promise<void> {
     try {
       this.sendResponse({ syncRequestId, data: await callback() });
     } catch (error) {
@@ -110,33 +129,33 @@ export class DocsEditRequests {
       } else {
         this.host.terminal.error(command, message, error);
       }
-      if (showErrorNotification) {
-        void notifyError(this.host.getProject(), message);
+      if (notifyProject) {
+        void notifyError(notifyProject, message);
       }
       this.sendResponse({ syncRequestId, error: message });
     }
   }
 
-  /** Runs `handler` with the active editor's project, or answers the request with why there is none. */
+  /** Runs `handler` with the active model, or answers the request with why there is none. */
   withProject<M extends { syncRequestId?: string | undefined }>(
-    handler: (message: M, project: DocsProject, modelPath: Uri) => unknown,
+    handler: (message: M, active: ActiveModel) => unknown,
   ): (message: M) => unknown {
     return (message) => {
-      if (!window.activeTextEditor) {
+      const uri = window.activeTextEditor?.document.uri;
+      if (!uri) {
         return this.sendResponse({
           syncRequestId: message.syncRequestId,
           error: "No active editor",
         });
       }
-      const modelPath = activeModelUri(window.activeTextEditor.document.uri);
-      const project = this.host.getProject();
+      const project = this.host.getProject(uri);
       if (!project) {
         return this.sendResponse({
           syncRequestId: message.syncRequestId,
           error: "No dbt project found for the active editor",
         });
       }
-      return handler(message, project, modelPath);
+      return handler(message, { uri, project });
     };
   }
 
@@ -150,36 +169,39 @@ export class DocsEditRequests {
       command === "showWarningMessage"
         ? window.showWarningMessage
         : window.showInformationMessage;
-    return this.handleSyncRequest(
+    return this.handleSyncRequest({
       syncRequestId,
-      () => show(infoMessage, ...(items ?? [])),
+      callback: () => show(infoMessage, ...(items ?? [])),
       command,
-    );
+    });
   }
 
-  private getDbtTestCode(test: TestMetaData, modelName: string) {
+  private getDbtTestCode(test: TestMetaData, modelName: string, uri: Uri) {
     return {
       sql: test.path?.endsWith(".sql")
         ? readFileSync(test.path, { encoding: "utf-8" })
         : undefined,
-      config: this.host.dbtTestService.getConfigByTest(
-        test,
-        modelName,
-        test.column_name,
-      ),
+      config: this.host.dbtTestService.getConfigByTest(test, modelName, {
+        columnNameFromTestMetadata: test.column_name,
+        uri,
+      }),
     };
   }
 
   /** Answers with `read` of the active editor's URI. */
-  private inProject(command: string, read: (uri: Uri | undefined) => unknown) {
+  private inProject<C extends RequestCommand>(
+    command: C,
+    read: (uri: Uri) => documentationEditor.ResponseBodies[C],
+  ) {
     return this.withProject(
-      ({ syncRequestId }: { syncRequestId?: string | undefined }) =>
-        this.handleSyncRequest(
+      ({ syncRequestId }: { syncRequestId?: string | undefined }, active) =>
+        this.handleSyncRequest({
           syncRequestId,
-          () => read(window.activeTextEditor?.document.uri),
+          callback: () => read(active.uri),
           command,
-          command === "getSourcesInProject",
-        ),
+          notifyProject:
+            command === "getSourcesInProject" ? active.project : undefined,
+        }),
     );
   }
 
@@ -188,60 +210,66 @@ export class DocsEditRequests {
     return {
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),
-      getTestCode: this.withProject(({ syncRequestId, test, model }) =>
-        this.handleSyncRequest(
+      getTestCode: this.withProject(({ syncRequestId, test, model }, active) =>
+        this.handleSyncRequest({
           syncRequestId,
-          () => this.getDbtTestCode(test as unknown as TestMetaData, model),
-          "getTestCode",
-        ),
+          callback: () =>
+            this.getDbtTestCode(
+              test as unknown as TestMetaData,
+              model,
+              active.uri,
+            ),
+          command: "getTestCode",
+        }),
       ),
       getUnitTestCode: this.withProject(({ syncRequestId, path, name }) =>
-        this.handleSyncRequest(
+        this.handleSyncRequest({
           syncRequestId,
-          () => getUnitTestCode(path, name),
-          "getUnitTestCode",
-        ),
+          callback: () => getUnitTestCode(path, name),
+          command: "getUnitTestCode",
+        }),
       ),
       getDistinctColumnValues: this.withProject(
-        ({ syncRequestId, model, column }, project) =>
-          this.handleSyncRequest(
+        ({ syncRequestId, model, column }, { project }) =>
+          this.handleSyncRequest({
             syncRequestId,
-            () => {
+            callback: () => {
               if (!model) {
                 throw new UserInputError("No model is loaded");
               }
               return project.queries.getColumnValues(model, column);
             },
-            "getDistinctColumnValues",
-            true,
-          ),
+            command: "getDistinctColumnValues",
+            notifyProject: project,
+          }),
       ),
       getColumnsOfSources: this.withProject(
-        ({ syncRequestId, source, table }, project) =>
-          this.handleSyncRequest(
+        ({ syncRequestId, source, table }, { project }) =>
+          this.handleSyncRequest({
             syncRequestId,
-            async () => ({
+            callback: async () => ({
               columns:
                 (await project.queries.getColumnsOfSource(source, table))?.map(
                   (c) => c.column,
                 ) ?? [],
             }),
-            "getColumnsOfSources",
-            true,
-          ),
-      ),
-      getColumnsOfModel: this.withProject(({ syncRequestId, model }, project) =>
-        this.handleSyncRequest(
-          syncRequestId,
-          async () => ({
-            columns:
-              (await project.queries.getColumnsOfModel(model))?.map(
-                (c) => c.column,
-              ) ?? [],
+            command: "getColumnsOfSources",
+            notifyProject: project,
           }),
-          "getColumnsOfModel",
-          true,
-        ),
+      ),
+      getColumnsOfModel: this.withProject(
+        ({ syncRequestId, model }, { project }) =>
+          this.handleSyncRequest({
+            syncRequestId,
+            callback: async () => ({
+              columns:
+                (await project.queries.getColumnsOfModel(model))?.map(
+                  (c) => c.column,
+                ) ?? [],
+            }),
+            command: "getColumnsOfModel",
+            notifyProject: project,
+          }),
       ),
       getSourcesInProject: this.inProject("getSourcesInProject", (uri) => ({
         sources: host.queryManifestService.getSourcesInProject(uri),
@@ -251,29 +279,4 @@ export class DocsEditRequests {
       })),
     };
   }
-}
-
-/**
- * Shows a progress notification while `work` runs. When `cancellable`, the user's cancel aborts the signal `work`
- * receives.
- */
-export function withProgress<T>(
-  title: string,
-  work: (signal: AbortSignal) => Promise<T>,
-  cancellable = false,
-) {
-  return window.withProgress(
-    { title, location: ProgressLocation.Notification, cancellable },
-    (_progress, token) => {
-      const controller = new AbortController();
-      if (!cancellable) {
-        return work(controller.signal);
-      }
-      if (token.isCancellationRequested) {
-        controller.abort();
-      }
-      const listener = token.onCancellationRequested(() => controller.abort());
-      return work(controller.signal).finally(() => listener.dispose());
-    },
-  );
 }

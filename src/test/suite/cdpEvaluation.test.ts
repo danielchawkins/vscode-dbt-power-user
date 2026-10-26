@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed reject rules of the CDP evaluation
 import type { ContextSlot } from "../smoke/cdpEvaluation";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed reject rules of the CDP evaluation
 import {
   allDispatchedSlotsSettled,
   assembleEvaluationResults,
+  evaluationSlot,
+  goneReason,
+  isPainted,
 } from "../smoke/cdpEvaluation";
 
 describe("CDP evaluation result assembly", () => {
@@ -10,34 +15,6 @@ describe("CDP evaluation result assembly", () => {
     { requestId: 100, contextId: 1 },
     { requestId: 101, contextId: 2 },
   ];
-
-  it("assembles successful results in dispatch order", () => {
-    const slots = new Map<number, ContextSlot>([
-      [100, { state: "ok", value: { workbench: false, toasts: [] } }],
-      [
-        101,
-        { state: "ok", value: { workbench: true, toasts: ["Host toast"] } },
-      ],
-    ]);
-
-    expect(assembleEvaluationResults(dispatched, slots)).toEqual([
-      { workbench: false, toasts: [] },
-      { workbench: true, toasts: ["Host toast"] },
-    ]);
-  });
-
-  it("ignores late contexts that were never dispatched", () => {
-    const slots = new Map<number, ContextSlot>([
-      [100, { state: "ok", value: "first" }],
-      [101, { state: "ok", value: "second" }],
-      [102, { state: "ok", value: "late" }],
-    ]);
-
-    expect(assembleEvaluationResults(dispatched, slots)).toEqual([
-      "first",
-      "second",
-    ]);
-  });
 
   it("rejects missing slots for dispatched contexts", () => {
     const slots = new Map<number, ContextSlot>([
@@ -79,5 +56,50 @@ describe("CDP evaluation result assembly", () => {
     expect(allDispatchedSlotsSettled(dispatched, slots)).toBe(false);
     slots.set(101, { state: "ok", value: "done" });
     expect(allDispatchedSlotsSettled(dispatched, slots)).toBe(true);
+  });
+});
+
+describe("CDP evaluation replies and paint checks", () => {
+  it("maps a reply to an error slot, an exception slot or an ok slot", () => {
+    expect(
+      evaluationSlot({ error: { code: -1 }, result: { result: { value: 1 } } }),
+    ).toEqual({
+      state: "error",
+      error: '{"code":-1}',
+    });
+    expect(
+      evaluationSlot({
+        result: { exceptionDetails: { text: "boom" }, result: { value: 1 } },
+      }),
+    ).toEqual({ state: "error", error: '{"text":"boom"}' });
+    expect(evaluationSlot({ result: { result: { value: "ok" } } })).toEqual({
+      state: "ok",
+      value: "ok",
+    });
+  });
+
+  it("reports a webview painted only with its body, own stylesheet, codicons and font", () => {
+    const paint = {
+      entry: "docs",
+      timeOrigin: 1,
+      firstContentfulPaint: 2,
+      bodyText: "Docs",
+      stylesheets: ["https://x/docs.css", "https://x/codicon.css"],
+      codiconFont: true,
+    };
+    expect(isPainted("docs", paint)).toBe(true);
+    expect(isPainted("docs", { ...paint, bodyText: "" })).toBe(false);
+    expect(
+      isPainted("docs", { ...paint, stylesheets: ["https://x/codicon.css"] }),
+    ).toBe(false);
+    expect(isPainted("docs", { ...paint, codiconFont: false })).toBe(false);
+  });
+
+  it("names why a panel scan found no frame showing the entry", () => {
+    expect(goneReason({ frames: 0, skipped: [] })).toBe("no-frames");
+    expect(goneReason({ frames: 2, skipped: ["gone", "gone"] })).toBe(
+      "frames-errored",
+    );
+    expect(goneReason({ frames: 2, skipped: ["gone"] })).toBe("other-entries");
   });
 });

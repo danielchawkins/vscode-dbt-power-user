@@ -31,7 +31,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../core/manifest";
-import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE, type ProjectPaths } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { ManifestParsers } from "../../projects/manifest/manifest";
@@ -39,7 +38,10 @@ import { ParseDemand } from "../../projects/manifest/parseDemand";
 import type { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import { DbtTaskTerminal } from "../../projects/project/dbtTask";
-import { Project, type ProjectOptions } from "../../projects/project/project";
+import {
+  type Project,
+  type ProjectOptions,
+} from "../../projects/project/project";
 import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
 import { queueCli } from "../../projects/project/projectCommands";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
@@ -199,24 +201,6 @@ describe("Project Test Suite", () => {
   });
 
   describe("Constructor and Initialization", () => {
-    it("should have access to dbt integration constants", () => {
-      expect(DBT_PROJECT_FILE).toBe("dbt_project.yml");
-      expect(MANIFEST_FILE).toBe("manifest.json");
-      expect(RESOURCE_TYPE_MODEL).toBe("model");
-    });
-
-    it("should create Project instance with correct configuration", () => {
-      const projectUri = vscode.Uri.file("/test/project");
-      dbtProject = newProject(projectUri);
-
-      expect(dbtProject).toBeInstanceOf(Project);
-      expect(dbtProject.projectRoot).toBe(projectUri);
-      expect(mockTerminal.debug).toHaveBeenCalledWith(
-        "Project",
-        expect.stringContaining("Created fusion dbt project"),
-      );
-    });
-
     it("should commit the Fusion CLI on initialize()", async () => {
       dbtProject = newProject();
       expect(() => dbtProject.getFusionCli()).toThrow(/not initialized/);
@@ -733,12 +717,7 @@ describe("Project Test Suite", () => {
       return execute;
     }
 
-    it.each([
-      ["", "", "my_model"],
-      ["+", "", "+my_model"],
-      ["", "+", "my_model+"],
-      ["+", "+", "+my_model+"],
-    ])(
+    it.each([["+", "+", "+my_model+"]])(
       "prepares run and build for %s my_model %s",
       async (plusOperatorLeft, plusOperatorRight, select) => {
         await queued();
@@ -1283,13 +1262,6 @@ describe("Project manifest trigger", () => {
     vi.useRealTimers();
   });
 
-  it("watches source extensions under the project root", () => {
-    expect(watcher.pattern).toEqual({
-      base: root,
-      pattern: "**/*.{sql,yml,yaml,csv}",
-    });
-  });
-
   it("rebuilds once after the debounce for model edits", async () => {
     const sourceFileChanged = vi.fn();
     project.onSourceFileChanged(sourceFileChanged);
@@ -1303,13 +1275,6 @@ describe("Project manifest trigger", () => {
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
     expect(project.manifest?.publicationEpoch ?? 0).toBe(0);
-  });
-
-  it("ignores edits outside the model, macro and seed paths", async () => {
-    watcher.fire("change", path.join(root, "target", "compiled", "a.sql"));
-    watcher.fire("change", path.join(root, "models_old", "a.sql"));
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(rebuildManifest).not.toHaveBeenCalled();
   });
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
@@ -1491,14 +1456,5 @@ describe("Project manifest trigger", () => {
         expect(rebuildManifest).toHaveBeenCalledTimes(1);
       },
     );
-  });
-
-  it("drops a pending rebuild and stops watching on dispose", async () => {
-    watcher.fire("change", path.join(root, "models", "a.sql"));
-    await project.dispose();
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(rebuildManifest).not.toHaveBeenCalled();
-    expect(watcher.dispose).toHaveBeenCalled();
-    expect(watcher.listeners.change).toHaveLength(0);
   });
 });

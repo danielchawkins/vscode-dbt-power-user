@@ -61,10 +61,10 @@ describe("ProjectSetupCommands project resolution", () => {
     });
     const noop = () => undefined;
     // The real FusionCli builds the argv; only the process it would spawn is recorded.
-    const cli = new FusionCli(
-      { path: "/bin/dbt", env: {} },
-      () => snapshot,
-      {
+    const cli = new FusionCli({
+      executable: { path: "/bin/dbt", env: {} },
+      snapshot: () => snapshot,
+      processes: {
         createCommandProcessExecution: (call: {
           command: string;
           args?: string[];
@@ -86,7 +86,7 @@ describe("ProjectSetupCommands project resolution", () => {
           };
         },
       } as never,
-      {
+      terminal: {
         debug: noop,
         info: noop,
         output: noop,
@@ -94,7 +94,7 @@ describe("ProjectSetupCommands project resolution", () => {
         error: noop,
         dispose: noop,
       },
-    );
+    });
     const mockProject = {
       projectRoot: pickedProject.uri,
       getProjectName: () => pickedProject.label,
@@ -131,12 +131,12 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     };
 
-    const commands = new ProjectSetupCommands(
-      mockProjects,
-      mockStore as never,
-      mockPicker as unknown as ProjectQuickPick,
-      outputChannels as never,
-    );
+    const commands = new ProjectSetupCommands({
+      projects: mockProjects,
+      extensionContext: mockStore as never,
+      projectQuickPick: mockPicker as unknown as ProjectQuickPick,
+      outputChannels: outputChannels as never,
+    });
 
     return {
       commands,

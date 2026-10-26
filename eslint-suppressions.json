@@ -1,30 +1,10 @@
 {
-  "src/core/manifest/relationshipInference.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/relationshipParser.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    }
-  },
   "src/features/cte/cteProfilerDecorationProvider.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
-  "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/projects/registry/projectRegistry.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/test/smoke/cdpClient.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     }

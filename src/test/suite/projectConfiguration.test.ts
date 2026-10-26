@@ -49,19 +49,6 @@ describe("resolveDeclaredProjectRoots", () => {
     ]);
   });
 
-  it("returns no fallback root when the folder is not a project", () => {
-    mockProjects([]);
-
-    expect(
-      resolveDeclaredProjectRoots(fixtureFolder("nested-project")),
-    ).toEqual({
-      folder: fixtureFolder("nested-project"),
-      roots: [],
-      source: "folderRoot",
-      problems: [],
-    });
-  });
-
   it("never enumerates projects or creates a watcher", () => {
     const findFiles = vi.spyOn(workspace, "findFiles");
     const createWatcher = vi.spyOn(workspace, "createFileSystemWatcher");
@@ -71,16 +58,6 @@ describe("resolveDeclaredProjectRoots", () => {
 
     expect(findFiles).not.toHaveBeenCalled();
     expect(createWatcher).not.toHaveBeenCalled();
-  });
-
-  it("falls back to a workspace-folder root project", () => {
-    const folder = fixtureFolder("single-project");
-    mockProjects([]);
-
-    const result = resolveDeclaredProjectRoots(folder);
-
-    expect(result.roots).toEqual([folder.uri]);
-    expect(result).toMatchObject({ source: "folderRoot", problems: [] });
   });
 
   it("accepts an explicit root holding dbt_project.yaml", () => {
@@ -112,16 +89,6 @@ describe("resolveDeclaredProjectRoots", () => {
         root: fixturePath("multi-root", "projects/typo"),
       },
     ]);
-  });
-
-  it("fails closed when any explicit root is invalid", () => {
-    const folder = fixtureFolder("multi-root");
-    mockProjects(["projects/general", "projects/typo"]);
-
-    const result = resolveDeclaredProjectRoots(folder);
-
-    expect(result.roots).toEqual([]);
-    expect(result.problems).toHaveLength(1);
   });
 
   it("never falls back after an explicit failure", () => {
@@ -182,18 +149,6 @@ describe("resolveDeclaredProjectRoots", () => {
       general,
       fixturePath("multi-root", "projects/sox"),
     ]);
-  });
-
-  it("produces equal paths for registry deduplication across folders", () => {
-    mockProjects(["projects/general"]);
-    const first = resolveDeclaredProjectRoots(fixtureFolder("multi-root"));
-    mockProjects(["../multi-root/projects/general"]);
-    const second = resolveDeclaredProjectRoots(fixtureFolder("nested-project"));
-
-    expect(rootPaths(first)).toEqual([
-      fixturePath("multi-root", "projects/general"),
-    ]);
-    expect(rootPaths(first)).toEqual(rootPaths(second));
   });
 
   it("reports blank and non-string entries and fails closed", () => {

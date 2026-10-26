@@ -16,7 +16,7 @@ import {
 } from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
-import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import { createFusionClientPool } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
   DeclaredProject,
@@ -141,18 +141,14 @@ describe("fusionNotificationPolicy", () => {
     };
     const factory = { create: vi.fn() };
 
-    const pool = new FusionClientPoolImpl(
-      registry,
-      terminal as any,
-      resolver as any,
+    const pool = createFusionClientPool(registry, terminal as any, {
+      resolver: resolver as any,
       factory,
-      {
-        readSnapshot: readProjectSnapshot,
-        environments: fakeProjectEnvironments(),
-        outputChannel: () => createMockLogOutputChannel("project"),
-        rootExists: () => true,
-      },
-    );
+      readSnapshot: readProjectSnapshot,
+      environments: fakeProjectEnvironments(),
+      outputChannel: () => createMockLogOutputChannel("project"),
+      rootExists: () => true,
+    });
     pool.initialize();
     await flushAsync();
 

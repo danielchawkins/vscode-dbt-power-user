@@ -45,23 +45,52 @@ export interface MessageSink {
   reply: Reply;
 }
 
+/**
+ * Answers request `syncRequestId` with `body`; the panel's request executor resolves with it. Takes only the
+ * `reply` of a sink, so a caller that answers outside `dispatchMessage` passes `{ reply }`.
+ */
+export function reply(
+  sink: Pick<MessageSink, "reply">,
+  syncRequestId: string | undefined,
+  body: unknown,
+): unknown {
+  return sink.reply({
+    command: "response",
+    args: { syncRequestId, body, status: true },
+  });
+}
+
 /** Answers request `syncRequestId` with `status: false`, the shape the panel's request executor rejects on. */
-const settle = async (
-  source: string,
-  { log, reply }: MessageSink,
-  syncRequestId: string,
+export function replyError(
+  sink: Pick<MessageSink, "reply">,
+  syncRequestId: string | undefined,
   error: string,
-) => {
+): unknown {
+  return sink.reply({
+    command: "response",
+    args: { syncRequestId, body: undefined, status: false, error },
+  });
+}
+
+/** Answers `syncRequestId` with an error, and logs a failure to deliver that answer. */
+const settle = async ({
+  source,
+  sink,
+  syncRequestId,
+  error,
+}: {
+  source: string;
+  sink: MessageSink;
+  syncRequestId: string;
+  error: string;
+}) => {
   try {
-    await reply({
-      command: "response",
-      args: { syncRequestId, body: undefined, status: false, error },
-    });
-  } catch (replyError) {
-    log.error(
+    await replyError(sink, syncRequestId, error);
+  } catch (replyFailure) {
+    sink.log.error(
       `${source}:reply`,
       "Could not answer a webview request",
-      replyError,
+      replyFailure,
     );
   }
 };
@@ -71,13 +100,19 @@ const settle = async (
  * and dropped; a handler failure is logged as an error. Either way, a message carrying a string `syncRequestId`
  * gets a `status: false` reply, so the panel's pending request settles. Never throws.
  */
-export async function dispatchMessage<M extends { command: string }>(
-  source: string,
-  message: unknown,
-  guard: (value: unknown) => value is M,
-  handlers: Handlers<M>,
-  sink: MessageSink,
-): Promise<void> {
+export async function dispatchMessage<M extends { command: string }>({
+  source,
+  message,
+  guard,
+  handlers,
+  sink,
+}: {
+  source: string;
+  message: unknown;
+  guard: (value: unknown) => value is M;
+  handlers: Handlers<M>;
+  sink: MessageSink;
+}): Promise<void> {
   const syncRequestId = requestIdOf(message);
   if (!guard(message)) {
     sink.log.warn(
@@ -85,7 +120,7 @@ export async function dispatchMessage<M extends { command: string }>(
       `Dropped a malformed webview message (${describe(message)})`,
     );
     if (syncRequestId !== undefined) {
-      await settle(source, sink, syncRequestId, "Malformed request");
+      await settle({ source, sink, syncRequestId, error: "Malformed request" });
     }
     return;
   }
@@ -102,7 +137,7 @@ export async function dispatchMessage<M extends { command: string }>(
     );
     if (syncRequestId !== undefined) {
       const text = error instanceof Error ? error.message : String(error);
-      await settle(source, sink, syncRequestId, text);
+      await settle({ source, sink, syncRequestId, error: text });
     }
   }
 }

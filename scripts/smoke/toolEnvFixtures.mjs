@@ -174,26 +174,6 @@ export const TOOL_ENV_FIXTURES = [
     },
   },
   {
-    name: "both",
-    suites: SUITES,
-    build(tmp) {
-      const workspace = makeWorkspace(tmp, "both");
-      const log = path.join(path.resolve(tmp), "invocations.log");
-      const xdgData = path.join(path.resolve(tmp), "xdg-data");
-      writeMise(workspace, "bin", log);
-      writeDirenv(workspace, "direnv-bin", log);
-      allowDirenv(workspace, xdgData);
-      return {
-        workspace,
-        env: {
-          MISE_TRUSTED_CONFIG_PATHS: trustedPaths(workspace),
-          XDG_DATA_HOME: xdgData,
-        },
-        open: modelOf(workspace),
-      };
-    },
-  },
-  {
     name: "untrusted",
     suites: SUITES,
     build(tmp) {
