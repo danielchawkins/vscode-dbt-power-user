@@ -9,6 +9,7 @@ import {
 } from "../../core/lsp";
 import type { FusionClient } from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
+import { manualToken } from "../manualToken";
 
 function clientWith(
   request: (...args: unknown[]) => Promise<unknown>,
@@ -333,5 +334,50 @@ describe("FusionCommands", () => {
     const second = commands.listNodes(["b"], columnLineage);
     expect(await first).toBeInstanceOf(FusionCommandError);
     expect(await second).toEqual({ nodes: [] });
+  });
+
+  it("retries a columnLineage request once when the server cancels it and the caller still wants it", async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ error: "Operation cancelled", nodes: [] })
+      .mockResolvedValueOnce({ nodes: [{ unique_id: "a" }] });
+    const commands = createFusionCommands(() => clientWith(request));
+    expect(await commands.listNodes(["a"], columnLineage)).toMatchObject({
+      nodes: [expect.anything()],
+    });
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports cancelled when the server cancels the retry too", async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValue({ error: "Operation cancelled", nodes: [] });
+    const commands = createFusionCommands(() => clientWith(request));
+    await expect(
+      commands.listNodes(["a"], columnLineage),
+    ).rejects.toMatchObject({ kind: "cancelled" });
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry once the caller that wanted the answer has cancelled", async () => {
+    const { token, cancel } = manualToken();
+    const rejections: ((error: unknown) => void)[] = [];
+    const request = vi.fn(
+      (..._args: unknown[]) =>
+        new Promise((_resolve, reject) => {
+          rejections.push(reject);
+        }),
+    );
+    const commands = createFusionCommands(() => clientWith(request));
+    const first = commands
+      .listNodes(["a"], { purpose: "columnLineage", token })
+      .catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(0);
+    cancel();
+    expect(await first).toMatchObject({ kind: "cancelled" });
+    // The server answers the cancelled request with RequestCancelled. Nobody wants it, so it is not sent again.
+    rejections[0]?.(Object.assign(new Error("Request cancelled"), { code: -32800 }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(1);
   });
 });

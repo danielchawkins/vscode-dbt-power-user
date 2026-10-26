@@ -2,7 +2,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, type Mock, vi } from "vitest";
-import { type CancellationToken, Uri, workspace } from "vscode";
+import {
+  type CancellationToken,
+  CancellationTokenSource,
+  Uri,
+  workspace,
+} from "vscode";
 import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
@@ -12,6 +17,7 @@ import {
   FUSION_LSP_COMMANDS,
   MAX_UNEXPECTED_EXIT_RETRIES,
 } from "../../fusion/fusionClient";
+import { createFusionCommands } from "../../fusion/fusionCommands";
 import { flushAsync } from "../async";
 import {
   channel,
@@ -557,23 +563,31 @@ describe("FusionLanguageClient lifecycle", () => {
       options: { commandPrefix: "fusionPowerUser:q:" },
     });
     await waitForState(client, "running");
+    const lsp = createFusionCommands(() => client);
     const service = new DbtLineageService({
       queryManifestService: {} as any,
       currentClient: () => client,
+      currentLsp: () => lsp,
     });
 
     const [upstream, downstream] = await Promise.all([
-      service.getConnectedColumns({
-        targets: [
-          ["model.p.b", "total"],
-          ["model.p.b", "n"],
-        ],
-        upstreamExpansion: false,
-      }),
-      service.getConnectedColumns({
-        targets: [["model.p.b", "total"]],
-        upstreamExpansion: true,
-      }),
+      service.getConnectedColumns(
+        {
+          targets: [
+            ["model.p.b", "total"],
+            ["model.p.b", "n"],
+          ],
+          upstreamExpansion: false,
+        },
+        new CancellationTokenSource().token,
+      ),
+      service.getConnectedColumns(
+        {
+          targets: [["model.p.b", "total"]],
+          upstreamExpansion: true,
+        },
+        new CancellationTokenSource().token,
+      ),
     ]);
 
     // The two `total` requests are identical, so they share one entry: one listNodes that fails for both callers.

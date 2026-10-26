@@ -2,7 +2,6 @@ import type { PanelNotice } from "@fusion-power-user/webview-contract";
 import { lineage } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
 import type {
-  CancellationToken,
   Event,
   TextEditor,
   WebviewPanel,
@@ -10,7 +9,8 @@ import type {
   WebviewViewProvider,
   WebviewViewResolveContext,
 } from "vscode";
-import { commands, Uri, window } from "vscode";
+import { CancellationTokenSource, commands, Uri, window } from "vscode";
+import type { CancellationToken } from "vscode";
 import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
@@ -299,10 +299,10 @@ export class LineagePanel
         ),
       getConnectedColumns: async ({ args, syncRequestId }) => {
         const { targets, upstreamExpansion } = args.params;
-        const result = await this.dbtLineageService.getConnectedColumns({
-          targets,
-          upstreamExpansion,
-        });
+        const result = await this.dbtLineageService.getConnectedColumns(
+          { targets, upstreamExpansion },
+          new CancellationTokenSource().token,
+        );
         this.respond(
           "getConnectedColumns",
           syncRequestId,

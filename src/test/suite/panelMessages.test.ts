@@ -252,7 +252,10 @@ describe("lineage panel messages", () => {
       });
       expect(
         h.panel.dbtLineageService.getConnectedColumns,
-      ).toHaveBeenCalledWith({ targets, upstreamExpansion: true });
+      ).toHaveBeenCalledWith(
+        { targets, upstreamExpansion: true },
+        expect.anything(),
+      );
       expect(h.postMessage).toHaveBeenCalledWith(
         response("k1", { column_lineage: [] }),
       );
