@@ -1,6 +1,10 @@
 import type { Log } from "../log";
-import { declaredRefs, SOURCE_PATTERN } from "./declaredRelationships";
-import { buildRelationIndex, type RelationIndex } from "./relationIndex";
+import { declaredRefs } from "./declaredRelationships";
+import {
+  buildRelationIndex,
+  type RelationIndex,
+  resolveTarget,
+} from "./relationIndex";
 import {
   type InferenceOptions,
   inferRefs,
@@ -32,9 +36,6 @@ const VALID_CARDINALITIES: ReadonlySet<Cardinality> = new Set([
   "many-to-one",
   "many-to-many",
 ]);
-
-const REF_PATTERN =
-  /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;
 
 /**
  * Builds `Ref[]` records that describe PK/FK relationships between dbt nodes.
@@ -206,11 +207,8 @@ export class RelationshipParser {
    * Extract refs from dbt model contracts (1.5+). Reads both column-level
    * (`columns[].constraints[]`) and model-level (`constraints[]`) FK entries.
    *
-   * Resolution of the `to` target:
-   *   1. If `to` matches `ref('name')`, look up by base name.
-   *   2. If `to` matches `source('schema', 'name')`, look up in source map.
-   *   3. Otherwise treat as a fully-qualified `relation_name` and match
-   *      against the index built from `NodeMetaData.relation_name`.
+   * The `to` target resolves through `resolveTarget` (in `relationIndex.ts`): a
+   * `ref()` or `source()` expression, or else a fully-qualified `relation_name`.
    *
    * Honors `meta.ignore_in_erd` on the column or node `meta`.
    */
@@ -271,7 +269,7 @@ export class RelationshipParser {
     if (constraint.type !== FOREIGN_KEY || !constraint.to) {
       return undefined;
     }
-    const toTable = this.resolveTo(constraint.to, index);
+    const toTable = resolveTarget(constraint.to, index, node.package_name);
     if (!toTable) {
       this.terminal.debug(
         "RelationshipParser",
@@ -327,7 +325,7 @@ export class RelationshipParser {
       );
       return undefined;
     }
-    const toTable = this.resolveTo(constraint.to, index);
+    const toTable = resolveTarget(constraint.to, index, node.package_name);
     if (!toTable) {
       return undefined;
     }
@@ -351,29 +349,6 @@ export class RelationshipParser {
     };
   }
 
-  /**
-   * Resolve a contract `to` field to a target unique_id. Supports
-   * `ref('name')`, `source('schema', 'name')`, and fully-qualified
-   * relation names like `"db"."schema"."table"`.
-   */
-  private resolveTo(to: string, index: RelationIndex): string | undefined {
-    const trimmed = to.trim();
-    const refMatch = REF_PATTERN.exec(trimmed);
-    if (refMatch) {
-      return index.byBaseName.get(refMatch[1] ?? "");
-    }
-    const sourceMatch = SOURCE_PATTERN.exec(trimmed);
-    if (sourceMatch) {
-      return index.bySourceTable.get(`${sourceMatch[1]}.${sourceMatch[2]}`);
-    }
-    // Fully-qualified relation name lookup. Try exact and case-insensitive
-    // matches because adapters quote/case differently.
-    return (
-      index.byRelationName.get(trimmed) ??
-      index.byRelationName.get(trimmed.toLowerCase())
-    );
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // Declared — meta.relationships
   // ─────────────────────────────────────────────────────────────────────────
@@ -393,10 +368,9 @@ export class RelationshipParser {
    *           to_columns: [id]
    * ```
    *
-   * - `to` is `ref('name')` (one argument, matched by model name across the project and its packages) or
-   *   `source('source_name', 'table')`. A `ref` name resolves as `resolveBaseName` does (in `relationIndex.ts`): the
-   *   declaring package's own node, then the latest version. A `source_name.table` that more than one source table
-   *   claims does not resolve.
+   * - `to` is a `ref()` or `source()` expression, resolved as `resolveTarget` does (in `relationIndex.ts`): a `ref`
+   *   name resolves to the declaring package's own node, then the latest version. A `source_name.table` that more
+   *   than one source table claims does not resolve.
    * - `config.meta.relationships` is read when `meta` has no `relationships`
    *   key, because Fusion places a node's `meta` under its config.
    * - `meta.ignore_in_erd: true` on the declaring node or table drops all of

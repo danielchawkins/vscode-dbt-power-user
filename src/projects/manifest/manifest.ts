@@ -21,6 +21,7 @@ import type {
   UnitTestParser,
 } from "../../core/manifest/index";
 import { type ManifestProject } from "../../core/manifest/index";
+import { buildRelationIndex } from "../../core/manifest/relationIndex";
 import type {
   ExposureResource,
   FunctionResource,
@@ -195,7 +196,6 @@ async function parseResourceMaps(
     nodeMetaMap,
     macroMetaMap,
     metricMetaMap,
-    semanticModelMetaMap,
     sourceMetaMap,
     testMetaMap,
     unitTestMetaMap,
@@ -210,10 +210,6 @@ async function parseResourceMaps(
     parsers.nodeParser.createNodeMetaMap(nodes, project),
     parsers.macroParser.createMacroMetaMap(macros, project),
     parsers.metricParser.createMetricMetaMap(semanticModels, project),
-    parsers.semanticModelParser.createSemanticModelMetaMap(
-      semanticModels,
-      project,
-    ),
     parsers.sourceParser.createSourceMetaMap(sources, project),
     parsers.testParser.createTestMetaMap(nodes, project),
     parsers.unitTestParser.createUnitTestMetaMap(unitTests ?? {}, project),
@@ -224,6 +220,13 @@ async function parseResourceMaps(
       project,
     ),
   ]);
+  // Semantic models resolve their `model` ref against the nodes and sources parsed above.
+  const semanticModelMetaMap =
+    await parsers.semanticModelParser.createSemanticModelMetaMap(
+      semanticModels,
+      project,
+      buildRelationIndex(nodeMetaMap, sourceMetaMap),
+    );
   return {
     ...parentMaps,
     nodeMetaMap,

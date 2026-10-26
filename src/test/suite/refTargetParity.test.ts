@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Log } from "../../core/log";
 import { ChildrenParentParser } from "../../core/manifest/childrenParentParser";
 import type { ManifestProject } from "../../core/manifest/manifestProject";
+import { buildRelationIndex } from "../../core/manifest/relationIndex";
 import { RelationshipParser } from "../../core/manifest/relationshipParser";
 import { SemanticModelParser } from "../../core/manifest/semanticModelParser";
 import type {
@@ -11,8 +12,7 @@ import type {
 } from "../../core/manifest/types";
 
 // One table of `to` strings, resolved by the lineage classification, the ERD's contract path and the semantic-model
-// parser. Each case names the table it must reach. A case marked `failsToday` is a known disagreement; its test
-// is `it.fails`, so it turns red when the parsers agree and must then lose the flag.
+// parser. Each case names the table it must reach.
 
 const ORDERS = "model.p.orders";
 const CUSTOMERS = "model.p.customers";
@@ -29,36 +29,17 @@ const project = {
 interface Case {
   to: string;
   target: string;
-  /** Why the lineage and ERD answers differ today; the test is `it.fails` while set. */
-  failsToday?: string;
 }
 
 const cases: Case[] = [
   { to: "ref('customers')", target: CUSTOMERS },
   { to: 'ref("customers")', target: CUSTOMERS },
-  {
-    to: "ref ('customers')",
-    target: CUSTOMERS,
-    failsToday: "the ERD pattern has no room before the parenthesis",
-  },
-  {
-    to: "ref('p', 'customers')",
-    target: CUSTOMERS,
-    failsToday: "the ERD reads the package as the model name",
-  },
-  {
-    to: "ref('customers', v=2)",
-    target: CUSTOMERS,
-    failsToday: "the ERD pattern does not accept the v= argument",
-  },
+  { to: "ref ('customers')", target: CUSTOMERS },
+  { to: "ref('p', 'customers')", target: CUSTOMERS },
+  { to: "ref('customers', v=2)", target: CUSTOMERS },
   { to: "source('s', 't')", target: T },
   { to: '"db"."s"."Payments"', target: PAYMENTS },
-  {
-    to: "db.s.Payments",
-    target: PAYMENTS,
-    failsToday:
-      "the ERD indexes the quoted relation name and its lowercase only",
-  },
+  { to: "db.s.Payments", target: PAYMENTS },
 ];
 
 /** Raw manifest resources, as the lineage classification reads them. */
@@ -169,6 +150,7 @@ function erdTarget(to: string): string[] {
 }
 
 async function semanticTarget(to: string): Promise<string | undefined> {
+  const { nodeMap, sources } = erdInput(to);
   const semanticModels: Record<string, SemanticModelResource> = {
     "semantic_model.p.orders": {
       unique_id: "semantic_model.p.orders",
@@ -182,14 +164,14 @@ async function semanticTarget(to: string): Promise<string | undefined> {
   const map = await new SemanticModelParser(log).createSemanticModelMetaMap(
     semanticModels,
     project,
+    buildRelationIndex(nodeMap, sources),
   );
   return map.get("semantic_model.p.orders")?.model_unique_id;
 }
 
 describe("ref and source targets agree across lineage, the ERD and semantic models", () => {
   for (const c of cases) {
-    const run = c.failsToday ? it.fails : it;
-    run(`lineage and the ERD resolve ${c.to} to ${c.target}`, async () => {
+    it(`lineage and the ERD resolve ${c.to} to ${c.target}`, async () => {
       expect(await lineageTarget(c.to)).toEqual([c.target]);
       expect(erdTarget(c.to)).toEqual([c.target]);
     });
@@ -197,10 +179,8 @@ describe("ref and source targets agree across lineage, the ERD and semantic mode
 });
 
 describe("the semantic-model parser resolves the same targets", () => {
-  // It keeps the bare name of a ref() without a depends_on model, and nothing for a relation name, so every case
-  // differs today. `it.fails` until the parser takes a relation index.
   for (const c of cases) {
-    it.fails(`semantic model model: ${c.to} resolves to ${c.target}`, async () => {
+    it(`semantic model model: ${c.to} resolves to ${c.target}`, async () => {
       expect(await semanticTarget(c.to)).toBe(c.target);
     });
   }

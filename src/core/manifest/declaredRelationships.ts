@@ -1,6 +1,7 @@
 import type { Log } from "../log";
+import { parseRefExpression } from "./refExpression";
 import type { RelationIndex } from "./relationIndex";
-import { relationTables, resolveBaseName } from "./relationIndex";
+import { relationTables, resolveTarget } from "./relationIndex";
 import { isIgnoredByMeta } from "./relationshipInference";
 import type { Meta, NodeMetaMap, Ref, SourceMetaMap } from "./types";
 
@@ -9,11 +10,6 @@ interface DeclaredContext {
   index: RelationIndex;
   terminal: Pick<Log, "debug">;
 }
-
-/** `source('source_name', 'table')`, with both arguments captured. */
-export const SOURCE_PATTERN =
-  /^source\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/;
-const SINGLE_REF_PATTERN = /^ref\(\s*['"]([^'"]+)['"]\s*\)$/;
 
 /**
  * The refs declared in `meta.relationships` on every node and source table. The declaring node or table is the
@@ -125,29 +121,18 @@ function refFromDeclaration(
 }
 
 /**
- * Resolve a `meta.relationships` `to` to a unique_id. `ref('name')` with one argument resolves through
- * `resolveBaseName`: the declaring package's own node, then the latest version, otherwise nothing.
- * `source('source_name', 'table')` resolves to its table, or to nothing when more than one source table claims
- * that `source_name.table` key.
+ * Resolve a `meta.relationships` `to` to a unique_id through `resolveTarget`. Only a `ref()` or `source()` is a
+ * declaration, so a relation name resolves to nothing here.
  */
 function resolveDeclaredTo(
   to: string,
   fromPackage: string,
   index: RelationIndex,
 ): string | undefined {
-  const trimmed = to.trim();
-  const refMatch = SINGLE_REF_PATTERN.exec(trimmed);
-  if (refMatch) {
-    return resolveBaseName(index, refMatch[1] ?? "", fromPackage);
+  if (parseRefExpression(to) === undefined) {
+    return undefined;
   }
-  const sourceMatch = SOURCE_PATTERN.exec(trimmed);
-  if (sourceMatch) {
-    const key = `${sourceMatch[1]}.${sourceMatch[2]}`;
-    return index.ambiguousSourceTables.has(key)
-      ? undefined
-      : index.bySourceTable.get(key);
-  }
-  return undefined;
+  return resolveTarget(to, index, fromPackage);
 }
 
 /** The value as a non-empty list of non-empty strings, or `undefined`. */
