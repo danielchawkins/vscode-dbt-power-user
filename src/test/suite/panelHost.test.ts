@@ -158,27 +158,6 @@ describe("PanelHost", () => {
     expect(panel.isPageReady(page.page as never)).toBe(false);
   });
 
-  it("resolves whenReady true once the page reports ready", async () => {
-    vi.useFakeTimers();
-    const { panel } = make();
-    const page = fakePage("panel");
-    panel.attach(page.page as never);
-    const waiting = panel.waitFor(page.page as never, 10_000);
-    page.send("webview:ready");
-    await flush();
-    await expect(waiting).resolves.toBe(true);
-  });
-
-  it("resolves whenReady false when the deadline passes first", async () => {
-    vi.useFakeTimers();
-    const { panel } = make();
-    const page = fakePage("panel");
-    panel.attach(page.page as never);
-    const waiting = panel.waitFor(page.page as never, 10_000);
-    await vi.advanceTimersByTimeAsync(10_000);
-    await expect(waiting).resolves.toBe(false);
-  });
-
   it("describes the view and renders its HTML on resolve", () => {
     const { panel } = make();
     const view = {

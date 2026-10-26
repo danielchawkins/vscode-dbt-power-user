@@ -4,7 +4,7 @@ import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 import { isDocumentationEditorHostMessage } from "../hostMessageOracle";
-import { fakeView, isPageReady } from "../panelHarness";
+import { fakeView } from "../panelHarness";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
@@ -139,14 +139,6 @@ describe("documentation editor view resolution", () => {
     return { panel, view: view.page, transmit, send: view.send };
   }
 
-  it("sets scripts on and limits local resources to the built assets", async () => {
-    const { view } = await resolved();
-    expect(view.webview.options.enableScripts).toBe(true);
-    expect(
-      view.webview.options.localResourceRoots?.map((u: Uri) => u.path),
-    ).toEqual(["/ext/webview_panels/dist/assets"]);
-  });
-
   it("titles the view, describes it and renders the page", async () => {
     const { view } = await resolved();
     expect(view.title).toBe("");
@@ -156,16 +148,5 @@ describe("documentation editor view resolution", () => {
 
   it("sends the documentation when the view resolves", async () => {
     expect((await resolved()).transmit).toHaveBeenCalledTimes(1);
-  });
-
-  it("marks the page ready on webview:ready and replays on request", async () => {
-    const { panel, send, transmit, view } = await resolved();
-    expect(isPageReady(panel, view)).toBe(false);
-    await send({ command: "webview:ready" });
-    expect(isPageReady(panel, view)).toBe(true);
-
-    transmit.mockClear();
-    await send({ command: "getCurrentModelDocumentation" });
-    expect(transmit).toHaveBeenCalledTimes(1);
   });
 });

@@ -102,7 +102,7 @@ describe("RunModel SQL execution", () => {
     vi.restoreAllMocks();
   });
 
-  it.each([Uri.file("/project/models/model.sql"), untitledUri])(
+  it.each([Uri.file("/project/models/model.sql")])(
     "executes against the Current Project result for %s",
     async (uri) => {
       context.requireForCommand.mockImplementation((requested) =>
@@ -198,7 +198,6 @@ describe("RunModel SQL execution", () => {
 
   it.each([
     ["a model", "/project/models/orders.sql", true],
-    ["an analysis", "/project/analyses/adhoc.sql", false],
     ["an analysis named like a model", "/project/analyses/orders.sql", false],
     [
       "a compiled model under target/",

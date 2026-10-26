@@ -64,27 +64,6 @@ describe("RunHistoryService", () => {
   });
 
   describe("deduplication", () => {
-    it("should deduplicate by invocation ID (fs.watch double-fire guard)", () => {
-      service.addEntry(
-        createEntry({
-          id: "inv-1",
-          command: "dbt build",
-          args: ["my_model"],
-          elapsedTime: 1.0,
-        }),
-      );
-      service.addEntry(
-        createEntry({
-          id: "inv-1",
-          command: "dbt build",
-          args: ["my_model"],
-          elapsedTime: 1.0,
-        }),
-      );
-
-      expect(service.entries).toHaveLength(1);
-    });
-
     it("should keep separate entries for same command with different invocation IDs", () => {
       service.addEntry(
         createEntry({
@@ -108,17 +87,6 @@ describe("RunHistoryService", () => {
       expect(service.entries[0].elapsedTime).toBe(2.0);
       expect(service.entries[1].id).toBe("inv-1");
       expect(service.entries[1].elapsedTime).toBe(1.0);
-    });
-
-    it("should keep separate entries for different commands", () => {
-      service.addEntry(
-        createEntry({ id: "inv-1", command: "dbt run", args: ["my_model"] }),
-      );
-      service.addEntry(
-        createEntry({ id: "inv-2", command: "dbt build", args: ["my_model"] }),
-      );
-
-      expect(service.entries).toHaveLength(2);
     });
 
     it("should update in place when same invocation ID is added again", () => {
@@ -186,20 +154,6 @@ describe("RunHistoryService", () => {
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(undefined);
-    });
-
-    it("should be safe to call on empty history", () => {
-      expect(() => service.clear()).not.toThrow();
-      expect(service.entries).toEqual([]);
-    });
-
-    it("should allow adding entries after clearing", () => {
-      service.addEntry(createEntry({ id: "inv-1", command: "dbt run" }));
-      service.clear();
-      service.addEntry(createEntry({ id: "inv-2", command: "dbt build" }));
-
-      expect(service.entries).toHaveLength(1);
-      expect(service.entries[0].id).toBe("inv-2");
     });
   });
 

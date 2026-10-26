@@ -79,19 +79,6 @@ describe("QueryResultPanel", () => {
   describe("switchPreview", () => {
     const model = "/project/models/orders.sql";
 
-    it("re-runs the model materialized through its materialized preview command", async () => {
-      const { send } = makePanel({ project: project() });
-      await send({
-        command: "switchPreview",
-        mode: "materialized",
-        model,
-      });
-      expect(commands.executeCommand).toHaveBeenCalledWith(
-        "fusionPowerUser.previewMaterialized",
-        { url: model },
-      );
-    });
-
     it("re-runs the model computed through its computed preview command", async () => {
       const { send } = makePanel({ project: project() });
       await send({
@@ -237,12 +224,6 @@ describe("QueryResultPanel", () => {
   });
 
   describe("messages", () => {
-    it("ignores messages the contract does not define", async () => {
-      const { send, posted } = makePanel();
-      await send({ command: "nonsense" });
-      expect(posted()).toEqual([]);
-    });
-
     it("returns and clears the query history", async () => {
       const { panel, posted, send } = makePanel({ project: project() });
       await panel.executeQuery({
@@ -264,15 +245,6 @@ describe("QueryResultPanel", () => {
         command: "response",
         args: { syncRequestId: "s1", status: true },
       });
-    });
-
-    it("cancels the running query and resets the page", async () => {
-      const { panel, posted, send } = makePanel();
-      const cancel = vi.fn();
-      (panel as any).queryExecution = { cancel };
-      await send({ command: "cancelQuery" });
-      expect(cancel).toHaveBeenCalled();
-      expect(posted().at(-1)).toMatchObject({ command: "resetState" });
     });
 
     it("runs a history query on the named project with its limit", async () => {

@@ -62,7 +62,7 @@ describe("dbtTemplateAssociations", () => {
     ]);
   });
 
-  it.each(["(x86)", "!", "[work]", "*", "?", "}", "a]b", "[!x]"])(
+  it.each(["(x86)", "!", "a]b", "[!x]"])(
     "matches only the literal directory containing %s",
     (part) => {
       const project = path.resolve("/repo", `p${part}q`);

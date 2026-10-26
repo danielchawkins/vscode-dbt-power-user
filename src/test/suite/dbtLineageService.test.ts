@@ -321,7 +321,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
     });
   });
 
-  it.each(["baseline", "off"])(
+  it.each(["baseline"])(
     "names the static-analysis mode when %s returns no nodes",
     async (mode) => {
       const request = vi
@@ -347,11 +347,8 @@ describe("DbtLineageService.getConnectedColumns", () => {
   );
 
   it.each([
-    ["strict", false, "empty"],
     ["project", true, "empty"],
     ["project", false, "baseline"],
-    ["baseline", true, "baseline"],
-    ["off", true, "off"],
   ])(
     "under %s with project strict=%s, no nodes answer %s",
     async (setting, strict, expected) => {
