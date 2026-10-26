@@ -4,7 +4,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it, type Mock, vi } from "vitest";
-import type { WorkspaceFolder } from "vscode";
 import {
   type CancellationToken,
   CodeLens,
@@ -16,7 +15,6 @@ import {
 import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
-import type { LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/snapshot";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import { canonicalProjectRoot } from "../../fusion/canonicalProjectRoot";
@@ -31,8 +29,6 @@ import {
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
   prefixedCommand,
-  type FusionClient,
-  type FusionClientState,
 } from "../../fusion/fusionClient";
 import {
   clearDiagnosticsOnDelete,
@@ -41,114 +37,32 @@ import {
 import {
   buildWorkspaceConfigurationResponse,
   mapCteLenses,
-  type ServerSpawnSpec,
 } from "../../fusion/lspClientSupport";
 import {
   ProcessStreamBuffer,
   SpawnedLspProcess,
 } from "../../fusion/lspProcess";
 import type { ChildProcess } from "../../fusion/process";
-import type {
-  ExitingProcess,
-  ReverseSocketServer,
-  ReverseSocketStreams,
-} from "../../fusion/reverseSocketTransport";
-import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
-import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { flushAsync } from "../async";
-import { createMockLogOutputChannel } from "../mock/vscode";
+import {
+  channel,
+  FakeReverseSocketServer,
+  makeExecutable,
+  makeLaunch,
+  makeLanguageClient,
+  makeProject,
+  makeStreams,
+  startClient,
+  stateListenerFor,
+  waitForState,
+} from "../fusionClientHarness";
 
 const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
-
-function channel() {
-  return createMockLogOutputChannel("Fusion Power User: general");
-}
-
-const folder: WorkspaceFolder = {
-  uri: Uri.file("/workspace/general"),
-  name: "general",
-  index: 0,
-};
 
 const cancellationToken: CancellationToken = {
   isCancellationRequested: false,
   onCancellationRequested: () => ({ dispose: () => {} }),
 };
-
-function makeProject(
-  rootPath = "/workspace/general",
-  name = "general",
-): DeclaredProject {
-  return {
-    root: Uri.file(rootPath),
-    name,
-    folder,
-    origin: "explicit",
-    contains: () => false,
-    dispose: () => {},
-  };
-}
-
-function makeLaunch(overrides: Partial<LspLaunch> = {}): LspLaunch {
-  return {
-    executable: { source: "path" },
-    projectDir: "/workspace/general",
-    target: undefined,
-    profile: undefined,
-    profilesDir: undefined,
-    staticAnalysis: "baseline",
-    lintEnabled: true,
-    maxErrorReporting: undefined,
-    logLevel: undefined,
-    environment: {},
-    ...overrides,
-  };
-}
-
-function makeStreams(): ReverseSocketStreams {
-  return {
-    reader: new PassThrough(),
-    writer: new PassThrough(),
-  };
-}
-
-class FakeReverseSocketServer implements ReverseSocketServer {
-  readonly port = 42_424;
-
-  accept = vi.fn<(timeoutMs: number) => Promise<ReverseSocketStreams>>();
-  dispose = vi.fn();
-
-  constructor(streams: ReverseSocketStreams) {
-    this.accept.mockResolvedValue(streams);
-  }
-}
-
-class FakeExitingProcess extends EventEmitter implements ExitingProcess {
-  private _exitCode: number | null = null;
-  private _signalCode: NodeJS.Signals | null = null;
-  kill = vi.fn((signal: NodeJS.Signals) => {
-    this._signalCode = signal;
-    this._exitCode = 0;
-    this.emit("exit");
-  });
-
-  get exitCode(): number | null {
-    return this._exitCode;
-  }
-
-  get signalCode(): NodeJS.Signals | null {
-    return this._signalCode;
-  }
-
-  getStderr(): string {
-    return "";
-  }
-
-  exit(): void {
-    this._exitCode = 1;
-    this.emit("exit");
-  }
-}
 
 describe("fusionLanguageClient helpers", () => {
   it("parses traceServer launch setting values", () => {
@@ -314,46 +228,19 @@ describe("SpawnedLspProcess streams", () => {
 
 describe("FusionLanguageClient lifecycle", () => {
   it("passes the project's channel to LanguageClient and never disposes it", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
     const outputChannel = channel();
-    const createLanguageClient = vi.fn(
-      async (
-        _id: string,
-        _name: string,
-        _server: unknown,
-        clientOptions: LanguageClientOptions,
-      ) => {
-        expect(clientOptions.outputChannel).toBe(outputChannel);
-        expect(clientOptions.traceOutputChannel).toBe(outputChannel);
-        expect(clientOptions).not.toHaveProperty("outputChannelName");
-        return makeLanguageClient() as any;
-      },
-    );
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel,
+    const { client, createLanguageClient } = startClient({
+      options: { outputChannel },
     });
 
     await flushAsync();
     expect(createLanguageClient).toHaveBeenCalledTimes(1);
+    const clientOptions = createLanguageClient.mock.calls[0]?.[3] as
+      | LanguageClientOptions
+      | undefined;
+    expect(clientOptions?.outputChannel).toBe(outputChannel);
+    expect(clientOptions?.traceOutputChannel).toBe(outputChannel);
+    expect(clientOptions).not.toHaveProperty("outputChannelName");
     expect(client.outputChannel).toBe(outputChannel);
 
     await client.stop();
@@ -363,8 +250,6 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("forwards each compile-complete notification's error messages", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
     const handlers = new Map<string, (params: unknown) => void>();
     const languageClient = {
       ...makeLanguageClient(),
@@ -376,25 +261,9 @@ describe("FusionLanguageClient lifecycle", () => {
       ),
     };
     const onCompileErrors = vi.fn();
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-      onCompileErrors,
+    const { client } = startClient({
+      languageClient,
+      options: { onCompileErrors },
     });
     await flushAsync();
 
@@ -416,31 +285,12 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("disposes the deleted-file watcher when the client stops", async () => {
-    const streams = makeStreams();
     const watcher = {
       onDidDelete: vi.fn().mockReturnValue({ dispose: vi.fn() }),
       dispose: vi.fn(),
     };
     (workspace.createFileSystemWatcher as Mock).mockReturnValueOnce(watcher);
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => new FakeReverseSocketServer(streams),
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {},
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client } = startClient();
     await waitForState(client, "running");
     expect(watcher.dispose).not.toHaveBeenCalled();
 
@@ -452,44 +302,18 @@ describe("FusionLanguageClient lifecycle", () => {
     let listenAttempts = 0;
     const streams = makeStreams();
     const outputChannel = channel();
-    const channels: unknown[] = [];
-    const createLanguageClient = vi.fn(
-      async (
-        _id: string,
-        _name: string,
-        _server: unknown,
-        clientOptions: LanguageClientOptions,
-      ) => {
-        channels.push(clientOptions.outputChannel);
-        return makeLanguageClient() as any;
-      },
-    );
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => {
-        listenAttempts += 1;
-        if (listenAttempts === 1) {
-          throw new Error("listen failed");
-        }
-        return new FakeReverseSocketServer(streams);
+    const { client, createLanguageClient } = startClient({
+      options: { outputChannel },
+      deps: {
+        listenForServer: async () => {
+          listenAttempts += 1;
+          if (listenAttempts === 1) {
+            throw new Error("listen failed");
+          }
+          return new FakeReverseSocketServer(streams);
+        },
       },
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel,
     });
 
     await waitForState(client, "failed");
@@ -499,6 +323,9 @@ describe("FusionLanguageClient lifecycle", () => {
 
     await client.restart();
     await waitForState(client, "running");
+    const channels = createLanguageClient.mock.calls.map(
+      (call) => (call[3] as LanguageClientOptions).outputChannel,
+    );
     expect(channels).toHaveLength(1);
     expect(channels[0]).toBe(outputChannel);
     expect(outputChannel.warn).toHaveBeenCalledWith(
@@ -510,28 +337,7 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("reports the launch's static analysis mode at the client seam", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client } = startClient();
 
     await waitForState(client, "running");
     expect(client.staticAnalysis).toBe("baseline");
@@ -541,39 +347,17 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("spawns directly without shell and passes the launch environment", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(
-      (_spec: ServerSpawnSpec) => processAdapter as any,
-    );
-    const createLanguageClient = vi.fn(async () => makeLanguageClient() as any);
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: { PROBE_ONLY: "1" },
+    const { client, spawnProcess } = startClient({
+      options: {
+        executable: makeExecutable({ env: { PROBE_ONLY: "1" } }),
+        launch: makeLaunch({
+          environment: {
+            PATH: "/opt/bin",
+            TEST_ENV: "1",
+            [DBT_LSP_USE_TARGET_LSP]: "1",
+          },
+        }),
       },
-      launch: makeLaunch({
-        environment: {
-          PATH: "/opt/bin",
-          TEST_ENV: "1",
-          [DBT_LSP_USE_TARGET_LSP]: "1",
-        },
-      }),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -602,37 +386,17 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("layers options.env over the launch environment, except DBT_LSP_USE_TARGET_LSP", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = vi.fn(
-      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
-    );
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
+    const { client, spawnProcess } = startClient({
+      options: {
+        env: { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
+        launch: makeLaunch({
+          environment: {
+            PATH: "/opt/bin",
+            ORIGIN: "a",
+            DBT_LSP_USE_TARGET_LSP: "1",
+          },
+        }),
       },
-      launch: makeLaunch({
-        environment: {
-          PATH: "/opt/bin",
-          ORIGIN: "a",
-          DBT_LSP_USE_TARGET_LSP: "1",
-        },
-      }),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-      env: { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
     });
 
     await flushAsync();
@@ -648,31 +412,8 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("uses launch.lintEnabled in launch args", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = vi.fn(
-      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
-    );
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch({ lintEnabled: false }),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
+    const { client, spawnProcess } = startClient({
+      options: { launch: makeLaunch({ lintEnabled: false }) },
     });
 
     await flushAsync();
@@ -687,41 +428,13 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("configures workspace/configuration middleware for dbt section only", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    let capturedClientOptions: LanguageClientOptions | undefined;
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: () => new FakeExitingProcess() as any,
-      createLanguageClient: async (
-        _id: string,
-        _name: string,
-        _serverOptions,
-        clientOptions: LanguageClientOptions,
-      ) => {
-        capturedClientOptions = clientOptions;
-        return makeLanguageClient() as any;
-      },
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, createLanguageClient } = startClient();
 
     await flushAsync();
 
+    const capturedClientOptions = createLanguageClient.mock.calls[0]?.[3] as
+      | LanguageClientOptions
+      | undefined;
     expect(capturedClientOptions?.middleware).toBeDefined();
     const configMiddleware = (capturedClientOptions?.middleware as any)
       ?.workspace?.configuration;
@@ -746,41 +459,15 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("middleware responds to launch.lintEnabled false", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    let capturedClientOptions: LanguageClientOptions | undefined;
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: () => new FakeExitingProcess() as any,
-      createLanguageClient: async (
-        _id: string,
-        _name: string,
-        _serverOptions,
-        clientOptions: LanguageClientOptions,
-      ) => {
-        capturedClientOptions = clientOptions;
-        return makeLanguageClient() as any;
-      },
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch({ lintEnabled: false }),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
+    const { client, createLanguageClient } = startClient({
+      options: { launch: makeLaunch({ lintEnabled: false }) },
     });
 
     await flushAsync();
 
+    const capturedClientOptions = createLanguageClient.mock.calls[0]?.[3] as
+      | LanguageClientOptions
+      | undefined;
     const configMiddleware = (capturedClientOptions?.middleware as any)
       ?.workspace?.configuration;
     const next = vi.fn();
@@ -801,36 +488,16 @@ describe("FusionLanguageClient lifecycle", () => {
 
   it("backs off on repeated process exits then fails", async () => {
     vi.useFakeTimers();
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
-    const languageClient = makeLanguageClient();
     const states: string[] = [];
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async (ms) => {
-        sleeps.push(ms);
-        await vi.advanceTimersByTimeAsync(ms);
+    const { client, processAdapter, spawnProcess } = startClient({
+      deps: {
+        sleep: async (ms) => {
+          sleeps.push(ms);
+          await vi.advanceTimersByTimeAsync(ms);
+        },
       },
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
     client.onDidChangeState((state) => states.push(state));
 
@@ -860,36 +527,15 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("handles State.Stopped while running as unexpected stop", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
-    const languageClient = makeLanguageClient();
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async (ms) => {
-        if (ms !== DISPOSAL_GRACE_MS) {
-          sleeps.push(ms);
-        }
+    const { client, languageClient, spawnProcess } = startClient({
+      deps: {
+        sleep: async (ms) => {
+          if (ms !== DISPOSAL_GRACE_MS) {
+            sleeps.push(ms);
+          }
+        },
       },
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -906,37 +552,17 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("coalesces process exit and State.Stopped within one transport generation", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
-    const languageClient = makeLanguageClient();
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async (ms) => {
-        if (ms !== DISPOSAL_GRACE_MS) {
-          sleeps.push(ms);
-        }
-      },
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, processAdapter, languageClient, spawnProcess } =
+      startClient({
+        deps: {
+          sleep: async (ms) => {
+            if (ms !== DISPOSAL_GRACE_MS) {
+              sleeps.push(ms);
+            }
+          },
+        },
+      });
 
     await waitForState(client, "running");
     processAdapter.exit();
@@ -952,32 +578,8 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("does not restart after stop() when unexpected signals arrive", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
-    const languageClient = makeLanguageClient();
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, processAdapter, languageClient, spawnProcess } =
+      startClient();
 
     await waitForState(client, "running");
     await client.stop();
@@ -991,38 +593,19 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("does not spawn again when disposed during unexpected restart backoff", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     let releaseBackoff = (): void => {};
     const backoffGate = new Promise<void>((resolve) => {
       releaseBackoff = resolve;
     });
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async (ms) => {
-        if (ms === 500) {
-          await backoffGate;
-        }
+    const { client, processAdapter, spawnProcess } = startClient({
+      deps: {
+        sleep: async (ms) => {
+          if (ms === 500) {
+            await backoffGate;
+          }
+        },
       },
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -1037,30 +620,12 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("does not restart after an unexpected stop when the project file is gone", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     const outputChannel = channel();
     let rootPresent = true;
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => rootPresent,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel,
+    const { client, processAdapter, spawnProcess } = startClient({
+      deps: { rootExists: () => rootPresent },
+      options: { outputChannel },
     });
     await waitForState(client, "running");
 
@@ -1079,32 +644,15 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("does not restart when the project file goes during the restart backoff", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     let rootPresent = true;
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => rootPresent,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {
-        rootPresent = false;
+    const { client, processAdapter, spawnProcess } = startClient({
+      deps: {
+        rootExists: () => rootPresent,
+        sleep: async () => {
+          rootPresent = false;
+        },
       },
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
     await waitForState(client, "running");
 
@@ -1118,28 +666,8 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("does not start a client whose project file is already gone", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = vi.fn(() => new FakeExitingProcess() as any);
-    const createLanguageClient = vi.fn(async () => makeLanguageClient() as any);
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => false,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient,
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
+    const { client, spawnProcess, createLanguageClient } = startClient({
+      deps: { rootExists: () => false },
     });
     await flushAsync();
 
@@ -1151,32 +679,7 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("resets unexpected exit budget on manual restart", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
-    const languageClient = makeLanguageClient();
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, processAdapter, spawnProcess } = startClient();
 
     await waitForState(client, "running");
     processAdapter.exit();
@@ -1196,28 +699,12 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("cleans up when listen fails", async () => {
-    const spawnProcess = vi.fn(
-      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
-    );
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => {
-        throw new Error("listen failed");
+    const { client, spawnProcess } = startClient({
+      deps: {
+        listenForServer: async () => {
+          throw new Error("listen failed");
+        },
       },
-      spawnProcess,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1229,29 +716,12 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("cleans up socket and process when spawn fails", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = vi.fn(() => {
-      throw new Error("spawn failed");
-    });
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      spawnProcess,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
+    const { client, server } = startClient({
+      deps: {
+        spawnProcess: vi.fn(() => {
+          throw new Error("spawn failed");
+        }),
       },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1263,33 +733,10 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("cleans up when start fails after transport setup", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
     languageClient.start.mockRejectedValue(new Error("start failed"));
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, server } = startClient({ languageClient });
 
     await waitForState(client, "failed");
     expect(server.dispose).toHaveBeenCalled();
@@ -1301,32 +748,7 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("serializes manual restart requests", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
-    const languageClient = makeLanguageClient();
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, languageClient } = startClient();
 
     await flushAsync();
     const startsBefore = languageClient.start.mock.calls.length;
@@ -1345,25 +767,14 @@ describe("FusionLanguageClient lifecycle", () => {
   it("preserves the root failureReason when a later failure is logged", async () => {
     let listenAttempts = 0;
     const outputChannel = channel();
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => {
-        listenAttempts += 1;
-        throw new Error(`listen failed ${listenAttempts}`);
+    const { client } = startClient({
+      options: { outputChannel },
+      deps: {
+        listenForServer: async () => {
+          listenAttempts += 1;
+          throw new Error(`listen failed ${listenAttempts}`);
+        },
       },
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel,
     });
 
     await waitForState(client, "failed");
@@ -1381,31 +792,7 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("disposes with SIGTERM then SIGKILL after grace", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
-    const processAdapter = new FakeExitingProcess();
-    const spawnProcess = vi.fn(() => processAdapter as any);
-
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess,
-      createLanguageClient: async () => makeLanguageClient() as any,
-      sleep: async () => {},
-    });
-
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-    });
+    const { client, processAdapter } = startClient();
 
     await flushAsync();
     await client.stop();
@@ -1416,31 +803,13 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("prefixes workspace/executeCommand requests", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
     const languageClient = makeLanguageClient();
     languageClient.sendRequest.mockResolvedValue({ ok: true } as never);
 
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => server,
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    });
-
     const prefix = "fusionPowerUser:req:";
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: prefix,
-      outputChannel: channel(),
+    const { client } = startClient({
+      languageClient,
+      options: { commandPrefix: prefix },
     });
 
     await flushAsync();
@@ -1462,8 +831,6 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("sends compileFile the realpath URI when the project is opened through a symlink", async () => {
-    const streams = makeStreams();
-    const server = new FakeReverseSocketServer(streams);
     const languageClient = makeLanguageClient();
     languageClient.sendRequest.mockResolvedValue({ ok: true } as never);
     const real = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-real-"));
@@ -1473,27 +840,9 @@ describe("FusionLanguageClient lifecycle", () => {
       VsCodeUri.parse(value),
     );
     try {
-      const factory = new DefaultFusionClientFactory({
-        rootExists: () => true,
-        listenForServer: async () => server,
-        acceptWithProcessExit: async () => streams,
-        spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-        createLanguageClient: async (_id, _name, _server, options) => {
-          void options;
-          return languageClient as any;
-        },
-        sleep: async () => {},
-      });
-      const client = factory.create({
-        project: makeProject(link),
-        executable: {
-          path: "/opt/dbt",
-          version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-          env: {},
-        },
-        launch: makeLaunch(),
-        commandPrefix: "p:",
-        outputChannel: channel(),
+      const { client } = startClient({
+        languageClient,
+        options: { project: makeProject(link), commandPrefix: "p:" },
       });
 
       await flushAsync();
@@ -1519,7 +868,6 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("never has two listNodes requests in flight for concurrent upstream and downstream lineage", async () => {
-    const streams = makeStreams();
     const languageClient = makeLanguageClient();
     let inFlight = 0;
     let peak = 0;
@@ -1541,23 +889,9 @@ describe("FusionLanguageClient lifecycle", () => {
       }
       return { error: null, nodes: [] };
     }) as never);
-    const client = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => new FakeReverseSocketServer(streams),
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient: async () => languageClient as any,
-      sleep: async () => {},
-    }).create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:q:",
-      outputChannel: channel(),
+    const { client } = startClient({
+      languageClient,
+      options: { commandPrefix: "fusionPowerUser:q:" },
     });
     await waitForState(client, "running");
     const service = new DbtLineageService({} as any, () => client);
@@ -1593,60 +927,6 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 });
 
-function makeLanguageClient() {
-  const stateEmitter = new EventEmitter();
-  return {
-    start: vi.fn(() => Promise.resolve()),
-    stop: vi.fn(() => Promise.resolve()),
-    sendRequest: vi.fn((_type?: unknown, _param?: unknown, _token?: unknown) =>
-      Promise.resolve(undefined),
-    ),
-    onDidChangeState: vi.fn(
-      (listener: (event: { newState: State }) => void) => {
-        stateEmitter.on("state", listener);
-        return {
-          dispose: () => stateEmitter.removeListener("state", listener),
-        };
-      },
-    ),
-    dispose: vi.fn(),
-  };
-}
-
-function stateListenerFor(
-  languageClient: ReturnType<typeof makeLanguageClient>,
-): ((event: { newState: State }) => void) | undefined {
-  const calls = languageClient.onDidChangeState.mock.calls;
-  return calls.at(-1)?.[0];
-}
-
-async function waitForState(
-  client: FusionClient,
-  target: FusionClientState | FusionClientState[],
-): Promise<void> {
-  const targets = Array.isArray(target) ? target : [target];
-  if (targets.includes(client.state)) {
-    return;
-  }
-  await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      sub.dispose();
-      reject(
-        new Error(
-          `Timed out waiting for ${targets.join("|")}; got ${client.state}`,
-        ),
-      );
-    }, 5_000);
-    const sub = client.onDidChangeState((state) => {
-      if (targets.includes(state)) {
-        clearTimeout(timer);
-        sub.dispose();
-        resolve();
-      }
-    });
-  });
-}
-
 describe("FusionLanguageClient nested roots", () => {
   /** A root list the test can grow, firing the change event the way the registry does. */
   function nestedSource() {
@@ -1671,55 +951,32 @@ describe("FusionLanguageClient nested roots", () => {
 
   const documentAt = (path: string) => ({ uri: Uri.file(path) }) as any;
 
-  async function startClient(
+  async function startNested(
     source: ReturnType<typeof nestedSource>["source"],
   ) {
-    const streams = makeStreams();
     const languageClient = {
       ...makeLanguageClient(),
       sendNotification: vi.fn(() => Promise.resolve()),
     };
-    const createLanguageClient = vi.fn(
-      async (
-        _id: string,
-        _name: string,
-        _server: unknown,
-        _options: LanguageClientOptions,
-      ) => languageClient as any,
-    );
-    const factory = new DefaultFusionClientFactory({
-      rootExists: () => true,
-      listenForServer: async () => new FakeReverseSocketServer(streams),
-      acceptWithProcessExit: async () => streams,
-      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
-      createLanguageClient,
-      sleep: async () => {},
-    });
-    const client = factory.create({
-      project: makeProject(),
-      executable: {
-        path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      },
-      launch: makeLaunch(),
-      commandPrefix: "fusionPowerUser:test:",
-      outputChannel: channel(),
-      nestedRoots: source,
-    });
-    await waitForState(client, "running");
-    const options = createLanguageClient.mock.calls[0]?.[3];
-    return {
-      client,
+    const started = startClient({
       languageClient,
-      createLanguageClient,
+      options: { nestedRoots: source },
+    });
+    await waitForState(started.client, "running");
+    const options = started.createLanguageClient.mock.calls[0]?.[3] as
+      | LanguageClientOptions
+      | undefined;
+    return {
+      client: started.client,
+      languageClient,
+      createLanguageClient: started.createLanguageClient,
       middleware: options?.middleware as any,
     };
   }
 
   it("stops forwarding documents once a root is declared later, without restarting", async () => {
     const nested = nestedSource();
-    const { client, createLanguageClient, middleware } = await startClient(
+    const { client, createLanguageClient, middleware } = await startNested(
       nested.source,
     );
     const inner = "/workspace/general/inner/models/inner_model.sql";
@@ -1739,7 +996,7 @@ describe("FusionLanguageClient nested roots", () => {
   });
 
   it("tracks open documents across didOpen and didClose", async () => {
-    const { client, middleware } = await startClient(nestedSource().source);
+    const { client, middleware } = await startNested(nestedSource().source);
     const model = documentAt("/workspace/general/models/a.sql");
 
     await middleware.didOpen(model, vi.fn());
@@ -1755,7 +1012,7 @@ describe("FusionLanguageClient nested roots", () => {
 
   it("sends didClose for an open document that a later-declared root excludes", async () => {
     const nested = nestedSource();
-    const { client, languageClient, middleware } = await startClient(
+    const { client, languageClient, middleware } = await startNested(
       nested.source,
     );
     const inner = "/workspace/general/inner/models/inner_model.sql";
@@ -1775,7 +1032,7 @@ describe("FusionLanguageClient nested roots", () => {
 
   it("drops the outer client's diagnostics for a document a later-declared root excludes", async () => {
     const nested = nestedSource();
-    const { client, languageClient, middleware } = await startClient(
+    const { client, languageClient, middleware } = await startNested(
       nested.source,
     );
     const diagnostics = { delete: vi.fn() };
