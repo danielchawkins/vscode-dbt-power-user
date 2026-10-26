@@ -6,7 +6,7 @@ import type {
   TextDocument,
 } from "vscode";
 import { CodeLens, EventEmitter, Range } from "vscode";
-import { positionAt, sourceTables } from "../../core/yaml/schemaYaml";
+import { lineIndex, sourceTables } from "../../core/yaml/schemaYaml";
 import type { GenerateModelFromSourceParams } from "../../projects/project/projectCodegen";
 
 export class SourceModelCreationCodeLensProvider
@@ -26,6 +26,7 @@ export class SourceModelCreationCodeLensProvider
     _token: CancellationToken,
   ): CodeLens[] | Thenable<CodeLens[]> {
     const text = document.getText();
+    const positionAt = lineIndex(text);
     this.codeLenses = sourceTables(text).map((table) => {
       const params: GenerateModelFromSourceParams = {
         currentDoc: document.uri,
@@ -35,7 +36,7 @@ export class SourceModelCreationCodeLensProvider
         tableName: table.table,
         tableIdentifier: table.identifier,
       };
-      const { line, character } = positionAt(text, table.offset);
+      const { line, character } = positionAt(table.offset);
       return new CodeLens(new Range(line, character, line, character), {
         title: "Generate model",
         tooltip: "Generate model based on source configuration",

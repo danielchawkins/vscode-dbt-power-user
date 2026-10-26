@@ -27,13 +27,32 @@ interface ScalarEntry {
   valueOffset: number;
 }
 
-/** A 0-based line and character of `offset` in `text`, counting lines by `\n` as the YAML parser does. */
-export function positionAt(
+/**
+ * A converter from an offset in `text` to a 0-based line and character, counting lines by `\n` as the YAML parser
+ * does. The line starts are indexed once here, so each lookup is a binary search rather than a scan of the prefix.
+ */
+export function lineIndex(
   text: string,
-  offset: number,
-): { line: number; character: number } {
-  const lines = text.slice(0, offset).split("\n");
-  return { line: lines.length - 1, character: (lines.at(-1) ?? "").length };
+): (offset: number) => { line: number; character: number } {
+  const starts = [0];
+  for (let i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) {
+    starts.push(i + 1);
+  }
+  return (offset) => {
+    const at = Math.min(offset, text.length);
+    // The last line that starts at or before `at`.
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+      const mid = Math.floor((low + high + 1) / 2);
+      if ((starts[mid] ?? 0) <= at) {
+        low = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return { line: low, character: at - (starts[low] ?? 0) };
+  };
 }
 
 /** The name key of every model under the top-level `models:` list, in document order. */

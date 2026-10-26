@@ -6,7 +6,7 @@ import type {
   TextDocument,
 } from "vscode";
 import { CodeLens, Range } from "vscode";
-import { modelNameKeys, positionAt } from "../../core/yaml/schemaYaml";
+import { lineIndex, modelNameKeys } from "../../core/yaml/schemaYaml";
 
 export class SqlActionsCodeLensProvider
   implements CodeLensProvider, Disposable
@@ -23,8 +23,9 @@ export class SqlActionsCodeLensProvider
 
   private provideYamlCodeLenses(document: TextDocument): CodeLens[] {
     const text = document.getText();
+    const positionAt = lineIndex(text);
     return modelNameKeys(text).flatMap(({ name, offset }) => {
-      const { line, character } = positionAt(text, offset);
+      const { line, character } = positionAt(offset);
       const lensRange = new Range(line, character, line, character);
       return [
         new CodeLens(lensRange, {
