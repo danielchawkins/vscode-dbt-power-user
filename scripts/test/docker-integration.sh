@@ -6,6 +6,8 @@ set -eu
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 scripts="$repo/scripts/test"
 platform=linux/arm64
+# shellcheck source=scripts/test/docker-context.sh
+. "$scripts/docker-context.sh"
 
 shards=$(node "$scripts/integration-shards.mjs" "${1:-}")
 labels=$(printf '%s\n' "$shards" | tr ' ' '\n' | paste -sd, -)
