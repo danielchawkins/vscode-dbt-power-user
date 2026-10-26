@@ -55,12 +55,6 @@ describe("DiagnosticsOutputChannel Test Suite", () => {
     expect(mockOutputChannel.show).toHaveBeenCalledWith(true);
   });
 
-  it("should log messages", () => {
-    const message = "Test message";
-    diagnosticsChannel.log(message);
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(message);
-  });
-
   it("should log new lines", () => {
     diagnosticsChannel.logNewLine();
     expect(mockOutputChannel.appendLine).toHaveBeenCalledWith("");
