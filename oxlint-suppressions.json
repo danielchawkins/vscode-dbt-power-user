@@ -329,11 +329,6 @@
       "count": 1
     }
   },
-  "src/test/suite/fusionLanguageClient.test.ts": {
-    "max-params": {
-      "count": 6
-    }
-  },
   "src/test/suite/fusionStatus.test.ts": {
     "max-params": {
       "count": 1
