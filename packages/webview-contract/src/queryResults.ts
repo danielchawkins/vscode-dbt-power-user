@@ -1,5 +1,4 @@
 import type { Response, WebviewReady } from "./common.js";
-import { responseFields } from "./common.js";
 import type { CommandFields } from "./guards.js";
 import {
   arrayOf,
@@ -180,38 +179,6 @@ const isQueryTabData = shape<QueryTabData>({
   preview,
 });
 
-const hostFields: CommandFields<HostMessage> = {
-  response: responseFields,
-  renderQuery: {
-    columnNames: arrayOf(isString),
-    columnTypes,
-    rows: arrayOf(isRecord),
-    raw_sql: isString,
-    compiled_sql: isString,
-    preview,
-  },
-  renderError: {
-    error: shape({ code: isNumber, message: isString, data: isAnything }),
-    raw_sql: isString,
-    compiled_sql: isString,
-    preview,
-  },
-  renderLoading: {},
-  resetState: {},
-  getContext: {
-    limit: isNumber,
-    activeEditor: shape({
-      query: optional(isString),
-      filepath: optional(isString),
-    }),
-    publication: optional(isString),
-  },
-  queryHistory: { args: shape({ body: arrayOf(isHistoryEntry) }) },
-  updateViewType: {
-    args: shape({ body: shape({ type: oneOf(0, 1, 2) }) }),
-  },
-};
-
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
   error: { text: isString },
@@ -238,10 +205,8 @@ const panelFields: CommandFields<PanelMessage> = {
   "queryResultTab:render": { queryTabData: isQueryTabData },
 };
 
-export const isHostMessage = messageGuard<HostMessage>(hostFields);
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);
 
-export const hostCommands = Object.keys(hostFields) as HostMessage["command"][];
 export const panelCommands = Object.keys(
   panelFields,
 ) as PanelMessage["command"][];

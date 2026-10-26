@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import type * as panelHtmlModule from "../../webview/panelHtml";
+import { isDocumentationEditorHostMessage } from "../hostMessageOracle";
 import {
   docsEditPanel,
   fakeView,
@@ -795,7 +796,7 @@ describe("documentation editor messages", () => {
         payload: h.payload,
       });
       expect(
-        documentationEditor.isHostMessage(h.postMessage.mock.calls[0][0]),
+        isDocumentationEditorHostMessage(h.postMessage.mock.calls[0][0]),
       ).toBe(true);
       h.columnProposals.propose.mockResolvedValueOnce(undefined);
       h.postMessage.mockClear();

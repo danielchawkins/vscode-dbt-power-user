@@ -9,6 +9,10 @@ import { Uri, window } from "vscode";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 import { NUM_RUNS } from "../arbitraries";
 import {
+  isDocumentationEditorHostMessage,
+  isQueryResultsHostMessage,
+} from "../hostMessageOracle";
+import {
   docsEditPanel,
   fakeView,
   lineagePanel,
@@ -258,7 +262,7 @@ describe("query results handlers", () => {
       args: { syncRequestId: "r", body: {}, status: true },
     });
     for (const message of view.posted()) {
-      expect(queryResults.isHostMessage(message)).toBe(true);
+      expect(isQueryResultsHostMessage(message)).toBe(true);
     }
   });
 
@@ -285,7 +289,7 @@ describe("query results handlers", () => {
         },
       })),
     );
-    expect(queryResults.isHostMessage(view.posted()[0])).toBe(true);
+    expect(isQueryResultsHostMessage(view.posted()[0])).toBe(true);
   });
 });
 
@@ -316,7 +320,7 @@ describe("documentation editor handlers", () => {
         error: "No active editor",
       },
     });
-    expect(documentationEditor.isHostMessage(view.posted()[0])).toBe(true);
+    expect(isDocumentationEditorHostMessage(view.posted()[0])).toBe(true);
   });
 
   it("accepts a save whose column carries a boolean replaceType", () => {
