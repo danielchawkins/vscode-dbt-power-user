@@ -1,14 +1,4 @@
 {
-  "src/core/manifest/relationshipInference.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/relationshipParser.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    }
-  },
   "src/features/cte/cteProfilerDecorationProvider.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
