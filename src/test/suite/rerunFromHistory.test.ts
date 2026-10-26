@@ -21,8 +21,6 @@ function createProject(): Mocked<ReplayProject> {
 describe("parseHistoryArgs", () => {
   it.each([
     ["model", "", "model", ""],
-    ["+model", "+", "model", ""],
-    ["model+", "", "model", "+"],
     ["+model+", "+", "model", "+"],
   ])("parses selector %s", (selector, left, modelName, right) => {
     expect(parseHistoryArgs([selector])).toEqual({

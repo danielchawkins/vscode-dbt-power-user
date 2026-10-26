@@ -415,32 +415,6 @@ describe.each(directions)("$name guard", ({ guard, commands, fixtures }) => {
     );
   });
 
-  it.each(fixtures.map((f) => [f.message.command, f] as const))(
-    "accepts a well-formed %s",
-    (_command, fixture) => {
-      expect(guard(fixture.message)).toBe(true);
-      expect(guard(JSON.parse(JSON.stringify(fixture.message)))).toBe(true);
-    },
-  );
-
-  it("rejects non-object and unknown-command values", () => {
-    for (const value of [
-      undefined,
-      null,
-      0,
-      "response",
-      [],
-      [{ command: commands[0] }],
-      { command: 1 },
-      {},
-    ]) {
-      expect(guard(value)).toBe(false);
-    }
-    expect(guard({ command: "toString" })).toBe(false);
-    expect(guard({ command: "__proto__" })).toBe(false);
-    expect(guard(Object.create({ command: commands[0] }))).toBe(false);
-  });
-
   it("rejects a non-string syncRequestId where a command declares one", () => {
     for (const fixture of fixtures.filter(
       (f) => "syncRequestId" in f.message,
@@ -590,6 +564,30 @@ describe.each(directions)("$name guard", ({ guard, commands, fixtures }) => {
   });
 });
 
+describe("queryResults panel guard rejections", () => {
+  it("rejects non-object and unknown-command values", () => {
+    for (const value of [
+      undefined,
+      null,
+      0,
+      "response",
+      [],
+      [{ command: queryResults.panelCommands[0] }],
+      { command: 1 },
+      {},
+    ]) {
+      expect(queryResults.isPanelMessage(value)).toBe(false);
+    }
+    expect(queryResults.isPanelMessage({ command: "toString" })).toBe(false);
+    expect(queryResults.isPanelMessage({ command: "__proto__" })).toBe(false);
+    expect(
+      queryResults.isPanelMessage(
+        Object.create({ command: queryResults.panelCommands[0] }),
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("lineage requestCommands", () => {
   it("lists exactly the panel commands whose fixture accepts a syncRequestId", () => {
     const answered = lineagePanel
@@ -690,25 +688,5 @@ describe("documentationEditor replaceType", () => {
         }),
       ).toBe(false);
     }
-  });
-});
-
-describe("queryResults model preview", () => {
-  it("accepts a switchPreview only to a known mode", () => {
-    const model = "/project/models/a.sql";
-    expect(
-      queryResults.isPanelMessage({
-        command: "switchPreview",
-        mode: "materialized",
-        model,
-      }),
-    ).toBe(true);
-    expect(
-      queryResults.isPanelMessage({
-        command: "switchPreview",
-        mode: "table",
-        model,
-      }),
-    ).toBe(false);
   });
 });

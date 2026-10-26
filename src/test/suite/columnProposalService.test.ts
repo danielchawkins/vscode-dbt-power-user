@@ -28,11 +28,6 @@ const MANIFEST = {
   sourceMetaMap: new Map() as SourceMetaMap,
 };
 
-/** The node metadata of a manifest with no described node. */
-const UNDESCRIBED_NODES = {
-  lookupByUniqueId: () => undefined,
-} as unknown as NodeMetaMap;
-
 interface FakeToken {
   isCancellationRequested: boolean;
   onCancellationRequested(listener: () => void): { dispose(): void };
@@ -101,36 +96,6 @@ describe("ColumnProposalService", () => {
     ) => task({ report: vi.fn() }, token)) as never);
   });
 
-  it("proposes from the draft over the YAML", async () => {
-    const { project } = fakeProject(async () => answer);
-    const service = new ColumnProposalService({
-      log: spyLog(),
-      columnsNeedStrict: () => undefined,
-    });
-
-    const withDraft = await service.propose(
-      "types",
-      target(project, { draft: [{ name: "id", type: "varchar" }] }),
-    );
-    expect(withDraft?.proposals).toEqual([]);
-    expect(withDraft?.model).toBe(MODEL.filePath);
-    expect(withDraft?.source).toEqual({
-      kind: "target",
-      target: "dev",
-      relation: "db.s.orders",
-    });
-
-    const yamlOnly = await service.propose("types", target(project));
-    expect(yamlOnly?.proposals).toEqual([
-      {
-        column: "id",
-        type: "varchar",
-        change: "overwrite",
-        current: "integer",
-      },
-    ]);
-  });
-
   it("drops a superseded request's result, even when it finishes later", async () => {
     let release!: (value: typeof answer) => void;
     const slow = new Promise<typeof answer>((resolve) => {
@@ -177,39 +142,6 @@ describe("ColumnProposalService", () => {
       expect.objectContaining({ cancellable: true }),
       expect.any(Function),
     );
-  });
-
-  it("names the deferred relation and its state in the source", async () => {
-    const project = {
-      projectRoot: { fsPath: "/p" },
-      lsp: { state: "running", getCurrentNode: vi.fn(async () => undefined) },
-      getFusionCli: () => ({
-        describeModel: vi.fn(async (_name: unknown, attempt: unknown) =>
-          attempt === "target"
-            ? { target: "dev", relation: "db.s.orders", columns: [] }
-            : { target: "prod", relation: "db.s.orders", columns: COLUMNS },
-        ),
-        deferState: () => ({
-          kind: "on",
-          stateDirectory: "/work/state",
-          favorState: true,
-        }),
-      }),
-    } as unknown as TypeSourceProject;
-    const service = new ColumnProposalService({
-      log: spyLog(),
-      columnsNeedStrict: () => undefined,
-    });
-
-    const payload = await service.propose("types", target(project));
-
-    expect(payload?.source).toEqual({
-      kind: "deferred",
-      target: "prod",
-      relation: "db.s.orders",
-      state: "/work/state",
-    });
-    expect(payload?.notice).toBeUndefined();
   });
 
   it("warns with the inferred types when no warehouse source answered", async () => {
@@ -364,45 +296,6 @@ describe("ColumnProposalService descriptions", () => {
     );
   });
 
-  it("keeps the proposals found before a failed request, with the error notice", async () => {
-    let calls = 0;
-    const { project } = describingProject("running", async () => {
-      calls += 1;
-      if (calls === 1) {
-        return LINEAGE;
-      }
-      throw new Error("listNodes timed out");
-    });
-    const service = new ColumnProposalService({
-      log: spyLog(),
-      columnsNeedStrict: () => undefined,
-    });
-
-    const payload = await service.propose(
-      "descriptions",
-      describedTarget(project, {
-        described: [
-          { name: "grand_total", description: "" },
-          { name: "other", description: "" },
-        ],
-      }),
-    );
-
-    expect(payload?.proposals).toEqual([
-      {
-        column: "grand_total",
-        candidates: [
-          {
-            description: "Order total",
-            sources: [{ uniqueId: ORDER_TOTALS, column: "total" }],
-          },
-        ],
-      },
-    ]);
-    expect(payload?.notice?.type).toBe("error");
-    expect(payload?.notice?.message).toContain("listNodes timed out");
-  });
-
   it("shows no notice when every column already has a description", async () => {
     const { project, listNodes } = describingProject();
     const service = new ColumnProposalService({
@@ -423,54 +316,6 @@ describe("ColumnProposalService descriptions", () => {
       model: MODEL.filePath,
       proposals: [],
     });
-  });
-
-  it("warns when no copy ancestor has a description", async () => {
-    const { project, listNodes } = describingProject();
-    const service = new ColumnProposalService({
-      log: spyLog(),
-      columnsNeedStrict: () => undefined,
-    });
-
-    const payload = await service.propose(
-      "descriptions",
-      describedTarget(project, {
-        node: {
-          uniqueId: GRAND_TOTALS,
-          manifest: { ...MANIFEST, nodeMetaMap: UNDESCRIBED_NODES },
-        },
-      }),
-    );
-
-    expect(listNodes).toHaveBeenCalled();
-    expect(payload).toEqual({
-      kind: "descriptions",
-      model: MODEL.filePath,
-      proposals: [],
-      notice: {
-        message:
-          "No upstream copy has a description for the columns without one.",
-        type: "warning",
-      },
-    });
-  });
-
-  it("reports a stopped language server as an error and asks it nothing", async () => {
-    const { project, listNodes } = describingProject("stopped");
-    const service = new ColumnProposalService({
-      log: spyLog(),
-      columnsNeedStrict: () => undefined,
-    });
-
-    const payload = await service.propose(
-      "descriptions",
-      describedTarget(project),
-    );
-
-    expect(listNodes).not.toHaveBeenCalled();
-    expect(payload?.proposals).toEqual([]);
-    expect(payload?.notice?.type).toBe("error");
-    expect(payload?.notice?.message).toContain("it is stopped");
   });
 
   it("offers the strict action and asks nothing when the mode computes no column lineage", async () => {

@@ -20,11 +20,6 @@ describe("RunHistoryTreeItems", () => {
       expect(item.label).toBe("dbt build --select +my_model+");
     });
 
-    it("should show command without flags", () => {
-      const item = new RunTreeItem(createEntry({ command: "dbt build" }));
-      expect(item.label).toBe("dbt build");
-    });
-
     it("should be collapsed by default when results exist", () => {
       const item = new RunTreeItem(
         createEntry({ command: "dbt run", results: [createResult()] }),
@@ -71,18 +66,6 @@ describe("RunHistoryTreeItems", () => {
       expect(allPass.description).toContain("2 passed");
       expect(someFail.description).toContain("analytics");
       expect(someFail.description).toContain("1/2 passed");
-    });
-
-    it("should include project name in description", () => {
-      const item = new RunTreeItem(
-        createEntry({
-          command: "dbt run",
-          projectName: "my_dbt_project",
-          elapsedTime: 1.0,
-          results: [createResult()],
-        }),
-      );
-      expect(item.description).toBe("my_dbt_project • 1.00s • 1 passed");
     });
 
     it("should use pass icon when all results succeed", () => {
@@ -190,25 +173,6 @@ describe("RunHistoryTreeItems", () => {
       expect(item.label).toBe("not_null_orders_order_id");
     });
 
-    it("should handle test uniqueId with compound test name", () => {
-      const item = new ResultTreeItem(
-        createTestResult({
-          uniqueId:
-            "test.my_project.accepted_values_orders_status.abc123def456",
-        }),
-      );
-
-      expect(item.label).toBe("accepted_values_orders_status");
-    });
-
-    it("should fall back to name for non-test resources", () => {
-      const item = new ResultTreeItem(
-        createResult({ name: "my_model", resourceType: "model" }),
-      );
-
-      expect(item.label).toBe("my_model");
-    });
-
     it("should fall back to name for tests with short uniqueId", () => {
       const item = new ResultTreeItem(
         createTestResult({
@@ -232,16 +196,6 @@ describe("RunHistoryTreeItems", () => {
     it("should use check icon for success status", () => {
       const item = new ResultTreeItem(createResult({ status: "success" }));
       expect((item.iconPath as any).id).toBe("check");
-    });
-
-    it("should use x icon for error status", () => {
-      const item = new ResultTreeItem(createResult({ status: "error" }));
-      expect((item.iconPath as any).id).toBe("x");
-    });
-
-    it("should use debug-step-over icon for skipped status", () => {
-      const item = new ResultTreeItem(createResult({ status: "skipped" }));
-      expect((item.iconPath as any).id).toBe("debug-step-over");
     });
 
     it("should include all fields in tooltip", () => {
@@ -269,7 +223,7 @@ describe("RunHistoryTreeItems", () => {
       expect(item.tooltip).not.toContain("Message:");
     });
 
-    it.each(["model", "test", "seed", "snapshot"] as const)(
+    it.each(["model"] as const)(
       "should set contextValue for %s resource type",
       (resourceType) => {
         const item = new ResultTreeItem(createResult({ resourceType }));

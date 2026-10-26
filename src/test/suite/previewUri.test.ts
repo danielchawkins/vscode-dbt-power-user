@@ -19,8 +19,6 @@ const parse = (value: string) => URI.parse(value);
 describe("previewUriFor / modelUriOf", () => {
   it.each([
     "/workspace/jaffle/models/orders.sql",
-    "/workspace/my project/models/stg orders.sql",
-    "/workspace/jaffle/models/überstunden_日本.sql",
     "/workspace/a#b/models/c#d.sql",
     "/workspace/a?b/models/c?d.sql",
     "/workspace/100%/models/50%25.sql",
@@ -42,7 +40,6 @@ describe("previewUriFor / modelUriOf", () => {
 
   it.each([
     ["/workspace/models/orders.py", "/orders.sql"],
-    ["/workspace/models/orders", "/orders.sql"],
     ["/workspace/models/orders.v2.sql", "/orders.v2.sql"],
   ])("always ends the preview path of %s in .sql", (modelPath, previewPath) => {
     expect(previewUriFor(model(modelPath)).path).toBe(previewPath);

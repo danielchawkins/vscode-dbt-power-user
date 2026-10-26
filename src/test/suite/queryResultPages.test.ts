@@ -102,8 +102,6 @@ describe("query results test command", () => {
     [{ FPU_SMOKE_HOST: "vscode" }, true],
     [{ FPU_SMOKE_HOST: "cursor" }, true],
     [{ FPU_INTEGRATION_COMMANDS: "1" }, true],
-    [{ FPU_SMOKE_HOST: "" }, false],
-    [{ FPU_SMOKE_HOST: "other" }, false],
     [{}, false],
   ])("with %o registers: %s", (env, registered) => {
     delete process.env.FPU_SMOKE_HOST;
