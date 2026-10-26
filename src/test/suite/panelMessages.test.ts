@@ -10,7 +10,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import type * as panelHtmlModule from "../../webview/panelHtml";
-import { isDocumentationEditorHostMessage } from "../hostMessageOracle";
 import {
   docsEditPanel,
   fakeView,
@@ -20,6 +19,7 @@ import {
   queryResultPanel,
 } from "../panelHarness";
 import { silentLog } from "../testLog";
+import { isDocumentationEditorHostMessage } from "./hostMessageOracle";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
