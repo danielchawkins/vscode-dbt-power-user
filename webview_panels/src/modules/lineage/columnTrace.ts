@@ -12,7 +12,7 @@ type ColumnLineage = lineage.ColumnLineage;
 /** Most `getConnectedColumns` rounds per direction of one trace. */
 const MAX_TRACE_HOPS = 10;
 
-const columnKey = ([table, column]: readonly [string, string]) =>
+export const columnKey = ([table, column]: readonly [string, string]): string =>
   `${table}\u0000${column.toLowerCase()}`;
 
 const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
@@ -32,6 +32,7 @@ export async function traceColumn(
     ...clearColumn(s),
     selectedColumn: column,
     selectedTable: column[0],
+    tracing: { column, since: Date.now() },
   }));
   const touched = new Set<string>();
   for (const upstreamExpansion of [true, false]) {
@@ -41,10 +42,19 @@ export async function traceColumn(
       touched,
     });
     if (!done) {
+      store.update((s) => settle(s, column));
       return [];
     }
   }
+  store.update((s) => settle(s, column));
   return [...touched];
+}
+
+/** Ends the trace of `column` once it has answered or been cancelled; a trace of another column is left as it is. */
+function settle(state: GraphState, column: ColumnRef): GraphState {
+  return sameColumn(state.tracing?.column, column)
+    ? { ...state, tracing: undefined }
+    : state;
 }
 
 /** The columns at the far end of `edges` not yet in `seen`, which it then records. */
@@ -84,6 +94,9 @@ async function traceDirection(
       trace: columnKey(column),
     });
     if (!sameColumn(store.get().selectedColumn, column)) {
+      return false;
+    }
+    if (body.cancelled) {
       return false;
     }
     const edges = body.column_lineage.filter(

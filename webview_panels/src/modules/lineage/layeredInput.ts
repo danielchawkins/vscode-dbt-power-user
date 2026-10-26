@@ -104,6 +104,8 @@ export interface FlowInput {
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
+  /** The column trace in flight, from which its table's pending badge is drawn. */
+  tracing?: { column: [string, string]; since: number } | undefined;
   /** Which connections are drawn: table and group edges under `dbt` and `both`; absent means dbt dependencies. */
   connections?: lineage.Connections | undefined;
   /** The relationships to draw, already filtered for the connections and the sources. */

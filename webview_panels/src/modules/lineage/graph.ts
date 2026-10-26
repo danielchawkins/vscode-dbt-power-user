@@ -52,6 +52,8 @@ export interface GraphState {
   groups: Record<string, NeighbourGroups>;
   selectedTable?: string | undefined;
   selectedColumn?: ColumnRef | undefined;
+  /** The column trace in flight: its column and when it started, from which the pending badge counts seconds. */
+  tracing?: { column: ColumnRef; since: number } | undefined;
 }
 
 /** Reads and changes the latest graph; an async step reads after each answer, so it never applies a stale base. */
@@ -446,7 +448,12 @@ export const hideColumns = (state: GraphState, table: string): GraphState =>
     ...state,
     columnTables: state.columnTables.filter((t) => t !== table),
     ...(state.selectedColumn?.[0] === table
-      ? { selectedColumn: undefined, columnEdges: [], errors: {} }
+      ? {
+          selectedColumn: undefined,
+          columnEdges: [],
+          errors: {},
+          tracing: undefined,
+        }
       : {}),
   });
 
@@ -455,12 +462,13 @@ export const selectTable = (
   table: string | undefined,
 ): GraphState => ({ ...state, selectedTable: table });
 
-/** Clears the column selection and its edges. */
+/** Clears the column selection, its edges and any trace in flight. */
 export const clearColumn = (state: GraphState): GraphState => ({
   ...state,
   selectedColumn: undefined,
   columnEdges: [],
   errors: {},
+  tracing: undefined,
 });
 
 /** The data the renderer draws, with column edges filtered by the edge settings. */

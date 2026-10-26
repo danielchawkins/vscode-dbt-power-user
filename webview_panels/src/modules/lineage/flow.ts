@@ -42,6 +42,8 @@ interface TableNodeData extends Record<string, unknown> {
   traced: string[];
   /** The selected column's lower-cased name when it belongs to this table. */
   selectedColumn?: string | undefined;
+  /** The trace in flight on this table's column: the lower-cased name, and when the trace started. */
+  tracing?: { column: string; since: number } | undefined;
   errors?: string[] | undefined;
   columnsNeedStrict?: boolean | undefined;
   /** The layered layout: table edges enter on the top bubble and leave by the bottom one. */
@@ -315,6 +317,13 @@ function cardNodes(
       selectedColumn:
         input.selectedColumn?.[0] === t.table
           ? input.selectedColumn[1].toLowerCase()
+          : undefined,
+      tracing:
+        input.tracing?.column[0] === t.table
+          ? {
+              column: input.tracing.column[1].toLowerCase(),
+              since: input.tracing.since,
+            }
           : undefined,
       errors: errors[t.table],
       columnsNeedStrict: input.columnsNeedStrict,

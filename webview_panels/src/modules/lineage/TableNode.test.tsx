@@ -1,13 +1,14 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { useLayoutEffect } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { cardTitle } from "./card";
 import { geometry } from "./layout";
 import { TableNode } from "./TableNode";
+import { type TableActions, TableActionsContext } from "./viewModel";
 
 /** The length `cardTitle` shortens a long zoomed-out title to. */
 const ZOOMED_TITLE_MAX = cardTitle(
@@ -405,5 +406,77 @@ describe("table node expander bubbles", () => {
     expect(parents.textContent).toBe("+1");
     expect(parents.closest("[class*=actions]")).not.toBeNull();
     expect(container.querySelector("[class*=bubble]")).toBeNull();
+  });
+});
+
+describe("table node column trace", () => {
+  const actionsWith = (overrides: Partial<TableActions>): TableActions => ({
+    toggleExpansion: vi.fn(),
+    showMore: vi.fn(),
+    openGroup: vi.fn(),
+    showMoreInGroup: vi.fn(),
+    closeGroup: vi.fn(),
+    toggleColumns: vi.fn(),
+    selectColumn: vi.fn(),
+    cancelTrace: vi.fn(),
+    retryTrace: vi.fn(),
+    openDetails: vi.fn(),
+    openFile: vi.fn(),
+    ...overrides,
+  });
+
+  const drawTraced = (actions: TableActions, errors?: string[]) => {
+    const props = {
+      id: "model.p.a",
+      data: {
+        table: {
+          table: "model.p.a",
+          label: "a",
+          nodeType: "model",
+          childCount: 0,
+          parentCount: 0,
+          tests: [],
+        },
+        columns: [{ table: "model.p.a", name: "id", datatype: "int" }],
+        isStart: true,
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        chips: [],
+        traced: [],
+        selectedColumn: "id",
+        tracing: { column: "id", since: Date.now() - 3000 },
+        errors,
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <TableActionsContext value={actions}>
+          <TableNode {...props} />
+        </TableActionsContext>
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("shows the seconds a pending trace has run under the traced column, with a Cancel that stops it", () => {
+    const actions = actionsWith({});
+    drawTraced(actions);
+    expect(screen.getByRole("status").textContent).toContain(
+      "Tracing column lineage… 3s",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(actions.cancelTrace).toHaveBeenCalledOnce();
+  });
+
+  it("offers Retry in the error tooltip, which re-runs the trace", () => {
+    const actions = actionsWith({});
+    drawTraced(actions, ["Could not read column lineage for id: boom"]);
+    fireEvent.mouseEnter(
+      screen.getByRole("button", {
+        name: "Could not read column lineage for id: boom",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(actions.retryTrace).toHaveBeenCalledOnce();
   });
 });
