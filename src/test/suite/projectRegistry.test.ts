@@ -19,7 +19,7 @@ import {
 import type { WorkspaceFolder } from "vscode";
 import { RelativePattern, Uri, workspace } from "vscode";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
-import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import { createFusionClientPool } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import {
   ENABLED_SETTING,
@@ -1262,17 +1262,13 @@ describe("ProjectRegistry", () => {
         stop: vi.fn(() => Promise.resolve()),
         dispose: vi.fn(),
       }));
-      const pool = new FusionClientPoolImpl(
-        registry,
-        terminal,
-        { resolve },
-        { create } as unknown as FusionClientFactory,
-        {
-          readSnapshot: readProjectSnapshot,
-          environments,
-          outputChannel: () => createMockLogOutputChannel(),
-        },
-      );
+      const pool = createFusionClientPool(registry, terminal, {
+        resolver: { resolve },
+        factory: { create } as unknown as FusionClientFactory,
+        readSnapshot: readProjectSnapshot,
+        environments,
+        outputChannel: () => createMockLogOutputChannel(),
+      });
       pool.initialize();
       registry.declareFromDocuments([openedDocument(soxModel)]);
 

@@ -195,11 +195,6 @@
       "count": 1
     }
   },
-  "src/projects/clients/fusionClientPool.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/projects/clients/fusionStatus.ts": {
     "max-params": {
       "count": 1

@@ -25,7 +25,10 @@ import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
 import { onCurrentClientChange } from "../../projects/clients/clientChange";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
-import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import {
+  createFusionClientPool,
+  type FusionClientPoolImpl,
+} from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
   DeclaredProject,
@@ -184,12 +187,12 @@ describe("FusionClientPool", () => {
   });
 
   function createPool(): FusionClientPoolImpl {
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: channelFor,
@@ -614,12 +617,12 @@ describe("FusionClientPool", () => {
         }),
     );
     const readSnapshot = vi.fn(readProjectSnapshot);
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot,
         environments,
         outputChannel: channelFor,
@@ -847,12 +850,12 @@ describe("FusionClientPool", () => {
     const resolve = vi.fn((_project: DeclaredProject) =>
       schemaOriginLaunchEnv(dbtProject),
     );
-    const pool = new FusionClientPoolImpl(
+    const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
-      resolver,
-      factory,
       {
+        resolver,
+        factory,
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: channelFor,

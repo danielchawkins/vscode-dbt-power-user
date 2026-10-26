@@ -7,26 +7,19 @@ import {
   hasDbtProjectFile,
   type ProjectSnapshot,
 } from "../../core/snapshot/index";
-import { FailedFusionClient } from "../../fusion/failedFusionClient";
-import {
-  commandPrefixForProject,
-  type FusionClient,
-  type FusionClientOptions,
-} from "../../fusion/fusionClient";
+import { type FusionClient } from "../../fusion/fusionClient";
 import type {
   FusionExecutable,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
-import {
-  formatFusionExecutableResolutionFailure,
-  isFusionExecutable,
-} from "../../fusion/fusionExecutable";
+import { isFusionExecutable } from "../../fusion/fusionExecutable";
 import type { SettingsChange } from "../../settings/index";
 import { onDidChangeSettings } from "../../settings/index";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../registry/projectRegistry";
+import { launchClient } from "./clientLaunch";
 import type { FusionClientFactory } from "./fusionClientFactory";
 import type { ProjectEnvironments } from "./projectEnvironments";
 import { sameEnv } from "./projectEnvironments";
@@ -58,7 +51,7 @@ type ManagedClient = {
 };
 
 /** Environment a project's language server launches with, beyond the extension host's. */
-export interface FusionLaunchEnvironment {
+interface FusionLaunchEnvironment {
   resolve(project: DeclaredProject): Record<string, string>;
   /** Fires when `resolve` may answer differently; clients whose environment changed are relaunched. */
   readonly onDidChange: Event<unknown>;
@@ -91,38 +84,19 @@ export class FusionClientPoolImpl implements FusionClientPool {
   private stopPromise: Promise<void> | undefined;
   private initialized = false;
   private disposed = false;
-  private readonly readSnapshot: FusionLaunchSources["readSnapshot"];
-  private readonly environments: FusionLaunchSources["environments"];
-  private readonly outputChannel: (
-    project: DeclaredProject,
-  ) => LogOutputChannel;
-  private readonly launchEnv: FusionLaunchEnvironment | undefined;
-  private readonly reportCompileErrors: FusionLaunchSources["reportCompileErrors"];
-  private readonly rootExists: (root: Uri) => boolean;
   private reconcileTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly registry: ProjectRegistry;
   private readonly terminal: Log;
-  private readonly resolver: FusionExecutableResolver;
-  private readonly factory: FusionClientFactory;
+  private readonly deps: FusionClientPoolDependencies;
 
   constructor(
     registry: ProjectRegistry,
     terminal: Log,
-    resolver: FusionExecutableResolver,
-    factory: FusionClientFactory,
-    sources: FusionLaunchSources,
+    deps: FusionClientPoolDependencies,
   ) {
     this.registry = registry;
     this.terminal = terminal;
-    this.resolver = resolver;
-    this.factory = factory;
-    this.readSnapshot = sources.readSnapshot;
-    this.outputChannel = sources.outputChannel;
-    this.environments = sources.environments;
-    this.launchEnv = sources.launchEnv;
-    this.reportCompileErrors = sources.reportCompileErrors;
-    this.rootExists =
-      sources.rootExists ?? ((root) => hasDbtProjectFile(root.fsPath));
+    this.deps = deps;
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
         this.scheduleReconcile();
@@ -130,13 +104,13 @@ export class FusionClientPoolImpl implements FusionClientPool {
       onDidChangeSettings(PROJECT_SNAPSHOT_SETTINGS, (change) => {
         void this.enqueue(() => this.handleConfigurationChange(change));
       }),
-      this.environments.onDidChange((project) => {
+      this.deps.environments.onDidChange((project) => {
         void this.enqueue(() => this.handleEnvironmentChange(project));
       }),
     );
-    if (this.launchEnv) {
+    if (this.deps.launchEnv) {
       this.subscriptions.push(
-        this.launchEnv.onDidChange(() => {
+        this.deps.launchEnv.onDidChange(() => {
           void this.enqueue(() => this.handleLaunchEnvChange());
         }),
       );
@@ -181,15 +155,46 @@ export class FusionClientPoolImpl implements FusionClientPool {
     while (this.subscriptions.length) {
       this.subscriptions.pop()?.dispose();
     }
-    const managed = [...this.clients.values()];
-    this.clients.clear();
+    const managed = [...this.clients];
     await Promise.all(
-      managed.map(async (entry) => {
-        entry.client.dispose();
-        await entry.client.stop();
-      }),
+      managed.map(([key, entry]) => this.stopManaged(key, entry)),
     );
     this._onDidChangeClients.dispose();
+  }
+
+  /** Drops the entry under `key` and stops its client. Callers check `disposed` after the await. */
+  private async stopManaged(
+    key: string,
+    managed: ManagedClient,
+  ): Promise<void> {
+    this.clients.delete(key);
+    managed.client.dispose();
+    await managed.client.stop();
+  }
+
+  /**
+   * Replaces each entry `isStale` names, in order. Returns whether any was replaced; stops early and
+   * returns false once the pool is disposed.
+   */
+  private async replaceEach(
+    entries: Iterable<[string, DeclaredProject]>,
+    isStale: (
+      key: string,
+      project: DeclaredProject,
+    ) => boolean | Promise<boolean>,
+  ): Promise<boolean> {
+    let changed = false;
+    for (const [key, project] of entries) {
+      if (!(await isStale(key, project))) {
+        continue;
+      }
+      await this.replaceClient(project, key);
+      if (this.disposed) {
+        return false;
+      }
+      changed = true;
+    }
+    return changed;
   }
 
   /** Runs one reconcile after registry changes stop for {@link RECONCILE_DEBOUNCE_MS}. */
@@ -219,8 +224,14 @@ export class FusionClientPoolImpl implements FusionClientPool {
   /** The registry's project for `key`, unless its root no longer holds a project file. */
   private findDesiredProject(key: string): DeclaredProject | undefined {
     return this.registry.projects.find(
-      (project) => projectKey(project) === key && this.rootExists(project.root),
+      (project) => projectKey(project) === key && this.hasRoot(project.root),
     );
+  }
+
+  private hasRoot(root: Uri): boolean {
+    return this.deps.rootExists
+      ? this.deps.rootExists(root)
+      : hasDbtProjectFile(root.fsPath);
   }
 
   private async handleConfigurationChange(
@@ -230,23 +241,18 @@ export class FusionClientPoolImpl implements FusionClientPool {
       return;
     }
 
-    let changed = false;
-    for (const project of this.registry.projects) {
+    const projects = this.registry.projects.map(
+      (project): [string, DeclaredProject] => [projectKey(project), project],
+    );
+    const changed = await this.replaceEach(projects, async (key, project) => {
       if (!change.affects(project.root)) {
-        continue;
+        return false;
       }
-      const key = projectKey(project);
       const managed = this.clients.get(key);
-      if (!managed || (await this.isCurrentLaunch(project, managed))) {
-        continue;
-      }
-      await this.replaceClient(project, key);
-      if (this.disposed) {
-        return;
-      }
-      changed = true;
-    }
-
+      return (
+        managed !== undefined && !(await this.isCurrentLaunch(project, managed))
+      );
+    });
     if (changed) {
       this._onDidChangeClients.fire();
     }
@@ -257,8 +263,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
     project: DeclaredProject,
     managed: ManagedClient,
   ): Promise<boolean> {
-    const environment = await this.environments.ensure(project);
-    const verdict = await this.resolver.resolve(project.root, environment);
+    const environment = await this.deps.environments.ensure(project);
+    const verdict = await this.deps.resolver.resolve(project.root, environment);
     return sameLspLaunch(
       managed.launch,
       toLspLaunch(
@@ -282,9 +288,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
   /** The project's snapshot read against its resolved environment, or the host's before it resolves. */
   private snapshot(project: DeclaredProject): ProjectSnapshot {
-    return this.readSnapshot(
+    return this.deps.readSnapshot(
       project.root,
-      this.environments.peek(project)?.env,
+      this.deps.environments.peek(project)?.env,
     );
   }
 
@@ -292,22 +298,18 @@ export class FusionClientPoolImpl implements FusionClientPool {
     if (!this.initialized || this.disposed) {
       return;
     }
-    let changed = false;
     // Snapshot: replaceClient replaces entries while the loop runs.
-    const snapshot = [...this.clients];
-    for (const [key, managed] of snapshot) {
-      if (
-        managed.executable === undefined ||
-        sameEnv(managed.env, this.resolveEnv(managed.project))
-      ) {
-        continue;
-      }
-      await this.replaceClient(managed.project, key);
-      if (this.disposed) {
-        return;
-      }
-      changed = true;
-    }
+    const entries = Array.from(
+      this.clients,
+      ([key, managed]): [string, DeclaredProject] => [key, managed.project],
+    );
+    const changed = await this.replaceEach(entries, (key) => {
+      const managed = this.clients.get(key);
+      return (
+        managed?.executable !== undefined &&
+        !sameEnv(managed.env, this.resolveEnv(managed.project))
+      );
+    });
     if (changed) {
       this._onDidChangeClients.fire();
     }
@@ -315,7 +317,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
   /** The resolved variables; they override the executable's own environment. */
   private resolveEnv(project: DeclaredProject): Record<string, string> {
-    return this.launchEnv?.resolve(project) ?? {};
+    return this.deps.launchEnv?.resolve(project) ?? {};
   }
 
   private async reconcile(): Promise<void> {
@@ -325,7 +327,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
     const nextProjects = new Map(
       this.registry.projects
-        .filter((project) => this.rootExists(project.root))
+        .filter((project) => this.hasRoot(project.root))
         .map((project) => [projectKey(project), project]),
     );
     let changed = false;
@@ -334,28 +336,21 @@ export class FusionClientPoolImpl implements FusionClientPool {
       if (nextProjects.has(key)) {
         continue;
       }
-      this.clients.delete(key);
-      managed.client.dispose();
-      await managed.client.stop();
+      await this.stopManaged(key, managed);
       if (this.disposed) {
         return;
       }
       changed = true;
     }
 
-    for (const [key, project] of nextProjects) {
-      const managed = this.clients.get(key);
-      if (managed?.project === project) {
-        continue;
-      }
-      await this.replaceClient(project, key);
-      if (this.disposed) {
-        return;
-      }
-      changed = true;
+    const replaced = await this.replaceEach(
+      nextProjects,
+      (key, project) => this.clients.get(key)?.project !== project,
+    );
+    if (this.disposed) {
+      return;
     }
-
-    if (changed) {
+    if (changed || replaced) {
       this._onDidChangeClients.fire();
     }
   }
@@ -366,47 +361,33 @@ export class FusionClientPoolImpl implements FusionClientPool {
   ): Promise<void> {
     const existing = this.clients.get(key);
     if (existing) {
-      this.clients.delete(key);
-      existing.client.dispose();
-      await existing.client.stop();
+      await this.stopManaged(key, existing);
       if (this.disposed) {
         return;
       }
     }
 
-    const environment = await this.environments.ensure(project);
+    const environment = await this.deps.environments.ensure(project);
     if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
-    const verdict = await this.resolver.resolve(project.root, environment);
+    const verdict = await this.deps.resolver.resolve(project.root, environment);
     if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
 
+    const snapshot = this.snapshot(project);
     const executable = isFusionExecutable(verdict) ? verdict : undefined;
-    const launch = toLspLaunch(this.snapshot(project), executable?.path);
     const env = executable ? this.resolveEnv(project) : {};
-    const client = isFusionExecutable(verdict)
-      ? this.factory.create({
-          project,
-          executable: verdict,
-          launch,
-          commandPrefix: commandPrefixForProject(project),
-          env,
-          outputChannel: this.outputChannel(project),
-          onCompileErrors: (messages) =>
-            this.reportCompileErrors?.(project, messages),
-          nestedRoots: {
-            roots: () => this.registry.projects.map((other) => other.root),
-            onDidChange: this.registry.onDidChangeProjects,
-          },
-        } satisfies FusionClientOptions)
-      : new FailedFusionClient(
-          project,
-          formatFusionExecutableResolutionFailure(project.name, verdict),
-          launch.staticAnalysis,
-          this.outputChannel(project),
-        );
+    const { client, launch } = launchClient(
+      {
+        registry: this.registry,
+        factory: this.deps.factory,
+        outputChannel: this.deps.outputChannel,
+        reportCompileErrors: this.deps.reportCompileErrors,
+      },
+      { project, verdict, snapshot, env },
+    );
 
     if (this.disposed || this.findDesiredProject(key) !== project) {
       client.dispose();
@@ -439,18 +420,5 @@ export function createFusionClientPool(
   terminal: Log,
   deps: FusionClientPoolDependencies,
 ): FusionClientPoolImpl {
-  return new FusionClientPoolImpl(
-    registry,
-    terminal,
-    deps.resolver,
-    deps.factory,
-    {
-      readSnapshot: deps.readSnapshot,
-      environments: deps.environments,
-      outputChannel: deps.outputChannel,
-      launchEnv: deps.launchEnv,
-      reportCompileErrors: deps.reportCompileErrors,
-      rootExists: deps.rootExists,
-    },
-  );
+  return new FusionClientPoolImpl(registry, terminal, deps);
 }
