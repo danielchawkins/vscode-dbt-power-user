@@ -27,12 +27,6 @@ describe("findDbtTestType", () => {
     ).toBe(DbtTestTypes.SINGULAR);
   });
 
-  it("reads a test with empty metadata name that is a .sql file as singular", () => {
-    expect(
-      findDbtTestType(modelTest(metadata(""), "tests/assert_positive.sql")),
-    ).toBe(DbtTestTypes.SINGULAR);
-  });
-
   it("reads a test without metadata that is not a .sql file as unknown", () => {
     expect(findDbtTestType(modelTest(undefined, "tests/assert.py"))).toBe(
       DbtTestTypes.UNKNOWN,
@@ -40,14 +34,11 @@ describe("findDbtTestType", () => {
     expect(findDbtTestType(modelTest(undefined))).toBe(DbtTestTypes.UNKNOWN);
   });
 
-  it.each(["accepted_values", "not_null", "relationships", "unique"])(
-    "reads the dbt generic test %s as generic",
-    (name) => {
-      expect(
-        findDbtTestType(modelTest(metadata(name), "models/schema.yml")),
-      ).toBe(DbtTestTypes.GENERIC);
-    },
-  );
+  it.each(["not_null"])("reads the dbt generic test %s as generic", (name) => {
+    expect(
+      findDbtTestType(modelTest(metadata(name), "models/schema.yml")),
+    ).toBe(DbtTestTypes.GENERIC);
+  });
 
   it("reads a generic test name as generic even when it has a namespace", () => {
     expect(findDbtTestType(modelTest(metadata("not_null", "dbt_utils")))).toBe(

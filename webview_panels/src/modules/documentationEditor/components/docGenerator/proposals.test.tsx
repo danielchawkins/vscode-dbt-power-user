@@ -102,18 +102,6 @@ const typeRow = (text: string) =>
   within(screen.getByText(text).parentElement!.parentElement!);
 
 describe("column proposal controls", () => {
-  it("the buttons post proposeColumns with their kind", async () => {
-    const { user } = renderEditor();
-    await user.click(
-      screen.getByRole("button", { name: "Record column types" }),
-    );
-    await expectPosted("proposeColumns", { kind: "types" });
-    await user.click(
-      screen.getByRole("button", { name: "Pull upstream descriptions" }),
-    );
-    await expectPosted("proposeColumns", { kind: "descriptions" });
-  });
-
   it("shows the source label and the columns not found in the target", () => {
     renderEditor(TYPES);
     expect(

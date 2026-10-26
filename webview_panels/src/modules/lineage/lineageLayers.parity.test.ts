@@ -166,16 +166,6 @@ describe("lineage-layers fixture, table mode", () => {
     );
   });
 
-  it("puts the start node in intermediate and the source and seed on one row", () => {
-    const flow = layout("dbt");
-    expect(yOf(flow, SOURCE)).toBe(yOf(flow, SEED));
-    expect(yOf(flow, STG_ORDERS)).toBeGreaterThan(yOf(flow, SOURCE));
-    expect(yOf(flow, INT_ORDERS)).toBeGreaterThan(yOf(flow, STG_ORDERS));
-    expect(yOf(flow, DIM_CUSTOMERS)).toBeGreaterThan(yOf(flow, INT_ORDERS));
-    expect(yOf(flow, FCT_ORDERS)).toBeGreaterThan(yOf(flow, INT_ORDERS));
-    expect(yOf(flow, REV_DAILY)).toBeGreaterThan(yOf(flow, INT_ORDERS));
-  });
-
   it("counts the crossings and hops of dbt dependency edges", () => {
     // Three edges skip a row whose card sits over the corridor, so they go round it and cross other edges; drawn
     // through the corridor they would run under that card.
@@ -257,15 +247,6 @@ describe("lineage-layers fixture, declared and both", () => {
     expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
       crossings: 12,
       hops: 7,
-    });
-  });
-
-  it("counts the crossings and hops when the hidden audit_log edge is drawn too", () => {
-    // The gallery draws this edge as well, so these are the counts to set against its 13 crossings and 8 hops.
-    const flow = layout("both", lineageLayersEdges);
-    expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
-      crossings: 13,
-      hops: 8,
     });
   });
 

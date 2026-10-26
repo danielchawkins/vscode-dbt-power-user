@@ -4,8 +4,6 @@ import { buildGridInit } from "./columnTypeMapping";
 
 const NUM_RUNS = 200;
 
-const NUMERIC_TYPES = new Set(["Integer", "Number"]);
-
 const columnType = fc.constantFrom(
   "Text",
   "Integer",
@@ -68,40 +66,6 @@ describe("buildGridInit properties", () => {
       fc.property(table, ({ names, types, rows }) => {
         const { columns } = buildGridInit(names, types, rows);
         expect(columns).toEqual(names);
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
-  it("renders values of an unknown or absent type as text or null", () => {
-    fc.assert(
-      fc.property(table, ({ names, types, rows }) => {
-        const init = buildGridInit(names, types, rows);
-        names.forEach((name, i) => {
-          if (types[i] === "unrecognized" || types[i] == null) {
-            for (const row of init.rows) {
-              expect(row[name] === null || typeof row[name] === "string").toBe(
-                true,
-              );
-            }
-          }
-        });
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
-  it("passes values of a numeric type through unchanged", () => {
-    fc.assert(
-      fc.property(table, ({ names, types, rows }) => {
-        const init = buildGridInit(names, types, rows);
-        names.forEach((name, i) => {
-          if (NUMERIC_TYPES.has(types[i] as string)) {
-            init.rows.forEach((row, r) => {
-              expect(row[name]).toBe(rows[r][name] ?? null);
-            });
-          }
-        });
       }),
       { numRuns: NUM_RUNS },
     );

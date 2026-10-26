@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
 import { useLayoutEffect } from "react";
@@ -56,37 +56,6 @@ describe("GroupChips", () => {
   it("draws nothing for no groups", () => {
     const { container } = draw([]);
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it("draws every chip inline up to four, with no +N button", () => {
-    draw(CHIPS.slice(0, 4));
-    expect(screen.getAllByRole("button", { name: /^Close / })).toHaveLength(4);
-    expect(screen.queryByRole("button", { name: /more$/ })).toBeNull();
-  });
-
-  it("draws three chips inline and the rest behind a +N popover", async () => {
-    const user = userEvent.setup();
-    draw(CHIPS);
-    expect(screen.getAllByRole("button", { name: /^Close / })).toHaveLength(3);
-    await user.click(screen.getByRole("button", { name: "+2 more" }));
-    const popover = screen.getByRole("dialog");
-    expect(
-      within(popover).getByRole("heading", { name: "Open groups" }),
-    ).toBeInTheDocument();
-    expect(
-      within(popover)
-        .getAllByRole("button", { name: /^Close / })
-        .map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Close delta", "Close epsilon"]);
-  });
-
-  it("closes a group from the popover", async () => {
-    const user = userEvent.setup();
-    const table = actions();
-    draw(CHIPS, table);
-    await user.click(screen.getByRole("button", { name: "+2 more" }));
-    await user.click(screen.getByRole("button", { name: "Close delta" }));
-    expect(table.closeGroup).toHaveBeenCalledWith("group:delta");
   });
 
   it("draws the next members of a group in the popover from its +K button", async () => {

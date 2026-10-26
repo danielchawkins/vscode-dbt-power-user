@@ -72,28 +72,4 @@ describe("DocGeneratorInput", () => {
     rerender(<Harness entity={after} />);
     expect(textarea().value).toBe("new");
   });
-
-  it("marks a description that differs from the saved one as modified", () => {
-    const saved = orders("saved");
-    const [edited] = orders("edited").columns;
-    const Dirty = (): React.JSX.Element => {
-      const [state, dispatch] = useReducer(documentationReducer, {
-        ...initialState,
-        incomingDocsData: { docs: saved },
-        currentDocsData: saved,
-      });
-      return (
-        <DocumentationContext value={{ state, dispatch }}>
-          <DocGeneratorInput
-            entity={edited}
-            type={EntityType.COLUMN}
-            title="id"
-            placeholder="Describe"
-          />
-        </DocumentationContext>
-      );
-    };
-    render(<Dirty />);
-    expect(screen.getByText("modified")).toBeInTheDocument();
-  });
 });

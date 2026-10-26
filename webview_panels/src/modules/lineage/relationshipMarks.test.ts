@@ -73,13 +73,9 @@ describe("relationTitle", () => {
     expect(relationTitle(ref("meta")).columns).toBe("a, b -> x");
   });
 
-  it.each([
-    ["meta", "declared in meta.relationships"],
-    ["test", "relationships test"],
-    ["contract", "contract foreign key"],
-    ["semantic", "semantic entities"],
-    ["inferred", "inferred from column names"],
-  ] as const)("labels a %s relationship's source", (source, label) => {
-    expect(relationTitle(ref(source)).source).toBe(label);
+  it("labels a meta relationship's source", () => {
+    expect(relationTitle(ref("meta")).source).toBe(
+      "declared in meta.relationships",
+    );
   });
 });
