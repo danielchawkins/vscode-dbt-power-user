@@ -100,10 +100,14 @@ export interface ColumnLineage {
   viewsType?: string | undefined;
 }
 
-/** The `getConnectedColumns` body; `errors` holds tooltip lines per table. */
+/**
+ * The `getConnectedColumns` body; `errors` holds tooltip lines per table. `cancelled` answers a trace the host
+ * stopped, either superseded by another trace or cancelled by the panel.
+ */
 export interface ConnectedColumns {
   column_lineage: ColumnLineage[];
   errors?: Record<string, string[]> | undefined;
+  cancelled?: true | undefined;
 }
 
 /** What the lineage renderer draws: tables, table edges as `[parent, child]`, and column edges among them. */
@@ -201,12 +205,14 @@ export type PersistedLineageSettings = Partial<
   >
 >;
 
-/** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */
+/** The `getConnectedColumns` request; the host reads `targets`, `upstreamExpansion` and `trace`. */
 export interface ConnectedColumnsParams {
   /** `[table unique ID, column]` pairs. */
   targets: [string, string][];
   /** True asks for the targets' children, false for their parents. */
   upstreamExpansion: boolean;
+  /** The selected column's key; a request with a new trace supersedes the previous trace's requests. */
+  trace: string;
 }
 
 /** Lineage messages from the panel to the extension host. */
@@ -231,6 +237,8 @@ export type PanelMessage =
       { includeSources?: boolean | undefined }
     >
   | Request<"getConnectedColumns", ConnectedColumnsParams>
+  /** Stops the column trace named by `trace`; its pending `getConnectedColumns` answers `cancelled`. */
+  | { command: "cancelColumnTrace"; trace: string }
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", PersistedLineageSettings>;
 
@@ -293,7 +301,9 @@ const panelFields: CommandFields<PanelMessage> = {
   getConnectedColumns: request<ConnectedColumnsParams>({
     targets: arrayOf(tuple<[string, string]>(isString, isString)),
     upstreamExpansion: isBoolean,
+    trace: isString,
   }),
+  cancelColumnTrace: { trace: isString },
   getLineageSettings: optionalRequest({}),
   persistLineageSettings: request<PersistedLineageSettings>({
     showSelectEdges: optionalBoolean,
