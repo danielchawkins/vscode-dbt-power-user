@@ -99,10 +99,18 @@ describe("resolveProfilesDir", () => {
   const exists = (file: string) => file === path.join(root, "profiles.yml");
 
   it("uses the root when it has a profiles.yml, else ~/.dbt", () => {
-    expect(resolveProfilesDir(undefined, {}, root, home, exists)).toBe(root);
-    expect(resolveProfilesDir(undefined, {}, root, home, never)).toBe(
-      path.join(home, ".dbt"),
-    );
+    expect(
+      resolveProfilesDir({ setting: undefined, env: {}, root, home, exists }),
+    ).toBe(root);
+    expect(
+      resolveProfilesDir({
+        setting: undefined,
+        env: {},
+        root,
+        home,
+        exists: never,
+      }),
+    ).toBe(path.join(home, ".dbt"));
   });
 
   it("returns the first non-blank source in precedence order", () => {
@@ -114,16 +122,16 @@ describe("resolveProfilesDir", () => {
         maybeBlank,
         fc.boolean(),
         (setting, engine, legacy, blank, hasProfiles) => {
-          const result = resolveProfilesDir(
-            setting ?? blank,
-            {
+          const result = resolveProfilesDir({
+            setting: setting ?? blank,
+            env: {
               DBT_ENGINE_PROFILES_DIR: engine ?? blank,
               DBT_PROFILES_DIR: legacy ?? blank,
             },
             root,
             home,
-            () => hasProfiles,
-          );
+            exists: () => hasProfiles,
+          });
           const fallback = hasProfiles ? root : path.join(home, ".dbt");
           expect(result).toBe(setting ?? engine ?? legacy ?? fallback);
         },

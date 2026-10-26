@@ -79,12 +79,12 @@ suite("Configuration errors", function () {
       projectFile: readDbtProjectFile(projectDir),
     });
     const terminal = silentTerminal();
-    const cli = new FusionCli(
-      { path: dbt, env: {} },
-      () => snapshot,
-      new CommandProcessExecutionFactory(terminal),
+    const cli = new FusionCli({
+      executable: { path: dbt, env: {} },
+      snapshot: () => snapshot,
+      processes: new CommandProcessExecutionFactory(terminal),
       terminal,
-    );
+    });
     return cli.rebuildManifest().then(() => ({
       diagnostics: cli.getDiagnostics().rebuildManifestDiagnostics,
       invocation: snapshot.invocation,

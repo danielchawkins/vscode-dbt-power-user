@@ -16,6 +16,15 @@ function createCommandNotFoundError(command: string): Error {
   );
 }
 
+export interface CommandSpec {
+  command: string;
+  args?: string[];
+  stdin?: string;
+  cwd?: string;
+  signal?: AbortSignal;
+  envVars?: EnvironmentVariables;
+}
+
 export class CommandProcessExecutionFactory {
   private terminal: Log;
 
@@ -23,30 +32,8 @@ export class CommandProcessExecutionFactory {
     this.terminal = terminal;
   }
 
-  createCommandProcessExecution({
-    command,
-    args,
-    stdin,
-    cwd,
-    signal,
-    envVars,
-  }: {
-    command: string;
-    args?: string[];
-    stdin?: string;
-    cwd?: string;
-    signal?: AbortSignal;
-    envVars?: EnvironmentVariables;
-  }) {
-    return new CommandProcessExecution(
-      this.terminal,
-      command,
-      args,
-      stdin,
-      cwd,
-      signal,
-      envVars,
-    );
+  createCommandProcessExecution(spec: CommandSpec) {
+    return new CommandProcessExecution(this.terminal, spec);
   }
 }
 
@@ -60,22 +47,14 @@ export class CommandProcessExecution {
   private signal: AbortSignal | undefined;
   private envVars: EnvironmentVariables | undefined;
 
-  constructor(
-    terminal: Log,
-    command: string,
-    args?: string[],
-    stdin?: string,
-    cwd?: string,
-    signal?: AbortSignal,
-    envVars?: EnvironmentVariables,
-  ) {
+  constructor(terminal: Log, spec: CommandSpec) {
     this.terminal = terminal;
-    this.command = command;
-    this.args = args;
-    this.stdin = stdin;
-    this.cwd = cwd;
-    this.signal = signal;
-    this.envVars = envVars;
+    this.command = spec.command;
+    this.args = spec.args;
+    this.stdin = spec.stdin;
+    this.cwd = spec.cwd;
+    this.signal = spec.signal;
+    this.envVars = spec.envVars;
   }
 
   private spawn() {

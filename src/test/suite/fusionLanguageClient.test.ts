@@ -557,7 +557,10 @@ describe("FusionLanguageClient lifecycle", () => {
       options: { commandPrefix: "fusionPowerUser:q:" },
     });
     await waitForState(client, "running");
-    const service = new DbtLineageService({} as any, () => client);
+    const service = new DbtLineageService({
+      queryManifestService: {} as any,
+      currentClient: () => client,
+    });
 
     const [upstream, downstream] = await Promise.all([
       service.getConnectedColumns({

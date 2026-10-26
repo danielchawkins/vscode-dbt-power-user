@@ -53,13 +53,19 @@ export function projectDirVariable(
  * then `DBT_PROFILES_DIR`, then `root` when it has a `profiles.yml`, then `~/.dbt`. Blank values are unset.
  * `exists` reports whether a file exists.
  */
-export function resolveProfilesDir(
-  setting: string | undefined,
-  env: Environment,
-  root: string,
-  home: string,
-  exists: (file: string) => boolean,
-): string {
+export function resolveProfilesDir({
+  setting,
+  env,
+  root,
+  home,
+  exists,
+}: {
+  setting: string | undefined;
+  env: Environment;
+  root: string;
+  home: string;
+  exists: (file: string) => boolean;
+}): string {
   const configured = [setting, ...PROFILES_DIR_VARIABLES.map((n) => env[n])];
   const first = configured.find((value) => value?.trim());
   if (first) {

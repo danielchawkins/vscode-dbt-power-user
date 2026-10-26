@@ -67,9 +67,15 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   private projects: PanelProjects;
   private parseDemand: ParseDemand | undefined;
 
-  public constructor(
-    projects: PanelProjects,
-    extensionContext: ExtensionContextStore,
+  public constructor({
+    projects,
+    extensionContext,
+    services,
+    terminal,
+    parseDemand,
+  }: {
+    projects: PanelProjects;
+    extensionContext: ExtensionContextStore;
     services: {
       docGenService: DocGenService;
       dbtTestService: DbtTestService;
@@ -77,10 +83,10 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       emitterService: SharedStateService;
       columnProposals: ColumnProposalService;
       columnProposalRequests: ColumnProposalRequests;
-    },
-    terminal: Log,
-    parseDemand?: ParseDemand,
-  ) {
+    };
+    terminal: Log;
+    parseDemand?: ParseDemand;
+  }) {
     super(
       extensionContext,
       services.emitterService,

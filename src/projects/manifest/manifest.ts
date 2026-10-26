@@ -102,13 +102,19 @@ interface ManifestJson {
  * Reads `<targetPath>/manifest.json` and runs every parser over it.
  * Returns undefined when the file is absent or unparsable.
  */
-export async function buildManifest(
-  parsers: ManifestParsers,
-  project: ManifestProject,
-  targetPath: string,
-  terminal: Log,
-  readFailures: ManifestReadFailures,
-): Promise<BuiltManifest | undefined> {
+export async function buildManifest({
+  parsers,
+  project,
+  targetPath,
+  terminal,
+  readFailures,
+}: {
+  parsers: ManifestParsers;
+  project: ManifestProject;
+  targetPath: string;
+  terminal: Log;
+  readFailures: ManifestReadFailures;
+}): Promise<BuiltManifest | undefined> {
   const projectRoot = project.getProjectRoot();
   terminal.debug(
     "Manifest",

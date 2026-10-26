@@ -63,17 +63,17 @@ function build(
   factory: FusionCommandIntegrationFactory,
   hooks: Partial<ExecutableLifecycleHooks> = {},
 ): ExecutableLifecycle {
-  return new ExecutableLifecycle(
-    { resolve: vi.fn(async () => resolve()) },
+  return new ExecutableLifecycle({
+    resolver: { resolve: vi.fn(async () => resolve()) },
     factory,
-    ROOT,
-    silentLog(),
-    {
+    projectRoot: ROOT,
+    terminal: silentLog(),
+    hooks: {
       activate: hooks.activate ?? (async () => undefined),
       deactivate: hooks.deactivate ?? (() => undefined),
       environment: hooks.environment,
     },
-  );
+  });
 }
 
 describe("ExecutableLifecycle", () => {
@@ -109,19 +109,19 @@ describe("ExecutableLifecycle", () => {
   it("resolves with no environment when the environment hook rejects", async () => {
     const { factory, created } = recordingFactory();
     const resolve = vi.fn(async () => sampleExecutable("/bin/dbt"));
-    const lifecycle = new ExecutableLifecycle(
-      { resolve },
+    const lifecycle = new ExecutableLifecycle({
+      resolver: { resolve },
       factory,
-      ROOT,
-      silentLog(),
-      {
+      projectRoot: ROOT,
+      terminal: silentLog(),
+      hooks: {
         activate: async () => undefined,
         deactivate: () => undefined,
         environment: async () => {
           throw new Error("mise failed");
         },
       },
-    );
+    });
 
     await lifecycle.initialize();
 
@@ -348,12 +348,12 @@ describe("Project executable wiring", () => {
     { stubRebuild = false } = {},
   ): FusionCommandIntegrationFactory {
     return (executable, root) => {
-      const cli = new FusionCli(
+      const cli = new FusionCli({
         executable,
-        () => readProjectSnapshot(Uri.file(root)),
-        recording.factory,
-        silentLog(),
-      );
+        snapshot: () => readProjectSnapshot(Uri.file(root)),
+        processes: recording.factory,
+        terminal: silentLog(),
+      });
       if (stubRebuild) {
         vi.spyOn(cli, "rebuildManifest").mockResolvedValue(undefined);
       }

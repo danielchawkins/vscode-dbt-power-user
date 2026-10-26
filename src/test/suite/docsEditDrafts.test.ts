@@ -36,10 +36,10 @@ async function draftPanel() {
     getTestsForCurrentModel: vi.fn(async () => []),
     getUnitTestsForCurrentModel: vi.fn(async () => []),
   };
-  const panel = new DocsEditViewPanel(
+  const panel = new DocsEditViewPanel({
     projects,
-    { extensionUri: Uri.file("/ext") } as any,
-    {
+    extensionContext: { extensionUri: Uri.file("/ext") } as any,
+    services: {
       docGenService,
       dbtTestService,
       queryManifestService: { manifestFor: () => undefined },
@@ -47,7 +47,7 @@ async function draftPanel() {
       columnProposalRequests: new ColumnProposalRequests(),
     } as any,
     terminal,
-  );
+  });
   const view = fakeView();
   await panel.resolveWebviewView(view.page, {} as any, {} as any);
   const { send } = view;
@@ -115,14 +115,14 @@ describe("documentation editor drafts", () => {
 
 describe("documentation editor view resolution", () => {
   async function resolved() {
-    const panel = new DocsEditViewPanel(
-      {
+    const panel = new DocsEditViewPanel({
+      projects: {
         onDidChangeManifest: new EventEmitter<unknown>().event,
         onDidRemoveProject: new EventEmitter<Uri>().event,
         get: () => undefined,
       } as any,
-      { extensionUri: Uri.file("/ext") } as any,
-      {
+      extensionContext: { extensionUri: Uri.file("/ext") } as any,
+      services: {
         docGenService: {},
         dbtTestService: {},
         queryManifestService: { manifestFor: () => undefined },
@@ -130,7 +130,7 @@ describe("documentation editor view resolution", () => {
         columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,
-    );
+    });
     const transmit = vi
       .spyOn(panel as any, "transmitData")
       .mockResolvedValue(undefined);

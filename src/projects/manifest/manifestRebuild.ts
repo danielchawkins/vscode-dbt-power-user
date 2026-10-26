@@ -25,13 +25,19 @@ export class ManifestRebuild {
   private readonly terminal: Log;
   private readonly callbacks: ManifestRebuildCallbacks;
 
-  constructor(
-    lifecycle: ExecutableLifecycle,
-    parsers: ManifestParsers,
-    project: ManifestProject,
-    terminal: Log,
-    callbacks: ManifestRebuildCallbacks,
-  ) {
+  constructor({
+    lifecycle,
+    parsers,
+    project,
+    terminal,
+    callbacks,
+  }: {
+    lifecycle: ExecutableLifecycle;
+    parsers: ManifestParsers;
+    project: ManifestProject;
+    terminal: Log;
+    callbacks: ManifestRebuildCallbacks;
+  }) {
     this.lifecycle = lifecycle;
     this.parsers = parsers;
     this.project = project;
@@ -132,13 +138,13 @@ export class ManifestRebuild {
       this.parsingCandidate = delegate;
     }
     try {
-      const built = await buildManifest(
-        this.parsers,
-        this.project,
+      const built = await buildManifest({
+        parsers: this.parsers,
+        project: this.project,
         targetPath,
-        this.terminal,
-        this.readFailures,
-      );
+        terminal: this.terminal,
+        readFailures: this.readFailures,
+      });
       if (!built || !this.lifecycle.isCurrent(generation)) {
         return;
       }

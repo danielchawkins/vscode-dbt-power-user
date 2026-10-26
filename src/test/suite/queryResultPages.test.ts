@@ -16,13 +16,13 @@ vi.mock("../../webview/panelHtml", async (importOriginal) => ({
 
 /** A panel built as the extension builds it; the removal event is the one a test fires. */
 function realPanel(removed = new EventEmitter<Uri>()) {
-  return new QueryResultPanel(
-    { extensionUri: Uri.file("/ext") } as any,
-    { eventEmitter: new EventEmitter<unknown>() } as any,
-    spyLog(),
-    {} as any,
-    removed.event,
-  );
+  return new QueryResultPanel({
+    extensionContext: { extensionUri: Uri.file("/ext") } as any,
+    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as any,
+    dbtTerminal: spyLog(),
+    queryManifestService: {} as any,
+    onDidRemoveProject: removed.event,
+  });
 }
 
 const token = () => ({ onCancellationRequested: vi.fn() }) as never;

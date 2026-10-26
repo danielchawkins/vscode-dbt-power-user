@@ -70,13 +70,19 @@ export class ExecutableLifecycle {
   private readonly terminal: Log;
   private readonly hooks: ExecutableLifecycleHooks;
 
-  constructor(
-    resolver: FusionExecutableResolver,
-    factory: FusionCommandIntegrationFactory,
-    projectRoot: string,
-    terminal: Log,
-    hooks: ExecutableLifecycleHooks,
-  ) {
+  constructor({
+    resolver,
+    factory,
+    projectRoot,
+    terminal,
+    hooks,
+  }: {
+    resolver: FusionExecutableResolver;
+    factory: FusionCommandIntegrationFactory;
+    projectRoot: string;
+    terminal: Log;
+    hooks: ExecutableLifecycleHooks;
+  }) {
     this.resolver = resolver;
     this.factory = factory;
     this.projectRoot = projectRoot;
