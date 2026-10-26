@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TextDocument } from "vscode";
-import { Uri } from "vscode";
+import { CodeLens, Position, Range, type TextDocument, Uri } from "vscode";
 import type { Middleware } from "vscode-languageclient/node";
 import { ProjectDiagnosticsFilter } from "../../fusion/fusionDiagnostics";
-import { languageClientOptions } from "../../fusion/lspClientSupport";
+import {
+  buildWorkspaceConfigurationResponse,
+  languageClientOptions,
+  mapCteLenses,
+} from "../../fusion/lspClientSupport";
 import { NestedRootGuard, OpenDocuments } from "../../fusion/nestedRoots";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject } from "../projectHarness";
@@ -164,5 +167,95 @@ describe("languageClientOptions inactive gate", () => {
 
     expect(next).toHaveBeenCalledTimes(2);
     expect(outputChannel.debug).not.toHaveBeenCalled();
+  });
+});
+
+describe("fusionLanguageClient helpers", () => {
+  it("builds workspace/configuration response for dbt section with linter", () => {
+    expect(buildWorkspaceConfigurationResponse("dbt", true)).toEqual({
+      lsp: { linter: { enabled: true } },
+    });
+    expect(buildWorkspaceConfigurationResponse("dbt", false)).toEqual({
+      lsp: { linter: { enabled: false } },
+    });
+  });
+
+  it("adds maxErrorReporting to the dbt section only when it is set", () => {
+    expect(buildWorkspaceConfigurationResponse("dbt", true, 250)).toEqual({
+      lsp: { linter: { enabled: true }, maxErrorReporting: 250 },
+    });
+    expect(
+      buildWorkspaceConfigurationResponse("dbt", true, undefined),
+    ).not.toHaveProperty("lsp.maxErrorReporting");
+    expect(buildWorkspaceConfigurationResponse("python", true, 250)).toBeNull();
+  });
+
+  it("returns null for non-dbt sections", () => {
+    expect(buildWorkspaceConfigurationResponse("python", true)).toBeNull();
+    expect(buildWorkspaceConfigurationResponse("vscode", false)).toBeNull();
+    expect(buildWorkspaceConfigurationResponse("", true)).toBeNull();
+  });
+});
+
+describe("mapCteLenses", () => {
+  const uri = Uri.file("/p/models/orders.sql");
+  const lens = (name: string, line: number) =>
+    new CodeLens(new Range(new Position(line, 0), new Position(line, 0)), {
+      command: "dbt.previewCte",
+      title: "Preview CTE",
+      arguments: [
+        "/p/models/orders.sql",
+        {
+          name,
+          compiled_path: "/p/target/compiled/orders.sql",
+          compiled_start: 2,
+          compiled_stop: 20,
+        },
+      ],
+    });
+
+  it("maps each CTE lens to an execute action and adds one profile action", () => {
+    const other = new CodeLens(
+      new Range(new Position(0, 0), new Position(0, 0)),
+      {
+        command: "fusionPowerUser.other",
+        title: "Other",
+      },
+    );
+    const result = mapCteLenses([other, lens("a", 3), lens("b", 9)], uri)!;
+    expect(result.map((l) => l.command?.title)).toEqual([
+      "Other",
+      "$(play) Execute CTE: a",
+      "⏱ Profile CTEs",
+      "$(play) Execute CTE: b",
+    ]);
+    expect(result[1].command?.command).toBe(
+      "fusionPowerUser.runCteWithDependencies",
+    );
+    const target = result[1].command?.arguments?.[0] as {
+      uri: unknown;
+      cte: unknown;
+    };
+    expect(target.uri).toBe(uri);
+    expect(target.cte).toMatchObject({
+      name: "a",
+      compiledStart: 2,
+      compiledStop: 20,
+      line: 3,
+    });
+    expect(result[2].command?.arguments?.[1]).toHaveLength(2);
+  });
+
+  it("drops a lens with an unexpected argument and passes null through", () => {
+    const bad = new CodeLens(
+      new Range(new Position(1, 0), new Position(1, 0)),
+      {
+        command: "dbt.previewCte",
+        title: "Preview CTE",
+        arguments: ["/p/models/orders.sql", {}],
+      },
+    );
+    expect(mapCteLenses([bad], uri)).toEqual([]);
+    expect(mapCteLenses(null, uri)).toBeNull();
   });
 });
