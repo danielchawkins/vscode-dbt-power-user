@@ -1,0 +1,33 @@
+# `dbt.listNodes` answers a table graph in ~130 ms and a column lineage in ~11 s on the same 995-model project
+# (Fusion 2.0.8, scripts/spikes/lsp-timing). The command alone does not say how a request should be scheduled or
+# bounded, so every call names its purpose; FusionCommands looks the RequestPolicy up by it.
+# The `ignores` ratchet lists the call sites that still pass no purpose; each file leaves the list once it does.
+id: ts-fusion-request-names-a-purpose
+language: typescript
+severity: error
+message: >-
+  Pass a request purpose: `lsp.listNodes(selectors, { purpose: "columnLineage", token })`. See REQUEST_POLICIES in
+  src/core/lsp/requestPolicy.ts.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+  - src/fusion/fusionCommands.ts
+  # Ratchet: remove each entry once its call sites pass a purpose.
+  - src/features/lineage/dbtLineageService.ts
+  - src/features/docs/upstreamDescriptionSource.ts
+  - src/features/docs/columnTypeSource.ts
+  - src/metadata/serverMetadataSource.ts
+  - src/projects/project/compiledModel.ts
+  - src/projects/project/projectWarehouse.ts
+rule:
+  any:
+    - pattern: $L.listNodes($A)
+    - pattern: $L.getCurrentNode($A)
+    - pattern: $L.compileFile($A)
+    - pattern: $L.getProjectInfo()
+constraints:
+  # The project's FusionCommands, as `lsp`, `this.lsp` or `project.lsp`; a same-named private method is not it.
+  L:
+    regex: '(^|\.)lsp$'

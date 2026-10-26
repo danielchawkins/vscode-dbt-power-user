@@ -1,0 +1,13 @@
+id: ts-timing-bounds-in-one-module
+valid:
+  - 'const timer = setTimeout(done, policy.ceilingMs);'
+  - 'await compiled.after(since, BOUNDS.formatCompileWaitMs, token);'
+  - 'const MAX_TRACE_HOPS = 10;'
+  - 'setTimeout(resolve, 0);'
+  - 'const retries = 3;'
+invalid:
+  - 'export const COMMAND_DEADLINE_MS = 5_000;'
+  - 'const RECONCILE_DEBOUNCE_MS = 500;'
+  - 'const TIMEOUT_MS = 5000;'
+  - 'if (!(await this.whenReady("bottom", 10_000))) { return; }'
+  - 'const timer = setTimeout(done, 5000);'

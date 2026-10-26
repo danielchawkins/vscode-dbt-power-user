@@ -1,0 +1,10 @@
+id: ts-fusion-request-names-a-purpose
+valid:
+  - 'const currentNode = this.getCurrentNode(modelName);'
+  - 'await lsp.listNodes(columnLineageArgs(t, c), { purpose: "columnLineage", token });'
+  - 'await this.lsp.getProjectInfo({ purpose: "graph" });'
+  - 'await project.lsp.getCurrentNode(relative, { purpose: "columns", token });'
+invalid:
+  - 'return lsp.listNodes(columnLineageArgs(table, column));'
+  - 'const info = await this.lsp.getProjectInfo();'
+  - 'const { fileUri } = await lsp.compileFile(model);'
