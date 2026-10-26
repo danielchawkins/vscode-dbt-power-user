@@ -43,7 +43,7 @@ function slowServer(answerMs: number) {
   return { client, received, sendRequest };
 }
 
-describe("Fusion request timing (characterization)", () => {
+describe("Fusion request timing", () => {
   beforeEach(() => {
     vi.useFakeTimers({ now: 0 });
   });
