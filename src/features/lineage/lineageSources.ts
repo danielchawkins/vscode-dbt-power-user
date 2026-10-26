@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import type { TextEditor } from "vscode";
 import type { SourceMetaMap, SourceTable } from "../../core/manifest/types";
-import { positionAt, sourceTables } from "../../core/yaml/schemaYaml";
+import { lineIndex, sourceTables } from "../../core/yaml/schemaYaml";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 
 /** A source table resolved to the dbt unique_id key the lineage should root at (`source.<pkg>.<source>.<table>`). */
@@ -47,10 +47,11 @@ function getSourceTablesForFile(
  */
 function findSourceTableLines(text: string): Map<string, number> {
   const declLines = new Map<string, number>();
+  const positionAt = lineIndex(text);
   for (const table of sourceTables(text)) {
     declLines.set(
       `${table.source}.${table.table}`,
-      positionAt(text, table.nameOffset).line,
+      positionAt(table.nameOffset).line,
     );
   }
   return declLines;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  lineIndex,
   modelAt,
   modelNameKeys,
-  positionAt,
   sourceTables,
 } from "../../core/yaml/schemaYaml";
 
@@ -132,14 +132,27 @@ describe("schema YAML walker", () => {
     const text = "models:\r\n  - name: a\r\n  - name: b\r\n";
     const [, second] = modelNameKeys(text);
 
-    expect(second && positionAt(text, second.offset)).toEqual({
+    expect(second && lineIndex(text)(second.offset)).toEqual({
       line: 2,
       character: 4,
     });
   });
 
   it("maps an offset to a zero-based line and character", () => {
-    expect(positionAt("ab\ncd", 0)).toEqual({ line: 0, character: 0 });
-    expect(positionAt("ab\ncd", 4)).toEqual({ line: 1, character: 1 });
+    const at = lineIndex("ab\ncd");
+    expect(at(0)).toEqual({ line: 0, character: 0 });
+    expect(at(4)).toEqual({ line: 1, character: 1 });
+  });
+
+  it("matches a prefix scan at every offset, including blank lines, CRLF and past the end", () => {
+    const text = "a\r\n\n  bc\nd\n";
+    const at = lineIndex(text);
+    for (let offset = 0; offset <= text.length + 2; offset++) {
+      const lines = text.slice(0, offset).split("\n");
+      expect(at(offset)).toEqual({
+        line: lines.length - 1,
+        character: (lines.at(-1) ?? "").length,
+      });
+    }
   });
 });
