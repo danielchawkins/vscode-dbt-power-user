@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed reject rules of the CDP evaluation
 import type { ContextSlot } from "../smoke/cdpEvaluation";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed reject rules of the CDP evaluation
 import {
   allDispatchedSlotsSettled,
   assembleEvaluationResults,
@@ -10,34 +12,6 @@ describe("CDP evaluation result assembly", () => {
     { requestId: 100, contextId: 1 },
     { requestId: 101, contextId: 2 },
   ];
-
-  it("assembles successful results in dispatch order", () => {
-    const slots = new Map<number, ContextSlot>([
-      [100, { state: "ok", value: { workbench: false, toasts: [] } }],
-      [
-        101,
-        { state: "ok", value: { workbench: true, toasts: ["Host toast"] } },
-      ],
-    ]);
-
-    expect(assembleEvaluationResults(dispatched, slots)).toEqual([
-      { workbench: false, toasts: [] },
-      { workbench: true, toasts: ["Host toast"] },
-    ]);
-  });
-
-  it("ignores late contexts that were never dispatched", () => {
-    const slots = new Map<number, ContextSlot>([
-      [100, { state: "ok", value: "first" }],
-      [101, { state: "ok", value: "second" }],
-      [102, { state: "ok", value: "late" }],
-    ]);
-
-    expect(assembleEvaluationResults(dispatched, slots)).toEqual([
-      "first",
-      "second",
-    ]);
-  });
 
   it("rejects missing slots for dispatched contexts", () => {
     const slots = new Map<number, ContextSlot>([

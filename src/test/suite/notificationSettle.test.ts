@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed settle rules of the notification wait
 import type { NotificationSettleState } from "../smoke/notificationToasts";
+// ast-grep-ignore: ts-suite-no-harness-import -- pins the fail-closed settle rules of the notification wait
 import {
   NOTIFICATION_CLEAR_MS,
   nextNotificationSettleState,

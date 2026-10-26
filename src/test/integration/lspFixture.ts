@@ -15,9 +15,7 @@ import {
 } from "../../fusion/reverseSocketTransport";
 import type {
   CapturedError,
-  ConfigurationDeliveryEntry,
   LspProtocolClient,
-  NotificationEntry,
   ServerRequestEntry,
 } from "./lspProtocolClient";
 import { attachLspProtocolClient, CAPTURE_LIMITS } from "./lspProtocolClient";
@@ -60,26 +58,17 @@ export interface LspFixture {
     fromIndex?: number,
   ): Promise<unknown>;
   notificationCount(method: string): number;
-  getNotifications(method: string): readonly unknown[];
   getNotificationsSince(method: string, fromCursor: number): readonly unknown[];
-  getNotificationEntries(method: string): readonly NotificationEntry[];
   getServerRequestsSince(
     method: string,
     fromCursor: number,
   ): readonly ServerRequestEntry[];
   configurationDeliveryCount(): number;
-  getConfigurationDeliveriesSince(
-    fromCursor: number,
-  ): readonly ConfigurationDeliveryEntry[];
-  getServerRequestMethods(): readonly string[];
   getErrors(): readonly CapturedError[];
-  setWorkspaceConfiguration(response: unknown[]): void;
 }
 
 export interface LspFixtureOptions {
   prepareProject?: (projectRoot: string) => void;
-  workspaceConfiguration?: unknown[];
-  configurationBySection?: Record<string, unknown>;
   defaultRequestTimeoutMs?: number;
   /** Environment variables for `dbt lsp` spawn; merged over process.env. */
   env?: Record<string, string>;
@@ -264,8 +253,6 @@ export async function createLspFixture(
           timeoutMs,
         );
         client = attachLspProtocolClient(streams.reader as net.Socket, {
-          workspaceConfiguration: options.workspaceConfiguration,
-          configurationBySection: options.configurationBySection,
           defaultRequestTimeoutMs: options.defaultRequestTimeoutMs,
         });
       } catch (error) {
@@ -345,19 +332,11 @@ export async function createLspFixture(
       return requireClient().notificationCount(method);
     },
 
-    getNotifications(method: string): readonly unknown[] {
-      return requireClient().getNotifications(method);
-    },
-
     getNotificationsSince(
       method: string,
       fromCursor: number,
     ): readonly unknown[] {
       return requireClient().getNotificationsSince(method, fromCursor);
-    },
-
-    getNotificationEntries(method: string): readonly NotificationEntry[] {
-      return requireClient().getNotificationEntries(method);
     },
 
     getServerRequestsSince(
@@ -371,22 +350,8 @@ export async function createLspFixture(
       return requireClient().configurationDeliveryCount();
     },
 
-    getConfigurationDeliveriesSince(
-      fromCursor: number,
-    ): readonly ConfigurationDeliveryEntry[] {
-      return requireClient().getConfigurationDeliveriesSince(fromCursor);
-    },
-
-    getServerRequestMethods(): readonly string[] {
-      return requireClient().getServerRequestMethods();
-    },
-
     getErrors(): readonly CapturedError[] {
       return requireClient().getErrors();
-    },
-
-    setWorkspaceConfiguration(response: unknown[]): void {
-      requireClient().setWorkspaceConfiguration(response);
     },
   };
 }

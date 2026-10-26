@@ -69,7 +69,7 @@ export interface CapturedError {
 }
 
 /** JSON-RPC error from an LSP request response. */
-export class LspRequestError extends Error {
+class LspRequestError extends Error {
   readonly method: string;
   readonly code: number;
   readonly data?: unknown;
@@ -108,9 +108,6 @@ export interface ConfigurationDeliveryEntry {
 
 export interface LspProtocolClientOptions {
   defaultRequestTimeoutMs?: number;
-  workspaceConfiguration?: unknown[];
-  /** Maps LSP configuration section strings to response objects. */
-  configurationBySection?: Record<string, unknown>;
   notificationsPerMethod?: number;
   serverRequestsPerMethod?: number;
 }
@@ -139,23 +136,13 @@ export interface LspProtocolClient {
   ): Promise<unknown>;
   /** Absolute next cursor for the method (total received count). */
   notificationCount(method: string): number;
-  /** Absolute next cursor for the method (total received count). */
-  serverRequestCount(method: string): number;
-  getNotifications(method: string): readonly unknown[];
   getNotificationsSince(method: string, fromCursor: number): readonly unknown[];
-  getNotificationEntries(method: string): readonly NotificationEntry[];
-  getServerRequests(method: string): readonly ServerRequestEntry[];
   getServerRequestsSince(
     method: string,
     fromCursor: number,
   ): readonly ServerRequestEntry[];
   configurationDeliveryCount(): number;
-  getConfigurationDeliveriesSince(
-    fromCursor: number,
-  ): readonly ConfigurationDeliveryEntry[];
-  getServerRequestMethods(): readonly string[];
   getErrors(): readonly CapturedError[];
-  setWorkspaceConfiguration(response: unknown[]): void;
   close(): void;
 }
 
@@ -214,11 +201,7 @@ function notificationTimeoutError(method: string, timeoutMs: number): Error {
   return new Error(`LSP notification ${method} timed out after ${timeoutMs}ms`);
 }
 
-function configurationResponse(
-  params: unknown,
-  configured: readonly unknown[],
-  bySection?: Record<string, unknown>,
-): {
+function configurationResponse(params: unknown): {
   values: unknown[];
   requestedSections: string[];
   deliveredSections: string[];
@@ -231,8 +214,7 @@ function configurationResponse(
     return { values: [], requestedSections: [], deliveredSections: [] };
   }
   const requestedSections: string[] = [];
-  const deliveredSections: string[] = [];
-  const values = items.map((item, index) => {
+  items.forEach((item) => {
     const section =
       typeof item === "object" && item !== null
         ? (item as { section?: string }).section
@@ -240,17 +222,12 @@ function configurationResponse(
     if (typeof section === "string") {
       requestedSections.push(section);
     }
-    if (bySection && typeof section === "string" && section in bySection) {
-      deliveredSections.push(section);
-      return bySection[section];
-    }
-    const fallback = configured[index] ?? null;
-    if (fallback !== null && typeof section === "string") {
-      deliveredSections.push(section);
-    }
-    return fallback;
   });
-  return { values, requestedSections, deliveredSections };
+  return {
+    values: items.map(() => null),
+    requestedSections,
+    deliveredSections: [],
+  };
 }
 
 function cloneCapturedValue<T>(value: T): T {
@@ -314,8 +291,6 @@ export function attachLspProtocolClient(
   let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0);
   let nextId = 1;
   let closed = false;
-  let workspaceConfiguration = options.workspaceConfiguration ?? [];
-  const configurationBySection = options.configurationBySection ?? {};
   const configurationDeliveries =
     emptyCaptureState<ConfigurationDeliveryEntry>();
 
@@ -510,11 +485,7 @@ export function attachLspProtocolClient(
     }
     if (method === "workspace/configuration") {
       return (params) => {
-        const response = configurationResponse(
-          params,
-          workspaceConfiguration,
-          configurationBySection,
-        );
+        const response = configurationResponse(params);
         pushBoundedCapture(
           configurationDeliveries,
           {
@@ -684,29 +655,6 @@ export function attachLspProtocolClient(
     return undefined;
   };
 
-  const cloneNotificationEntries = (
-    state: CaptureState<NotificationEntry>,
-  ): readonly NotificationEntry[] => {
-    return state.entries.map((entry) => ({
-      params: cloneCapturedValue(entry.params),
-      receivedAtMs: entry.receivedAtMs,
-      size: entry.size,
-      absoluteIndex: entry.absoluteIndex,
-    }));
-  };
-
-  const cloneServerRequestEntries = (
-    state: CaptureState<ServerRequestEntry>,
-  ): readonly ServerRequestEntry[] => {
-    return state.entries.map((entry) => ({
-      method: entry.method,
-      params: cloneCapturedValue(entry.params),
-      receivedAtMs: entry.receivedAtMs,
-      size: entry.size,
-      absoluteIndex: entry.absoluteIndex,
-    }));
-  };
-
   const entriesSince = <T extends { absoluteIndex: number }>(
     state: CaptureState<T>,
     fromCursor: number,
@@ -836,16 +784,6 @@ export function attachLspProtocolClient(
       return notificationState(method).totalReceived;
     },
 
-    serverRequestCount(method: string): number {
-      return capturedServerRequests.get(method)?.totalReceived ?? 0;
-    },
-
-    getNotifications(method: string): readonly unknown[] {
-      return cloneNotificationEntries(notificationState(method)).map(
-        (entry) => entry.params,
-      );
-    },
-
     getNotificationsSince(
       method: string,
       fromCursor: number,
@@ -853,18 +791,6 @@ export function attachLspProtocolClient(
       return entriesSince(notificationState(method), fromCursor).map((entry) =>
         cloneCapturedValue(entry.params),
       );
-    },
-
-    getNotificationEntries(method: string): readonly NotificationEntry[] {
-      return cloneNotificationEntries(notificationState(method));
-    },
-
-    getServerRequests(method: string): readonly ServerRequestEntry[] {
-      const state = capturedServerRequests.get(method);
-      if (!state) {
-        return [];
-      }
-      return cloneServerRequestEntries(state);
     },
 
     getServerRequestsSince(
@@ -886,32 +812,11 @@ export function attachLspProtocolClient(
       return configurationDeliveries.totalReceived;
     },
 
-    getConfigurationDeliveriesSince(
-      fromCursor: number,
-    ): readonly ConfigurationDeliveryEntry[] {
-      return entriesSince(configurationDeliveries, fromCursor).map((entry) => ({
-        requestedSections: [...entry.requestedSections],
-        deliveredSections: [...entry.deliveredSections],
-        absoluteIndex: entry.absoluteIndex,
-      }));
-    },
-
-    getServerRequestMethods(): readonly string[] {
-      return [...capturedServerRequests.entries()]
-        .filter(([, state]) => state.totalReceived > 0)
-        .map(([method]) => method)
-        .sort();
-    },
-
     getErrors(): readonly CapturedError[] {
       return capturedErrors.map((entry) => ({
         method: entry.method,
         error: entry.error,
       }));
-    },
-
-    setWorkspaceConfiguration(response: unknown[]): void {
-      workspaceConfiguration = response;
     },
 
     close(): void {
