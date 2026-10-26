@@ -576,7 +576,8 @@ describe("FusionLanguageClient lifecycle", () => {
       }),
     ]);
 
-    expect(listNodes).toBe(3);
+    // The two `total` requests are identical, so they share one entry: one listNodes that fails for both callers.
+    expect(listNodes).toBe(2);
     expect(peak).toBe(1);
     expect(upstream).toEqual({
       kind: "lineage",
@@ -585,7 +586,7 @@ describe("FusionLanguageClient lifecycle", () => {
     });
     expect(downstream).toEqual({
       kind: "noLineage",
-      reason: { kind: "staticAnalysis", mode: "baseline", setting: "baseline" },
+      reason: { kind: "failed", message: "boom" },
     });
 
     await client.stop();

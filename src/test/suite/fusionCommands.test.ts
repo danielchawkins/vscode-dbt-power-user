@@ -140,9 +140,11 @@ describe("FusionCommands", () => {
     expect(await commands.compileFile(uri, compiledSql)).toEqual({
       fileUri: "file:///t/a.sql",
     });
-    expect(request).toHaveBeenLastCalledWith("dbt.compileFile", [
-      uri.toString(),
-    ]);
+    expect(request).toHaveBeenLastCalledWith(
+      "dbt.compileFile",
+      [uri.toString()],
+      expect.anything(),
+    );
   });
 
   it("times out at the purpose's ceiling, with a message that names the purpose and the ceiling", async () => {
@@ -200,12 +202,59 @@ describe("FusionCommands", () => {
       .listNodes(["a"], { purpose: "columnLineage", token })
       .catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(0);
-    expect(request.mock.calls[0]?.[2]).toBe(token);
+    // The server gets the lane's own token, so one caller cannot cancel an answer others still want.
+    const serverToken = request.mock.calls[0]?.[2] as CancellationToken;
+    expect(serverToken.isCancellationRequested).toBe(false);
     cancelled = true;
     for (const listener of listeners) {
       listener();
     }
     expect(await settled).toMatchObject({ kind: "cancelled" });
+    expect(serverToken.isCancellationRequested).toBe(true);
+  });
+
+  it("does not join a cancelled request, so a later caller is not rejected with the server's cancel", async () => {
+    let cancelled = false;
+    const listeners: (() => void)[] = [];
+    const token = {
+      get isCancellationRequested() {
+        return cancelled;
+      },
+      onCancellationRequested: (l: () => void) => {
+        listeners.push(l);
+        return { dispose: () => undefined };
+      },
+    } as unknown as CancellationToken;
+    const answers: ((value: unknown) => void)[] = [];
+    const rejections: ((error: unknown) => void)[] = [];
+    const request = vi.fn((..._args: unknown[]) =>
+      new Promise((resolve, reject) => {
+        answers.push(resolve);
+        rejections.push(reject);
+      }),
+    );
+    const commands = createFusionCommands(() => clientWith(request));
+    const first = commands
+      .listNodes(["a"], { purpose: "columns", token })
+      .catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(100);
+    cancelled = true;
+    for (const listener of listeners) {
+      listener();
+    }
+    expect(await first).toMatchObject({ kind: "cancelled" });
+    const second = commands.listNodes(["a"], { purpose: "columns" });
+    await vi.advanceTimersByTimeAsync(0);
+    // The server has the cancelled request, so the second caller waits for its answer and sends its own.
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0]?.[2]).toMatchObject({
+      isCancellationRequested: true,
+    });
+    rejections[0]?.(Object.assign(new Error("Request cancelled"), { code: -32800 }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(2);
+    answers[1]?.({ nodes: [{ unique_id: "a" }] });
+    expect(await second).toMatchObject({ nodes: [expect.anything()] });
   });
 
   it("rejects a request whose caller already cancelled, without sending it", async () => {
@@ -281,7 +330,7 @@ describe("FusionCommands", () => {
     const first = commands
       .listNodes(["a"], columnLineage)
       .catch((e: unknown) => e);
-    const second = commands.listNodes(["a"], columnLineage);
+    const second = commands.listNodes(["b"], columnLineage);
     expect(await first).toBeInstanceOf(FusionCommandError);
     expect(await second).toEqual({ nodes: [] });
   });
