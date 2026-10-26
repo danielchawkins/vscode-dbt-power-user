@@ -21,9 +21,9 @@ import type {
 import type { FusionVersion } from "../../fusion/fusionVersion";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
 import type { ManifestParsers } from "../manifest/manifest";
-import { ManifestTrigger } from "../manifest/manifest";
 import { ManifestRebuild } from "../manifest/manifestRebuild";
 import { ManifestState } from "../manifest/manifestState";
+import { ManifestTrigger } from "../manifest/manifestTrigger";
 import type { Manifest } from "../manifest/manifestTypes";
 import type { ParseDemand } from "../manifest/parseDemand";
 import { ParseScheduler } from "../manifest/parseScheduler";

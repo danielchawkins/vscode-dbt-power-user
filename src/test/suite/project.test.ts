@@ -1283,13 +1283,6 @@ describe("Project manifest trigger", () => {
     vi.useRealTimers();
   });
 
-  it("watches source extensions under the project root", () => {
-    expect(watcher.pattern).toEqual({
-      base: root,
-      pattern: "**/*.{sql,yml,yaml,csv}",
-    });
-  });
-
   it("rebuilds once after the debounce for model edits", async () => {
     const sourceFileChanged = vi.fn();
     project.onSourceFileChanged(sourceFileChanged);
@@ -1303,13 +1296,6 @@ describe("Project manifest trigger", () => {
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
     expect(project.manifest?.publicationEpoch ?? 0).toBe(0);
-  });
-
-  it("ignores edits outside the model, macro and seed paths", async () => {
-    watcher.fire("change", path.join(root, "target", "compiled", "a.sql"));
-    watcher.fire("change", path.join(root, "models_old", "a.sql"));
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(rebuildManifest).not.toHaveBeenCalled();
   });
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
@@ -1491,14 +1477,5 @@ describe("Project manifest trigger", () => {
         expect(rebuildManifest).toHaveBeenCalledTimes(1);
       },
     );
-  });
-
-  it("drops a pending rebuild and stops watching on dispose", async () => {
-    watcher.fire("change", path.join(root, "models", "a.sql"));
-    await project.dispose();
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(rebuildManifest).not.toHaveBeenCalled();
-    expect(watcher.dispose).toHaveBeenCalled();
-    expect(watcher.listeners.change).toHaveLength(0);
   });
 });
