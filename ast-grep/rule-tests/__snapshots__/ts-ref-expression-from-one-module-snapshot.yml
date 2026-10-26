@@ -1,0 +1,24 @@
+id: ts-ref-expression-from-one-module
+snapshots:
+  const REF_PATTERN = /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;:
+    labels:
+    - source: /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/
+      style: primary
+      start: 20
+      end: 81
+  const match = /source\s*\(\s*['"]([^'"]+)/.exec(to);:
+    labels:
+    - source: /source\s*\(\s*['"]([^'"]+)/
+      style: primary
+      start: 14
+      end: 42
+  const pattern = new RegExp(`ref\\s*\\(\\s*['"]${escapeRegex(name)}`);:
+    labels:
+    - source: new RegExp(`ref\\s*\\(\\s*['"]${escapeRegex(name)}`)
+      style: primary
+      start: 16
+      end: 68
+    - source: '`ref\\s*\\(\\s*[''"]${escapeRegex(name)}`'
+      style: secondary
+      start: 27
+      end: 67
