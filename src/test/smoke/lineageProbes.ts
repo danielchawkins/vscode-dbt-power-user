@@ -1,5 +1,5 @@
 import * as assert from "node:assert";
-import { evaluatePanel } from "./cdpClient";
+import { evaluatePanel } from "./panelFrames";
 import { PANELS } from "./panels";
 import { cdpPort } from "./smokeEnv";
 

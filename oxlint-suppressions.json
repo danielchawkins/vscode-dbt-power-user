@@ -94,9 +94,9 @@
       "count": 1
     }
   },
-  "src/test/smoke/cdpClient.ts": {
+  "src/test/smoke/cdpTransport.ts": {
     "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "src/test/smoke/documentationEditorInteractions.test.ts": {
@@ -107,6 +107,11 @@
   "src/test/smoke/notificationToasts.ts": {
     "max-params": {
       "count": 2
+    }
+  },
+  "src/test/smoke/panelFrames.ts": {
+    "max-params": {
+      "count": 1
     }
   },
   "src/test/smoke/panelSmoke.test.ts": {

@@ -9,20 +9,13 @@ import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil, sleep } from "../async";
 import type { ActivationMetric } from "./activationReport";
 import { readActivationMetric } from "./activationReport";
-import type { WebviewPaintMetric } from "./cdpClient";
-import {
-  assertNoWorkbenchNotifications,
-  captureWorkbenchScreenshot,
-  evidenceWindowSize,
-  evaluatePanel,
-  evaluateWorkbench,
-  readCspViolations,
-  readWorkbenchNotificationTexts,
-  revealWorkbench,
-  waitForWebviewPaint,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
+import type { WebviewPaintMetric } from "./cdpEvaluation";
 import { currentFixtureName } from "./fixtureContext";
+import {
+  evaluatePanel,
+  readCspViolations,
+  waitForWebviewPaint,
+} from "./panelFrames";
 import { DBT_VIEW_CONTAINER, EXTENSION_ID, PANELS } from "./panels";
 import * as smokeEnv from "./smokeEnv";
 import type { VisualCheckpoint } from "./visualEvidence";
@@ -36,6 +29,15 @@ import {
   restorePanelSize,
   webviewSize,
 } from "./webviewInteractions";
+import {
+  assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  evaluateWorkbench,
+  evidenceWindowSize,
+  readWorkbenchNotificationTexts,
+  revealWorkbench,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 

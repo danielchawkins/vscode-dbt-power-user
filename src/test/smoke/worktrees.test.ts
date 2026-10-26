@@ -5,10 +5,6 @@ import type { FusionClientStateReport } from "../../projects/clients/fusionClien
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { PollTimeoutError, pollUntil, sleep } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  captureWorkbenchScreenshot,
-  readWorkbenchNotificationTexts,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -17,6 +13,10 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  captureWorkbenchScreenshot,
+  readWorkbenchNotificationTexts,
+} from "./workbench";
 
 const GENERAL = "worktree_general";
 const STAGING_MODEL = "transformation/dbt/general/models/general_model.sql";

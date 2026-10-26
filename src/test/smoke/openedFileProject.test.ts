@@ -5,13 +5,6 @@ import type { FusionClientStateReport } from "../../projects/clients/fusionClien
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import {
-  assertNoWorkbenchNotifications,
-  captureWorkbenchScreenshot,
-  evaluateWorkbench,
-  revealWorkbench,
-  waitForWorkbenchNotificationsToSettle,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -20,6 +13,13 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  evaluateWorkbench,
+  revealWorkbench,
+  waitForWorkbenchNotificationsToSettle,
+} from "./workbench";
 
 /** The project's dbt name; the folder is `projects/analytics`. */
 const PROJECT_NAME = "nested_analytics";

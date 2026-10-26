@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
-import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import { cdpPort, smokeHost } from "./smokeEnv";

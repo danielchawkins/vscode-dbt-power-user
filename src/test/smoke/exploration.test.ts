@@ -4,10 +4,6 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { sleep } from "../async";
-import {
-  captureWorkbenchScreenshot,
-  readWorkbenchNotificationTexts,
-} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -16,6 +12,10 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  captureWorkbenchScreenshot,
+  readWorkbenchNotificationTexts,
+} from "./workbench";
 
 const SETTLE_MS = 20_000;
 
