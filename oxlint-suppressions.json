@@ -55,11 +55,6 @@
       "count": 1
     }
   },
-  "src/core/manifest/relationshipParser.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/core/manifest/utils.ts": {
     "max-params": {
       "count": 2
