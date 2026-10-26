@@ -7,6 +7,8 @@ smoke_root=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$smoke_root/../.." && pwd)
 platform=linux/arm64
 hosts=(vscode cursor)
+# shellcheck source=scripts/test/docker-context.sh
+. "$repo/scripts/test/docker-context.sh"
 
 out=${1:?usage: docker-smoke.sh <out-dir> [args...]}
 shift
