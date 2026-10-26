@@ -1,0 +1,20 @@
+id: ts-no-legacy-namespace
+snapshots:
+  commands.registerCommand("dbtPowerUser.runCurrentModel", run);:
+    labels:
+    - source: dbtPowerUser.runCurrentModel
+      style: primary
+      start: 26
+      end: 54
+  const key = `dbtPowerUser.${leaf}`;:
+    labels:
+    - source: '`dbtPowerUser.${leaf}`'
+      style: primary
+      start: 12
+      end: 34
+  context.workspaceState.get('dbtPowerUser.projectSelected');:
+    labels:
+    - source: dbtPowerUser.projectSelected
+      style: primary
+      start: 28
+      end: 56

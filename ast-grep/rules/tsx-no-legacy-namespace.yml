@@ -1,0 +1,17 @@
+# Extension-owned IDs (commands, views, contexts, submenus, settings, workspace state) use `fusionPowerUser.*`
+# with no alias for the upstream `dbtPowerUser.*` names (docs/settings-migration.md). Replaces the string scans
+# in src/test/suite/namespaceGuard.test.ts.
+id: tsx-no-legacy-namespace
+language: tsx
+severity: error
+message: >-
+  `dbtPowerUser.*` IDs were renamed to `fusionPowerUser.*` with no fallback (docs/settings-migration.md). Use
+  the `fusionPowerUser.` prefix.
+files:
+  - webview_panels/src/**
+ignores:
+  - webview_panels/src/test/**
+rule:
+  any:
+    - { kind: string_fragment, regex: 'dbtPowerUser\.' }
+    - { kind: template_string, regex: 'dbtPowerUser\.' }

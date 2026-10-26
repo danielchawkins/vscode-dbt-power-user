@@ -1,0 +1,6 @@
+id: json-no-legacy-namespace
+valid:
+  - '{ "command": "fusionPowerUser.runCurrentModel" }'
+invalid:
+  - '{ "command": "dbtPowerUser.runCurrentModel" }'
+  - '{ "properties": { "dbtPowerUser.queryLimit": { "type": "number" } } }'
