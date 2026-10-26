@@ -74,7 +74,7 @@ export interface FusionClient extends Disposable {
   readonly compiled?: { readonly completions: number };
   /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
   readonly diagnostics?: DiagnosticCollection | undefined;
-  /** Sends `workspace/executeCommand`; {@link FusionCommands} queues and times out the calls. */
+  /** Sends `workspace/executeCommand`; {@link FusionCommands} schedules and bounds the calls. */
   request<T>(
     command: FusionLspCommand,
     payload: unknown,
