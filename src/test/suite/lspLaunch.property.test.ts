@@ -8,16 +8,13 @@ import {
   toCliEnvironment,
 } from "../../core/cli";
 import type { LspRun } from "../../core/lsp";
-import {
-  DBT_LSP_USE_TARGET_LSP,
-  sameLspLaunch,
-  toLspArgs,
-  toLspLaunch,
-} from "../../core/lsp";
+import { sameLspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import { resolveProjectSnapshot } from "../../core/snapshot";
 import { NUM_RUNS, relativeDir, segment } from "../arbitraries";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";
+
+const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
 
 const snapshots = snapshotInputs.map(resolveProjectSnapshot);
 

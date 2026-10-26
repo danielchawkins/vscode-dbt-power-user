@@ -6,7 +6,7 @@ import type {
 } from "../snapshot";
 
 /** Selects `target/.lsp/` for compiled output; see `LspCompiledOutput`. */
-export const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
+const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
 
 /** Everything a project's `dbt lsp` process is started with; equal launches need no restart. */
 export interface LspLaunch {
@@ -90,6 +90,18 @@ export function toLspArgs(launch: LspLaunch, run: LspRun): string[] {
       ? ["--log-level", launch.logLevel, "--log-level-file", launch.logLevel]
       : []),
   ];
+}
+
+/**
+ * The environment a `dbt lsp` process starts with: the caller's layered over the launch's. The caller cannot set
+ * `DBT_LSP_USE_TARGET_LSP`; the launch decides it.
+ */
+export function lspProcessEnv(
+  launchEnvironment: Readonly<Record<string, string>>,
+  callerEnv: Readonly<Record<string, string>> | undefined,
+): Record<string, string> {
+  const { [DBT_LSP_USE_TARGET_LSP]: _ignored, ...layered } = callerEnv ?? {};
+  return { ...launchEnvironment, ...layered };
 }
 
 /** Compares the resolved path for every source, `path` included: mise or direnv can switch the binary. */

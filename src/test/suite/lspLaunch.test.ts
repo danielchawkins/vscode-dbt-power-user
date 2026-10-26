@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { LspLaunch } from "../../core/lsp";
-import { sameLspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
+import {
+  lspProcessEnv,
+  sameLspLaunch,
+  toLspArgs,
+  toLspLaunch,
+} from "../../core/lsp";
 import type {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
@@ -114,6 +119,32 @@ describe("toLspArgs", () => {
       expect(args[args.indexOf("--static-analysis") + 1]).toBe(mode);
     },
   );
+});
+
+describe("lspProcessEnv", () => {
+  it("layers the caller's environment over the launch's, except DBT_LSP_USE_TARGET_LSP", () => {
+    expect(
+      lspProcessEnv(
+        { PATH: "/opt/bin", ORIGIN: "a", DBT_LSP_USE_TARGET_LSP: "1" },
+        { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
+      ),
+    ).toEqual({ PATH: "/opt/bin", ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "1" });
+  });
+
+  it("is the launch's environment alone when the caller has none", () => {
+    expect(lspProcessEnv({ PATH: "/opt/bin" }, undefined)).toEqual({
+      PATH: "/opt/bin",
+    });
+  });
+
+  it("keeps the launch's DBT_LSP_USE_TARGET_LSP over the caller's", () => {
+    expect(
+      lspProcessEnv(
+        { DBT_LSP_USE_TARGET_LSP: "1" },
+        { DBT_LSP_USE_TARGET_LSP: "0" },
+      ),
+    ).toEqual({ DBT_LSP_USE_TARGET_LSP: "1" });
+  });
 });
 
 describe("toLspLaunch", () => {
