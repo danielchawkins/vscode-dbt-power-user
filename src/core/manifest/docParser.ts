@@ -4,7 +4,7 @@ import type { ManifestProject } from "./manifestProject";
 import type { DocMetaMap, ManifestResources } from "./types";
 
 import type { Log } from "../log";
-import { createFullPathForNode } from "./utils";
+import { findDeclarationLine, resourcePaths } from "./utils";
 
 export class DocParser {
   private terminal: Pick<Log, "debug">;
@@ -30,35 +30,25 @@ export class DocParser {
     for (const doc of Object.values(docs)) {
       const { package_name, name, original_file_path } = doc;
       const packageName = package_name;
-      const packagePath = project.paths()?.packagesInstallPath;
-      if (packagePath === undefined) {
-        throw new Error("packagePath is not defined in " + projectRoot);
-      }
       const docName =
         packageName === projectName ? name : `${packageName}.${name}`;
-      const fullPath = createFullPathForNode(
-        projectName,
-        projectRoot,
+      const fullPath = resourcePaths(project).fileOf(
         packageName,
-        packagePath,
         original_file_path,
       );
       if (!fullPath) {
-        return docMetaMap;
+        continue;
       }
       try {
         const docFile: string = readFileSync(fullPath).toString("utf8");
-        const macroFileLines = docFile.split("\n");
-        for (let index = 0; index < macroFileLines.length; index++) {
-          const currentLine = macroFileLines[index] ?? "";
-          if (new RegExp(`docs\\s${name}`).test(currentLine)) {
-            docMetaMap.set(docName, {
-              path: fullPath,
-              line: index,
-              character: currentLine.indexOf(name),
-            });
-            break;
-          }
+        const line = findDeclarationLine(docFile, "docs", name);
+        if (line !== undefined) {
+          const currentLine = docFile.split("\n")[line] ?? "";
+          docMetaMap.set(docName, {
+            path: fullPath,
+            line,
+            character: currentLine.indexOf(name),
+          });
         }
       } catch (error) {
         this.terminal.debug(
