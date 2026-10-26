@@ -1,4 +1,9 @@
 import type { DBTGraphType } from "./graphParser";
+import {
+  containsRefCall,
+  containsSourceCall,
+  parseRefExpression,
+} from "./refExpression";
 import type { ModelLevelConstraint } from "./types";
 
 /** What the graph classification reads of a node, source, exposure or function. */
@@ -236,34 +241,15 @@ function resolveConstraintTo(
     return [direct];
   }
 
-  // Parse-time form: `ref('name')`, `ref('pkg', 'name')`, or
-  // `source('src', 'tbl')`. Strip whitespace and try regex.
-  const trimmed = to.trim();
-
-  const refMatch = trimmed.match(
-    /^ref\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?(?:\s*,\s*v?=?\s*([^)]+))?\s*\)$/,
-  );
-  if (refMatch) {
-    const a = refMatch[1] ?? "";
-    const b = refMatch[2];
-    const v = refMatch[3]?.trim().replaceAll(/['"]/g, "");
-    // ref('name') → a=name, b=undefined
-    // ref('pkg', 'name') → a=pkg, b=name
-    const name = b ?? a;
-    const pkg = b ? a : undefined;
-    return lookupRef(refIndex, { name, package: pkg, version: v });
+  // Parse-time form: `ref('name')`, `ref('pkg', 'name')`, or `source('src', 'tbl')`.
+  const expr = parseRefExpression(to);
+  if (expr?.kind === "ref") {
+    return lookupRef(refIndex, expr);
   }
-
-  const sourceMatch = trimmed.match(
-    /^source\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/,
-  );
-  if (sourceMatch) {
-    const id = sourceIndex.get(
-      sourceKey(sourceMatch[1] ?? "", sourceMatch[2] ?? ""),
-    );
+  if (expr?.kind === "source") {
+    const id = sourceIndex.get(sourceKey(expr.source, expr.table));
     return id ? [id] : [];
   }
-
   return [];
 }
 
@@ -369,39 +355,6 @@ function parentAppearsInBody(
   }
 
   return false;
-}
-
-function containsRefCall(body: string, name: string, pkg?: string): boolean {
-  const e = escapeRegex;
-  const simple = new RegExp(`ref\\s*\\(\\s*['"]${e(name)}['"]\\s*[,)]`);
-  if (simple.test(body)) {
-    return true;
-  }
-  if (pkg) {
-    const qualified = new RegExp(
-      `ref\\s*\\(\\s*['"]${e(pkg)}['"]\\s*,\\s*['"]${e(name)}['"]\\s*[,)]`,
-    );
-    if (qualified.test(body)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function containsSourceCall(
-  body: string,
-  sourceName: string,
-  tableName: string,
-): boolean {
-  const e = escapeRegex;
-  const re = new RegExp(
-    `source\\s*\\(\\s*['"]${e(sourceName)}['"]\\s*,\\s*['"]${e(tableName)}['"]\\s*\\)`,
-  );
-  return re.test(body);
-}
-
-function escapeRegex(s: string): string {
-  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // -----------------------------------------------------------------------------
