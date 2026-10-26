@@ -1,6 +1,5 @@
-// Intent: refactor-scout characterization of request timing between the extension and the Fusion server.
-// Each `it.fails` states the behaviour the timing refactor must deliver and fails today; the refactor turns each
-// into `it`. Each plain `it` pins a current fact the refactor relies on.
+// Intent: request timing between the extension and the Fusion server, against a fake server that answers as slowly
+// as the real one. Each test pins a behaviour the request lanes deliver.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CancellationToken } from "vscode";
 import { FusionCommandError, REQUEST_POLICIES } from "../../core/lsp";
@@ -61,23 +60,29 @@ describe("Fusion request timing (characterization)", () => {
     expect(await settled).toMatchObject({ nodes: [expect.anything()] });
   });
 
-  it("today a timed-out request keeps the per-client queue busy, so the next one also times out", async () => {
+  it("a queued caller that times out is never sent, and times out at its own ceiling", async () => {
     const ceilingMs = REQUEST_POLICIES.columns.ceilingMs;
     const { client, received } = slowServer(ceilingMs + 3_000);
     const commands = createFusionCommands(() => client);
     const request = { purpose: "columns" } as const;
     const first = commands.listNodes(["a"], request).catch((e: unknown) => e);
-    const second = commands.listNodes(["b"], request).catch((e: unknown) => e);
-    await vi.advanceTimersByTimeAsync(ceilingMs);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const settledAt = vi.fn();
+    const second = commands.listNodes(["b"], request).catch((e: unknown) => {
+      settledAt(Date.now());
+      return e;
+    });
+    await vi.advanceTimersByTimeAsync(ceilingMs - 1);
     expect(await first).toMatchObject({ kind: "timeout" });
-    // FusionCommands released its queue at the ceiling, and FusionRequests no longer queues, so the second reaches
-    // the server at once. Its ceiling started at the first's timeout, so it times out a ceiling later.
-    await vi.advanceTimersByTimeAsync(ceilingMs);
+    expect(settledAt).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
     expect(await second).toMatchObject({ kind: "timeout" });
-    expect(received.map((r) => r.at)).toEqual([0, ceilingMs]);
+    // The second ceiling runs from its call at 1 s, not from when the first request timed out.
+    expect(settledAt).toHaveBeenCalledWith(1_000 + ceilingMs);
+    expect(received.map((r) => r.at)).toEqual([0]);
   });
 
-  it.fails("cancels the server request when the caller gives up on it", async () => {
+  it("cancels the server request when the caller gives up on it", async () => {
     const ceilingMs = REQUEST_POLICIES.columns.ceilingMs;
     const { client, received } = slowServer(ceilingMs + 3_000);
     const commands = createFusionCommands(() => client);
@@ -89,7 +94,7 @@ describe("Fusion request timing (characterization)", () => {
     expect(received[0]?.token?.isCancellationRequested).toBe(true);
   });
 
-  it.fails("drops a queued request whose caller was superseded before it reached the server", async () => {
+  it("drops a queued request whose caller was superseded before it reached the server", async () => {
     const { client, sendRequest } = slowServer(8_000);
     const commands = createFusionCommands(() => client);
     let cancelled = false;
