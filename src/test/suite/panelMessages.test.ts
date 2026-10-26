@@ -247,7 +247,9 @@ describe("lineage panel messages", () => {
       const targets = [["model.p.a", "id"]];
       await h.send({
         command: "getConnectedColumns",
-        args: { params: { targets, upstreamExpansion: true } },
+        args: {
+          params: { targets, upstreamExpansion: true, trace: "model.p.a.id" },
+        },
         syncRequestId: "k1",
       });
       expect(
@@ -258,6 +260,33 @@ describe("lineage panel messages", () => {
       );
       expect(h.postMessage).toHaveBeenCalledWith(
         response("k1", { column_lineage: [] }),
+      );
+    },
+    cancelColumnTrace: async () => {
+      const h = lineageHarness();
+      let finish: (value: unknown) => void = () => undefined;
+      h.panel.dbtLineageService.getConnectedColumns.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const pending = h.send({
+        command: "getConnectedColumns",
+        args: {
+          params: {
+            targets: [["model.p.a", "id"]],
+            upstreamExpansion: true,
+            trace: "model.p.a.id",
+          },
+        },
+        syncRequestId: "k2",
+      });
+      await h.send({ command: "cancelColumnTrace", trace: "model.p.a.id" });
+      finish({ kind: "lineage", columnLineage: [] });
+      await pending;
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("k2", { column_lineage: [], cancelled: true }),
       );
     },
     getLineageSettings: async () => {
