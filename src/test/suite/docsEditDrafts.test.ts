@@ -1,9 +1,9 @@
-import { documentationEditor } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
+import { isDocumentationEditorHostMessage } from "../hostMessageOracle";
 import { fakeView, isPageReady } from "../panelHarness";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
@@ -54,7 +54,7 @@ async function draftPanel() {
   const rendered = async () => {
     await send({ command: "getCurrentModelDocumentation" });
     const message = view.posted().at(-1) as any;
-    expect(documentationEditor.isHostMessage(message)).toBe(true);
+    expect(isDocumentationEditorHostMessage(message)).toBe(true);
     return message;
   };
   return { panel, removed, send, rendered };

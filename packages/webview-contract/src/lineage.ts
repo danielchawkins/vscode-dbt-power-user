@@ -5,15 +5,10 @@ import type {
   Response,
   WebviewReady,
 } from "./common.js";
-import {
-  isPanelNotice,
-  isPanelNoticeActionId,
-  responseFields,
-} from "./common.js";
+import { isPanelNoticeActionId } from "./common.js";
 import type { Check, CommandFields, Fields } from "./guards.js";
 import {
   arrayOf,
-  isAnything,
   isBoolean,
   isNumber,
   isString,
@@ -280,21 +275,6 @@ const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   inferred: optionalBoolean,
 });
 
-const hostFields: CommandFields<HostMessage> = {
-  response: responseFields,
-  render: {
-    args: optional(
-      shape<RenderArgs>({
-        node: isAnything,
-        missingLineageMessage: optional(isPanelNotice),
-        columnsNeedStrict: optional(isBoolean),
-        publication: optional(isString),
-      }),
-    ),
-  },
-  projectSaved: {},
-};
-
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
   openProblemsTab: {},
@@ -326,10 +306,8 @@ const panelFields: CommandFields<PanelMessage> = {
   }),
 };
 
-export const isHostMessage = messageGuard<HostMessage>(hostFields);
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);
 
-export const hostCommands = Object.keys(hostFields) as HostMessage["command"][];
 export const panelCommands = Object.keys(
   panelFields,
 ) as PanelMessage["command"][];
