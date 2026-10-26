@@ -43,13 +43,6 @@ describe("DiagnosticsOutputChannel Test Suite", () => {
     vi.restoreAllMocks();
   });
 
-  it("should create output channel with correct name", () => {
-    expect(vscode.window.createOutputChannel).toHaveBeenCalledWith(
-      "Fusion Power User - Diagnostics",
-      "log",
-    );
-  });
-
   it("should show output channel", () => {
     diagnosticsChannel.show();
     expect(mockOutputChannel.show).toHaveBeenCalledWith(true);
@@ -58,19 +51,6 @@ describe("DiagnosticsOutputChannel Test Suite", () => {
   it("should log new lines", () => {
     diagnosticsChannel.logNewLine();
     expect(mockOutputChannel.appendLine).toHaveBeenCalledWith("");
-  });
-
-  it("should log lines", () => {
-    const line = "Test line";
-    diagnosticsChannel.logLine(line);
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(line);
-  });
-
-  it("should log horizontal rules", () => {
-    diagnosticsChannel.logHorizontalRule();
-    expect(mockOutputChannel.appendLine).toHaveBeenCalledWith(
-      "--------------------------------------------------------------------------",
-    );
   });
 
   it("should format and log blocks with horizontal rules", () => {

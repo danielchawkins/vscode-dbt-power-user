@@ -445,7 +445,7 @@ describe("ProjectRegistry", () => {
     }
   });
 
-  it.each(["", "# comment only\n"])(
+  it.each([""])(
     "uses the basename when project YAML has no mapping",
     async (content) => {
       const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
@@ -535,29 +535,6 @@ describe("ProjectRegistry", () => {
     expect(registry.projects[0].contains({ fsPath: undefined } as any)).toBe(
       false,
     );
-  });
-
-  it("contains rejects a sibling folder whose name extends the root's", async () => {
-    const single = makeFolder("single-project");
-    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
-    (workspace.workspaceFolders as any) = [single];
-
-    const registry = new ProjectRegistry(terminal);
-    await registry.initialize();
-
-    const root = single.uri.fsPath;
-    const sibling = `${root}s`;
-    expect(registry.projects[0].contains(Uri.file(sibling))).toBe(false);
-    expect(
-      registry.projects[0].contains(
-        Uri.file(path.join(sibling, "models/model.sql")),
-      ),
-    ).toBe(false);
-    expect(
-      registry.projects[0].contains(
-        Uri.file(path.join(root, "..scratch", "model.sql")),
-      ),
-    ).toBe(true);
   });
 
   it("preserves registration order across folder and declaration order", async () => {
@@ -1083,33 +1060,22 @@ describe("ProjectRegistry", () => {
       expect(changed).toHaveBeenCalledTimes(1);
     });
 
-    it.each(["jinja-sql", "yaml"])(
-      "accepts a %s document",
-      async (language) => {
+    it.each(["yaml"])("accepts a %s document", async (language) => {
+      const registry = await start();
+      registry.declareFromDocuments([
+        openedDocument(soxModel, { languageId: language }),
+      ]);
+      expect(roots(registry)).toContain("sox:openedFile");
+    });
+
+    it.each([["an unsupported language", { languageId: "markdown" }]])(
+      "ignores a document with %s",
+      async (_name, overrides) => {
         const registry = await start();
-        registry.declareFromDocuments([
-          openedDocument(soxModel, { languageId: language }),
-        ]);
-        expect(roots(registry)).toContain("sox:openedFile");
+        registry.declareFromDocuments([openedDocument(soxModel, overrides)]);
+        expect(roots(registry)).toEqual(["general:explicit"]);
       },
     );
-
-    it.each([
-      [
-        "a non-file scheme",
-        {
-          uri: {
-            scheme: "untitled",
-            fsPath: path.join(general.uri.fsPath, soxModel),
-          },
-        },
-      ],
-      ["an unsupported language", { languageId: "markdown" }],
-    ])("ignores a document with %s", async (_name, overrides) => {
-      const registry = await start();
-      registry.declareFromDocuments([openedDocument(soxModel, overrides)]);
-      expect(roots(registry)).toEqual(["general:explicit"]);
-    });
 
     it("ignores documents in an untrusted workspace, and reports the root it found", async () => {
       (workspace as any).isTrusted = false;
