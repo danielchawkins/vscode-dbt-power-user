@@ -14,7 +14,5 @@ ignores:
   - "**/*.test.ts"
   - src/projects/project/project.ts
   - src/fusion/fusionCommands.ts
-  # Ratchet: remove once its test-only fallback FusionCommands is gone.
-  - src/features/lineage/dbtLineageService.ts
 rule:
   pattern: createFusionCommands($$$)

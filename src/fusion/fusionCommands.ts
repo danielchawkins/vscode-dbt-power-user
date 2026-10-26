@@ -116,7 +116,7 @@ function notRunning(client: FusionClient | undefined): FusionCommandError {
 
 class RequestLanes {
   private readonly lanes = new Map<QueuedCommand, Lane>();
-  /** The entries that have not answered yet, by command and arguments. */
+  /** The entries a new caller may join, by command and arguments; a cancelled in-flight entry leaves at once. */
   private readonly entries = new Map<string, Entry>();
   private readonly clientOf: () => FusionClient | undefined;
 
