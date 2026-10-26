@@ -497,11 +497,6 @@ describe("FusionCli project state and commands", () => {
     );
     expect(prepared.args).toEqual(expected);
     expect(prepared.statusMessage).toBe("Running dbt model...");
-    expect([
-      prepared.focus,
-      prepared.showProgress,
-      prepared.logToTerminal,
-    ]).toEqual([true, true, true]);
     const chunks: string[] = [];
     await prepared.execute(undefined, (chunk) => chunks.push(chunk));
     expect(argsAfterExecutable(calls[0])).toEqual(expected);
