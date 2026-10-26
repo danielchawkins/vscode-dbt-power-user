@@ -75,7 +75,7 @@
       "count": 1
     },
     "typescript/no-redundant-type-constituents": {
-      "count": 2
+      "count": 1
     }
   },
   "src/test/integration/lspProtocolClient.ts": {
