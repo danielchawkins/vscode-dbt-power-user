@@ -9,29 +9,29 @@ import type {
   ProposalSource,
   TypeProposal,
   TypeProposalsPayload,
-} from "../../packages/webview-contract/src/columnProposals";
+} from "../../../packages/webview-contract/src/columnProposals";
 import type {
   PanelNotice,
   PanelNoticeAction,
   Response,
   ResponseArgs,
-} from "../../packages/webview-contract/src/common";
-import { isPanelNoticeActionId } from "../../packages/webview-contract/src/common";
-import type { DocumentationColumn } from "../../packages/webview-contract/src/documentationColumn";
+} from "../../../packages/webview-contract/src/common";
+import { isPanelNoticeActionId } from "../../../packages/webview-contract/src/common";
+import type { DocumentationColumn } from "../../../packages/webview-contract/src/documentationColumn";
 import type {
   HostMessage as DocumentationEditorHostMessage,
   UnitTest,
-} from "../../packages/webview-contract/src/documentationEditor";
+} from "../../../packages/webview-contract/src/documentationEditor";
 import type {
   Documentation,
   DocumentationDraft,
   ModelTest,
   TestKwargs,
-} from "../../packages/webview-contract/src/documentationEditor";
+} from "../../../packages/webview-contract/src/documentationEditor";
 import type {
   CommandFields,
   Fields,
-} from "../../packages/webview-contract/src/guards";
+} from "../../../packages/webview-contract/src/guards";
 import {
   arrayOf,
   isAnything,
@@ -46,12 +46,12 @@ import {
   optional,
   shape,
   syncRequestId,
-} from "../../packages/webview-contract/src/guards";
+} from "../../../packages/webview-contract/src/guards";
 import type {
   ModelPreview,
   QueryHistoryEntry,
   HostMessage as QueryResultsHostMessage,
-} from "../../packages/webview-contract/src/queryResults";
+} from "../../../packages/webview-contract/src/queryResults";
 
 const isColumn = shape<DocumentationColumn>({
   name: isString,

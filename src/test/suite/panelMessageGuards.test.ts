@@ -9,10 +9,6 @@ import { Uri, window } from "vscode";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 import { NUM_RUNS } from "../arbitraries";
 import {
-  isDocumentationEditorHostMessage,
-  isQueryResultsHostMessage,
-} from "../hostMessageOracle";
-import {
   docsEditPanel,
   fakeView,
   lineagePanel,
@@ -20,6 +16,10 @@ import {
   queryResultPanel,
 } from "../panelHarness";
 import { spyLog } from "../testLog";
+import {
+  isDocumentationEditorHostMessage,
+  isQueryResultsHostMessage,
+} from "./hostMessageOracle";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),

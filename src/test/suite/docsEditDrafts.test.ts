@@ -3,8 +3,8 @@ import { EventEmitter, Uri } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
-import { isDocumentationEditorHostMessage } from "../hostMessageOracle";
 import { fakeView } from "../panelHarness";
+import { isDocumentationEditorHostMessage } from "./hostMessageOracle";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
