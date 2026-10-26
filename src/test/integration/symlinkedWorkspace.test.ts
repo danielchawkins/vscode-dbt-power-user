@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
@@ -14,25 +15,6 @@ import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 const ACTIVATION_TIMEOUT_MS = 20_000;
 const POLL_INTERVAL_MS = 250;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitUntil(
-  predicate: () => boolean,
-  timeoutMs: number,
-  description: string,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (predicate()) {
-      return;
-    }
-    await sleep(POLL_INTERVAL_MS);
-  }
-  assert.ok(predicate(), `Timed out waiting for: ${description}`);
-}
 
 function readJson(filePath: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(filePath, "utf-8")) as Record<
@@ -89,10 +71,14 @@ suite("Symlinked workspace (extension)", function () {
       "manifest.json",
     );
 
-    await waitUntil(
+    await pollUntil(
       () => fs.existsSync(manifestPath),
-      ACTIVATION_TIMEOUT_MS,
-      "target/manifest.json to exist after activation",
+      (exists) => exists,
+      {
+        timeoutMs: ACTIVATION_TIMEOUT_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        describe: "target/manifest.json to exist after activation",
+      },
     );
 
     const manifest = readJson(manifestPath);
@@ -120,21 +106,20 @@ suite("Symlinked workspace (extension)", function () {
     assert.ok(refIndex >= 0, 'child.sql fixture must contain ref("base")');
     const position = document.positionAt(refIndex + 1);
 
-    let locations: vscode.Location[] | vscode.LocationLink[] | undefined;
-
     // executeDefinitionProvider is async; poll it since the LSP may still be
     // indexing right after activation finishes.
-    const deadline = Date.now() + ACTIVATION_TIMEOUT_MS;
-    while (Date.now() < deadline) {
-      const result = await vscode.commands.executeCommand<
-        vscode.Location[] | vscode.LocationLink[]
-      >("vscode.executeDefinitionProvider", document.uri, position);
-      if (result && result.length > 0) {
-        locations = result;
-        break;
-      }
-      await sleep(POLL_INTERVAL_MS);
-    }
+    const locations = await pollUntil(
+      () =>
+        vscode.commands.executeCommand<
+          vscode.Location[] | vscode.LocationLink[]
+        >("vscode.executeDefinitionProvider", document.uri, position),
+      (result) => (result?.length ?? 0) > 0,
+      {
+        timeoutMs: ACTIVATION_TIMEOUT_MS,
+        intervalMs: POLL_INTERVAL_MS,
+        describe: 'a definition location for ref("base")',
+      },
+    );
 
     assert.ok(
       locations && locations.length > 0,

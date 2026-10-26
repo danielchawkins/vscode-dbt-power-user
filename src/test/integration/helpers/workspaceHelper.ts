@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import type { FusionPowerUserApi } from "../../../extension";
+import { sleep } from "../../async";
 
 /**
  * Waits for Fusion Power User to activate and finish project startup.
@@ -114,5 +115,5 @@ export async function closeAllEditors(): Promise<void> {
     );
   }
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await sleep(500);
 }

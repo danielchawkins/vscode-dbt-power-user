@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -70,44 +71,43 @@ interface SummaryReading {
 
 /** Polls the summary until its source label or its notice is shown, then returns both as read. */
 async function waitForSummary(): Promise<SummaryReading> {
-  const deadline = Date.now() + 60_000;
-  let last: SummaryReading | undefined;
-  do {
-    const match = await evaluatePanel<SummaryReading>(
-      process.env.FPU_CDP_PORT!,
-      DOCS.entry,
-      READ_SUMMARY,
-    );
-    last = match?.value ?? undefined;
-    if (last?.sourceLabel || last?.notice) {
-      return last;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `the summary never showed a source label or a notice: ${JSON.stringify(last)}`,
+  const summary = await pollUntil(
+    async () => {
+      const match = await evaluatePanel<SummaryReading>(
+        process.env.FPU_CDP_PORT!,
+        DOCS.entry,
+        READ_SUMMARY,
+      );
+      return match?.value ?? undefined;
+    },
+    (last) => Boolean(last?.sourceLabel) || Boolean(last?.notice),
+    {
+      timeoutMs: 60_000,
+      intervalMs: 250,
+      describe: "the summary to show a source label or a notice",
+    },
   );
+  return summary!;
 }
 
 const host = () =>
   validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Polls the description until `done` holds; the editor loads it asynchronously. */
 async function waitForDescription(
   done: (text: string) => boolean,
 ): Promise<string> {
-  const deadline = Date.now() + 10_000;
-  let last: string | null = null;
-  do {
-    const docs = await readDocsState(process.env.FPU_CDP_PORT!);
-    last = docs?.description ?? null;
-    if (last !== null && done(last)) {
-      return last;
-    }
-    await sleep(250);
-  } while (Date.now() < deadline);
-  throw new Error(`the description never matched; last value: ${last}`);
+  const text = await pollUntil(
+    async () =>
+      (await readDocsState(process.env.FPU_CDP_PORT!))?.description ?? null,
+    (last) => last !== null && done(last),
+    {
+      timeoutMs: 10_000,
+      intervalMs: 250,
+      describe: "the description to match",
+    },
+  );
+  return text!;
 }
 
 async function setDescription(text: string): Promise<void> {

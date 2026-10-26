@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { PollTimeoutError, pollUntil, sleep } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
   captureWorkbenchScreenshot,
@@ -100,7 +101,7 @@ suite("Worktrees smoke", function () {
 
   test("a macro in a local package without a profile declares no project", async function () {
     await open(folder("main"), PACKAGE_MACRO);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await sleep(3000);
     const states = await clientStates();
     assert.ok(
       !states.some((r) => r.projectName === "worktree_temporal"),
@@ -135,7 +136,7 @@ suite("Worktrees smoke", function () {
       "strict",
       "the probe project's perProject entry overrides the folder's staticAnalysis",
     );
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await sleep(3000);
     const texts = await readWorkbenchNotificationTexts(cdpPort(), host());
     assert.ok(
       !texts.some((text) => text.includes("worktree_probe")),
@@ -211,17 +212,20 @@ async function waitFor<T>(
   probe: () => Promise<T | undefined>,
   what: string,
 ): Promise<T> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
-  do {
-    const value = await probe();
-    if (value !== undefined) {
-      return value;
+  try {
+    return (await pollUntil(probe, (value) => value !== undefined, {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: what,
+    }))!;
+  } catch (error) {
+    if (!(error instanceof PollTimeoutError)) {
+      throw error;
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-  } while (Date.now() < deadline);
-  throw new Error(
-    `Timed out waiting for ${what}: ${JSON.stringify(await clientStates())}`,
-  );
+    throw new Error(
+      `Timed out waiting for ${what}: ${JSON.stringify(await clientStates())}`,
+    );
+  }
 }
 
 const cdpPort = () => process.env.FPU_CDP_PORT ?? "";
@@ -240,7 +244,7 @@ async function record(
   const fixtureDir = path.join(dir, host(), "worktrees");
   // The checkpoint is about a notification, so the capture shows the notification list.
   await vscode.commands.executeCommand("notifications.showList");
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await sleep(500);
   let png: Buffer;
   try {
     png = await captureWorkbenchScreenshot(cdpPort(), host());

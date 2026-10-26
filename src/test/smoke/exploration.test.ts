@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { sleep } from "../async";
 import {
   captureWorkbenchScreenshot,
   readWorkbenchNotificationTexts,
@@ -61,7 +62,7 @@ suite("Exploration", function () {
       if (step.editor) {
         await vscode.window.showTextDocument(document);
       }
-      await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+      await sleep(SETTLE_MS);
       await record(port, host, step.name);
     }
   });
@@ -73,7 +74,7 @@ async function record(port: string, host: string, name: string) {
       FUSION_CLIENT_STATES_COMMAND,
     )) ?? [];
   await vscode.commands.executeCommand("notifications.showList");
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await sleep(500);
   const notifications = await readWorkbenchNotificationTexts(port, host);
   const measured = {
     projects: states.map((s) => ({

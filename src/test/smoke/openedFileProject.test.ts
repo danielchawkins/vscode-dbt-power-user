@@ -4,6 +4,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
   assertNoWorkbenchNotifications,
@@ -123,41 +124,41 @@ async function fusionClientStates(): Promise<FusionClientStateReport[]> {
 }
 
 async function waitForProjectRunning(): Promise<FusionClientStateReport> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
   let last: FusionClientStateReport[] = [];
-  do {
-    last = await fusionClientStates();
-    const report = last.find(
-      (candidate) => candidate.projectName === PROJECT_NAME,
-    );
-    if (report?.state === "running") {
-      return report;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  throw new Error(
-    `Timed out waiting for ${PROJECT_NAME} to run: ${JSON.stringify(last)}`,
+  const { report } = await pollUntil(
+    async () => {
+      last = await fusionClientStates();
+      return {
+        report: last.find(
+          (candidate) => candidate.projectName === PROJECT_NAME,
+        ),
+      };
+    },
+    ({ report }) => report?.state === "running",
+    {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: () => `${PROJECT_NAME} to run: ${JSON.stringify(last)}`,
+    },
   );
+  return report as FusionClientStateReport;
 }
 
 /** The first call opens the language status hover; later calls read its text. */
-async function waitForHover(
+function waitForHover(
   cdpPort: string,
   host: string,
 ): Promise<string | undefined> {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
-  do {
-    const text = await evaluateWorkbench<string>(
-      cdpPort,
-      host,
-      LANGUAGE_STATUS_HOVER,
-    );
-    if (text?.includes(DECLARED_TEXT)) {
-      return text;
-    }
-    await sleep(POLL_MS);
-  } while (Date.now() < deadline);
-  return undefined;
+  return pollUntil(
+    () => evaluateWorkbench<string>(cdpPort, host, LANGUAGE_STATUS_HOVER),
+    (text) => text?.includes(DECLARED_TEXT) ?? false,
+    {
+      timeoutMs: WAIT_TIMEOUT_MS,
+      intervalMs: POLL_MS,
+      describe: (last) =>
+        `the language status hover; last hover was ${JSON.stringify(last)}`,
+    },
+  );
 }
 
 /** Writes one checkpoint with the hover open, when `FPU_SMOKE_SCREENSHOTS` names a directory. */
@@ -191,8 +192,4 @@ async function recordCheckpoint(
     },
   );
   console.log(`FPU_SMOKE_SCREENSHOT=${file}`);
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

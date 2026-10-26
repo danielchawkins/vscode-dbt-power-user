@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { sleep } from "../async";
 import {
   evaluatePanel,
   readWebviewHeap,
@@ -433,8 +434,4 @@ async function waitForTabs(
       (await evaluatePanel<Tabs>(port, RESULTS.entry, READ_TABS))?.value,
     (tabs): tabs is Tabs => tabs !== undefined && done(tabs),
   ) as Promise<Tabs>;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

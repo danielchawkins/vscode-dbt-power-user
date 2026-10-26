@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { parse } from "yaml";
+import { pollUntil } from "../async";
 
 /**
  * Column type and description proposals on the native labels, through the test-only
@@ -65,20 +66,17 @@ async function until<T extends Payload | DescriptionPayload = Payload>(
   done: (payload: T) => boolean,
   kind: ProposalKind = "types",
 ): Promise<T> {
-  const deadline = Date.now() + 120_000;
-  let last: T | undefined;
-  while (Date.now() < deadline) {
-    last = await vscode.commands.executeCommand<T | undefined>(
-      COMMAND,
-      kind,
-      file,
-    );
-    if (last && done(last)) {
-      return last;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-  }
-  assert.fail(`no matching proposals: ${JSON.stringify(last)}`);
+  const last = await pollUntil(
+    () => vscode.commands.executeCommand<T | undefined>(COMMAND, kind, file),
+    (payload) => !!payload && done(payload),
+    {
+      timeoutMs: 120_000,
+      intervalMs: 1_000,
+      describe: (seen) => `no matching proposals: ${JSON.stringify(seen)}`,
+    },
+  );
+  assert.ok(last);
+  return last;
 }
 
 suite("Column type proposals from the language server, strict", function () {

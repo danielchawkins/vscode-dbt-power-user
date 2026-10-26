@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { previewUriFor } from "../../projects/registry/previewUri";
+import { pollUntil } from "../async";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
 
 /**
@@ -25,14 +26,16 @@ suite("Compiled preview from the language server", function () {
     await vscode.window.showTextDocument(model);
     const spawned = dbtInvocations().length;
     const preview = previewUriFor(model);
-    let text = "";
-    for (let attempt = 0; attempt < 60; attempt += 1) {
-      text = (await vscode.workspace.openTextDocument(preview)).getText();
-      if (/select/i.test(text)) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
-    }
+    const text = await pollUntil(
+      async () => (await vscode.workspace.openTextDocument(preview)).getText(),
+      (found) => /select/i.test(found),
+      {
+        timeoutMs: 60_000,
+        intervalMs: 1_000,
+        describe: (last) =>
+          `the compiled preview to hold a select; preview was ${JSON.stringify(last)}`,
+      },
+    );
     assert.ok(/select/i.test(text), `preview was ${JSON.stringify(text)}`);
     assert.ok(!text.includes("{{"), "the preview still holds Jinja");
     assert.deepStrictEqual(

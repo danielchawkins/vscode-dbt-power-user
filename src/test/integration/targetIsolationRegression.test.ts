@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
+import { sleep } from "../async";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture, type LspFixture } from "./lspFixture";
 
@@ -101,18 +102,18 @@ function runSuite(): void {
       },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 8_000));
+    await sleep(8_000);
     await fixture.request("workspace/executeCommand", {
       command: "dbt.listNodes",
       arguments: [],
     });
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await sleep(2_000);
 
     await fixture.request("workspace/executeCommand", {
       command: "dbt.compileLsp",
       arguments: [],
     });
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await sleep(2_000);
 
     // Record state after compile
     const tempTarget = path.join(fixture.projectRoot, "target");

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import { pollUntil } from "../async";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -69,16 +70,11 @@ async function waitForNodeCount(
   what: string,
   done: (count: number) => boolean,
 ): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  let last = -1;
-  do {
-    last = await nodeCount();
-    if (done(last)) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  } while (Date.now() < deadline);
-  throw new Error(`${what}; the last node count was ${last}`);
+  await pollUntil(nodeCount, done, {
+    timeoutMs: 10_000,
+    intervalMs: 250,
+    describe: (last) => `${what}; the last node count was ${last}`,
+  });
 }
 
 const gear = { role: "button", name: "Settings" };
