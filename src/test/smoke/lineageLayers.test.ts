@@ -10,7 +10,12 @@ import {
   START,
 } from "./lineageLayersExpected";
 import type { ColumnState } from "./lineageProbes";
-import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
+import {
+  clickFirstColumn,
+  clickOnCard,
+  readColumns,
+  tracedCardsListed,
+} from "./lineageProbes";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import type { PanelEntry } from "./webviewInteractions";
@@ -113,15 +118,18 @@ function waitForColumns(
 }
 
 /**
- * Polls the column state until the traced edges and table edge paths hold still: two consecutive reads agree, and
- * at least one column edge is drawn. Edges can arrive in parts, so the first non-empty read is not a baseline.
+ * Polls the column state until the traced edges and table edge paths hold still: at least one column edge is drawn,
+ * every traced card lists its columns, and two consecutive reads agree.
  */
 function waitForStableColumns(what: string): Promise<ColumnState> {
   let previous: string | undefined;
   return waitFor(what, readStart, {
     until: (current) => {
       const key = JSON.stringify([current.traced, current.tableD]);
-      const stable = current.traced.length > 0 && key === previous;
+      const stable =
+        current.traced.length > 0 &&
+        tracedCardsListed(current) &&
+        key === previous;
       previous = key;
       return stable;
     },

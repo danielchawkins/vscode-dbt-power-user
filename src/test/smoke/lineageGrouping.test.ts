@@ -8,7 +8,12 @@ import {
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import type { ColumnState } from "./lineageProbes";
-import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
+import {
+  clickFirstColumn,
+  clickOnCard,
+  readColumns,
+  tracedCardsListed,
+} from "./lineageProbes";
 import { EXTENSION_ID, PANELS } from "./panels";
 import type { PanelEntry } from "./webviewInteractions";
 import {
@@ -282,14 +287,16 @@ async function traceHubColumn(): Promise<ColumnState> {
     clickFirstColumn(HUB),
   );
   assert.ok(clicked?.value.clicked, "the hub card has a column row to click");
-  // Edges arrive in parts and the cards relayout after them, so the first traced read is not a baseline: wait until
-  // two consecutive reads agree.
+  // The baseline is the first pair of equal reads once every traced card lists its columns.
   let previous: string | undefined;
   return waitForColumns(
     "clicking a hub column should trace column edges that hold still",
     (current) => {
       const key = JSON.stringify([current.traced, current.tableD]);
-      const stable = current.traced.length > 0 && key === previous;
+      const stable =
+        current.traced.length > 0 &&
+        tracedCardsListed(current) &&
+        key === previous;
       previous = key;
       return stable;
     },

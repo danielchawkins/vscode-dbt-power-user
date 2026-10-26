@@ -12,6 +12,15 @@ export interface ColumnState {
   tableD: string[];
 }
 
+/**
+ * True once every card a traced column edge ends at lists its columns. Each traced card opens its list after the
+ * click, one at a time, and every opening lays the graph out again, so table edge paths move until this holds.
+ */
+export const tracedCardsListed = (state: ColumnState): boolean =>
+  state.traced.every((id) =>
+    state.columnTables.includes(id.split("->")[1].split(".").at(-2) ?? ""),
+  );
+
 /** The script that reads the column state of the lineage card whose table id ends in `card`. */
 const columnStateScript = (
   card: string,
