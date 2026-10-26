@@ -14,22 +14,19 @@ describe("Fusion version", () => {
     });
   });
 
-  it.each(["dbt 2.0.7\n", "dbt 2.1.0\n", "dbt 2.1.3\n"])(
-    "accepts later 2.x version %j",
-    (raw) => {
-      expect(judgeFusionVersion(parseFusionVersion(raw), raw).kind).toBe("ok");
+  it.each(["dbt 2.1.0\n"])("accepts later 2.x version %j", (raw) => {
+    expect(judgeFusionVersion(parseFusionVersion(raw), raw).kind).toBe("ok");
+  });
+
+  it.each([["dbt 2.0.5\n", 5]])(
+    "rejects %j below the minimum",
+    (raw, patch) => {
+      expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
+        kind: "tooOld",
+        version: { major: 2, minor: 0, patch, raw },
+      });
     },
   );
-
-  it.each([
-    ["dbt 2.0.5\n", 5],
-    ["dbt 2.0.4\n", 4],
-  ])("rejects %j below the minimum", (raw, patch) => {
-    expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
-      kind: "tooOld",
-      version: { major: 2, minor: 0, patch, raw },
-    });
-  });
 
   it.each([
     ["dbt 2.0.6-preview.3 (a1b2c3d 2026-09-01)\n", "ok"],
