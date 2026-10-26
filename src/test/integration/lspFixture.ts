@@ -60,11 +60,9 @@ export interface LspFixture {
     fromIndex?: number,
   ): Promise<unknown>;
   notificationCount(method: string): number;
-  serverRequestCount(method: string): number;
   getNotifications(method: string): readonly unknown[];
   getNotificationsSince(method: string, fromCursor: number): readonly unknown[];
   getNotificationEntries(method: string): readonly NotificationEntry[];
-  getServerRequests(method: string): readonly ServerRequestEntry[];
   getServerRequestsSince(
     method: string,
     fromCursor: number,
@@ -75,7 +73,6 @@ export interface LspFixture {
   ): readonly ConfigurationDeliveryEntry[];
   getServerRequestMethods(): readonly string[];
   getErrors(): readonly CapturedError[];
-  getStderr(): string;
   setWorkspaceConfiguration(response: unknown[]): void;
 }
 
@@ -84,8 +81,6 @@ export interface LspFixtureOptions {
   workspaceConfiguration?: unknown[];
   configurationBySection?: Record<string, unknown>;
   defaultRequestTimeoutMs?: number;
-  /** Extra `dbt lsp` argv tokens, e.g. `--static-analysis strict`. */
-  extraArgs?: string[];
   /** Environment variables for `dbt lsp` spawn; merged over process.env. */
   env?: Record<string, string>;
   /** Fusion executable; defaults to `dbt` on PATH. */
@@ -159,13 +154,6 @@ function childProcessAdapter(
     removeListener: (event, listener) => child.removeListener(event, listener),
     getStderr,
   };
-}
-
-function cappedStderrTail(stderr: string): string {
-  if (stderr.length <= CAPTURE_LIMITS.stderrBytes) {
-    return stderr;
-  }
-  return stderr.slice(-CAPTURE_LIMITS.stderrBytes);
 }
 
 /**
@@ -250,9 +238,6 @@ export async function createLspFixture(
         args.push("--profiles-dir", temporaryProfilesDir);
       }
       args.push("--no-version-check");
-      if (options.extraArgs) {
-        args.push(...options.extraArgs);
-      }
       launchArgs = args;
 
       stderr = "";
@@ -360,10 +345,6 @@ export async function createLspFixture(
       return requireClient().notificationCount(method);
     },
 
-    serverRequestCount(method: string): number {
-      return requireClient().serverRequestCount(method);
-    },
-
     getNotifications(method: string): readonly unknown[] {
       return requireClient().getNotifications(method);
     },
@@ -377,10 +358,6 @@ export async function createLspFixture(
 
     getNotificationEntries(method: string): readonly NotificationEntry[] {
       return requireClient().getNotificationEntries(method);
-    },
-
-    getServerRequests(method: string): readonly ServerRequestEntry[] {
-      return requireClient().getServerRequests(method);
     },
 
     getServerRequestsSince(
@@ -406,10 +383,6 @@ export async function createLspFixture(
 
     getErrors(): readonly CapturedError[] {
       return requireClient().getErrors();
-    },
-
-    getStderr(): string {
-      return cappedStderrTail(stderr);
     },
 
     setWorkspaceConfiguration(response: unknown[]): void {
