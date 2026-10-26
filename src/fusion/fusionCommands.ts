@@ -67,6 +67,13 @@ interface Caller {
   subscription?: Disposable | undefined;
 }
 
+/** What one server command sends, and how its answer becomes the command's result. */
+interface CommandCall<T> {
+  readonly command: QueuedCommand;
+  readonly payload: unknown;
+  readonly convert: (raw: unknown) => T;
+}
+
 /** One distinct request. Every caller that asks for it waits on the same entry and its answer. */
 interface Entry {
   readonly key: string;
@@ -118,11 +125,10 @@ class RequestLanes {
   }
 
   request<T>(
-    command: QueuedCommand,
-    payload: unknown,
-    convert: (raw: unknown) => T,
+    call: CommandCall<T>,
     { purpose, token }: RequestOptions,
   ): Promise<T> {
+    const { command, payload, convert } = call;
     if (token?.isCancellationRequested) {
       return Promise.reject(
         new FusionCommandError("cancelled", "Request cancelled"),
@@ -214,8 +220,8 @@ class RequestLanes {
   private failWaiting(lane: Lane, client: FusionClient | undefined): void {
     const down =
       !client || client.state === "stopped" || client.state === "failed";
-    for (const entry of [...lane.queue]) {
-      for (const caller of [...entry.callers]) {
+    for (const entry of lane.queue.slice()) {
+      for (const caller of entry.callers) {
         if (down || caller.policy.whenNotRunning === "fail") {
           this.settle(entry, caller, notRunning(client));
         }
@@ -254,7 +260,7 @@ class RequestLanes {
         source.token,
       );
     } catch (error) {
-      pending = Promise.reject(error);
+      pending = Promise.reject(toCommandError(error));
     }
     pending.then(entry.convert).then(
       (value) => this.finish(lane, entry, { ok: true, value }),
@@ -362,33 +368,41 @@ export function createFusionCommands(
     },
     async listNodes(selectors, request) {
       return lanes.request(
-        FUSION_LSP_COMMANDS.listNodes,
-        [...selectors],
-        toListNodesResult,
+        {
+          command: FUSION_LSP_COMMANDS.listNodes,
+          payload: [...selectors],
+          convert: toListNodesResult,
+        },
         request,
       );
     },
     async getCurrentNode(relativePath, request) {
       return lanes.request(
-        FUSION_LSP_COMMANDS.getCurrentNode,
-        [relativePath],
-        toCurrentNodeResult,
+        {
+          command: FUSION_LSP_COMMANDS.getCurrentNode,
+          payload: [relativePath],
+          convert: toCurrentNodeResult,
+        },
         request,
       );
     },
     async compileFile(uri, request) {
       return lanes.request(
-        FUSION_LSP_COMMANDS.compileFile,
-        [uri.toString()],
-        toCompileFileResult,
+        {
+          command: FUSION_LSP_COMMANDS.compileFile,
+          payload: [uri.toString()],
+          convert: toCompileFileResult,
+        },
         request,
       );
     },
     async getProjectInfo(request) {
       return lanes.request(
-        FUSION_LSP_COMMANDS.getProjectInfo,
-        [],
-        toProjectInfo,
+        {
+          command: FUSION_LSP_COMMANDS.getProjectInfo,
+          payload: [],
+          convert: toProjectInfo,
+        },
         request,
       );
     },
