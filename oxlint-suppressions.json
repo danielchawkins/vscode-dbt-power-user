@@ -50,11 +50,6 @@
       "count": 1
     }
   },
-  "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
-    "max-depth": {
-      "count": 1
-    }
-  },
   "src/features/treeViews.ts": {
     "max-params": {
       "count": 1

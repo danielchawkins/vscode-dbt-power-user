@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/projects/registry/projectRegistry.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1

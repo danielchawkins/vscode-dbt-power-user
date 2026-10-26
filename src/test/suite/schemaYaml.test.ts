@@ -6,7 +6,13 @@ import {
   sourceTables,
 } from "../../core/yaml/schemaYaml";
 
-const BLOCK_MODELS = ["version: 2", "models:", "  - name: orders", "    description: x", "  - name: customers"];
+const BLOCK_MODELS = [
+  "version: 2",
+  "models:",
+  "  - name: orders",
+  "    description: x",
+  "  - name: customers",
+];
 
 describe("schema YAML walker", () => {
   it("names each model by its name key, with the key's offset and range", () => {
@@ -34,7 +40,9 @@ describe("schema YAML walker", () => {
     const text = BLOCK_MODELS.join("\n");
 
     expect(modelAt(text, text.indexOf("description"))?.name).toBe("orders");
-    expect(modelAt(text, text.indexOf("customers") + 3)?.name).toBe("customers");
+    expect(modelAt(text, text.indexOf("customers") + 3)?.name).toBe(
+      "customers",
+    );
     expect(modelAt(text, 0)).toBeUndefined();
   });
 
@@ -81,13 +89,28 @@ describe("schema YAML walker", () => {
   });
 
   it("reads flow-style sources and tables", () => {
-    const text = "sources: [{name: raw, tables: [{name: t1}, {name: t2, identifier: t2_id}]}]\n";
+    const text =
+      "sources: [{name: raw, tables: [{name: t1}, {name: t2, identifier: t2_id}]}]\n";
 
-    expect(sourceTables(text).map((table) => [table.source, table.table, table.identifier])).toEqual([
+    expect(
+      sourceTables(text).map((table) => [
+        table.source,
+        table.table,
+        table.identifier,
+      ]),
+    ).toEqual([
       ["raw", "t1", undefined],
       ["raw", "t2", "t2_id"],
     ]);
     expect(sourceTables(text)[0]?.offset).toBe(text.indexOf("{name: t1}"));
+  });
+
+  it("skips the tables of a source that has no name", () => {
+    expect(
+      sourceTables(
+        "sources:\n  - database: db\n    tables:\n      - name: orphan\n",
+      ),
+    ).toEqual([]);
   });
 
   it("reads nothing from text that has no models or sources, or that fails to parse", () => {
@@ -98,16 +121,21 @@ describe("schema YAML walker", () => {
   });
 
   it("skips a model whose name is null or not a scalar", () => {
-    expect(modelNameKeys("models:\n  - name:\n  - name: {a: 1}\n  - name: ok\n").map((key) => key.name)).toEqual([
-      "ok",
-    ]);
+    expect(
+      modelNameKeys("models:\n  - name:\n  - name: {a: 1}\n  - name: ok\n").map(
+        (key) => key.name,
+      ),
+    ).toEqual(["ok"]);
   });
 
   it("keeps a model's name key on its own line when the text uses CRLF", () => {
     const text = "models:\r\n  - name: a\r\n  - name: b\r\n";
     const [, second] = modelNameKeys(text);
 
-    expect(second && positionAt(text, second.offset)).toEqual({ line: 2, character: 4 });
+    expect(second && positionAt(text, second.offset)).toEqual({
+      line: 2,
+      character: 4,
+    });
   });
 
   it("maps an offset to a zero-based line and character", () => {
