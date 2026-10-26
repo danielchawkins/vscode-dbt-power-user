@@ -177,7 +177,7 @@
   },
   "src/fusion/lspClientSupport.ts": {
     "max-params": {
-      "count": 6
+      "count": 3
     }
   },
   "src/fusion/nestedRoots.ts": {
@@ -331,7 +331,7 @@
   },
   "src/test/suite/fusionLanguageClient.test.ts": {
     "max-params": {
-      "count": 8
+      "count": 6
     }
   },
   "src/test/suite/fusionStatus.test.ts": {

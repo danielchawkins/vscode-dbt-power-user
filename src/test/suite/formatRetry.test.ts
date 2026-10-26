@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  CompileSignal,
-  languageClientOptions,
-} from "../../fusion/lspClientSupport";
+import { CompileSignal } from "../../fusion/compileSignal";
+import { languageClientOptions } from "../../fusion/lspClientSupport";
 
 const noState = () => ({
   code: -32803,

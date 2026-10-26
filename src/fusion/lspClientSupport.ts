@@ -1,4 +1,4 @@
-import type { CancellationToken, Disposable, LogOutputChannel } from "vscode";
+import type { LogOutputChannel } from "vscode";
 import { CodeLens, Uri } from "vscode";
 import type {
   LanguageClient,
@@ -9,6 +9,11 @@ import type {
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { LspLaunch } from "../core/lsp";
 import { clientErrorHandler, inactiveGate } from "./clientLifecycle";
+import {
+  CompileSignal,
+  FORMAT_METHODS,
+  formatOnceCompiled,
+} from "./compileSignal";
 import type { FusionProjectRef } from "./fusionClient";
 import type { ProjectDiagnosticsFilter } from "./fusionDiagnostics";
 import {
@@ -102,143 +107,6 @@ export function buildWorkspaceConfigurationResponse(
   return null;
 }
 
-/** Fusion's notifications that end a compile; `errors` lists what it found. */
-const FUSION_COMPILE_COMPLETE = [
-  "dbt/lspCompileComplete",
-  "dbt/lspBackgroundCompileComplete",
-] as const;
-
-/** The `Error`-severity messages of a compile-complete notification's `errors`. */
-function compileErrorMessages(params: unknown): string[] {
-  const errors = (params as { errors?: unknown } | null)?.errors;
-  if (!Array.isArray(errors)) {
-    return [];
-  }
-  return errors.flatMap((error: { message?: unknown; severity?: unknown }) =>
-    error?.severity === "Error" && typeof error.message === "string"
-      ? [error.message]
-      : [],
-  );
-}
-
-/** How long a formatting request waits for the server's first compile before giving up. */
-const FORMAT_COMPILE_WAIT_MS = 5_000;
-
-/** LSP `RequestFailed`. */
-const REQUEST_FAILED = -32803;
-
-/** Counts `dbt/lspCompileComplete` notifications so a request can wait for the next one. */
-export class CompileSignal {
-  private count = 0;
-  private readonly waiters = new Set<() => void>();
-
-  get completions(): number {
-    return this.count;
-  }
-
-  notify(): void {
-    this.count += 1;
-    // Snapshot: a waiter removes itself when it runs.
-    const waiters = [...this.waiters];
-    for (const waiter of waiters) {
-      waiter();
-    }
-  }
-
-  /** Resolves once a compile completes after `since`, after `timeoutMs`, or when `token` is cancelled. */
-  async after(
-    since: number,
-    timeoutMs: number,
-    token?: { onCancellationRequested: (listener: () => void) => Disposable },
-  ): Promise<void> {
-    if (this.count > since) {
-      return;
-    }
-    await new Promise<void>((resolve) => {
-      const cancelled = token?.onCancellationRequested(() => done());
-      const done = () => {
-        clearTimeout(timer);
-        cancelled?.dispose();
-        this.waiters.delete(done);
-        resolve();
-      };
-      const timer = setTimeout(done, timeoutMs);
-      this.waiters.add(done);
-    });
-  }
-}
-
-/** Counts `dbt/lspCompileComplete` on `compiled` and passes each compile's errors to `onCompileErrors`. */
-export function subscribeToCompileComplete(
-  client: ClientHandle,
-  compiled: CompileSignal,
-  onCompileErrors?: (messages: string[]) => void,
-): void {
-  for (const method of FUSION_COMPILE_COMPLETE) {
-    client.onNotification?.(method, (params: unknown) => {
-      if (method === "dbt/lspCompileComplete") {
-        compiled.notify();
-      }
-      onCompileErrors?.(compileErrorMessages(params));
-    });
-  }
-}
-
-/** True for Fusion's refusal to format a document it has not compiled yet. */
-function isNoCompilerStateError(error: unknown): boolean {
-  const { code, message } = (error ?? {}) as {
-    code?: unknown;
-    message?: unknown;
-  };
-  return (
-    code === REQUEST_FAILED &&
-    typeof message === "string" &&
-    message.includes("no compiler state")
-  );
-}
-
-const FORMAT_METHODS = new Set([
-  "textDocument/formatting",
-  "textDocument/rangeFormatting",
-]);
-
-/**
- * Runs a formatting request; on the no-compiler-state error waits once for the next compile and retries once.
- * Still failing, or cancelled while waiting, it returns no edits. Other errors propagate.
- * Runs in `middleware.sendRequest`, below the library's failure handler, which would show a toast.
- */
-async function formatOnceCompiled<R>(
-  request: () => Promise<R>,
-  compiled: CompileSignal,
-  log: (message: string) => void,
-  token: CancellationToken | undefined,
-  timeoutMs: number = FORMAT_COMPILE_WAIT_MS,
-): Promise<R> {
-  const since = compiled.completions;
-  try {
-    return await request();
-  } catch (error) {
-    if (!isNoCompilerStateError(error)) {
-      throw error;
-    }
-  }
-  await compiled.after(since, timeoutMs, token);
-  if (token?.isCancellationRequested) {
-    return null as R;
-  }
-  try {
-    return await request();
-  } catch (error) {
-    if (!isNoCompilerStateError(error)) {
-      throw error;
-    }
-    log(
-      "Formatting skipped: the server has no compiler state for this document yet.",
-    );
-    return null as R;
-  }
-}
-
 /**
  * The arguments of `command`. `compileFile` takes a URI string, which skips the document `uriConverters`, so it is
  * mapped the same way; the server matches URIs literally and would not find a file under a symlinked root.
@@ -311,6 +179,33 @@ export function languageClientOptions(input: {
   };
 }
 
+/** The document notifications the middleware can drop while the client is inactive, keyed by middleware hook. */
+const DOCUMENT_NOTIFICATIONS = {
+  didOpen: "textDocument/didOpen",
+  didChange: "textDocument/didChange",
+  didSave: "textDocument/didSave",
+  didClose: "textDocument/didClose",
+} as const;
+
+/** Each document hook forwards its notification to `next` unless the client is inactive. */
+function gatedDocumentHooks(
+  dropInactive: (method: string) => boolean,
+): Pick<Middleware, keyof typeof DOCUMENT_NOTIFICATIONS> {
+  const gate =
+    <T>(method: string) =>
+    async (data: T, next: (data: T) => unknown) => {
+      if (!dropInactive(method)) {
+        await next(data);
+      }
+    };
+  return {
+    didOpen: gate(DOCUMENT_NOTIFICATIONS.didOpen),
+    didChange: gate(DOCUMENT_NOTIFICATIONS.didChange),
+    didSave: gate(DOCUMENT_NOTIFICATIONS.didSave),
+    didClose: gate(DOCUMENT_NOTIFICATIONS.didClose),
+  };
+}
+
 /**
  * The middleware of one Declared Project's client: it maps code lenses and compile requests, filters diagnostics to
  * the project, answers workspace configuration, and drops document and watched-file notifications while the client is
@@ -331,12 +226,11 @@ function fusionMiddleware(input: {
     sendRequest: (type, param, token, next) => {
       const method = typeof type === "string" ? type : type.method;
       return FORMAT_METHODS.has(method)
-        ? formatOnceCompiled(
-            () => next(type, param, token),
+        ? formatOnceCompiled(() => next(type, param, token), {
             compiled,
             log,
             token,
-          )
+          })
         : next(type, param, token);
     },
     handleDiagnostics: (uri, diagnostics, next) => {
@@ -344,26 +238,7 @@ function fusionMiddleware(input: {
         next(uri, diagnostics);
       }
     },
-    didOpen: async (document, next) => {
-      if (!dropInactive("textDocument/didOpen")) {
-        await next(document);
-      }
-    },
-    didChange: async (event, next) => {
-      if (!dropInactive("textDocument/didChange")) {
-        await next(event);
-      }
-    },
-    didSave: async (document, next) => {
-      if (!dropInactive("textDocument/didSave")) {
-        await next(document);
-      }
-    },
-    didClose: async (document, next) => {
-      if (!dropInactive("textDocument/didClose")) {
-        await next(document);
-      }
-    },
+    ...gatedDocumentHooks(dropInactive),
     workspace: {
       didChangeWatchedFile: (event, next) =>
         dropInactive("workspace/didChangeWatchedFiles")
@@ -384,12 +259,7 @@ function fusionMiddleware(input: {
 export type FusionLanguageClientDependencies = {
   listenForServer?: typeof listenForServer;
   acceptWithProcessExit?: typeof acceptWithProcessExit;
-  spawnProcess?: (
-    executable: string,
-    args: string[],
-    env: Record<string, string>,
-    cwd?: string,
-  ) => ChildProcess;
+  spawnProcess?: (spec: ServerSpawnSpec) => ChildProcess;
   createLanguageClient?: (
     id: string,
     name: string,
@@ -412,15 +282,18 @@ export type ClientHandle = Pick<
 > &
   Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
 
-export function defaultSpawn(
-  executable: string,
-  args: string[],
-  env: Record<string, string>,
-  cwd?: string,
-): ChildProcess {
-  return spawnProcess(executable, args, {
-    env,
-    cwd,
+/** What the client needs to start one language server process. */
+export type ServerSpawnSpec = {
+  executable: string;
+  args: string[];
+  env: Record<string, string>;
+  cwd?: string;
+};
+
+export function defaultSpawn(spec: ServerSpawnSpec): ChildProcess {
+  return spawnProcess(spec.executable, spec.args, {
+    env: spec.env,
+    cwd: spec.cwd,
     stdio: ["ignore", "pipe", "pipe"],
   });
 }

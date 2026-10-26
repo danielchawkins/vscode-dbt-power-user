@@ -16,6 +16,7 @@ import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
 import { canonicalProjectRoot } from "./canonicalProjectRoot";
 import { projectFileAvailable } from "./clientLifecycle";
+import { CompileSignal, subscribeToCompileComplete } from "./compileSignal";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
@@ -33,11 +34,9 @@ import {
 } from "./fusionDiagnostics";
 import { FusionRequests } from "./fusionRequests";
 import {
-  CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
   languageClientOptions,
-  subscribeToCompileComplete,
   type ClientHandle,
   type FusionLanguageClientDependencies,
 } from "./lspClientSupport";
@@ -265,12 +264,12 @@ class FusionLanguageClientImpl implements FusionClient {
         this.options.env ?? {};
       const env = { ...launch.environment, ...callerEnv };
 
-      const child = spawnServer(
-        this.options.executable.path,
+      const child = spawnServer({
+        executable: this.options.executable.path,
         args,
         env,
-        launchRoot,
-      );
+        cwd: launchRoot,
+      });
       const processAdapter = new SpawnedLspProcess(child, (line) => {
         this.outputChannel.appendLine(line);
       });
