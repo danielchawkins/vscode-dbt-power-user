@@ -45,17 +45,6 @@
       "count": 1
     }
   },
-  "src/core/manifest/graphParser.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/core/manifest/nodeParser.ts": {
     "max-lines-per-function": {
       "count": 1

@@ -1,6 +1,6 @@
 import type { ParsedManifest } from "../dbt/domain";
 import type { Log } from "../log";
-import { GraphParser, type DBTGraphType } from "../manifest";
+import { type DBTGraphType, nodeResolver } from "../manifest";
 import type {
   GraphMetaMap,
   NodeData,
@@ -238,11 +238,14 @@ function graphFrom(
   parentIds: DBTGraphType,
   childIds: DBTGraphType,
 ): Pick<GraphMetaMap, "parents" | "children"> {
-  const resolve = new GraphParser(quiet).mapToNode(
-    base.sourceMetaMap,
-    nodeMetaMap,
-    base.testMetaMap,
-    base.functionMetaMap,
+  const resolve = nodeResolver(
+    {
+      sourceMetaMap: base.sourceMetaMap,
+      nodeMetaMap,
+      testMetaMap: base.testMetaMap,
+      functionMetaMap: base.functionMetaMap,
+    },
+    quiet,
   );
   const previous = new Map<string, NodeData>();
   for (const map of [base.graphMetaMap.parents, base.graphMetaMap.children]) {
