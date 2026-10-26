@@ -129,10 +129,15 @@ export async function runOnQueryPanel(
  * Adds a result to the history. A query run from history or bookmarks may have no project to attribute it to, and
  * is not recorded.
  */
-export function recordResult(
-  history: QueryHistoryStore,
-  queryManifestService: QueryManifestService,
-  log: Pick<Log, "debug">,
+export function recordResult({
+  history,
+  queryManifestService,
+  log,
+  run,
+}: {
+  history: QueryHistoryStore;
+  queryManifestService: QueryManifestService;
+  log: Pick<Log, "debug">;
   run: {
     result: {
       columnNames: string[];
@@ -144,8 +149,8 @@ export function recordResult(
     query: string;
     start: number;
     modelName: string;
-  },
-): void {
+  };
+}): void {
   const project = run.projectName
     ? queryManifestService.getProjectByName(run.projectName)
     : queryManifestService.getProject();

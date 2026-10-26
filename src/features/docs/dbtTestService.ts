@@ -206,12 +206,17 @@ export class DbtTestService {
   }
 
   // Find the file path of test macro
-  private getMacroFilePath = (
-    macros: [string],
-    projectName: string,
-    macroMetaMap: MacroMetaMap,
-    testName: string | undefined,
-  ) => {
+  private getMacroFilePath = ({
+    macros,
+    projectName,
+    macroMetaMap,
+    testName,
+  }: {
+    macros: [string];
+    projectName: string;
+    macroMetaMap: MacroMetaMap;
+    testName: string | undefined;
+  }) => {
     if (!testName) {
       return;
     }
@@ -297,12 +302,12 @@ export class DbtTestService {
           test_metadata,
         } = testData;
 
-        const macroFilepath = this.getMacroFilePath(
+        const macroFilepath = this.getMacroFilePath({
           macros,
           projectName,
           macroMetaMap,
-          test_metadata?.name,
-        );
+          testName: test_metadata?.name,
+        });
 
         return {
           ...testData,

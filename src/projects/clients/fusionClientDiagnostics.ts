@@ -60,12 +60,17 @@ function countsByFile(
 }
 
 /** Registers {@link FUSION_CLIENT_STATES_COMMAND} when a test harness asks for it. */
-export function registerFusionClientDiagnostics(
-  registry: ProjectRegistry,
-  pool: FusionClientPool,
-  environments: ProjectEnvironments,
-  status: FusionStatus,
-): Disposable | undefined {
+export function registerFusionClientDiagnostics({
+  registry,
+  pool,
+  environments,
+  status,
+}: {
+  registry: ProjectRegistry;
+  pool: FusionClientPool;
+  environments: ProjectEnvironments;
+  status: FusionStatus;
+}): Disposable | undefined {
   if (!testCommandsEnabled()) {
     return undefined;
   }

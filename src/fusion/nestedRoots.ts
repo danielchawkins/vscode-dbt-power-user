@@ -126,12 +126,17 @@ function providerHook(guard: NestedRootGuard, inner: Hook | undefined): Hook {
       : forward(inner, [argument, ...rest]);
 }
 
-function syncHook(
-  guard: NestedRootGuard,
-  name: (typeof SYNC_HOOKS)[number],
-  inner: Hook | undefined,
-  open: OpenDocuments | undefined,
-): Hook {
+function syncHook({
+  guard,
+  name,
+  inner,
+  open,
+}: {
+  guard: NestedRootGuard;
+  name: (typeof SYNC_HOOKS)[number];
+  inner: Hook | undefined;
+  open: OpenDocuments | undefined;
+}): Hook {
   return (argument, ...rest) => {
     const uri = uriOf(argument);
     if (guard.excludes(uri)) {
@@ -188,7 +193,7 @@ export function guardMiddleware(
   }
   for (const name of SYNC_HOOKS) {
     Object.assign(guarded, {
-      [name]: syncHook(guard, name, hooks[name], open),
+      [name]: syncHook({ guard, name, inner: hooks[name], open }),
     });
   }
   return guarded;

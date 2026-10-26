@@ -137,16 +137,16 @@ suite("Compile reports caused by our own requests", function () {
         }
       },
     } as unknown as FusionClient;
-    const source = new ServerMetadataSource(
-      createFusionCommands(() => client),
-      () => "single_project",
-      {
+    const source = new ServerMetadataSource({
+      lsp: createFusionCommands(() => client),
+      projectName: () => "single_project",
+      triggers: {
         compileComplete: reports.event,
         sourceChanged: sourceChanged.event,
         clientChanged: clientChanged.event,
       },
-      { debug: () => undefined, warn: () => undefined },
-    );
+      log: { debug: () => undefined, warn: () => undefined },
+    });
     try {
       reports.fire();
       await sleep(SETTLE_MS);

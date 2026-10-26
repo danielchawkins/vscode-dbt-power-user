@@ -147,12 +147,12 @@ export class Project implements Disposable, ManifestProject {
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
     );
-    this.errors = new ProjectErrors(
-      this.projectRoot,
-      () => this.getProjectName(),
-      () => readProjectSnapshot(this.projectRoot),
-      this.terminal,
-    );
+    this.errors = new ProjectErrors({
+      root: this.projectRoot,
+      projectName: () => this.getProjectName(),
+      snapshot: () => readProjectSnapshot(this.projectRoot),
+      terminal: this.terminal,
+    });
     this.commandDeps = this.createCommandDeps();
     this.tasks = new ProjectTasks({
       root,
@@ -364,7 +364,14 @@ export class Project implements Disposable, ManifestProject {
     const sourcePaths = reportPaths
       ? () => sourcePathsOf(this.paths())
       : undefined;
-    if (await refreshCliConfig(delegate, this.terminal, label, sourcePaths)) {
+    if (
+      await refreshCliConfig({
+        cli: delegate,
+        terminal: this.terminal,
+        label,
+        sourcePaths,
+      })
+    ) {
       this.diagnostics.clearConfig();
       this.updateDiagnosticsInProblemsPanel();
     }
@@ -433,12 +440,12 @@ export class Project implements Disposable, ManifestProject {
     run: () => Promise<T>,
     launched?: readonly string[],
   ): Promise<T> {
-    return withRunResults(
-      this.runResultsReader,
-      this.runHistory,
+    return withRunResults({
+      reader: this.runResultsReader,
+      history: this.runHistory,
       run,
       launched,
-    );
+    });
   }
 
   async dispose(): Promise<void> {

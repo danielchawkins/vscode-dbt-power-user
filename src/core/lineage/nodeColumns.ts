@@ -55,20 +55,30 @@ export function panelColumns(
   const fromServer = inferred.map((column) => {
     const yaml = byName.get(column.name.toLowerCase());
     byName.delete(column.name.toLowerCase());
-    return toPanelColumn(table, column.name, column.datatype, yaml);
+    return toPanelColumn({
+      table,
+      name: column.name,
+      inferredType: column.datatype,
+      declared: yaml,
+    });
   });
   const onlyDeclared = Array.from(byName.values(), (c) =>
-    toPanelColumn(table, c.name, "", c),
+    toPanelColumn({ table, name: c.name, inferredType: "", declared: c }),
   ).sort((a, b) => a.name.localeCompare(b.name));
   return [...fromServer, ...onlyDeclared];
 }
 
-function toPanelColumn(
-  table: string,
-  name: string,
-  inferredType: string,
-  declared: DeclaredColumn | undefined,
-): PanelColumn {
+function toPanelColumn({
+  table,
+  name,
+  inferredType,
+  declared,
+}: {
+  table: string;
+  name: string;
+  inferredType: string;
+  declared: DeclaredColumn | undefined;
+}): PanelColumn {
   return {
     table,
     name,

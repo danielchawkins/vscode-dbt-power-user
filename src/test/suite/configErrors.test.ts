@@ -439,17 +439,17 @@ describe("ProjectErrors", () => {
   });
 
   const projectErrors = (invocation?: object) =>
-    new ProjectErrors(
-      Uri.file("/p"),
-      () => "p",
-      () => {
+    new ProjectErrors({
+      root: Uri.file("/p"),
+      projectName: () => "p",
+      snapshot: () => {
         if (!invocation) {
           throw new Error("no snapshot");
         }
         return { invocation } as ProjectSnapshot;
       },
-      spyLog(),
-    );
+      terminal: spyLog(),
+    });
 
   it.each([
     [

@@ -94,12 +94,12 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
     queryManifestService: QueryManifestService;
     onDidRemoveProject: Event<Uri>;
   }) {
-    super(
+    super({
       extensionContext,
-      eventEmitterService,
+      emitterService: eventEmitterService,
       dbtTerminal,
       queryManifestService,
-    );
+    });
     this.history = new QueryHistoryStore(dbtTerminal);
     this._disposables.push(
       onDidRemoveProject(() => this.replay.clear()),
@@ -343,12 +343,17 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
         await queryExecutionPromise);
       const output = await queryExecution.executeQuery();
       const result = await this.transmitDataWrapper(output, query, preview);
-      recordResult(this.history, this.queryManifestService, this.dbtTerminal, {
-        result,
-        projectName,
-        query,
-        start,
-        modelName: output.modelName,
+      recordResult({
+        history: this.history,
+        queryManifestService: this.queryManifestService,
+        log: this.dbtTerminal,
+        run: {
+          result,
+          projectName,
+          query,
+          start,
+          modelName: output.modelName,
+        },
       });
       return result;
     } catch (exc: unknown) {

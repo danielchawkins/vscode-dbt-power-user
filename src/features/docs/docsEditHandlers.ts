@@ -107,14 +107,19 @@ export class DocsEditRequests {
    * Runs `callback` and answers `syncRequestId` with its result or its error. A failure also shows an error
    * notification for `notifyProject` when it is set.
    */
-  async handleSyncRequest<C extends RequestCommand>(
-    syncRequestId: string | undefined,
+  async handleSyncRequest<C extends RequestCommand>({
+    syncRequestId,
+    callback,
+    command,
+    notifyProject,
+  }: {
+    syncRequestId: string | undefined;
     callback: () =>
       | documentationEditor.ResponseBodies[C]
-      | PromiseLike<documentationEditor.ResponseBodies[C]>,
-    command: C,
-    notifyProject?: DocsProject,
-  ): Promise<void> {
+      | PromiseLike<documentationEditor.ResponseBodies[C]>;
+    command: C;
+    notifyProject?: DocsProject | undefined;
+  }): Promise<void> {
     try {
       this.sendResponse({ syncRequestId, data: await callback() });
     } catch (error) {
@@ -164,11 +169,11 @@ export class DocsEditRequests {
       command === "showWarningMessage"
         ? window.showWarningMessage
         : window.showInformationMessage;
-    return this.handleSyncRequest(
+    return this.handleSyncRequest({
       syncRequestId,
-      () => show(infoMessage, ...(items ?? [])),
+      callback: () => show(infoMessage, ...(items ?? [])),
       command,
-    );
+    });
   }
 
   private getDbtTestCode(test: TestMetaData, modelName: string, uri: Uri) {
@@ -190,12 +195,13 @@ export class DocsEditRequests {
   ) {
     return this.withProject(
       ({ syncRequestId }: { syncRequestId?: string | undefined }, active) =>
-        this.handleSyncRequest(
+        this.handleSyncRequest({
           syncRequestId,
-          () => read(active.uri),
+          callback: () => read(active.uri),
           command,
-          command === "getSourcesInProject" ? active.project : undefined,
-        ),
+          notifyProject:
+            command === "getSourcesInProject" ? active.project : undefined,
+        }),
     );
   }
 
@@ -205,65 +211,65 @@ export class DocsEditRequests {
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),
       getTestCode: this.withProject(({ syncRequestId, test, model }, active) =>
-        this.handleSyncRequest(
+        this.handleSyncRequest({
           syncRequestId,
-          () =>
+          callback: () =>
             this.getDbtTestCode(
               test as unknown as TestMetaData,
               model,
               active.uri,
             ),
-          "getTestCode",
-        ),
+          command: "getTestCode",
+        }),
       ),
       getUnitTestCode: this.withProject(({ syncRequestId, path, name }) =>
-        this.handleSyncRequest(
+        this.handleSyncRequest({
           syncRequestId,
-          () => getUnitTestCode(path, name),
-          "getUnitTestCode",
-        ),
+          callback: () => getUnitTestCode(path, name),
+          command: "getUnitTestCode",
+        }),
       ),
       getDistinctColumnValues: this.withProject(
         ({ syncRequestId, model, column }, { project }) =>
-          this.handleSyncRequest(
+          this.handleSyncRequest({
             syncRequestId,
-            () => {
+            callback: () => {
               if (!model) {
                 throw new UserInputError("No model is loaded");
               }
               return project.queries.getColumnValues(model, column);
             },
-            "getDistinctColumnValues",
-            project,
-          ),
+            command: "getDistinctColumnValues",
+            notifyProject: project,
+          }),
       ),
       getColumnsOfSources: this.withProject(
         ({ syncRequestId, source, table }, { project }) =>
-          this.handleSyncRequest(
+          this.handleSyncRequest({
             syncRequestId,
-            async () => ({
+            callback: async () => ({
               columns:
                 (await project.queries.getColumnsOfSource(source, table))?.map(
                   (c) => c.column,
                 ) ?? [],
             }),
-            "getColumnsOfSources",
-            project,
-          ),
+            command: "getColumnsOfSources",
+            notifyProject: project,
+          }),
       ),
       getColumnsOfModel: this.withProject(
         ({ syncRequestId, model }, { project }) =>
-          this.handleSyncRequest(
+          this.handleSyncRequest({
             syncRequestId,
-            async () => ({
+            callback: async () => ({
               columns:
                 (await project.queries.getColumnsOfModel(model))?.map(
                   (c) => c.column,
                 ) ?? [],
             }),
-            "getColumnsOfModel",
-            project,
-          ),
+            command: "getColumnsOfModel",
+            notifyProject: project,
+          }),
       ),
       getSourcesInProject: this.inProject("getSourcesInProject", (uri) => ({
         sources: host.queryManifestService.getSourcesInProject(uri),

@@ -130,12 +130,17 @@ export async function runSqlNow(
   };
 }
 
-async function queryExecution(
-  project: SqlProject,
-  query: string,
-  modelName: string,
-  limit: number,
-): Promise<QueryExecution> {
+async function queryExecution({
+  project,
+  query,
+  modelName,
+  limit,
+}: {
+  project: SqlProject;
+  query: string;
+  modelName: string;
+  limit: number;
+}): Promise<QueryExecution> {
   return startSql(project.getFusionCli(), { query, modelName, limit });
 }
 
@@ -162,7 +167,7 @@ export function queryPanelPayload(
   logQuery(deps, query, limit);
   return {
     query,
-    fn: queryExecution(deps.project, query, modelName, limit),
+    fn: queryExecution({ project: deps.project, query, modelName, limit }),
     projectName: deps.project.getProjectName(),
     preview,
   };
@@ -183,12 +188,17 @@ export async function compileOrReport(
 }
 
 /** Returns up to 100 distinct values of `column` in `model`. */
-export async function getColumnValues(
-  cli: SqlExecutor,
-  terminal: Log,
-  model: string,
-  column: string,
-) {
+export async function getColumnValues({
+  cli,
+  terminal,
+  model,
+  column,
+}: {
+  cli: SqlExecutor;
+  terminal: Log;
+  model: string;
+  column: string;
+}) {
   terminal.debug(
     "getColumnValues",
     "finding distinct values for column",

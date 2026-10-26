@@ -89,12 +89,12 @@ export class DBTPowerUserExtension implements Disposable {
   activate(): Promise<void> {
     this.own(registerRuntimeTimings());
     this.own(
-      registerFusionClientDiagnostics(
-        this.projectRegistry,
-        this.fusionClientPool,
-        this.projectEnvironments,
-        this.fusionStatus,
-      ),
+      registerFusionClientDiagnostics({
+        registry: this.projectRegistry,
+        pool: this.fusionClientPool,
+        environments: this.projectEnvironments,
+        status: this.fusionStatus,
+      }),
     );
     this.own(registerConnectedColumnsCommand(this.dbtLineageService));
     return this.start();

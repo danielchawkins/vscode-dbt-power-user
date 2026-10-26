@@ -70,12 +70,12 @@ describe("registerFusionClientDiagnostics", () => {
         process.env.FPU_SMOKE_HOST = value;
       }
 
-      registerFusionClientDiagnostics(
-        { projects: [] } as unknown as ProjectRegistry,
-        { get: vi.fn() } as unknown as FusionClientPool,
-        noEnvironments,
-        noStatus,
-      );
+      registerFusionClientDiagnostics({
+        registry: { projects: [] } as unknown as ProjectRegistry,
+        pool: { get: vi.fn() } as unknown as FusionClientPool,
+        environments: noEnvironments,
+        status: noStatus,
+      });
 
       expect(commands.registerCommand).not.toHaveBeenCalled();
     },
@@ -86,12 +86,12 @@ describe("registerFusionClientDiagnostics", () => {
     (host) => {
       process.env.FPU_SMOKE_HOST = host;
 
-      registerFusionClientDiagnostics(
-        { projects: [] } as unknown as ProjectRegistry,
-        { get: vi.fn() } as unknown as FusionClientPool,
-        noEnvironments,
-        noStatus,
-      );
+      registerFusionClientDiagnostics({
+        registry: { projects: [] } as unknown as ProjectRegistry,
+        pool: { get: vi.fn() } as unknown as FusionClientPool,
+        environments: noEnvironments,
+        status: noStatus,
+      });
 
       expect(commands.registerCommand).toHaveBeenCalledWith(
         FUSION_CLIENT_STATES_COMMAND,
@@ -119,12 +119,12 @@ describe("registerFusionClientDiagnostics", () => {
       ),
     } as unknown as FusionClientPool;
 
-    registerFusionClientDiagnostics(
-      { projects: [general, sox] } as unknown as ProjectRegistry,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general, sox] } as unknown as ProjectRegistry,
       pool,
-      noEnvironments,
-      noStatus,
-    );
+      environments: noEnvironments,
+      status: noStatus,
+    });
 
     expect(commandHandler()()).toEqual([
       {
@@ -174,12 +174,12 @@ describe("registerFusionClientDiagnostics", () => {
       getLaunch: vi.fn(() => undefined),
     } as unknown as FusionClientPool;
 
-    registerFusionClientDiagnostics(
-      { projects: [general] } as unknown as ProjectRegistry,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general] } as unknown as ProjectRegistry,
       pool,
-      noEnvironments,
-      noStatus,
-    );
+      environments: noEnvironments,
+      status: noStatus,
+    });
 
     expect(commandHandler()()).toEqual([
       expect.objectContaining({
@@ -197,12 +197,12 @@ describe("registerFusionClientDiagnostics", () => {
       peek: vi.fn(() => ({ source: "mise" })),
     } as unknown as ProjectEnvironments;
 
-    registerFusionClientDiagnostics(
-      { projects: [general] } as unknown as ProjectRegistry,
-      { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general] } as unknown as ProjectRegistry,
+      pool: { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
       environments,
-      noStatus,
-    );
+      status: noStatus,
+    });
 
     expect(commandHandler()()).toEqual([
       expect.objectContaining({ environmentSource: "mise" }),
@@ -218,12 +218,12 @@ describe("registerFusionClientDiagnostics", () => {
       getLaunch: vi.fn(() => ({ resolvedPath: "/opt/mise/bin/dbt" })),
     } as unknown as FusionClientPool;
 
-    registerFusionClientDiagnostics(
-      { projects: [general] } as unknown as ProjectRegistry,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general] } as unknown as ProjectRegistry,
       pool,
-      noEnvironments,
-      noStatus,
-    );
+      environments: noEnvironments,
+      status: noStatus,
+    });
 
     expect(commandHandler()()).toEqual([
       expect.objectContaining({ executablePath: "/opt/mise/bin/dbt" }),
@@ -238,12 +238,12 @@ describe("registerFusionClientDiagnostics", () => {
       getLaunch: vi.fn(() => ({ projectDir: "/workspace/general" })),
     } as unknown as FusionClientPool;
 
-    registerFusionClientDiagnostics(
-      { projects: [general] } as unknown as ProjectRegistry,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general] } as unknown as ProjectRegistry,
       pool,
-      noEnvironments,
-      noStatus,
-    );
+      environments: noEnvironments,
+      status: noStatus,
+    });
 
     expect(commandHandler()()).toEqual([
       expect.objectContaining({ projectDir: "/workspace/general" }),
@@ -257,12 +257,12 @@ describe("registerFusionClientDiagnostics", () => {
       clientDetail: vi.fn(() => "general · from mise"),
     } as unknown as FusionStatus;
 
-    registerFusionClientDiagnostics(
-      { projects: [general] } as unknown as ProjectRegistry,
-      { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
-      noEnvironments,
+    registerFusionClientDiagnostics({
+      registry: { projects: [general] } as unknown as ProjectRegistry,
+      pool: { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
+      environments: noEnvironments,
       status,
-    );
+    });
 
     expect(commandHandler()()).toEqual([
       expect.objectContaining({ statusDetail: "general · from mise" }),
@@ -274,12 +274,12 @@ describe("registerFusionClientDiagnostics", () => {
     delete process.env.FPU_SMOKE_HOST;
     process.env.FPU_INTEGRATION_COMMANDS = "1";
     try {
-      registerFusionClientDiagnostics(
-        { projects: [] } as unknown as ProjectRegistry,
-        { get: vi.fn() } as unknown as FusionClientPool,
-        noEnvironments,
-        noStatus,
-      );
+      registerFusionClientDiagnostics({
+        registry: { projects: [] } as unknown as ProjectRegistry,
+        pool: { get: vi.fn() } as unknown as FusionClientPool,
+        environments: noEnvironments,
+        status: noStatus,
+      });
     } finally {
       delete process.env.FPU_INTEGRATION_COMMANDS;
     }

@@ -100,12 +100,12 @@ describe("disposable ownership", () => {
     enableHarness(false);
     expect(registerRuntimeTimings()).toBeUndefined();
     expect(
-      registerFusionClientDiagnostics(
-        {} as ProjectRegistry,
-        {} as FusionClientPool,
-        {} as ProjectEnvironments,
-        {} as FusionStatus,
-      ),
+      registerFusionClientDiagnostics({
+        registry: {} as ProjectRegistry,
+        pool: {} as FusionClientPool,
+        environments: {} as ProjectEnvironments,
+        status: {} as FusionStatus,
+      }),
     ).toBeUndefined();
     expect(
       registerConnectedColumnsCommand({} as DbtLineageService),
@@ -116,12 +116,12 @@ describe("disposable ownership", () => {
     enableHarness(true);
     const owned: (Disposable | undefined)[] = [
       registerRuntimeTimings(),
-      registerFusionClientDiagnostics(
-        {} as ProjectRegistry,
-        {} as FusionClientPool,
-        {} as ProjectEnvironments,
-        {} as FusionStatus,
-      ),
+      registerFusionClientDiagnostics({
+        registry: {} as ProjectRegistry,
+        pool: {} as FusionClientPool,
+        environments: {} as ProjectEnvironments,
+        status: {} as FusionStatus,
+      }),
       registerConnectedColumnsCommand({} as DbtLineageService),
     ];
 

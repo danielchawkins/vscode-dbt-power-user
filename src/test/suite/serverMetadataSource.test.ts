@@ -28,16 +28,16 @@ function setup(
       .mockResolvedValue({ adapterType: "duckdb", projectName: "p" }),
   } as unknown as FusionCommands;
   const log = { debug: vi.fn(), warn: vi.fn() };
-  const source = new ServerMetadataSource(
+  const source = new ServerMetadataSource({
     lsp,
-    () => "p",
-    {
+    projectName: () => "p",
+    triggers: {
       compileComplete: compiled.event,
       sourceChanged: sourceChanged.event,
       clientChanged: clientChanged.event,
     },
     log,
-  );
+  });
   const changes = vi.fn();
   source.onDidChange(changes);
   return {

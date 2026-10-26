@@ -131,12 +131,12 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     };
 
-    const commands = new ProjectSetupCommands(
-      mockProjects,
-      mockStore as never,
-      mockPicker as unknown as ProjectQuickPick,
-      outputChannels as never,
-    );
+    const commands = new ProjectSetupCommands({
+      projects: mockProjects,
+      extensionContext: mockStore as never,
+      projectQuickPick: mockPicker as unknown as ProjectQuickPick,
+      outputChannels: outputChannels as never,
+    });
 
     return {
       commands,

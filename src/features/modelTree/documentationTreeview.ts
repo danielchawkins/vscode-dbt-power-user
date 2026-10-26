@@ -69,7 +69,7 @@ export class DocumentationTreeview
       : " ";
     const description = `[ ${(node.config.materialized ?? "").toUpperCase()} ]  -  schema : ${node.schema}`;
     const treeItem = new DocTreeItem(
-      new DocNode(node.alias, node.unique_id, url, description),
+      new DocNode({ label: node.alias, key: node.unique_id, url, description }),
     );
     treeItem.children = Object.entries(node.columns).map(
       ([label, column]) =>
@@ -117,7 +117,17 @@ class DocTreeItem extends TreeItem {
 class DocNode extends Node {
   description: string;
 
-  constructor(label: string, key: string, url: string, description: string) {
+  constructor({
+    label,
+    key,
+    url,
+    description,
+  }: {
+    label: string;
+    key: string;
+    url: string;
+    description: string;
+  }) {
     super(label, key, url);
     this.description = description;
   }
