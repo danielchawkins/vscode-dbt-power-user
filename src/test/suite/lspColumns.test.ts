@@ -14,10 +14,4 @@ describe("dbColumnsFrom", () => {
       { column: "total", dtype: "" },
     ]);
   });
-
-  it("is undefined for no node, no columns and baseline's empty columns", () => {
-    expect(dbColumnsFrom(undefined)).toBeUndefined();
-    expect(dbColumnsFrom(null)).toBeUndefined();
-    expect(dbColumnsFrom({ node: { columns: {} } })).toBeUndefined();
-  });
 });

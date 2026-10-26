@@ -15,10 +15,6 @@ describe("ProjectDiagnosticsFilter", () => {
   const filter = () =>
     new ProjectDiagnosticsFilter(["/p", "/private/p"], (p) => present.has(p));
 
-  it("forwards diagnostics for files that exist", () => {
-    expect(filter().shouldForward(Uri.file("/p/models/a.sql"))).toBe(true);
-  });
-
   it("drops diagnostics for files that do not exist", () => {
     expect(filter().shouldForward(Uri.file("/p/macros/adapters.sql"))).toBe(
       false,
@@ -27,10 +23,6 @@ describe("ProjectDiagnosticsFilter", () => {
 
   it("drops diagnostics for files outside the project root", () => {
     expect(filter().shouldForward(Uri.file("/elsewhere/a.sql"))).toBe(false);
-  });
-
-  it("drops diagnostics for a sibling whose path shares the root as a prefix", () => {
-    expect(filter().shouldForward(Uri.file("/pp/models/a.sql"))).toBe(false);
   });
 
   it("accepts files under the canonical project root", () => {

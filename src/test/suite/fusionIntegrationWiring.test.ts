@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
-import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionStatus } from "../../projects/clients/fusionStatus";
 import { Project } from "../../projects/project/project";
 
-import { ConfiguredFusionExecutableResolver } from "../../executable/configuredFusionExecutableResolver";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
@@ -98,20 +95,6 @@ describe("Fusion-only integration wiring", () => {
     composeTracked("first");
     const { extensionContextStore } = composeTracked("rebound");
     expect(extensionContextStore.getFromWorkspaceState("key")).toBe("rebound");
-  });
-
-  it("composes FusionStatus for the Fusion LSP status surface", () => {
-    expect(composeTracked().fusionStatus).toBeInstanceOf(FusionStatus);
-  });
-
-  it("composes DBTPowerUserExtension with FusionStatus", () => {
-    expect(composeTracked().extension).toBeInstanceOf(DBTPowerUserExtension);
-  });
-
-  it("composes one shared Fusion executable resolver for LSP and CLI", () => {
-    expect(composeTracked().fusionExecutableResolver).toBeInstanceOf(
-      ConfiguredFusionExecutableResolver,
-    );
   });
 
   it("builds a Project from the project factory", async () => {

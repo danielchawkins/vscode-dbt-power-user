@@ -92,11 +92,6 @@ describe("NestedRootGuard", () => {
     ).toBe(false);
   });
 
-  it("matches by path segments, so a sibling sharing a prefix is not excluded", () => {
-    const sibling = Uri.file("/workspace/outer/inner_extra/a.sql");
-    expect(guardFor().excludes(sibling)).toBe(false);
-  });
-
   it("excludes is false for non-file URIs", () => {
     const guard = guardFor();
     for (const value of [

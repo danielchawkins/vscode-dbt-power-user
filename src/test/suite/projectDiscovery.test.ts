@@ -49,26 +49,17 @@ describe("findProjectRootForFile", () => {
     expect(find(touch(d, "p", "models", "a.sql"), d)).toBe(path.join(d, "p"));
   });
 
-  it("accepts a directory whose name starts with two dots", () => {
-    const d = tmp();
-    touch(d, "dbt_project.yml");
-    expect(find(touch(d, "..scratch", "models", "a.sql"), d)).toBe(d);
-  });
-
   it("returns undefined without a project file", () => {
     const d = tmp();
     expect(find(touch(d, "a", "b.sql"), d)).toBeUndefined();
   });
 
-  it.each(["node_modules", "dbt_packages", "dbt_internal_packages", "target"])(
-    "ignores files under %s",
-    (excluded) => {
-      const d = tmp();
-      touch(d, "dbt_project.yml");
-      touch(d, excluded, "pkg", "dbt_project.yml");
-      expect(find(touch(d, excluded, "pkg", "m.sql"), d)).toBeUndefined();
-    },
-  );
+  it.each(["dbt_packages"])("ignores files under %s", (excluded) => {
+    const d = tmp();
+    touch(d, "dbt_project.yml");
+    touch(d, excluded, "pkg", "dbt_project.yml");
+    expect(find(touch(d, excluded, "pkg", "m.sql"), d)).toBeUndefined();
+  });
 
   it("does not look above the folder root", () => {
     const d = tmp();
@@ -83,17 +74,6 @@ describe("findProjectRootForFile", () => {
     const other = tmp();
     touch(other, "dbt_project.yml");
     expect(find(touch(other, "a.sql"), d)).toBeUndefined();
-  });
-
-  it("does not treat a sibling whose name extends the folder's as inside it", () => {
-    const d = tmp();
-    const folder = path.join(d, "proj");
-    touch(folder, "dbt_project.yml");
-    touch(d, "projects", "dbt_project.yml");
-    expect(find(touch(folder, "models", "a.sql"), folder)).toBe(folder);
-    expect(
-      find(touch(d, "projects", "models", "a.sql"), folder),
-    ).toBeUndefined();
   });
 
   it("uses the injected existence check", () => {

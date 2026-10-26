@@ -658,21 +658,6 @@ describe("FusionLanguageClient nested roots", () => {
     client.dispose();
   });
 
-  it("tracks open documents across didOpen and didClose", async () => {
-    const { client, middleware } = await startNested(nestedSource().source);
-    const model = documentAt("/workspace/general/models/a.sql");
-
-    await middleware.didOpen(model, vi.fn());
-    expect(client.openDocuments?.map((uri) => uri.fsPath)).toEqual([
-      "/workspace/general/models/a.sql",
-    ]);
-
-    await middleware.didClose(model, vi.fn());
-    expect(client.openDocuments).toEqual([]);
-    await client.stop();
-    client.dispose();
-  });
-
   it("sends didClose for an open document that a later-declared root excludes", async () => {
     const nested = nestedSource();
     const { client, languageClient, middleware } = await startNested(

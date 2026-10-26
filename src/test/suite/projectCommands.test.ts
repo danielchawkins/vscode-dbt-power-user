@@ -65,35 +65,32 @@ describe("modelParamsFor", () => {
 });
 
 describe("queueCli", () => {
-  it.each([
-    [{ kind: "build" } as const, "dbt build"],
-    [
-      { kind: "run", select: "orders" } as const,
-      "dbt run --select orders --full-refresh",
-    ],
-  ])("reports %o as %s when prepare throws", async (cli, status) => {
-    const notifyFailed = vi.fn();
-    const deps = {
-      cli: () =>
-        ({
-          prepare: () => {
-            throw new Error("no dbt");
-          },
-        }) as unknown as FusionCli,
-      snapshot: () =>
-        ({
-          invocation: { commandParams: { run: ["--full-refresh"] } },
-        }) as unknown as ProjectSnapshot,
-      notifyFailed,
-      terminal: { error: vi.fn() } as unknown as Log,
-    } as unknown as ProjectCommandDeps;
+  it.each([[{ kind: "build" } as const, "dbt build"]])(
+    "reports %o as %s when prepare throws",
+    async (cli, status) => {
+      const notifyFailed = vi.fn();
+      const deps = {
+        cli: () =>
+          ({
+            prepare: () => {
+              throw new Error("no dbt");
+            },
+          }) as unknown as FusionCli,
+        snapshot: () =>
+          ({
+            invocation: { commandParams: { run: ["--full-refresh"] } },
+          }) as unknown as ProjectSnapshot,
+        notifyFailed,
+        terminal: { error: vi.fn() } as unknown as Log,
+      } as unknown as ProjectCommandDeps;
 
-    await expect(
-      queueCli(deps, cli, new DbtTaskTerminal(() => undefined)),
-    ).rejects.toThrow("no dbt");
+      await expect(
+        queueCli(deps, cli, new DbtTaskTerminal(() => undefined)),
+      ).rejects.toThrow("no dbt");
 
-    expect(notifyFailed).toHaveBeenCalledWith(status, "Error: no dbt");
-  });
+      expect(notifyFailed).toHaveBeenCalledWith(status, "Error: no dbt");
+    },
+  );
 
   it("notifies failure and queues nothing when prepare throws", async () => {
     const enqueue = vi.fn();

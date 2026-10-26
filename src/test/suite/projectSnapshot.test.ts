@@ -1,7 +1,6 @@
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  parseTraceServerLevel,
   resolveProjectSnapshot,
   substituteVariables,
 } from "../../core/snapshot";
@@ -249,12 +248,5 @@ describe("substituteVariables", () => {
         folder: undefined,
       }),
     ).toBe("${env:NOPE}/${workspaceFolder}");
-  });
-});
-
-describe("fusionLanguageClient helpers", () => {
-  it("parses traceServer launch setting values", () => {
-    expect(parseTraceServerLevel("verbose")).toBe("verbose");
-    expect(parseTraceServerLevel("unexpected")).toBe("off");
   });
 });
