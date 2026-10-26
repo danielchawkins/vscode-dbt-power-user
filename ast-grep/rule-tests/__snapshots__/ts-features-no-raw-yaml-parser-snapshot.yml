@@ -1,0 +1,68 @@
+id: ts-features-no-raw-yaml-parser
+snapshots:
+  const alias = YAML.CST;:
+    labels:
+    - source: YAML.CST
+      style: primary
+      start: 14
+      end: 22
+  const doc = YAML.parseDocument(text);:
+    labels:
+    - source: YAML.parseDocument(text)
+      style: primary
+      start: 12
+      end: 36
+  const doc = YAML.parseDocument<YAMLSeq<string>>(text);:
+    labels:
+    - source: YAML.parseDocument<YAMLSeq<string>>(text)
+      style: primary
+      start: 12
+      end: 53
+  const doc = parseDocument(text);:
+    labels:
+    - source: parseDocument(text)
+      style: primary
+      start: 12
+      end: 31
+  const doc = parseDocument<YAMLSeq<string>>(text);:
+    labels:
+    - source: parseDocument<YAMLSeq<string>>(text)
+      style: primary
+      start: 12
+      end: 48
+  const parser = new Parser(lineCounter.addNewLine);:
+    labels:
+    - source: new Parser(lineCounter.addNewLine)
+      style: primary
+      start: 15
+      end: 49
+  const parser = new YAML.Parser(lineCounter.addNewLine);:
+    labels:
+    - source: new YAML.Parser(lineCounter.addNewLine)
+      style: primary
+      start: 15
+      end: 54
+  'function f(item: CST.CollectionItem) { return item; }':
+    labels:
+    - source: CST.CollectionItem
+      style: primary
+      start: 17
+      end: 35
+  if (CST.isScalar(item.key)) { return; }:
+    labels:
+    - source: CST.isScalar
+      style: primary
+      start: 4
+      end: 16
+  if (YAML.CST.isScalar(item.key)) { return; }:
+    labels:
+    - source: YAML.CST.isScalar
+      style: primary
+      start: 4
+      end: 21
+  'let token: YAML.CST.Token;':
+    labels:
+    - source: YAML.CST.Token
+      style: primary
+      start: 11
+      end: 25

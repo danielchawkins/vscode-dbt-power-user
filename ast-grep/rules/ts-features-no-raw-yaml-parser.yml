@@ -1,0 +1,27 @@
+# Feature code reads dbt schema YAML through the core walker in src/core/yaml/schemaYaml.ts. The yaml
+# package's CST, its Parser and parseDocument are the raw parts that walker wraps, so a feature that calls
+# them walks the YAML by hand again. A file that writes YAML is listed under ignores.
+#
+# The regexes match node text from its start, so a qualified or generic form (YAML.parseDocument<T>(...),
+# new YAML.Parser(), YAML.CST.isScalar, let t: YAML.CST.Token) is caught as well as the bare call.
+id: ts-features-no-raw-yaml-parser
+language: typescript
+severity: error
+message: >-
+  A feature file uses the yaml package's CST, Parser or parseDocument. Read schema YAML through
+  src/core/yaml/schemaYaml.ts (modelNameKeys, modelAt, sourceTables). A file that writes YAML goes in ignores.
+files:
+  - src/features/**
+ignores:
+  # Writes the docs schema YAML, so it has to parse the document it edits.
+  - src/features/docs/docsYaml.ts
+rule:
+  any:
+    - kind: new_expression
+      regex: ^new ([\w$]+\.)*Parser\b
+    - kind: call_expression
+      regex: ^([\w$]+\.)*parseDocument\b
+    - kind: member_expression
+      regex: (^|\.)CST(\.|$)
+    - kind: nested_type_identifier
+      regex: (^|\.)CST\.
