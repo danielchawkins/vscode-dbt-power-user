@@ -70,11 +70,11 @@ describe("Fusion request timing (characterization)", () => {
     const second = commands.listNodes(["b"], request).catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(ceilingMs);
     expect(await first).toMatchObject({ kind: "timeout" });
-    // FusionCommands released its queue at the ceiling, but FusionRequests still holds the first request, so the
-    // second reaches the server only after the first answers, while its own ceiling started at the first's timeout.
+    // FusionCommands released its queue at the ceiling, and FusionRequests no longer queues, so the second reaches
+    // the server at once. Its ceiling started at the first's timeout, so it times out a ceiling later.
     await vi.advanceTimersByTimeAsync(ceilingMs);
     expect(await second).toMatchObject({ kind: "timeout" });
-    expect(received.map((r) => r.at)).toEqual([0, ceilingMs + 3_000]);
+    expect(received.map((r) => r.at)).toEqual([0, ceilingMs]);
   });
 
   it.fails("cancels the server request when the caller gives up on it", async () => {

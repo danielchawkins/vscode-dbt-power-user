@@ -4,7 +4,6 @@ import {
   type LanguageClientOptions,
 } from "vscode-languageclient/node";
 import {
-  FUSION_LSP_COMMANDS,
   prefixedCommand,
   type FusionClientState,
   type FusionLspCommand,
@@ -19,9 +18,8 @@ interface RequestTarget {
   readonly uriConverters: LanguageClientOptions["uriConverters"];
 }
 
-/** Sends `workspace/executeCommand` for one client; `listNodes` requests run one at a time. */
+/** Sends `workspace/executeCommand` for one client. FusionCommands decides when each request is sent. */
 export class FusionRequests {
-  private listNodesQueue: Promise<unknown> = Promise.resolve();
   private readonly target: () => RequestTarget;
 
   constructor(target: () => RequestTarget) {
@@ -29,21 +27,6 @@ export class FusionRequests {
   }
 
   request<T>(
-    command: FusionLspCommand,
-    payload: unknown,
-    token?: CancellationToken,
-  ): Promise<T> {
-    if (command !== FUSION_LSP_COMMANDS.listNodes) {
-      return this.send(command, payload, token);
-    }
-    const sent = this.listNodesQueue.then(() =>
-      this.send<T>(command, payload, token),
-    );
-    this.listNodesQueue = sent.catch(() => undefined);
-    return sent;
-  }
-
-  private send<T>(
     command: FusionLspCommand,
     payload: unknown,
     token?: CancellationToken,
