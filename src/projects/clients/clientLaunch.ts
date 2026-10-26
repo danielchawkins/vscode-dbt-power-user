@@ -62,11 +62,11 @@ export function launchClient(
           onDidChange: sources.registry.onDidChangeProjects,
         },
       } satisfies FusionClientOptions)
-    : new FailedFusionClient(
+    : new FailedFusionClient({
         project,
-        formatFusionExecutableResolutionFailure(project.name, verdict),
-        launch.staticAnalysis,
-        sources.outputChannel(project),
-      );
+        message: formatFusionExecutableResolutionFailure(project.name, verdict),
+        staticAnalysis: launch.staticAnalysis,
+        outputChannel: sources.outputChannel(project),
+      });
   return { client, launch };
 }

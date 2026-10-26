@@ -80,7 +80,12 @@ function newColumnEntry(
     description: (column.description?.trim() ?? "") || undefined,
     data_type: column.type?.toLowerCase(),
     // A column without a `tests` key gets `data_tests`.
-    ...getTestDataByColumn(message, column.name, { name: column.name }, deps),
+    ...getTestDataByColumn({
+      message,
+      columnNameFromWebview: column.name,
+      existingColumn: { name: column.name },
+      deps,
+    }),
     ...(isQuotedIdentifier(column.name, adapterType)
       ? { quote: true }
       : undefined),
@@ -104,12 +109,12 @@ function updateColumnEntry(
       .find(Boolean)
       ?.toLowerCase(),
   );
-  const allTests = getTestDataByColumn(
+  const allTests = getTestDataByColumn({
     message,
-    column.name,
-    existing.toJSON(),
+    columnNameFromWebview: column.name,
+    existingColumn: existing.toJSON(),
     deps,
-  );
+  });
   setOrDelete(existing, "tests", allTests?.tests);
   setOrDelete(existing, "data_tests", allTests?.data_tests);
 }
@@ -117,12 +122,12 @@ function updateColumnEntry(
 function mergeIntoModel(context: WriteContext, model: YAMLMap) {
   const { message, deps } = context;
   setOrDelete(model, "description", message.description?.trim());
-  const modelTests = getTestDataByModel(
+  const modelTests = getTestDataByModel({
     message,
-    model.get("name") as string,
-    model.toJSON(),
+    modelName: model.get("name") as string,
+    existingModel: model.toJSON(),
     deps,
-  );
+  });
   setOrDelete(model, "tests", modelTests?.tests);
   setOrDelete(model, "data_tests", modelTests?.data_tests);
   if (!model.get("columns")) {
@@ -166,12 +171,17 @@ function addModel(
 }
 
 /** `docFile` with the model documentation and tests of `message` merged in. */
-export function withDocumentation(
-  docFile: string,
-  message: SaveInput,
-  adapterType: string,
-  deps: TestDataDeps,
-): string {
+export function withDocumentation({
+  docFile,
+  message,
+  adapterType,
+  deps,
+}: {
+  docFile: string;
+  message: SaveInput;
+  adapterType: string;
+  deps: TestDataDeps;
+}): string {
   const parsed = parseDocument<YAMLSeq<DocumentationSchema>>(docFile, {
     strict: false,
     uniqueKeys: false,

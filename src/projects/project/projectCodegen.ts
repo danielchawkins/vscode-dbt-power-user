@@ -177,12 +177,17 @@ export async function generateModel({
 }
 
 /** Opens beside the editor the `type` artifact in the target folder that matches the model's path. */
-export async function findModelInTargetfolder(
-  projectRoot: string,
-  targetPath: string | undefined,
-  modelPath: Uri,
-  type: string,
-): Promise<void> {
+export async function findModelInTargetfolder({
+  projectRoot,
+  targetPath,
+  modelPath,
+  type,
+}: {
+  projectRoot: string;
+  targetPath: string | undefined;
+  modelPath: Uri;
+  type: string;
+}): Promise<void> {
   if (!targetPath) {
     return;
   }

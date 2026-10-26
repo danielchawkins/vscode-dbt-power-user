@@ -10,23 +10,33 @@ interface TypePolicy {
   graph: boolean;
 }
 
-const node = (
-  replace: boolean,
-  add: boolean,
-  parentKey: boolean,
+const node = ({
+  replace,
+  add,
+  parentKey,
   graph = true,
-): TypePolicy => ({ replace, add, parentKey, graph });
+}: {
+  replace: boolean;
+  add: boolean;
+  parentKey: boolean;
+  graph?: boolean;
+}): TypePolicy => ({ replace, add, parentKey, graph });
 
 /** Resource types whose node set the server owns (`dbt.listNodes ["+package:<root>"]`), and how the merge treats each. */
 const MERGE_POLICY: Readonly<Record<string, TypePolicy>> = {
-  model: node(true, true, true),
-  seed: node(true, true, true),
-  snapshot: node(true, true, true),
-  exposure: node(true, false, true),
-  function: node(true, false, true),
-  source: node(false, false, false),
-  test: node(false, false, true),
-  unit_test: node(false, false, false, false),
+  model: node({ replace: true, add: true, parentKey: true }),
+  seed: node({ replace: true, add: true, parentKey: true }),
+  snapshot: node({ replace: true, add: true, parentKey: true }),
+  exposure: node({ replace: true, add: false, parentKey: true }),
+  function: node({ replace: true, add: false, parentKey: true }),
+  source: node({ replace: false, add: false, parentKey: false }),
+  test: node({ replace: false, add: false, parentKey: true }),
+  unit_test: node({
+    replace: false,
+    add: false,
+    parentKey: false,
+    graph: false,
+  }),
 };
 
 export const SERVER_RESOURCE_TYPES: ReadonlySet<string> = new Set(

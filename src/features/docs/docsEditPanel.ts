@@ -87,12 +87,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     terminal: Log;
     parseDemand?: ParseDemand;
   }) {
-    super(
+    super({
       extensionContext,
-      services.emitterService,
-      terminal,
-      services.queryManifestService,
-    );
+      emitterService: services.emitterService,
+      dbtTerminal: terminal,
+      queryManifestService: services.queryManifestService,
+    });
     this.projects = projects;
     this.parseDemand = parseDemand;
     this.docGenService = services.docGenService;
@@ -345,10 +345,10 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     message: SaveMessage,
     project: PanelProject | undefined,
   ): Promise<boolean> {
-    return saveDocumentation(
+    return saveDocumentation({
       message,
-      project,
-      {
+      activeProject: project,
+      deps: {
         projects: this.projects,
         terminal: this.dbtTerminal,
         testData: {
@@ -356,7 +356,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
           dbtTestService: this.dbtTestService,
         },
       },
-      (error, patchPath) => {
+      onFailure: (error, patchPath) => {
         void this.transmitError();
         void notifyError(
           project,
@@ -369,7 +369,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
           error,
         );
       },
-    );
+    });
   }
 
   private async onManifestChanged() {

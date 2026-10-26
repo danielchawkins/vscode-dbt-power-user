@@ -97,15 +97,15 @@ export function createProjectMetadataSource(
   return new CompositeMetadataSource(
     declared,
     project,
-    new ServerMetadataSource(
-      project.lsp,
-      () => project.getProjectName(),
-      {
+    new ServerMetadataSource({
+      lsp: project.lsp,
+      projectName: () => project.getProjectName(),
+      triggers: {
         compileComplete: project.onDidCompile,
         sourceChanged: project.onSourceFileChanged,
         clientChanged: project.onDidChangeClient,
       },
       log,
-    ),
+    }),
   );
 }

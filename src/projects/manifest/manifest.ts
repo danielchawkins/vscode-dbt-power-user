@@ -120,12 +120,12 @@ export async function buildManifest({
     "Manifest",
     `Going to parse manifest for project at ${projectRoot}`,
   );
-  const manifestJson = readManifestFile(
+  const manifestJson = readManifestFile({
     projectRoot,
     targetPath,
     terminal,
     readFailures,
-  );
+  });
   if (manifestJson === undefined) {
     return undefined;
   }
@@ -239,12 +239,17 @@ async function parseResourceMaps(
   };
 }
 
-function readManifestFile(
-  projectRoot: string,
-  targetPath: string,
-  terminal: Log,
-  readFailures: ManifestReadFailures,
-): ManifestJson | undefined {
+function readManifestFile({
+  projectRoot,
+  targetPath,
+  terminal,
+  readFailures,
+}: {
+  projectRoot: string;
+  targetPath: string;
+  terminal: Log;
+  readFailures: ManifestReadFailures;
+}): ManifestJson | undefined {
   const segments = isAbsolute(targetPath)
     ? [targetPath]
     : [projectRoot, targetPath];

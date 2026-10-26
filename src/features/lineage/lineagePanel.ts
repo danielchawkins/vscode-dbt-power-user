@@ -101,12 +101,12 @@ export class LineagePanel
     queryManifestService: QueryManifestService;
     parseDemand?: ParseDemand;
   }) {
-    super(
+    super({
       extensionContext,
-      eventEmitterService,
-      terminal,
+      emitterService: eventEmitterService,
+      dbtTerminal: terminal,
       queryManifestService,
-    );
+    });
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
     this.parseDemand = parseDemand;

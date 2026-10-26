@@ -276,7 +276,7 @@ describe("withRunResults", () => {
     const reader = stubReader(entry);
     const history = { addEntry: vi.fn() };
     await expect(
-      withRunResults(reader, history, async () => "done"),
+      withRunResults({ reader, history, run: async () => "done" }),
     ).resolves.toBe("done");
     expect(reader.readIfChanged).toHaveBeenCalledWith("before", undefined);
     expect(history.addEntry).toHaveBeenCalledWith(entry);
@@ -284,13 +284,22 @@ describe("withRunResults", () => {
 
   it("passes the launched args to the reader", async () => {
     const reader = stubReader(entry);
-    await withRunResults(reader, { addEntry: vi.fn() }, async () => 0, ["run"]);
+    await withRunResults({
+      reader,
+      history: { addEntry: vi.fn() },
+      run: async () => 0,
+      launched: ["run"],
+    });
     expect(reader.readIfChanged).toHaveBeenCalledWith("before", ["run"]);
   });
 
   it("records nothing when run_results.json did not change", async () => {
     const history = { addEntry: vi.fn() };
-    await withRunResults(stubReader(null), history, async () => undefined);
+    await withRunResults({
+      reader: stubReader(null),
+      history,
+      run: async () => undefined,
+    });
     expect(history.addEntry).not.toHaveBeenCalled();
   });
 
@@ -298,7 +307,11 @@ describe("withRunResults", () => {
     const reader = stubReader(entry);
     const history = { addEntry: vi.fn() };
     await expect(
-      withRunResults(reader, history, () => Promise.reject(new Error("x"))),
+      withRunResults({
+        reader,
+        history,
+        run: () => Promise.reject(new Error("x")),
+      }),
     ).rejects.toThrow("x");
     expect(reader.readIfChanged).not.toHaveBeenCalled();
     expect(history.addEntry).not.toHaveBeenCalled();

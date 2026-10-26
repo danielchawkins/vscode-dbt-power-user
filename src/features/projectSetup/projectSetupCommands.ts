@@ -27,12 +27,17 @@ export class ProjectSetupCommands {
   private projectQuickPick: ProjectQuickPick;
   private outputChannels: Pick<OutputChannels, "logFor">;
 
-  constructor(
-    projects: ProjectList<SetupProject>,
-    extensionContext: ExtensionContextStore,
-    projectQuickPick: ProjectQuickPick,
-    outputChannels: Pick<OutputChannels, "logFor">,
-  ) {
+  constructor({
+    projects,
+    extensionContext,
+    projectQuickPick,
+    outputChannels,
+  }: {
+    projects: ProjectList<SetupProject>;
+    extensionContext: ExtensionContextStore;
+    projectQuickPick: ProjectQuickPick;
+    outputChannels: Pick<OutputChannels, "logFor">;
+  }) {
     this.projects = projects;
     this.extensionContext = extensionContext;
     this.projectQuickPick = projectQuickPick;

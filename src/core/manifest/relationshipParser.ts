@@ -90,7 +90,12 @@ export class RelationshipParser {
     sourceMetaMap: SourceMetaMap | undefined,
     options: InferenceOptions = {},
   ): Ref[] {
-    return inferRefs(this.terminal, nodeMetaMap, sourceMetaMap, options);
+    return inferRefs({
+      terminal: this.terminal,
+      nodeMetaMap,
+      sourceMetaMap,
+      options,
+    });
   }
 
   /** Extract refs by pairing semantic-layer entities; see {@link refsFromSemanticEntities}. */

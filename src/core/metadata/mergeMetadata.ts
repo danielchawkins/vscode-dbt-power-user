@@ -87,12 +87,12 @@ export function mergeMetadata(
     return base;
   }
   const serverNodes = new Map(server.nodes.map((n) => [n.uniqueId, n]));
-  const nodeMetaMap = mergeNodeMetaMap(
-    base.nodeMetaMap,
+  const nodeMetaMap = mergeNodeMetaMap({
+    parse: base.nodeMetaMap,
     serverNodes,
     server,
     options,
-  );
+  });
   const parentIds = mergedParentIds(
     base.graphMetaMap,
     removedIds(base.nodeMetaMap, serverNodes, server),
@@ -114,12 +114,17 @@ export function mergeMetadata(
   };
 }
 
-function mergeNodeMetaMap(
-  parse: NodeMetaMap,
-  serverNodes: ReadonlyMap<string, ServerNode>,
-  server: ServerMetadata,
-  options: MergeOptions,
-): NodeMetaMap {
+function mergeNodeMetaMap({
+  parse,
+  serverNodes,
+  server,
+  options,
+}: {
+  parse: NodeMetaMap;
+  serverNodes: ReadonlyMap<string, ServerNode>;
+  server: ServerMetadata;
+  options: MergeOptions;
+}): NodeMetaMap {
   const removed = removedIds(parse, serverNodes, server);
   const added = new Map<string, NodeMetaData>();
   for (const node of serverNodes.values()) {

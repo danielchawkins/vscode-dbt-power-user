@@ -60,9 +60,19 @@ function applied(edit: WorkspaceEdit, before: string): string {
 
 describe("docs editor test key", () => {
   const model = (message: object, existing?: object) =>
-    getTestDataByModel(message, "orders", existing, deps);
+    getTestDataByModel({
+      message,
+      modelName: "orders",
+      existingModel: existing,
+      deps,
+    });
   const column = (message: object, existing?: object) =>
-    getTestDataByColumn(message, "id", existing, deps);
+    getTestDataByColumn({
+      message,
+      columnNameFromWebview: "id",
+      existingColumn: existing,
+      deps,
+    });
 
   it("writes data_tests for a model whose YAML has no tests key", () => {
     const message = { updatedTests: [modelTest] };

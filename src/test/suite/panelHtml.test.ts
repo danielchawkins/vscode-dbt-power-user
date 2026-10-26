@@ -116,7 +116,12 @@ describe("entryAssets", () => {
 
 describe("panelHtml", () => {
   const render = () =>
-    panelHtml(webview, extensionUri, { entry: "lineage", csp: {} }, manifest);
+    panelHtml({
+      webview,
+      extensionUri,
+      page: { entry: "lineage", csp: {} },
+      manifest,
+    });
 
   it("loads only the panel's own entry and stylesheets", () => {
     const html = render();
@@ -172,9 +177,13 @@ describe("panelHtml manifest cache", () => {
       utimesSync(file, seconds, seconds);
     };
     const render = () =>
-      panelHtml(webview, Uri.file(root), {
-        entry: "lineage",
-        csp: {},
+      panelHtml({
+        webview,
+        extensionUri: Uri.file(root),
+        page: {
+          entry: "lineage",
+          csp: {},
+        },
       });
     try {
       write("assets/one.js", 1_000);

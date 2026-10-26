@@ -73,12 +73,17 @@ export function replyError(
 }
 
 /** Answers `syncRequestId` with an error, and logs a failure to deliver that answer. */
-const settle = async (
-  source: string,
-  sink: MessageSink,
-  syncRequestId: string,
-  error: string,
-) => {
+const settle = async ({
+  source,
+  sink,
+  syncRequestId,
+  error,
+}: {
+  source: string;
+  sink: MessageSink;
+  syncRequestId: string;
+  error: string;
+}) => {
   try {
     await replyError(sink, syncRequestId, error);
   } catch (replyFailure) {
@@ -115,7 +120,7 @@ export async function dispatchMessage<M extends { command: string }>({
       `Dropped a malformed webview message (${describe(message)})`,
     );
     if (syncRequestId !== undefined) {
-      await settle(source, sink, syncRequestId, "Malformed request");
+      await settle({ source, sink, syncRequestId, error: "Malformed request" });
     }
     return;
   }
@@ -132,7 +137,7 @@ export async function dispatchMessage<M extends { command: string }>({
     );
     if (syncRequestId !== undefined) {
       const text = error instanceof Error ? error.message : String(error);
-      await settle(source, sink, syncRequestId, text);
+      await settle({ source, sink, syncRequestId, error: text });
     }
   }
 }

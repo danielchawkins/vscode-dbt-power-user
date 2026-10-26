@@ -49,12 +49,17 @@ export function isIgnoredByMeta(meta: Meta): boolean {
  * Honors `meta.ignore_in_erd` per column. Sources excluded by default
  * (set `includeSources: true` to include them).
  */
-export function inferRefs(
-  terminal: Pick<Log, "debug">,
-  nodeMetaMap: NodeMetaMap,
-  sourceMetaMap: SourceMetaMap | undefined,
-  options: InferenceOptions = {},
-): Ref[] {
+export function inferRefs({
+  terminal,
+  nodeMetaMap,
+  sourceMetaMap,
+  options = {},
+}: {
+  terminal: Pick<Log, "debug">;
+  nodeMetaMap: NodeMetaMap;
+  sourceMetaMap: SourceMetaMap | undefined;
+  options?: InferenceOptions;
+}): Ref[] {
   if (!nodeMetaMap) {
     return [];
   }

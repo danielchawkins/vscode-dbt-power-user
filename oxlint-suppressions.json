@@ -35,38 +35,8 @@
       "count": 1
     }
   },
-  "src/core/dbtCommand.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/lineage/nodeColumns.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/core/manifest/nodeParser.ts": {
     "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/relationshipInference.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/metadata/fieldOwners.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/metadata/mergeMetadata.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/core/snapshot/dbtEnvironment.ts": {
-    "max-params": {
       "count": 1
     }
   },
@@ -80,71 +50,6 @@
       "count": 1
     }
   },
-  "src/features/docs/dbtTestService.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/docs/docsEditHandlers.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/docs/docsEditPanel.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/docs/docsEditSave.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/docs/docsTestData.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/features/docs/docsYaml.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/lineage/dbtLineageService.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/lineage/lineageDetails.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/lineage/lineagePanel.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/modelTree/documentationTreeview.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/projectSetup/projectSetupCommands.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/queryResults/queryPanelSupport.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/queryResults/queryResultPanel.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
     "max-depth": {
       "count": 1
@@ -155,99 +60,14 @@
       "count": 1
     }
   },
-  "src/fusion/commandProcessExecution.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/fusion/executableLifecycle.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/fusion/failedFusionClient.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/fusion/fusionCli.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/fusion/lspClientSupport.ts": {
     "max-params": {
       "count": 3
     }
   },
-  "src/fusion/nestedRoots.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/metadata/serverMetadataSource.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/clients/fusionClientDiagnostics.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/clients/fusionStatus.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/manifest/manifest.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/projects/manifest/manifestRebuild.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/manifest/runResults.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/output/projectErrors.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/projects/project/commandQueue.ts": {
     "typescript/unbound-method": {
       "count": 2
-    }
-  },
-  "src/projects/project/dbtTask.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/project/projectCodegen.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/projects/project/projectCommands.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/projects/project/projectSql.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/projects/project/projectWarehouse.ts": {
-    "max-params": {
-      "count": 1
     }
   },
   "src/projects/registry/projectRegistry.ts": {
@@ -342,21 +162,6 @@
   "src/test/suite/runModel.test.ts": {
     "typescript/restrict-template-expressions": {
       "count": 6
-    }
-  },
-  "src/webview/messageRouter.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/webview/panelHost.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/webview/panelHtml.ts": {
-    "max-params": {
-      "count": 1
     }
   }
 }

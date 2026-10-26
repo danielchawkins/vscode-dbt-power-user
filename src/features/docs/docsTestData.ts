@@ -66,12 +66,17 @@ function isModelTestOf(test: TestMetaData, modelName: string): boolean {
 }
 
 /** The tests to write under a model: `data_tests`, or `tests` when the model's YAML already uses that key. */
-export function getTestDataByModel(
-  message: UpdatedTests,
-  modelName: string,
-  existingModel: { tests?: unknown } | undefined,
-  deps: TestDataDeps,
-): TestKeys | undefined {
+export function getTestDataByModel({
+  message,
+  modelName,
+  existingModel,
+  deps,
+}: {
+  message: UpdatedTests;
+  modelName: string;
+  existingModel: { tests?: unknown } | undefined;
+  deps: TestDataDeps;
+}): TestKeys | undefined {
   const tests = message.updatedTests as undefined | TestMetaData[];
   if (!tests?.length) {
     deps.terminal.debug(
@@ -129,12 +134,17 @@ function columnTestEntry(
 }
 
 /** The tests to write under a column: `data_tests`, or `tests` when the column's YAML already uses that key. */
-export function getTestDataByColumn(
-  message: UpdatedTests,
-  columnNameFromWebview: string,
-  existingColumn: { name?: string; tests?: unknown } | undefined,
-  deps: TestDataDeps,
-): TestKeys | undefined {
+export function getTestDataByColumn({
+  message,
+  columnNameFromWebview,
+  existingColumn,
+  deps,
+}: {
+  message: UpdatedTests;
+  columnNameFromWebview: string;
+  existingColumn: { name?: string; tests?: unknown } | undefined;
+  deps: TestDataDeps;
+}): TestKeys | undefined {
   const tests = message.updatedTests as undefined | TestMetaData[];
   if (!tests?.length) {
     deps.terminal.debug(

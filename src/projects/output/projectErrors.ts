@@ -132,12 +132,17 @@ export class ProjectErrors implements Disposable {
   private readonly snapshot: () => ProjectSnapshot;
   private readonly terminal: Log;
 
-  constructor(
-    root: Uri,
-    projectName: () => string,
-    snapshot: () => ProjectSnapshot,
-    terminal: Log,
-  ) {
+  constructor({
+    root,
+    projectName,
+    snapshot,
+    terminal,
+  }: {
+    root: Uri;
+    projectName: () => string;
+    snapshot: () => ProjectSnapshot;
+    terminal: Log;
+  }) {
     this.root = root;
     this.projectName = projectName;
     this.snapshot = snapshot;

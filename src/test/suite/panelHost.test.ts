@@ -52,9 +52,11 @@ class TestPanel extends PanelHost<lineage.HostMessage, Ready> {
 
 const make = () => {
   let listener: ((e: { command: string }) => unknown) | undefined;
-  const panel = new TestPanel(
-    { extensionUri: { fsPath: "/ext", path: "/ext", scheme: "file" } } as never,
-    {
+  const panel = new TestPanel({
+    extensionContext: {
+      extensionUri: { fsPath: "/ext", path: "/ext", scheme: "file" },
+    } as never,
+    emitterService: {
       eventEmitter: {
         event: (l: typeof listener) => {
           listener = l;
@@ -62,9 +64,9 @@ const make = () => {
         },
       },
     } as never,
-    { debug: vi.fn() } as never,
-    {} as never,
-  );
+    dbtTerminal: { debug: vi.fn() } as never,
+    queryManifestService: {} as never,
+  });
   return { panel, emit: (command: string) => listener?.({ command }) };
 };
 

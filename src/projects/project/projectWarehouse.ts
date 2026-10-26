@@ -73,12 +73,17 @@ export async function columnsOfModel(
 }
 
 /** Runs `query` now, with a row limit, after checking project diagnostics. */
-export async function runNow(
-  deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
-): Promise<QueryExecutionResult> {
+export async function runNow({
+  deps,
+  query,
+  modelName,
+  limit,
+}: {
+  deps: SqlDeps;
+  query: string;
+  modelName: string;
+  limit: number;
+}): Promise<QueryExecutionResult> {
   deps.project.throwDiagnosticsErrorIfAvailable();
   logQuery(deps, query, limit);
   return runSqlNow(deps.project.getFusionCli(), { query, modelName, limit });
