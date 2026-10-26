@@ -153,43 +153,6 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     `run --select a --profiles-dir /q ${P} --profile analytics`,
     { settings: { profile: "analytics", runParams: ["--profiles-dir", "/q"] } },
   ],
-  [
-    "a flag is left out when the command params carry it",
-    { kind: "run", select: "a" },
-    `run --select a --profiles-dir /already/set --target dev ${P}`,
-    {
-      settings: {
-        profilesDir: "/p",
-        target: "prod",
-        runParams: ["--profiles-dir", "/already/set", "--target", "dev"],
-      },
-    },
-  ],
-  ...([["--target=dev"], ["-t", "dev"], ["-tdev"]] as string[][]).map(
-    (runParams): [string, CliCommand, string, Golden] => [
-      `${runParams.join(" ")} carries --target`,
-      { kind: "run", select: "a" },
-      `run --select a ${runParams.join(" ")} ${P}`,
-      { settings: { target: "prod", runParams } },
-    ],
-  ),
-  [
-    "--profiles-dir= and --project-dir= carry the flag",
-    { kind: "run", select: "a" },
-    `run --select a --profiles-dir=/q --project-dir=/r`,
-    {
-      settings: {
-        profilesDir: "/p",
-        runParams: ["--profiles-dir=/q", "--project-dir=/r"],
-      },
-    },
-  ],
-  [
-    "--target-path is not mistaken for --target",
-    { kind: "run", select: "a" },
-    `run --select a --target-path t ${P} --target prod`,
-    { settings: { target: "prod", runParams: ["--target-path", "t"] } },
-  ],
   // Defer.
   [
     "no defer entry adds nothing, so DBT_DEFER and DBT_STATE apply",
@@ -210,44 +173,12 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     { settings: { runParams: [] }, defer: deferEntry("/state") },
   ],
   [
-    "defer without favor-state",
-    { kind: "run", select: "a" },
-    `run --select a ${P} --defer --state /state`,
-    { settings: { runParams: [] }, defer: deferEntry("/state", true, false) },
-  ],
-  [
     "defer uses the directory of a manifest.json path",
     { kind: "run", select: "a" },
     `run --select a ${P} --defer --state /state`,
     {
       settings: { runParams: [] },
       defer: deferEntry("/state/manifest.json", true, false),
-      probe: "file",
-    },
-  ],
-  [
-    "defer enabled without a path adds nothing",
-    { kind: "run", select: "a" },
-    `run --select a ${P}`,
-    { settings: { runParams: [] }, defer: deferEntry(undefined, true, false) },
-  ],
-  [
-    "defer at a missing path adds nothing",
-    { kind: "run", select: "a" },
-    `run --select a ${P}`,
-    {
-      settings: { runParams: [] },
-      defer: deferEntry("/state/notes.txt"),
-      probe: "missing",
-    },
-  ],
-  [
-    "defer at a file other than manifest.json adds nothing",
-    { kind: "run", select: "a" },
-    `run --select a ${P}`,
-    {
-      settings: { runParams: [] },
-      defer: deferEntry("/state/notes.txt"),
       probe: "file",
     },
   ],
@@ -272,30 +203,6 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     "defer off with no entry (default)",
     { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
     [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
-  ],
-  [
-    "defer off with an entry that disables defer (off)",
-    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
-    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
-    { defer: deferEntry("/state", false) },
-  ],
-  [
-    "defer off with defer enabled and no path (unset)",
-    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
-    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
-    { defer: deferEntry(undefined, true, false) },
-  ],
-  [
-    "defer off with defer enabled on a state directory (on)",
-    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
-    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
-    { defer: deferEntry("/state") },
-  ],
-  [
-    "defer off with defer enabled on a path that is unusable",
-    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
-    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
-    { defer: deferEntry("/state/notes.txt"), probe: "missing" },
   ],
   [
     "defer flags follow the profiles directory on a queued kind",

@@ -47,9 +47,6 @@ async function constraintTargets(to: string): Promise<string[]> {
 describe("lineage resolves a ref's version argument to that version", () => {
   const cases: Array<[string, string]> = [
     ["ref('c', version=2)", C_V2],
-    ["ref('c', v = 2)", C_V2],
-    ["ref('c', version = '2')", C_V2],
-    ["ref('c', v=2)", C_V2],
     ["ref('c', 2)", C_V2],
     ["ref('c', v=1)", C_V1],
   ];

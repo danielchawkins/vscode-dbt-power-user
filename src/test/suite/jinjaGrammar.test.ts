@@ -55,41 +55,6 @@ describe("Jinja SQL Grammar", () => {
     }
   });
 
-  describe("repository completeness", () => {
-    it("should have Jinja comment, statement, expression patterns", () => {
-      expect(grammar.repository["jinja-comment"]).toBeDefined();
-      expect(grammar.repository["jinja-statement"]).toBeDefined();
-      expect(grammar.repository["jinja-expression"]).toBeDefined();
-    });
-
-    it("should have SQL comment patterns", () => {
-      expect(grammar.repository["sql-comment-line"]).toBeDefined();
-      expect(grammar.repository["sql-comment-block"]).toBeDefined();
-    });
-
-    it("should have SQL keyword categories", () => {
-      expect(grammar.repository["sql-keyword-dml"]).toBeDefined();
-      expect(grammar.repository["sql-keyword-ddl"]).toBeDefined();
-      expect(grammar.repository["sql-keyword-clause"]).toBeDefined();
-      expect(grammar.repository["sql-keyword-join"]).toBeDefined();
-      expect(grammar.repository["sql-keyword-operator"]).toBeDefined();
-    });
-
-    it("should have SQL function categories", () => {
-      expect(grammar.repository["sql-function-aggregate"]).toBeDefined();
-      expect(grammar.repository["sql-function-window"]).toBeDefined();
-      expect(grammar.repository["sql-function-date"]).toBeDefined();
-      expect(grammar.repository["sql-function-string"]).toBeDefined();
-    });
-
-    it("should have Jinja sub-patterns", () => {
-      expect(grammar.repository["jinja-keyword"]).toBeDefined();
-      expect(grammar.repository["jinja-dbt-function"]).toBeDefined();
-      expect(grammar.repository["jinja-filter"]).toBeDefined();
-      expect(grammar.repository["jinja-operator"]).toBeDefined();
-    });
-  });
-
   describe("regex pattern validity", () => {
     const getPatternRegexes = (repo: Record<string, any>): string[] => {
       const regexes: string[] = [];

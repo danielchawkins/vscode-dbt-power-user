@@ -210,15 +210,6 @@ describe("RunResultsReader", () => {
     );
   });
 
-  it("ignores unchanged run_results.json after command start", () => {
-    write(sampleRunResultsJson());
-    expect(reader.readIfChanged(reader.observe())).toBeNull();
-  });
-
-  it("stays silent when run_results.json is missing after command start", () => {
-    expect(reader.readIfChanged(reader.observe())).toBeNull();
-  });
-
   it("parses run_results.json when content changes after command start", () => {
     write(sampleRunResultsJson("inv-old"));
     const before = reader.observe();

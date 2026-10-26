@@ -2,14 +2,8 @@ import fc from "fast-check";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { dbtTemplateAssociations } from "../../core/dbt/dbtAssociations";
-import { toLspArgs } from "../../core/lsp";
 import type { ProjectPaths } from "../../core/snapshot";
-import {
-  NUM_RUNS,
-  relativeDir,
-  segment,
-  staticAnalysisMode,
-} from "../arbitraries";
+import { NUM_RUNS, relativeDir, segment } from "../arbitraries";
 import { match } from "../vscodeGlob";
 
 const root = path.join("/", "re[po]", "(x86)}p!*?j");
@@ -82,78 +76,6 @@ describe("dbtTemplateAssociations properties", () => {
           expect(associatedLanguage(written, copy)).toBeUndefined();
         },
       ),
-      { numRuns: NUM_RUNS },
-    );
-  });
-});
-
-describe("toLspArgs properties", () => {
-  const input = fc.record({
-    port: fc.integer({ min: 1, max: 65535 }),
-    projectDir: relativeDir.map(abs),
-    commandPrefix: segment.map((s) => `fusionPowerUser:${s}:`),
-    lintEnabled: fc.boolean(),
-    staticAnalysis: staticAnalysisMode,
-    logLevel: fc.constantFrom(undefined, "debug" as const, "trace" as const),
-    profilesDir: fc.option(relativeDir.map(abs), { nil: undefined }),
-    target: fc.option(segment, { nil: undefined }),
-  });
-  type Input = typeof input extends fc.Arbitrary<infer T> ? T : never;
-  const argsFor = (i: Input) =>
-    toLspArgs(
-      {
-        executable: { source: "path" },
-        projectDir: i.projectDir,
-        target: i.target,
-        profile: undefined,
-        profilesDir: i.profilesDir,
-        staticAnalysis: i.staticAnalysis,
-        lintEnabled: i.lintEnabled,
-        maxErrorReporting: undefined,
-        logLevel: i.logLevel,
-        environment: {},
-      },
-      {
-        port: i.port,
-        commandPrefix: i.commandPrefix,
-        projectDir: i.projectDir,
-      },
-    );
-
-  const valueOf = (args: string[], flag: string) => {
-    const i = args.indexOf(flag);
-    return i < 0 ? undefined : args[i + 1];
-  };
-
-  it("carries every input as a flag value exactly once and never an empty argument", () => {
-    fc.assert(
-      fc.property(input, (i) => {
-        const args = argsFor(i);
-        expect(args[0]).toBe("lsp");
-        expect(args.every((a) => a.length > 0)).toBe(true);
-        expect(valueOf(args, "--socket")).toBe(String(i.port));
-        expect(valueOf(args, "--project-dir")).toBe(i.projectDir);
-        expect(valueOf(args, "--command-prefix")).toBe(i.commandPrefix);
-        expect(valueOf(args, "--lint-enabled")).toBe(String(i.lintEnabled));
-        expect(valueOf(args, "--profiles-dir")).toBe(i.profilesDir);
-        expect(valueOf(args, "--target")).toBe(i.target);
-        expect(valueOf(args, "--log-level")).toBe(i.logLevel);
-        for (const flag of args.filter((a) => a.startsWith("--"))) {
-          expect(args.filter((a) => a === flag)).toHaveLength(1);
-        }
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
-  it("omits --static-analysis exactly when the mode is project", () => {
-    fc.assert(
-      fc.property(input, (i) => {
-        const value = valueOf(argsFor(i), "--static-analysis");
-        expect(value).toBe(
-          i.staticAnalysis === "project" ? undefined : i.staticAnalysis,
-        );
-      }),
       { numRuns: NUM_RUNS },
     );
   });

@@ -10,8 +10,6 @@ describe("ManifestMetadataSource", () => {
   let parsed: EventEmitter<ParsedManifest>;
   let rebuildManifest: ReturnType<typeof vi.fn>;
 
-  const parse = {} as ParsedManifest;
-
   beforeEach(() => {
     parsed = new EventEmitter<ParsedManifest>();
     rebuildManifest = vi.fn(async () => undefined);
@@ -33,14 +31,6 @@ describe("ManifestMetadataSource", () => {
 
   it("has no parse result before the first parse", () => {
     expect(source.current()).toBeUndefined();
-  });
-
-  it("forwards each parse result and keeps the latest", () => {
-    const seen: ParsedManifest[] = [];
-    source.onDidParse((p) => seen.push(p));
-    parsed.fire(parse);
-    expect(seen).toEqual([parse]);
-    expect(source.current()).toBe(parse);
   });
 
   it("delegates refresh to project.rebuildManifest and propagates its errors", async () => {

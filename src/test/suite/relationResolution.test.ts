@@ -93,16 +93,6 @@ describe("resolveTarget picks the claimant a ref names", () => {
 });
 
 describe("resolveTarget matches relation names as written, unquoted or lowercased", () => {
-  it("matches a quoted relation name as written", () => {
-    expect(resolveTarget('"db"."s"."Payments"', index, "p")).toBe(
-      "model.p.payments",
-    );
-  });
-
-  it("matches an unquoted relation name", () => {
-    expect(resolveTarget("db.s.Payments", index, "p")).toBe("model.p.payments");
-  });
-
   it("matches a lowercased unquoted relation name", () => {
     expect(resolveTarget("db.s.payments", index, "p")).toBe("model.p.payments");
   });

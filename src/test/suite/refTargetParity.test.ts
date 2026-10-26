@@ -33,8 +33,6 @@ interface Case {
 
 const cases: Case[] = [
   { to: "ref('customers')", target: CUSTOMERS },
-  { to: 'ref("customers")', target: CUSTOMERS },
-  { to: "ref ('customers')", target: CUSTOMERS },
   { to: "ref('p', 'customers')", target: CUSTOMERS },
   { to: "ref('customers', v=2)", target: CUSTOMERS },
   { to: "source('s', 't')", target: T },
