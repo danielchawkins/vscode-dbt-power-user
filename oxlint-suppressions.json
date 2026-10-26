@@ -271,11 +271,6 @@
       "count": 2
     }
   },
-  "src/test/integration/targetMutationCapture.test.ts": {
-    "max-params": {
-      "count": 3
-    }
-  },
   "src/test/mock/vscode.ts": {
     "max-params": {
       "count": 1
