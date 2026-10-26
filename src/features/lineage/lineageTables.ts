@@ -4,7 +4,7 @@ import type { Meta, NodeGraphMap } from "../../core/manifest/types";
 import {
   RESOURCE_TYPE_EXPOSURE,
   RESOURCE_TYPE_FUNCTION,
-  RESOURCE_TYPE_METRIC,
+  RESOURCE_TYPE_SEMANTIC_MODEL,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
@@ -70,7 +70,7 @@ export function lineageTable(
   switch (nodeType) {
     case RESOURCE_TYPE_SOURCE:
       return sourceTable(event, { ...base, options }, [at(2), at(3)]);
-    case RESOURCE_TYPE_METRIC:
+    case RESOURCE_TYPE_SEMANTIC_MODEL:
       return {
         ...base,
         label: at(2),
