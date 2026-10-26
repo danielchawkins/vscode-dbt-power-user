@@ -42,6 +42,7 @@ import {
 import {
   buildWorkspaceConfigurationResponse,
   mapCteLenses,
+  type ServerSpawnSpec,
 } from "../../fusion/lspClientSupport";
 import {
   ProcessStreamBuffer,
@@ -543,12 +544,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
     const spawnProcess = vi.fn(
-      (
-        _executable: string,
-        _args: string[],
-        _env: Record<string, string>,
-        _cwd?: string,
-      ) => processAdapter as any,
+      (_spec: ServerSpawnSpec) => processAdapter as any,
     );
     const createLanguageClient = vi.fn(async () => makeLanguageClient() as any);
 
@@ -581,9 +577,9 @@ describe("FusionLanguageClient lifecycle", () => {
 
     await flushAsync();
 
-    expect(spawnProcess).toHaveBeenCalledWith(
-      "/opt/dbt",
-      expect.arrayContaining([
+    expect(spawnProcess).toHaveBeenCalledWith({
+      executable: "/opt/dbt",
+      args: expect.arrayContaining([
         "lsp",
         "--socket",
         "42424",
@@ -592,13 +588,13 @@ describe("FusionLanguageClient lifecycle", () => {
         "--lint-enabled",
         "true",
       ]),
-      {
+      env: {
         PATH: "/opt/bin",
         TEST_ENV: "1",
         DBT_LSP_USE_TARGET_LSP: "1",
       },
-      "/workspace/general",
-    );
+      cwd: "/workspace/general",
+    });
 
     await client.stop();
     client.dispose();
@@ -608,12 +604,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const spawnProcess = vi.fn(
-      (
-        _executable: string,
-        _args: string[],
-        _env: Record<string, string>,
-        _cwd?: string,
-      ) => new FakeExitingProcess() as any,
+      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
     );
     const factory = new DefaultFusionClientFactory({
       rootExists: () => true,
@@ -645,7 +636,7 @@ describe("FusionLanguageClient lifecycle", () => {
 
     await flushAsync();
 
-    expect(spawnProcess.mock.calls[0][2]).toEqual({
+    expect(spawnProcess.mock.calls[0][0].env).toEqual({
       PATH: "/opt/bin",
       ORIGIN: "b",
       DBT_LSP_USE_TARGET_LSP: "1",
@@ -658,7 +649,9 @@ describe("FusionLanguageClient lifecycle", () => {
   it("uses launch.lintEnabled in launch args", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = vi.fn(() => new FakeExitingProcess() as any);
+    const spawnProcess = vi.fn(
+      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
+    );
 
     const factory = new DefaultFusionClientFactory({
       rootExists: () => true,
@@ -683,12 +676,8 @@ describe("FusionLanguageClient lifecycle", () => {
 
     await flushAsync();
     expect(spawnProcess).toHaveBeenCalled();
-    const spawnArgs = spawnProcess.mock.calls[0] as unknown as [
-      string,
-      string[],
-      Record<string, string>,
-    ];
-    expect(spawnArgs[1]).toEqual(
+    const spawnSpec = spawnProcess.mock.calls[0]?.[0];
+    expect(spawnSpec?.args).toEqual(
       expect.arrayContaining(["--lint-enabled", "false"]),
     );
 
@@ -1207,8 +1196,7 @@ describe("FusionLanguageClient lifecycle", () => {
 
   it("cleans up when listen fails", async () => {
     const spawnProcess = vi.fn(
-      (_executable: string, _args: string[], _env: Record<string, string>) =>
-        new FakeExitingProcess() as any,
+      (_spec: ServerSpawnSpec) => new FakeExitingProcess() as any,
     );
     const factory = new DefaultFusionClientFactory({
       rootExists: () => true,

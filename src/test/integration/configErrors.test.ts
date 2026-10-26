@@ -11,12 +11,12 @@ import {
   resolveProjectSnapshot,
 } from "../../core/snapshot";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
-import { FusionCli } from "../../fusion/fusionCli";
 import {
   CompileSignal,
   subscribeToCompileComplete,
-  type ClientHandle,
-} from "../../fusion/lspClientSupport";
+} from "../../fusion/compileSignal";
+import { FusionCli } from "../../fusion/fusionCli";
+import type { ClientHandle } from "../../fusion/lspClientSupport";
 import { errorHint } from "../../projects/output/projectErrors";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";
