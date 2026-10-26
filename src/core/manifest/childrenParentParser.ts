@@ -281,16 +281,8 @@ function parentAppearsInBody(
   if (!parent || body === null) {
     return true; // conservatively treat as data flow
   }
-
-  const relation = parent.relation_name;
-  if (typeof relation === "string" && relation.length > 0) {
-    if (body.text.includes(relation)) {
-      return true;
-    }
-    const unquoted = relation.replaceAll('"', "");
-    if (unquoted !== relation && body.text.includes(unquoted)) {
-      return true;
-    }
+  if (relationAppears(parent, body.text)) {
+    return true;
   }
 
   // After `dbt compile`, all Jinja is resolved into relation names. A `ref(...)`
@@ -304,29 +296,43 @@ function parentAppearsInBody(
   // `{{ source(...) }}` patterns. Accepts false positives from SQL comments;
   // acceptable trade-off because the manifest path that lacks `compiled_code`
   // is the parse-only path before the user has compiled.
+  return refCallAppears(parent, body.text);
+}
+
+/** True when the body names the parent's relation, quoted or unquoted. */
+function relationAppears(parent: ManifestResource, text: string): boolean {
+  const relation = parent.relation_name;
+  if (typeof relation !== "string" || relation.length === 0) {
+    return false;
+  }
+  if (text.includes(relation)) {
+    return true;
+  }
+  const unquoted = relation.replaceAll('"', "");
+  return unquoted !== relation && text.includes(unquoted);
+}
+
+/** True when the body calls `ref()` on the parent's name, or `source()` on its source table. */
+function refCallAppears(parent: ManifestResource, text: string): boolean {
   const name = parent.name;
   const pkg = parent.package_name;
   if (
     typeof name === "string" &&
     name.length > 0 &&
-    containsRefCall(body.text, name, pkg)
+    containsRefCall(text, name, pkg)
   ) {
     return true;
   }
 
   const sourceName = parent.source_name;
   const sourceTable = parent.name;
-  if (
+  return (
     typeof sourceName === "string" &&
     sourceName.length > 0 &&
     typeof sourceTable === "string" &&
     sourceTable.length > 0 &&
-    containsSourceCall(body.text, sourceName, sourceTable)
-  ) {
-    return true;
-  }
-
-  return false;
+    containsSourceCall(text, sourceName, sourceTable)
+  );
 }
 
 // -----------------------------------------------------------------------------
