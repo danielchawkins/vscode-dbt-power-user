@@ -1,7 +1,6 @@
 import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil, sleep } from "../async";
 import type { SmokeHost } from "./cdpClient";
 import {
@@ -12,10 +11,10 @@ import {
   readWorkbenchNotificationTexts,
   revealWorkbench,
   sendCommand,
-  validateSmokeHost,
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
@@ -82,17 +81,6 @@ const FRAME_HELPERS = `
     return { found: onTop, x, y, detail, html: node.outerHTML.slice(0, ${HTML_LIMIT}) };
   };
 `;
-
-/** The CDP port the smoke host exposed, which every webview read needs. Fails when the harness did not set it. */
-export function cdpPort(): string {
-  const port = process.env.FPU_CDP_PORT;
-  assert.ok(port, "smoke requires CDP port");
-  return port;
-}
-
-function smokeHost(): SmokeHost {
-  return validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
-}
 
 /** Wraps `body` so it runs only in the frame showing `entry`, and returns `{ entry, ...result }` from it. */
 function inFrame(entry: string, body: string): string {

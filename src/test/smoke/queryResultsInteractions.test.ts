@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -49,8 +49,7 @@ const READ_COMPILED_SQL = `(() => document.body.dataset.entry === "queryResults"
   : null)()`;
 
 const runsHere = () => currentFixtureName() === "single-project";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 /** Polls until `done` holds; the effect of a click reaches the host or the editor asynchronously. */
 async function waitUntil(
   what: string,
@@ -65,7 +64,7 @@ async function waitUntil(
 
 async function createdBlobTypes(): Promise<string[]> {
   const match = await evaluatePanel<{ entry: string; types: string[] }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     RESULTS.entry,
     READ_BLOB_TYPES,
   );
@@ -82,7 +81,7 @@ const SYNTHETIC_COMPILED_SQL = "select synthetic /* compiled */";
 
 async function compiledSqlText(): Promise<string> {
   const match = await evaluatePanel<{ entry: string; text: string }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     RESULTS.entry,
     READ_COMPILED_SQL,
   );
@@ -124,7 +123,7 @@ suite("Query results interactions", function () {
     await clickWebviewPoint(RESULTS, { selector: PREVIEW_TAB });
     await expectWebviewDom(RESULTS, { role: "grid" });
 
-    await evaluatePanel(process.env.FPU_CDP_PORT!, RESULTS.entry, WATCH_BLOBS);
+    await evaluatePanel(cdpPort(), RESULTS.entry, WATCH_BLOBS);
     await clickInWebview(RESULTS, { role: "button", name: "Export CSV" });
     await waitUntil("the CSV blob", async () =>
       (await createdBlobTypes()).includes("text/csv"),

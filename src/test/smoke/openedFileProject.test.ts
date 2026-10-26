@@ -3,7 +3,6 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
@@ -11,11 +10,11 @@ import {
   captureWorkbenchScreenshot,
   evaluateWorkbench,
   revealWorkbench,
-  validateSmokeHost,
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
@@ -50,11 +49,8 @@ suite("Opened-file smoke", function () {
       return;
     }
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -102,16 +98,16 @@ suite("Opened-file smoke", function () {
       "the project should be declared by the opened file",
     );
 
-    await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost);
-    await assertNoWorkbenchNotifications(cdpPort, smokeHost);
-    await revealWorkbench(cdpPort, smokeHost);
-    const hover = await waitForHover(cdpPort, smokeHost);
+    await waitForWorkbenchNotificationsToSettle(port, host);
+    await assertNoWorkbenchNotifications(port, host);
+    await revealWorkbench(port, host);
+    const hover = await waitForHover(port, host);
     assert.ok(
       hover?.includes(DECLARED_TEXT),
       `the language status should say "${DECLARED_TEXT}": ${hover ?? "no hover"}`,
     );
 
-    await recordCheckpoint(cdpPort, smokeHost, { hover, report });
+    await recordCheckpoint(port, host, { hover, report });
   });
 });
 

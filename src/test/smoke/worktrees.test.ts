@@ -3,16 +3,15 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { PollTimeoutError, pollUntil, sleep } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
   captureWorkbenchScreenshot,
   readWorkbenchNotificationTexts,
-  validateSmokeHost,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
@@ -40,7 +39,7 @@ suite("Worktrees smoke", function () {
       this.skip();
       return;
     }
-    assert.ok(process.env.FPU_CDP_PORT, "smoke requires CDP port");
+    cdpPort();
     host();
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -228,9 +227,7 @@ async function waitFor<T>(
   }
 }
 
-const cdpPort = () => process.env.FPU_CDP_PORT ?? "";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 async function record(
   name: string,

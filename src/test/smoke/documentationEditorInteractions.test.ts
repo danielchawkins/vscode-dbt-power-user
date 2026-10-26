@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -74,7 +74,7 @@ async function waitForSummary(): Promise<SummaryReading> {
   const summary = await pollUntil(
     async () => {
       const match = await evaluatePanel<SummaryReading>(
-        process.env.FPU_CDP_PORT!,
+        cdpPort(),
         DOCS.entry,
         READ_SUMMARY,
       );
@@ -90,16 +90,14 @@ async function waitForSummary(): Promise<SummaryReading> {
   return summary!;
 }
 
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /** Polls the description until `done` holds; the editor loads it asynchronously. */
 async function waitForDescription(
   done: (text: string) => boolean,
 ): Promise<string> {
   const text = await pollUntil(
-    async () =>
-      (await readDocsState(process.env.FPU_CDP_PORT!))?.description ?? null,
+    async () => (await readDocsState(cdpPort()))?.description ?? null,
     (last) => last !== null && done(last),
     {
       timeoutMs: 10_000,
@@ -111,11 +109,7 @@ async function waitForDescription(
 }
 
 async function setDescription(text: string): Promise<void> {
-  await evaluatePanel(
-    process.env.FPU_CDP_PORT!,
-    DOCS.entry,
-    typeDescription(text),
-  );
+  await evaluatePanel(cdpPort(), DOCS.entry, typeDescription(text));
 }
 
 interface ChevronState {
@@ -127,7 +121,7 @@ interface ChevronState {
 
 async function readChevron(): Promise<ChevronState> {
   const match = await evaluatePanel<ChevronState>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     DOCS.entry,
     READ_CHEVRON,
   );
@@ -248,7 +242,7 @@ suite("Documentation editor interactions", function () {
       try {
         await setDescription(original);
         await waitForDescription((text) => text === original);
-        await waitForDocsClean(process.env.FPU_CDP_PORT!);
+        await waitForDocsClean(cdpPort());
         // A clean page is not enough: the host keeps drafts in memory and sends one with the next render, so a
         // draft it still holds would open the next suite's editor dirty.
         await waitFor(

@@ -19,12 +19,12 @@ import {
   readCspViolations,
   readWorkbenchNotificationTexts,
   revealWorkbench,
-  validateSmokeHost,
   waitForWebviewPaint,
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { DBT_VIEW_CONTAINER, EXTENSION_ID, PANELS } from "./panels";
+import * as smokeEnv from "./smokeEnv";
 import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
@@ -89,11 +89,8 @@ suite("Pinned-host VSIX smoke", function () {
         whenEnabled(runtimeEnabled, 184_000) +
         whenEnabled(evidenceEnabled, 766_000),
     );
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -264,14 +261,12 @@ suite("Pinned-host VSIX smoke", function () {
   });
 
   test("renders each panel in the light, dark and high-contrast themes", async function () {
-    const cdpPort = process.env.FPU_CDP_PORT;
-    if (currentFixtureName() !== "single-project" || !cdpPort) {
+    if (currentFixtureName() !== "single-project") {
       this.skip();
       return;
     }
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
     const evidence = visualEvidence(cdpPort, smokeHost);
     // Default path, in seconds: active language 5, color theme 3 x 10, panel theme read 9 x 20 (one per panel per
     // theme), lineage column wait 3 x 15. That is 260, so the limit is 290.

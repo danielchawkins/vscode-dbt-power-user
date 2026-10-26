@@ -1,12 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
-import {
-  evaluatePanel,
-  validateSmokeHost,
-  waitForPanelGone,
-} from "./cdpClient";
+import { evaluatePanel, waitForPanelGone } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import type { ColumnState } from "./lineageProbes";
 import {
@@ -16,6 +11,7 @@ import {
   tracedCardsListed,
 } from "./lineageProbes";
 import { EXTENSION_ID, PANELS } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -33,8 +29,7 @@ const HUB = "hub";
 const HUB_CHILDREN = 7;
 
 const runsHere = () => currentFixtureName() === "lineage-groups";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /** What the lineage webview draws now: group nodes with their counts, table cards, group chips and "+N" buttons. */
 interface Snapshot {
@@ -63,7 +58,7 @@ const SNAPSHOT = `(() => document.body.dataset.entry === "lineage" ? {
 
 async function snapshot(): Promise<Snapshot> {
   const match = await evaluatePanel<Snapshot>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     SNAPSHOT,
   );
@@ -122,7 +117,7 @@ async function waitForChildrenExpander(count: number): Promise<string> {
         entry: string;
         labels: string[];
         text: string;
-      }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CHILDREN_STATE);
+      }>(cdpPort(), LINEAGE.entry, CHILDREN_STATE);
       last = match?.value;
       return last?.labels.find(
         (l) => l === `Show ${count} children` || l === `Hide ${count} children`,
@@ -153,7 +148,7 @@ async function cardTitles(): Promise<Record<string, string>> {
   const match = await evaluatePanel<{
     entry: string;
     titles: Record<string, string>;
-  }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CARD_TITLES);
+  }>(cdpPort(), LINEAGE.entry, CARD_TITLES);
   assert.ok(match, "the lineage webview is not showing");
   return match.value.titles;
 }
@@ -166,7 +161,7 @@ const BAND_LABELS = `(() => document.body.dataset.entry === "lineage" ? {
 
 async function bandLabels(): Promise<string[]> {
   const match = await evaluatePanel<{ entry: string; bands: string[] }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     BAND_LABELS,
   );
@@ -177,7 +172,7 @@ async function bandLabels(): Promise<string[]> {
 /** Hides the lineage panel so its page is rebuilt, which reads the settings again, then shows it from the named model. */
 async function reopenModel(name: string): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closePanel");
-  await waitForPanelGone(process.env.FPU_CDP_PORT!, LINEAGE.entry);
+  await waitForPanelGone(cdpPort(), LINEAGE.entry);
   await openModel(name);
 }
 
@@ -210,7 +205,7 @@ const FANOUT_CARD = `(() => document.body.dataset.entry === "lineage" ? {
 
 async function fanoutCard(): Promise<FanoutCard> {
   const match = await evaluatePanel<FanoutCard>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     FANOUT_CARD,
   );
@@ -255,7 +250,7 @@ async function traceHubColumn(): Promise<ColumnState> {
       const current = await readHub();
       if (!current.columnTables.includes(HUB)) {
         await evaluatePanel(
-          process.env.FPU_CDP_PORT!,
+          cdpPort(),
           LINEAGE.entry,
           clickOnCard(HUB, "Columns"),
         );
@@ -275,7 +270,7 @@ async function traceHubColumn(): Promise<ColumnState> {
     (current) => current.cardColumns > 0,
   );
   const clicked = await evaluatePanel<{ entry: string; clicked: boolean }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     clickFirstColumn(HUB),
   );
@@ -329,7 +324,7 @@ const GROUP_STYLES = `(() => document.body.dataset.entry === "lineage" ? {
 
 async function groupStyles(): Promise<unknown> {
   const match = await evaluatePanel<{ entry: string; groups: unknown[] }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     GROUP_STYLES,
   );
