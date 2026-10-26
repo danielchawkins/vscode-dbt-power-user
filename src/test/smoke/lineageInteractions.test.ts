@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID, PANELS } from "./panels";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -31,8 +31,7 @@ const RELATIONSHIP_CHECKBOXES = [
 ];
 
 const runsHere = () => currentFixtureName() === "single-project";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /** A table card React Flow draws; the view has drawn the graph once one is present. */
 const TABLE_CARD = ".react-flow__node-table";
@@ -41,7 +40,7 @@ const SHOWN_PARENTS = `.react-flow__node button[title^="Hide "][title$="parents"
 
 async function nodeCount(): Promise<number> {
   const match = await evaluatePanel<{ entry: string; nodes: number }>(
-    process.env.FPU_CDP_PORT!,
+    cdpPort(),
     LINEAGE.entry,
     `(() => document.body.dataset.entry === "lineage"
       ? { entry: "lineage", nodes: document.querySelectorAll(".react-flow__node").length }

@@ -1,7 +1,7 @@
 import * as assert from "node:assert";
 import { evaluatePanel } from "./cdpClient";
 import { PANELS } from "./panels";
-import { cdpPort } from "./webviewInteractions";
+import { cdpPort } from "./smokeEnv";
 
 /** A lineage card's column list, the column edges traced from it, and the table edges' paths. */
 export interface ColumnState {

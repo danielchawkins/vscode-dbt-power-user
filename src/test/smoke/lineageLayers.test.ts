@@ -1,8 +1,7 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import { evaluatePanel } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import {
   CARD_IDS,
@@ -19,9 +18,9 @@ import {
 } from "./lineageProbes";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import type { PanelEntry } from "./webviewInteractions";
 import {
-  cdpPort,
   clickInWebview,
   interactionEvidence,
   maximizePanelFor,
@@ -33,8 +32,7 @@ import {
 const LINEAGE: PanelEntry = PANELS.lineage;
 
 const runsHere = () => currentFixtureName() === "lineage-layers";
-const host = () =>
-  validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
+const host = smokeHost;
 
 /**
  * What the lineage webview draws now: the layer bands in draw order, every card with its title, file line and

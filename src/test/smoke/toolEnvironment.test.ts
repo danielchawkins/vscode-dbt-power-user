@@ -4,15 +4,14 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil, sleep } from "../async";
 import {
   captureWorkbenchScreenshot,
   readWorkbenchNotificationTexts,
-  validateSmokeHost,
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { cdpPort, smokeHost } from "./smokeEnv";
 import {
   checkpointCount,
   screenshotDirectory,
@@ -169,11 +168,8 @@ suite("Tool-environment smoke", function () {
     const row = ROWS.get(key);
     assert.ok(row, `unknown tool-environment fixture ${name}`);
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const port = cdpPort();
+    const host = smokeHost();
     const resultsDir = process.env.FPU_SMOKE_RESULTS;
     assert.ok(resultsDir, "smoke requires FPU_SMOKE_RESULTS");
     const toolEnvTmp = process.env.FPU_SMOKE_TOOLENV_TMP;
@@ -193,9 +189,9 @@ suite("Tool-environment smoke", function () {
     // The untrusted row expects its trust hint to stay, so wait for it to appear rather than for the list to clear.
     const notifications =
       key === "untrusted"
-        ? await waitForNotificationText(cdpPort, smokeHost, "mise trust")
-        : (await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost),
-          await readWorkbenchNotificationTexts(cdpPort, smokeHost));
+        ? await waitForNotificationText(port, host, "mise trust")
+        : (await waitForWorkbenchNotificationsToSettle(port, host),
+          await readWorkbenchNotificationTexts(port, host));
     const observed: Observed = {
       reports,
       notifications,
@@ -213,8 +209,8 @@ suite("Tool-environment smoke", function () {
 
     const screenshots = screenshotDirectory();
     if (screenshots) {
-      const fixtureDir = path.join(screenshots, smokeHost, name);
-      const png = await captureWorkbenchScreenshot(cdpPort, smokeHost);
+      const fixtureDir = path.join(screenshots, host, name);
+      const png = await captureWorkbenchScreenshot(port, host);
       const file = writeCheckpoint(
         fixtureDir,
         checkpointCount(fixtureDir) + 1,
@@ -225,7 +221,7 @@ suite("Tool-environment smoke", function () {
         },
         png,
         {
-          host: smokeHost,
+          host,
           fixture: name,
           activeEditor:
             vscode.window.activeTextEditor?.document.uri.fsPath ?? null,

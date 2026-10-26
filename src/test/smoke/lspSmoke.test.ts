@@ -4,16 +4,15 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
-import { HARNESS_SWITCHES } from "../../settings/environment";
 import { pollUntil } from "../async";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import {
   assertNoWorkbenchNotifications,
-  validateSmokeHost,
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import { EXTENSION_ID } from "./panels";
+import * as smokeEnv from "./smokeEnv";
 
 const EXPECTED_PROJECT_NAMES = ["general", "sox"];
 const LSP_WAIT_TIMEOUT_MS = 45_000;
@@ -30,11 +29,8 @@ suite("Multi-root LSP smoke", function () {
       return;
     }
 
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(
-      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
-    );
+    const cdpPort = smokeEnv.cdpPort();
+    const smokeHost = smokeEnv.smokeHost();
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
