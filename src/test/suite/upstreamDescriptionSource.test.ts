@@ -213,6 +213,43 @@ describe("resolveUpstreamDescriptions", () => {
     expect(outcome.kind).toBe("found");
   });
 
+  it("cancels the answer in flight when the signal is aborted, and asks for no more columns", async () => {
+    const controller = new AbortController();
+    const asked: {
+      token: { isCancellationRequested: boolean } | undefined;
+      reject: (error: unknown) => void;
+    }[] = [];
+    const lsp = {
+      state: "running" as const,
+      listNodes: (
+        _selectors: readonly string[],
+        request: { token?: { isCancellationRequested: boolean } },
+      ) =>
+        new Promise<never>((_resolve, reject) => {
+          asked.push({ token: request.token, reject });
+        }),
+    };
+    const outcome = resolveUpstreamDescriptions({
+      lsp,
+      strict: true,
+      uniqueId: TOTALS_DOWNSTREAM,
+      columns: [
+        { name: "total", description: "" },
+        { name: "grand_total", description: "" },
+      ],
+      manifest,
+      signal: controller.signal,
+    });
+    controller.abort();
+    expect(asked[0]?.token?.isCancellationRequested).toBe(true);
+    // The server answers the cancelled request with RequestCancelled.
+    asked[0]?.reject(
+      Object.assign(new Error("Request cancelled"), { code: -32800 }),
+    );
+    expect(await outcome).toEqual({ kind: "found", asked: 2, proposals: [] });
+    expect(asked).toHaveLength(1);
+  });
+
   it("omits a column whose ancestors have no description", async () => {
     const { lsp } = fakeLsp();
     const outcome = await resolveUpstreamDescriptions({
