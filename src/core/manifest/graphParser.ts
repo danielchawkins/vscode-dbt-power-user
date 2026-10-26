@@ -1,13 +1,19 @@
 import type { Log } from "../log";
 import type { ManifestProject } from "./manifestProject";
 import type {
+  DocMetaMap,
+  ExposureMetaMap,
   FunctionMetaMap,
   GraphMetaMap,
+  MacroMetaMap,
+  MetricMetaMap,
   NodeData,
   NodeGraphMap,
   NodeMetaMap,
+  SemanticModelMetaMap,
   SourceMetaMap,
   TestMetaMap,
+  UnitTestMetaMap,
 } from "./types";
 import { RESOURCE_TYPE_METRIC, RESOURCE_TYPE_TEST } from "./types";
 
@@ -44,6 +50,35 @@ function graphOfType(
   return result;
 }
 
+/** The resource maps one manifest parse produces. */
+export interface ParsedResourceMaps {
+  parentMetaMap: DBTGraphType;
+  childMetaMap: DBTGraphType;
+  constraintOnlyParents: DBTGraphType;
+  nodeMetaMap: NodeMetaMap;
+  macroMetaMap: MacroMetaMap;
+  metricMetaMap: MetricMetaMap;
+  semanticModelMetaMap: SemanticModelMetaMap;
+  sourceMetaMap: SourceMetaMap;
+  testMetaMap: TestMetaMap;
+  unitTestMetaMap: UnitTestMetaMap;
+  docMetaMap: DocMetaMap;
+  exposureMetaMap: ExposureMetaMap;
+  functionMetaMap: FunctionMetaMap;
+}
+
+/** The parts of {@link ParsedResourceMaps} the graph is built from, with the project they belong to. */
+export type GraphInput = Pick<
+  ParsedResourceMaps,
+  | "parentMetaMap"
+  | "childMetaMap"
+  | "constraintOnlyParents"
+  | "nodeMetaMap"
+  | "sourceMetaMap"
+  | "testMetaMap"
+  | "functionMetaMap"
+> & { project: ManifestProject };
+
 export class GraphParser {
   private terminal: Pick<Log, "debug">;
 
@@ -56,16 +91,16 @@ export class GraphParser {
    * of kinds the server does not list (`analysis`). The other edges of `parents` and `children` come from the
    * Server Producer.
    */
-  createGraphMetaMap(
-    project: ManifestProject,
-    parentMap: DBTGraphType,
-    childrenMap: DBTGraphType,
-    nodeMetaMap: NodeMetaMap,
-    sourceMetaMap: SourceMetaMap,
-    testMetaMap: TestMetaMap,
-    functionMetaMap: FunctionMetaMap,
-    constraintOnlyParents: DBTGraphType = {},
-  ): GraphMetaMap {
+  createGraphMetaMap({
+    project,
+    parentMetaMap: parentMap,
+    childMetaMap: childrenMap,
+    constraintOnlyParents,
+    nodeMetaMap,
+    sourceMetaMap,
+    testMetaMap,
+    functionMetaMap,
+  }: GraphInput): GraphMetaMap {
     const projectRoot = project.getProjectRoot();
     const projectName = project.getProjectName();
     this.terminal.debug(

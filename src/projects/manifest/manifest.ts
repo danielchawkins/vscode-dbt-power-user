@@ -15,6 +15,7 @@ import type {
   MacroParser,
   MetricParser,
   NodeParser,
+  ParsedResourceMaps,
   SemanticModelParser,
   SourceParser,
   TestParser,
@@ -147,16 +148,16 @@ export async function buildManifest(
     exposureMetaMap,
     functionMetaMap,
   } = await parseResourceMaps(parsers, project, manifestJson);
-  const graphMetaMap = parsers.graphParser.createGraphMetaMap(
+  const graphMetaMap = parsers.graphParser.createGraphMetaMap({
     project,
     parentMetaMap,
     childMetaMap,
+    constraintOnlyParents,
     nodeMetaMap,
     sourceMetaMap,
     testMetaMap,
     functionMetaMap,
-    constraintOnlyParents,
-  );
+  });
   return {
     adapterType: (manifestJson.metadata?.adapter_type ?? "") || undefined,
     parsed: {
@@ -180,7 +181,7 @@ async function parseResourceMaps(
   parsers: ManifestParsers,
   project: ManifestProject,
   manifestJson: ManifestJson,
-) {
+): Promise<ParsedResourceMaps> {
   const {
     nodes,
     sources,

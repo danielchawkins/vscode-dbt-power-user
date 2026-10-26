@@ -56,16 +56,16 @@ async function parseNodes(nodes: RawNodes): Promise<ParsedManifest> {
     nodes as never,
     {},
   );
-  const graphMetaMap = new GraphParser(log).createGraphMetaMap(
+  const graphMetaMap = new GraphParser(log).createGraphMetaMap({
     project,
-    maps.parentMetaMap,
-    maps.childMetaMap,
+    parentMetaMap: maps.parentMetaMap,
+    childMetaMap: maps.childMetaMap,
     nodeMetaMap,
     sourceMetaMap,
     testMetaMap,
     functionMetaMap,
-    maps.constraintOnlyParents,
-  );
+    constraintOnlyParents: maps.constraintOnlyParents,
+  });
   return {
     nodeMetaMap,
     sourceMetaMap,
