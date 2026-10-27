@@ -93,7 +93,8 @@ export class Project implements Disposable, ManifestProject {
   private readonly projectCount: () => number;
   /** Server commands over the project's current Fusion Client. */
   readonly lsp: FusionCommands;
-  private readonly fusionClient: () => FusionClient | undefined;
+  /** The project's current Fusion Client, resolved per call. */
+  readonly fusionClient: () => FusionClient | undefined;
   private disposed = false;
 
   private _onSourceFileChanged = new EventEmitter<void>();

@@ -11,6 +11,8 @@ const LOG_SOURCE = "ServerMetadataSource";
 export interface ServerMetadataTriggers {
   /** The server reported a finished compile. */
   compileComplete: Event<void>;
+  /** The server has no compile running, after one ran. */
+  compileIdle: Event<void>;
   /** A source file of the project changed on disk. */
   sourceChanged: Event<void>;
   /** The project's Fusion client changed state or was replaced. */
@@ -22,13 +24,13 @@ export interface ServerMetadataTriggers {
  * and fires only when the node set or project info changed.
  *
  * A `dbt.listNodes` costs the server one Parse and then one full background compile, even when nothing changed. It
- * cancels a running background compile, which then starts again from the beginning.
+ * cancels a running compile, which then starts again from the beginning, so a fetch starts only while the server's
+ * compile phase is idle.
  *
- * Every `dbt.listNodes` makes the server send one compile report of its own, so a report is a reason to refresh
- * only while the graph is `stale` and a fetch is `armed`. A source change, a client change and an explicit
- * `refresh()` arm it; a failed fetch disarms it, so the next report waits for one of those. A source change also
- * fetches at once when the server has reported and is not compiling, since its compile report has then come already.
- * A fetch clears `stale` and `armed` when it starts, which keeps its own reports from starting another.
+ * A fetch is due while the graph is `stale` and a fetch is `armed`. A source change, a client change and an explicit
+ * `refresh()` arm it; a failed fetch disarms it, so later reports wait for one of those. A due fetch starts on a
+ * compile report or a source change when the phase is idle, and otherwise when the phase returns to idle. A fetch
+ * clears `stale` and `armed` when it starts, which keeps its own reports from starting another.
  */
 export class ServerMetadataSource implements Disposable {
   private readonly emitter = new EventEmitter<ServerMetadata | undefined>();
@@ -64,23 +66,13 @@ export class ServerMetadataSource implements Disposable {
     this.subscriptions = [
       triggers.compileComplete(() => {
         this.compiled = true;
-        if (this.stale && this.armed && this.lsp.state === "running") {
-          void this.start();
-        }
+        this.startWhenDue();
       }),
+      triggers.compileIdle(() => this.startWhenDue()),
       triggers.sourceChanged(() => {
         this.stale = true;
         this.armed = true;
-        // The file event follows the server's compile of the change by about the debounce, so that compile's report
-        // has usually come already and no later one will. Fetch now unless a compile is still running, whose report
-        // then refreshes.
-        if (
-          this.compiled &&
-          this.lsp.state === "running" &&
-          this.lsp.compilePhase !== "compiling"
-        ) {
-          void this.start();
-        }
+        this.startWhenDue();
       }),
       triggers.clientChanged(() => {
         if (this.lsp.state === "running") {
@@ -99,6 +91,19 @@ export class ServerMetadataSource implements Disposable {
 
   current(): ServerMetadata | undefined {
     return this.value;
+  }
+
+  /** Starts a due fetch once the server has compiled and is not compiling now. */
+  private startWhenDue(): void {
+    if (
+      this.stale &&
+      this.armed &&
+      this.compiled &&
+      this.lsp.state === "running" &&
+      this.lsp.compilePhase === "idle"
+    ) {
+      void this.start();
+    }
   }
 
   /** Arms and runs one refresh; a call during a refresh schedules exactly one more after it. */

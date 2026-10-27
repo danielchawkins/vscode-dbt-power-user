@@ -106,6 +106,7 @@ describe("Projects", () => {
       onDidCompile: new EventEmitter<void>().event,
       onSourceFileChanged: new EventEmitter<void>().event,
       onDidChangeClient: new EventEmitter<void>().event,
+      fusionClient: () => undefined,
       lsp: {},
       publishMerged: publishMerged,
       rebuildManifest: vi.fn(() => {
@@ -128,6 +129,7 @@ describe("Projects", () => {
       onDidCompile: new EventEmitter<void>().event,
       onSourceFileChanged: new EventEmitter<void>().event,
       onDidChangeClient: new EventEmitter<void>().event,
+      fusionClient: () => undefined,
       lsp: {},
       publishMerged: publishMerged,
       rebuildManifest: vi.fn(() => {

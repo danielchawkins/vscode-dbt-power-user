@@ -47,6 +47,7 @@ describe("compiled preview project lookup", () => {
       onDidCompile: new EventEmitter<void>().event,
       onSourceFileChanged: new EventEmitter<void>().event,
       onDidChangeClient: new EventEmitter<void>().event,
+      fusionClient: () => undefined,
       lsp: {},
     }) as unknown as Project;
 

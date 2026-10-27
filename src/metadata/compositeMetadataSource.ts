@@ -4,6 +4,7 @@ import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
 import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
+import { followClientIdle } from "../projects/clients/clientChange";
 import type { Manifest } from "../projects/manifest/manifestTypes";
 import type { Project } from "../projects/project/project";
 import type { ProjectMetadataSource } from "../projects/project/projectMetadataSource";
@@ -102,6 +103,12 @@ export function createProjectMetadataSource(
       projectName: () => project.getProjectName(),
       triggers: {
         compileComplete: project.onDidCompile,
+        compileIdle: (listener) =>
+          followClientIdle(
+            project.fusionClient,
+            project.onDidChangeClient,
+            listener,
+          ),
         sourceChanged: project.onSourceFileChanged,
         clientChanged: project.onDidChangeClient,
       },

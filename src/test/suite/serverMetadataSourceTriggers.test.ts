@@ -25,6 +25,7 @@ function setup(
   listNodes = vi.fn().mockResolvedValue({ nodes: [node("model.p.a")] }),
 ) {
   const compiled = new EventEmitter<void>();
+  const idle = new EventEmitter<void>();
   const sourceChanged = new EventEmitter<void>();
   const clientChanged = new EventEmitter<void>();
   const phase: { current: CompilePhase } = { current: "idle" };
@@ -43,12 +44,13 @@ function setup(
     projectName: () => "p",
     triggers: {
       compileComplete: compiled.event,
+      compileIdle: idle.event,
       sourceChanged: sourceChanged.event,
       clientChanged: clientChanged.event,
     },
     log: { debug: vi.fn(), warn: vi.fn() },
   });
-  return { source, compiled, sourceChanged, listNodes, phase };
+  return { source, compiled, idle, sourceChanged, listNodes, phase };
 }
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -68,6 +70,23 @@ describe("ServerMetadataSource triggers", () => {
 
     phase.current = "idle";
     compiled.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(2);
+  });
+
+  it("a source change during a background compile waits for the server to go idle", async () => {
+    const { compiled, idle, sourceChanged, listNodes, phase } = setup();
+    compiled.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    phase.current = "backgroundCompiling";
+    sourceChanged.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    phase.current = "idle";
+    idle.fire();
     await tick();
     expect(listNodes).toHaveBeenCalledTimes(2);
   });
@@ -98,7 +117,6 @@ describe("ServerMetadataSource triggers", () => {
     compiled.fire();
     compiled.fire();
     await tick();
-    // Today the report re-arms the fetch (2 calls), which causes another Parse and background compile, and so on.
     expect(calls).toHaveBeenCalledTimes(1);
   });
 });
