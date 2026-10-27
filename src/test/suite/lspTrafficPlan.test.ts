@@ -54,8 +54,6 @@ describe("compile report kinds", () => {
   });
 
   it("does not fire onDidCompile for a background compile report", () => {
-    // Today both kinds fire onDidCompile, so one server compile cycle renders the preview twice and re-arms
-    // the server metadata source twice.
     const { send, onCompile, dispose } = harness();
     send("dbt/lspBackgroundCompileComplete", { errors: [] });
     expect(onCompile).not.toHaveBeenCalled();

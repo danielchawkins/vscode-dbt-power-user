@@ -32,7 +32,7 @@ export function onClientChange(
 ): Event<void> {
   return (listener) => {
     let stateSubscription: Disposable | undefined;
-    let followed = pool.get(project);
+    let followed: FusionClient | undefined;
     const follow = () => {
       stateSubscription?.dispose();
       followed = pool.get(project);

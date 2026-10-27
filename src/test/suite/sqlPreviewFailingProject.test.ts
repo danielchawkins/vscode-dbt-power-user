@@ -7,8 +7,8 @@ import { SqlPreviewContentProvider } from "../../features/compiledSql/sqlPreview
 import { previewUriFor } from "../../projects/registry/previewUri";
 
 /*
- * A failed compileFile starts compiles, and their reports re-render the preview. Each failed render must count
- * against the bounded waits, so a preview of a model in a failing project stops re-rendering.
+ * A failed compileFile starts compiles, and their reports re-render the preview. Each re-render a compile report
+ * causes counts against the bounded waits, so a preview of a model in a failing project stops re-rendering.
  */
 
 vi.mock("vscode", async (importOriginal) => ({
@@ -67,5 +67,26 @@ describe("SqlPreviewContentProvider in a failing project", () => {
       }
     }
     expect(queries.compiledSql.mock.calls.length).toBeLessThanOrEqual(4);
+  });
+
+  it("re-renders on compile reports again after the model's dirty state flips", async () => {
+    const preview = previewUriFor(model);
+    await provider.provideTextDocumentContent(preview);
+    const onChange = vi.fn();
+    provider.onDidChange(onChange);
+    for (let i = 0; i < 10; i += 1) {
+      compileListener?.();
+    }
+    const exhausted = onChange.mock.calls.length;
+    compileListener?.();
+    expect(onChange).toHaveBeenCalledTimes(exhausted);
+
+    const textChanged = vi
+      .mocked(workspace.onDidChangeTextDocument)
+      .mock.calls.at(-1)?.[0] as (e: unknown) => void;
+    textChanged({ document: { uri: model, isDirty: true } });
+    const afterFlip = onChange.mock.calls.length;
+    compileListener?.();
+    expect(onChange).toHaveBeenCalledTimes(afterFlip + 1);
   });
 });
