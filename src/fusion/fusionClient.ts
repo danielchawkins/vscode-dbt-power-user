@@ -9,6 +9,7 @@ import type {
 } from "vscode";
 import type { LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/snapshot";
+import type { ServerCompileState } from "./compileSignal";
 import type { FusionExecutable } from "./fusionExecutable";
 import type { NestedRootSource } from "./nestedRoots";
 
@@ -71,7 +72,7 @@ export interface FusionClient extends Disposable {
    */
   readonly openDocuments?: readonly Uri[];
   /** Compile signal of this client's server, read by the smoke suite; optional so fakes can omit it. */
-  readonly compiled?: { readonly completions: number };
+  readonly compiled?: ServerCompileState;
   /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
   readonly diagnostics?: DiagnosticCollection | undefined;
   /** Sends `workspace/executeCommand`; {@link FusionCommands} schedules and bounds the calls. */

@@ -78,7 +78,9 @@ describe("FusionLanguageClient lifecycle", () => {
     await flushAsync();
 
     expect([...handlers.keys()]).toEqual([
+      "dbt/lspCompileStart",
       "dbt/lspCompileComplete",
+      "dbt/lspBackgroundCompileStart",
       "dbt/lspBackgroundCompileComplete",
     ]);
     handlers.get("dbt/lspCompileComplete")?.({
@@ -94,7 +96,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("raises the compile-complete path for a foreground and a background compile, counts only the foreground one", async () => {
+  it("raises the compile-complete path for a foreground and a background compile, counts both", async () => {
     const handlers = new Map<string, (params: unknown) => void>();
     const languageClient = {
       ...makeLanguageClient(),
@@ -111,11 +113,14 @@ describe("FusionLanguageClient lifecycle", () => {
       options: { onCompileErrors },
     });
     await flushAsync();
+    const kinds: string[] = [];
+    client.compiled?.onDidComplete((complete) => kinds.push(complete.kind));
 
     handlers.get("dbt/lspCompileComplete")?.({ errors: [] });
     handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
     expect(onCompileErrors).toHaveBeenCalledTimes(2);
-    expect(client.compiled?.completions).toBe(1);
+    expect(kinds).toEqual(["foreground", "background"]);
+    expect(client.compiled?.completions).toBe(2);
 
     await client.stop();
     client.dispose();

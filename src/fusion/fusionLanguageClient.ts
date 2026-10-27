@@ -3,7 +3,7 @@ import { EventEmitter } from "vscode";
 import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
 import { projectFileAvailable } from "./clientLifecycle";
-import { CompileSignal } from "./compileSignal";
+import { ServerCompileState } from "./compileSignal";
 import {
   MAX_UNEXPECTED_EXIT_RETRIES,
   type FusionClient,
@@ -101,7 +101,7 @@ class FusionLanguageClientImpl implements FusionClient {
     return this.transport.languageClient?.diagnostics;
   }
 
-  readonly compiled = new CompileSignal();
+  readonly compiled = new ServerCompileState();
 
   get outputChannel(): LogOutputChannel {
     return this.options.outputChannel;

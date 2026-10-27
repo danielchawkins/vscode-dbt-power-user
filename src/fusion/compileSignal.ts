@@ -1,11 +1,23 @@
-import type { CancellationToken, Disposable } from "vscode";
+import type { CancellationToken, Disposable, Event } from "vscode";
+import { EventEmitter } from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
 
-/** Fusion's notifications that end a compile; `errors` lists what it found. */
-const FUSION_COMPILE_COMPLETE = [
+/** Fusion's notifications that start or end a compile. */
+const FUSION_COMPILE_NOTIFICATIONS = [
+  "dbt/lspCompileStart",
   "dbt/lspCompileComplete",
+  "dbt/lspBackgroundCompileStart",
   "dbt/lspBackgroundCompileComplete",
 ] as const;
+
+export type CompilePhase = "idle" | "compiling" | "backgroundCompiling";
+
+/** One finished compile; `errors` lists its `Error`-severity messages. */
+export interface CompileComplete {
+  kind: "foreground" | "background";
+  errors: string[];
+  modelsCount?: number | undefined;
+}
 
 /** The `Error`-severity messages of a compile-complete notification's `errors`. */
 function compileErrorMessages(params: unknown): string[] {
@@ -20,28 +32,54 @@ function compileErrorMessages(params: unknown): string[] {
   );
 }
 
-/** How long a formatting request waits for the server's first compile before giving up. */
-const FORMAT_COMPILE_WAIT_MS = 5_000;
-
 /** LSP `RequestFailed`. */
 const REQUEST_FAILED = -32803;
 
-/** Counts `dbt/lspCompileComplete` notifications so a request can wait for the next one. */
-export class CompileSignal {
+/**
+ * What one language server is doing with its compiles: the phase it is in now, and how many compiles have finished.
+ * Fed by the four `dbt/*` compile notifications through {@link subscribeToCompileState}.
+ */
+export class ServerCompileState implements Disposable {
+  private currentPhase: CompilePhase = "idle";
   private count = 0;
-  private readonly waiters = new Set<() => void>();
+  private readonly completed = new EventEmitter<CompileComplete>();
+  private readonly phaseChanged = new EventEmitter<CompilePhase>();
+
+  /** Fires for each finished compile, foreground or background. */
+  readonly onDidComplete: Event<CompileComplete> = this.completed.event;
+  readonly onDidChangePhase: Event<CompilePhase> = this.phaseChanged.event;
+
+  get phase(): CompilePhase {
+    return this.currentPhase;
+  }
 
   get completions(): number {
     return this.count;
   }
 
-  notify(): void {
+  /** Records a compile start; `phase` is the kind of compile that started. */
+  started(phase: Exclude<CompilePhase, "idle">): void {
+    this.setPhase(phase);
+  }
+
+  /** Records a finished compile and returns the phase to idle. */
+  finished(complete: CompileComplete): void {
     this.count += 1;
-    // Snapshot: a waiter removes itself when it runs.
-    const waiters = [...this.waiters];
-    for (const waiter of waiters) {
-      waiter();
+    this.setPhase("idle");
+    this.completed.fire(complete);
+  }
+
+  private setPhase(phase: CompilePhase): void {
+    if (this.currentPhase === phase) {
+      return;
     }
+    this.currentPhase = phase;
+    this.phaseChanged.fire(phase);
+  }
+
+  dispose(): void {
+    this.completed.dispose();
+    this.phaseChanged.dispose();
   }
 
   /** Resolves once a compile completes after `since`, after `timeoutMs`, or when `token` is cancelled. */
@@ -54,31 +92,46 @@ export class CompileSignal {
       return;
     }
     await new Promise<void>((resolve) => {
-      const cancelled = token?.onCancellationRequested(() => done());
+      const subscriptions: Disposable[] = [];
       const done = () => {
         clearTimeout(timer);
-        cancelled?.dispose();
-        this.waiters.delete(done);
+        for (const subscription of subscriptions) {
+          subscription.dispose();
+        }
         resolve();
       };
       const timer = setTimeout(done, timeoutMs);
-      this.waiters.add(done);
+      subscriptions.push(this.onDidComplete(done));
+      const cancelled = token?.onCancellationRequested(done);
+      if (cancelled) {
+        subscriptions.push(cancelled);
+      }
     });
   }
 }
 
-/** Counts `dbt/lspCompileComplete` on `compiled` and passes each compile's errors to `onCompileErrors`. */
-export function subscribeToCompileComplete(
+/** Feeds `state` from all four compile notifications of `client`. */
+export function subscribeToCompileState(
   client: { onNotification?: LanguageClient["onNotification"] },
-  compiled: CompileSignal,
-  onCompileErrors?: (messages: string[]) => void,
+  state: ServerCompileState,
 ): void {
-  for (const method of FUSION_COMPILE_COMPLETE) {
+  for (const method of FUSION_COMPILE_NOTIFICATIONS) {
     client.onNotification?.(method, (params: unknown) => {
-      if (method === "dbt/lspCompileComplete") {
-        compiled.notify();
+      switch (method) {
+        case "dbt/lspCompileStart":
+          state.started("compiling");
+          return;
+        case "dbt/lspBackgroundCompileStart":
+          state.started("backgroundCompiling");
+          return;
+        case "dbt/lspCompileComplete":
+        case "dbt/lspBackgroundCompileComplete":
+          state.finished({
+            kind: method === "dbt/lspCompileComplete" ? "foreground" : "background",
+            errors: compileErrorMessages(params),
+            modelsCount: (params as { models_count?: number } | null)?.models_count,
+          });
       }
-      onCompileErrors?.(compileErrorMessages(params));
     });
   }
 }
@@ -101,6 +154,9 @@ export const FORMAT_METHODS = new Set([
   "textDocument/rangeFormatting",
 ]);
 
+/** How long a formatting request waits for the server's first compile before giving up. */
+const FORMAT_COMPILE_WAIT_MS = 5_000;
+
 /**
  * Runs a formatting request; on the no-compiler-state error waits once for the next compile and retries once.
  * Still failing, or cancelled while waiting, it returns no edits. Other errors propagate.
@@ -109,7 +165,7 @@ export const FORMAT_METHODS = new Set([
 export async function formatOnceCompiled<R>(
   request: () => Promise<R>,
   input: {
-    compiled: CompileSignal;
+    compiled: ServerCompileState;
     log: (message: string) => void;
     token: CancellationToken | undefined;
     timeoutMs?: number;

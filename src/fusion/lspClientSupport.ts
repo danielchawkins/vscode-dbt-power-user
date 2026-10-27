@@ -10,7 +10,7 @@ import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { LspLaunch } from "../core/lsp";
 import { clientErrorHandler, inactiveGate } from "./clientLifecycle";
 import {
-  CompileSignal,
+  ServerCompileState,
   FORMAT_METHODS,
   formatOnceCompiled,
 } from "./compileSignal";
@@ -133,7 +133,7 @@ export function languageClientOptions(input: {
   diagnosticsFilter: ProjectDiagnosticsFilter;
   /** What the client answers `workspace/configuration` for section `dbt` with. */
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
-  compiled?: CompileSignal;
+  compiled?: ServerCompileState;
   /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
   nestedRoots?:
     | { guard: NestedRootGuard; openDocuments: OpenDocuments }
@@ -147,7 +147,7 @@ export function languageClientOptions(input: {
   const { project, nestedRoots } = input;
   const isInactive = input.isInactive ?? (() => false);
   const middleware = fusionMiddleware({
-    compiled: input.compiled ?? new CompileSignal(),
+    compiled: input.compiled ?? new ServerCompileState(),
     outputChannel: input.outputChannel,
     diagnosticsFilter: input.diagnosticsFilter,
     config: input.config,
@@ -212,7 +212,7 @@ function gatedDocumentHooks(
  * inactive.
  */
 function fusionMiddleware(input: {
-  compiled: CompileSignal;
+  compiled: ServerCompileState;
   outputChannel: LogOutputChannel;
   diagnosticsFilter: ProjectDiagnosticsFilter;
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;

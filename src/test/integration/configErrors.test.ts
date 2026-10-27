@@ -12,8 +12,8 @@ import {
 } from "../../core/snapshot";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import {
-  CompileSignal,
-  subscribeToCompileComplete,
+  ServerCompileState,
+  subscribeToCompileState,
 } from "../../fusion/compileSignal";
 import { FusionCli } from "../../fusion/fusionCli";
 import type { ClientHandle } from "../../fusion/lspClientSupport";
@@ -180,9 +180,11 @@ suite("Configuration errors", function () {
           }
         },
       } as unknown as ClientHandle;
-      subscribeToCompileComplete(client, new CompileSignal(), (m) => {
-        messages = m;
+      const state = new ServerCompileState();
+      state.onDidComplete((complete) => {
+        messages = complete.errors;
       });
+      subscribeToCompileState(client, state);
       return messages;
     };
     const fixture = await createLspFixture(projectDir, projectDir, {

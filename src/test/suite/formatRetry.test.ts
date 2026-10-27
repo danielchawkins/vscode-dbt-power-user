@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CompileSignal } from "../../fusion/compileSignal";
+import { ServerCompileState } from "../../fusion/compileSignal";
 import { languageClientOptions } from "../../fusion/lspClientSupport";
 
 const noState = () => ({
@@ -42,7 +42,7 @@ function cancellable() {
  * the feature's failure handler (which shows the toast) only sees what escapes it.
  */
 function setup() {
-  const compiled = new CompileSignal();
+  const compiled = new ServerCompileState();
   const info = vi.fn();
   const toast = vi.fn();
   const middleware = languageClientOptions({
@@ -95,7 +95,7 @@ describe("formatting retry in middleware.sendRequest", () => {
 
       const result = run(method, connection);
       await vi.advanceTimersByTimeAsync(0);
-      compiled.notify();
+      compiled.finished({ kind: "foreground", errors: [] });
 
       await expect(result).resolves.toEqual(["edit"]);
       expect(connection).toHaveBeenCalledTimes(2);
