@@ -22,13 +22,18 @@ const PROJECT_LEVEL_FILES = [
 /** The handler a quiet period ends with; a project-file change covers a source-file change in the same burst. */
 type PendingKind = "projectFile" | "sourceFile";
 
+/** The files one quiet period ended with: each changed path once, in the order its events arrived. */
+export interface ChangeBurst {
+  paths: string[];
+}
+
 export interface ManifestTriggerHandlers {
   /** Model, macro and seed paths; read on every event. */
   sourcePaths(): string[] | undefined;
   /** Runs after `dbt_project.yml` is created, changed or deleted. */
-  onProjectFileChanged(): Promise<void>;
+  onProjectFileChanged(change: ChangeBurst): Promise<void>;
   /** Runs after a `.sql`, `.yml`, `.yaml` or `.csv` file under a source path changes. */
-  onSourceFileChanged(): Promise<void>;
+  onSourceFileChanged(change: ChangeBurst): Promise<void>;
 }
 /** Debounced file events under one Declared Project root that call for a manifest rebuild. */
 export class ManifestTrigger implements Disposable {
@@ -37,6 +42,8 @@ export class ManifestTrigger implements Disposable {
   private quietTimer: ReturnType<typeof setTimeout> | undefined;
   /** The strongest kind of event since the last run; undefined while no event is pending. */
   private pendingKind: PendingKind | undefined;
+  /** Every changed path since the last run, in arrival order. */
+  private pendingPaths = new Set<string>();
   private readonly projectRoot: string;
   private readonly terminal: Log;
   private readonly handlers: ManifestTriggerHandlers;
@@ -73,6 +80,7 @@ export class ManifestTrigger implements Disposable {
     clearTimeout(this.quietTimer);
     this.quietTimer = undefined;
     this.pendingKind = undefined;
+    this.pendingPaths.clear();
     for (const subscription of this.subscriptions) {
       subscription.dispose();
     }
@@ -96,37 +104,40 @@ export class ManifestTrigger implements Disposable {
         "ManifestTrigger",
         `${DBT_PROJECT_FILE} changed in ${this.projectRoot}`,
       );
-      this.arm("projectFile");
+      this.arm("projectFile", fsPath);
       return;
     }
     if (!this.isUnderSourcePath(fsPath)) {
       return;
     }
     this.terminal.debug("ManifestTrigger", `Source file changed: ${fsPath}`);
-    this.arm("sourceFile");
+    this.arm("sourceFile", fsPath);
   }
 
   /** Restarts the quiet period. A project-file event replaces a pending source-file event, never the reverse. */
-  private arm(kind: PendingKind): void {
+  private arm(kind: PendingKind, fsPath: string): void {
     if (kind === "projectFile" || this.pendingKind === undefined) {
       this.pendingKind = kind;
     }
+    this.pendingPaths.add(fsPath);
     clearTimeout(this.quietTimer);
     this.quietTimer = setTimeout(() => this.flush(), BOUNDS.fileEventQuietMs);
   }
 
-  /** Runs the handler for the strongest pending kind, once. */
+  /** Runs the handler for the strongest pending kind, once, with every path the quiet period collected. */
   private flush(): void {
     const kind = this.pendingKind;
+    const change: ChangeBurst = { paths: [...this.pendingPaths] };
     this.quietTimer = undefined;
     this.pendingKind = undefined;
+    this.pendingPaths.clear();
     if (kind === "projectFile") {
       void this.run("project config refresh", () =>
-        this.handlers.onProjectFileChanged(),
+        this.handlers.onProjectFileChanged(change),
       );
     } else if (kind === "sourceFile") {
       void this.run("manifest rebuild", () =>
-        this.handlers.onSourceFileChanged(),
+        this.handlers.onSourceFileChanged(change),
       );
     }
   }
