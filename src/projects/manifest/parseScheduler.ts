@@ -1,6 +1,6 @@
 import type { Disposable } from "vscode";
 import type { Log } from "../../core/log";
-import type { ParseDemand } from "./parseDemand";
+import type { MetadataDemand } from "./metadataDemand";
 
 /** What a `ParseScheduler` runs and reads from its project. */
 export interface ParseSchedulerDeps {
@@ -13,7 +13,7 @@ export interface ParseSchedulerDeps {
   onSourceChanged(): void;
   isDisposed(): boolean;
   /** Views reading parse-owned fields; without it every source change rebuilds. */
-  demand?: ParseDemand | undefined;
+  demand?: MetadataDemand | undefined;
 }
 
 /** Decides when a project rebuilds its manifest: one parse at a time, deferred while no view needs the result. */

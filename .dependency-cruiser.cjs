@@ -61,9 +61,9 @@ module.exports = {
     layer("webview", `^src/(core|benchmark|projects/project)/|${SUPPORT}`),
     layer(
       "features",
-      // The manifest/ modules a feature reads: the Manifest type, a publication's id, and parse demand.
+      // The manifest/ modules a feature reads: the Manifest type, a publication's id, and metadata demand.
       `^src/(core|settings|fusion|projects/(registry|output|project)|webview|features)/|${SUPPORT}|` +
-        "^src/projects/manifest/(manifestTypes|manifest|parseDemand)\\.ts$",
+        "^src/projects/manifest/(manifestTypes|manifest|metadataDemand)\\.ts$",
     ),
   ],
   forbidden: [

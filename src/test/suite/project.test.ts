@@ -34,7 +34,7 @@ import {
 import { DBT_PROJECT_FILE, type ProjectPaths } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { ManifestParsers } from "../../projects/manifest/manifest";
-import { ParseDemand } from "../../projects/manifest/parseDemand";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import { DbtTaskTerminal } from "../../projects/project/dbtTask";
@@ -1290,17 +1290,17 @@ describe("Project manifest trigger", () => {
   });
 
   describe("with parse-field consumers tracked", () => {
-    let demand: ParseDemand;
+    let demand: MetadataDemand;
     let tracked: Project;
     let trackedWatcher: MockFileSystemWatcher;
 
     beforeEach(async () => {
-      demand = new ParseDemand();
+      demand = new MetadataDemand();
       createdFileSystemWatchers.length = 0;
       tracked = await buildProject(
         root,
         stubDelegate(root, { rebuildManifest, refreshProjectConfig }),
-        { parseDemand: demand },
+        { metadataDemand: demand },
       );
       trackedWatcher = createdFileSystemWatchers[0];
       rebuildManifest.mockClear();
@@ -1370,7 +1370,7 @@ describe("Project manifest trigger", () => {
         path.join(fixtureRoot, "manifest.contract.json"),
         path.join(targetDir, MANIFEST_FILE),
       );
-      const parseDemand = new ParseDemand();
+      const metadataDemand = new MetadataDemand();
       let release = () => {};
       const slowRebuild = vi.fn<() => Promise<void>>().mockResolvedValue();
       const slow = await buildProject(
@@ -1383,14 +1383,14 @@ describe("Project manifest trigger", () => {
               packagesInstallPath: path.join(dir, "dbt_packages"),
             }),
         }),
-        { parseDemand },
+        { metadataDemand },
       );
       const slowWatcher = createdFileSystemWatchers.at(-1)!;
       slowRebuild.mockClear();
       slowRebuild.mockImplementationOnce(
         () => new Promise<void>((resolve) => (release = resolve)),
       );
-      const hold = parseDemand.acquire();
+      const hold = metadataDemand.acquire();
       slowWatcher.fire("change", path.join(dir, "models", "a.sql"));
       await new Promise((resolve) => setTimeout(resolve, 700));
       expect(slowRebuild).toHaveBeenCalledTimes(1);
@@ -1430,7 +1430,7 @@ describe("Project manifest trigger", () => {
               packagesInstallPath: path.join(dir, "dbt_packages"),
             }),
         }),
-        { parseDemand: new ParseDemand() },
+        { metadataDemand: new MetadataDemand() },
       );
       const currentWatcher = createdFileSystemWatchers.at(-1);
       currentWatcher?.fire("change", path.join(dir, "models", "a.sql"));

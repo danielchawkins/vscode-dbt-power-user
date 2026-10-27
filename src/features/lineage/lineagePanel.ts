@@ -14,7 +14,7 @@ import type { CancellationToken } from "vscode";
 import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
-import type { ParseDemand } from "../../projects/manifest/parseDemand";
+import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
@@ -78,7 +78,7 @@ export class LineagePanel
   declare protected extensionContext: ExtensionContextStore;
   private terminal: Log;
   private dbtLineageService: DbtLineageService;
-  private parseDemand: ParseDemand | undefined;
+  private metadataDemand: MetadataDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
@@ -95,14 +95,14 @@ export class LineagePanel
     dbtLineageService,
     eventEmitterService,
     queryManifestService,
-    parseDemand,
+    metadataDemand,
   }: {
     extensionContext: ExtensionContextStore;
     terminal: Log;
     dbtLineageService: DbtLineageService;
     eventEmitterService: SharedStateService;
     queryManifestService: QueryManifestService;
-    parseDemand?: ParseDemand;
+    metadataDemand?: MetadataDemand;
   }) {
     super({
       extensionContext,
@@ -112,7 +112,7 @@ export class LineagePanel
     });
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
-    this.parseDemand = parseDemand;
+    this.metadataDemand = metadataDemand;
     const columnsCommand = registerLineageColumnsCommand((params) =>
       this.getColumns(params),
     );
@@ -131,7 +131,7 @@ export class LineagePanel
     context: WebviewViewResolveContext<unknown>,
     token: CancellationToken,
   ): void | Thenable<void> {
-    this.followDemand(panel, this.parseDemand);
+    this.followDemand(panel, this.metadataDemand);
     return super.resolveWebviewView(panel, context, token);
   }
 

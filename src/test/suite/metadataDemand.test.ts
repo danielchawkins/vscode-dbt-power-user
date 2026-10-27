@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "vscode";
-import { ParseDemand } from "../../projects/manifest/parseDemand";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import { QueryManifestService } from "../../projects/project/queryManifestService";
 
-describe("ParseDemand", () => {
+describe("MetadataDemand", () => {
   it("is active while any consumer holds it and fires when the first appears", () => {
-    const demand = new ParseDemand();
+    const demand = new MetadataDemand();
     const appeared = vi.fn();
     demand.onDidBecomeActive(appeared);
     expect(demand.active).toBe(false);
@@ -19,7 +19,7 @@ describe("ParseDemand", () => {
   });
 
   it("follows a visibility flag", () => {
-    const demand = new ParseDemand();
+    const demand = new MetadataDemand();
     const changed = new EventEmitter<void>();
     let visible = false;
     const follow = demand.follow(() => visible, changed.event);

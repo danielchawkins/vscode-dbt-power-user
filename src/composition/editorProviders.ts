@@ -23,7 +23,7 @@ export function composeEditorProviders(graph: ProjectsGraph) {
       {
         test: new ModelTestTreeview(projects),
         documentation: new DocumentationTreeview(projects),
-        parseDemand: graph.parseDemand,
+        metadataDemand: graph.metadataDemand,
       },
       new RunHistoryTreeviewProvider(graph.runHistoryService),
     ),
