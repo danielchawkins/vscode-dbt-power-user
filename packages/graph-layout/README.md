@@ -130,7 +130,7 @@ Rejected, with the reason:
 ## Build order
 
 1. Types, presets, `validateGraph`, package wiring and boundary rules: in place.
-2. `measureDrawing` and `compareDrawings`, the geometric metrics, so every later phase is measured.
+2. `measureDrawing` and `compareDrawings`, the geometric metrics, so every later phase is measured: in place.
 3. Ranking: cycle removal, network simplex, partitions, rank hints.
 4. Ordering with ports, then clusters, then sifting.
 5. Placement, then cluster boxes.
