@@ -90,6 +90,21 @@ function fakeTerminal() {
 const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
 
 describe("FusionCli", () => {
+  it.fails("passes --no-version-check to the background parse only", async () => {
+    const { calls, factory } = fakeProcesses();
+    const cli = new FusionCli({
+      executable,
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
+    await cli.rebuildManifest();
+    await cli.run({ kind: "parse" });
+    expect(
+      calls.map((call) => (call.args ?? []).includes("--no-version-check")),
+    ).toEqual([true, false]);
+  });
+
   it(
     "runs the parse at background priority and user commands at normal",
     async () => {

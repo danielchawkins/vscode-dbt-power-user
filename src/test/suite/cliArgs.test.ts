@@ -217,6 +217,23 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
 ];
 
 describe("toCliArgs golden examples", () => {
+  it.fails("a parse that skips the version check passes --no-version-check", () => {
+    const snapshot = resolveProjectSnapshot({
+      root,
+      folder: snapshotFolder,
+      firstWorkspaceFolder: snapshotFolder,
+      userHome: "/home/u",
+      environment: {},
+      lspCompiledOutputOverride: undefined,
+      settings: { ...noSettings },
+      projectFile: { kind: "parsed", text: "", config: { name: "proj" } },
+    });
+    expect(
+      toCliArgs(snapshot, { kind: "parse", skipVersionCheck: true }, every("directory")),
+    ).toEqual(argv(`parse --log-format json --no-version-check ${P}`));
+  });
+
+
   it.each(golden)("%s", (_label, command, expected, options = {}) => {
     const { settings = {}, defer, probe = "directory" } = options;
     const snapshot = resolveProjectSnapshot({

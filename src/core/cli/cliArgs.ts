@@ -18,7 +18,8 @@ export type CliCommand =
       defer?: "off";
     }
   | { kind: "show"; sql: string; limit: number }
-  | { kind: "parse" }
+  /** `skipVersionCheck` passes `--no-version-check`, so the parse makes no network request for a version. */
+  | { kind: "parse"; skipVersionCheck?: boolean }
   | { kind: "deps" }
   | { kind: "clean" }
   | { kind: "debug" };
