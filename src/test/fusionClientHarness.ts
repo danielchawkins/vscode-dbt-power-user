@@ -64,6 +64,7 @@ export function makeLaunch(overrides: Partial<LspLaunch> = {}): LspLaunch {
   return {
     executable: { source: "path" },
     projectDir: "/workspace/general",
+    targetPath: "/workspace/general/target",
     target: undefined,
     profile: undefined,
     profilesDir: undefined,
