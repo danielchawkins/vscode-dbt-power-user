@@ -9,20 +9,20 @@ import {
   sameColumnName,
   tableEdgeId,
 } from "./edgeIds";
-import type { GroupChip } from "./expansionGroups";
-import { expansionKey } from "./graph";
-import type { LayerBand } from "./layered";
-import { layeredFlow } from "./layeredFlow";
+import { engineFor } from "./engine/engines";
+import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
   drawsTableEdges,
-  layeredInput,
+  layoutRequest,
   rankingEdges,
   type FlowInput,
-} from "./layeredInput";
-import { type Point } from "./layeredMetrics";
+} from "./engine/layoutRequest";
+import type { GroupChip } from "./expansionGroups";
+import { expansionKey } from "./graph";
 import { bandColour, layerTagOf } from "./layerTags";
 import { columnHandle, geometry, layout, tableHeight } from "./layout";
 import { relationshipPath } from "./relationshipRoute";
+import { drawLayout } from "./routeDrawing";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
 interface TableNodeData extends Record<string, unknown> {
@@ -186,20 +186,16 @@ function placeLayered(
   bands: BandNode[];
   paths: Map<string, RoutedEdgeData>;
 } {
-  const flow = layeredFlow(layeredInput(input, listed, heightOf));
+  const request = layoutRequest(input, listed, heightOf);
+  const response = engineFor().layout(request);
+  const { paths: drawn } = drawLayout(request, response);
   const paths = new Map<string, RoutedEdgeData>();
-  for (const [id, path] of flow.paths) {
-    paths.set(id, {
-      d: path.d,
-      labelAt: path.labelAt,
-      start: path.start,
-      end: path.end,
-      startsAt: path.startsAt,
-    });
+  for (const [id, path] of drawn) {
+    paths.set(id, { ...path });
   }
   return {
-    positions: flow.positions,
-    bands: bandNodes(flow.bands, input.layerColors),
+    positions: new Map(response.positions),
+    bands: bandNodes([...response.bands], input.layerColors),
     paths,
   };
 }

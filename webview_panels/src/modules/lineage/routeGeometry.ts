@@ -1,4 +1,4 @@
-import type { Point } from "./layeredMetrics";
+import type { Point } from "./engine/layoutEngine";
 
 export const distance = (p: Point, q: Point): number =>
   Math.hypot(q.x - p.x, q.y - p.y);

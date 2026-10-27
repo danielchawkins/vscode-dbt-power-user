@@ -1,8 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { tableEdgeId } from "./edgeIds";
-import { routeGutters, type TableRoute } from "./gutterRouter";
+import {
+  routeGutters,
+  type RouteResult,
+  type TableRoute,
+} from "./gutterRouter";
 import type { LayeredNode } from "./layered";
 import { layeredFlow } from "./layeredFlow";
+import { drawLayout } from "./routeDrawing";
+
+/** The router's paths drawn as the panel draws them, so the hops and path strings are counted from the drawing. */
+const drawnOf = (result: RouteResult) =>
+  drawLayout(
+    { edges: [], traceOn: false },
+    {
+      edges: new Map(
+        Array.from(result.paths, ([id, path]) => [
+          id,
+          { points: path.points, startsAt: path.startsAt },
+        ]),
+      ),
+    },
+  );
 
 const WIDTH = 280;
 const HEIGHT = 100;
@@ -58,7 +77,7 @@ describe("layeredFlow on a mixed-layer fixture", () => {
     // would run under stg_a. It takes the gap beside stg_a instead and crosses one gutter run.
     const result = flow("start", nodes, pairs);
     expect(result.crossings).toBe(1);
-    expect(result.hops).toBe(1);
+    expect(drawnOf(result).hops).toBe(1);
   });
 
   it("draws the bands behind the cards: one per layer run, plus Other when it is used", () => {
@@ -77,7 +96,7 @@ describe("layeredFlow on a mixed-layer fixture", () => {
     // Its crossing sits within a corner's reach of the bubble channel, so the router counts it but draws no hop.
     const result = flow("start", nodes, [...pairs, ["seed", "fct_2"]]);
     expect(result.crossings).toBe(1);
-    expect(result.hops).toBe(0);
+    expect(drawnOf(result).hops).toBe(0);
   });
 });
 
@@ -122,8 +141,8 @@ describe("routeGutters", () => {
       traceOn: false,
     });
     expect(result.crossings).toBe(1);
-    expect(result.hops).toBe(1);
-    expect(result.paths.get("a-d")?.d).toContain("A");
+    expect(drawnOf(result).hops).toBe(1);
+    expect(drawnOf(result).paths.get("a-d")?.d).toContain("A");
   });
 
   it("routes a relationship between cards in one row through the gutter below them", () => {
@@ -138,7 +157,7 @@ describe("routeGutters", () => {
       relationshipRoutes: [{ id: "rel:a-b", from: "a", to: "b" }],
       traceOn: false,
     });
-    const path = result.paths.get("rel:a-b");
+    const path = drawnOf(result).paths.get("rel:a-b");
     expect(path).toBeDefined();
     expect(path?.labelAt.y).toBeGreaterThan(60);
   });
@@ -155,7 +174,7 @@ describe("routeGutters", () => {
       relationshipRoutes: [],
       traceOn: true,
     });
-    const path = result.paths.get("col");
+    const path = drawnOf(result).paths.get("col");
     expect(path?.d.startsWith("M100,30")).toBe(true);
     expect(path?.d.endsWith("100,230") || path?.d.includes("100,230")).toBe(
       true,
@@ -222,7 +241,7 @@ describe("routeGutters speed", () => {
 
     expect(result.paths.size).toBe(120);
     for (const edge of tableRoutes) {
-      expect(result.paths.get(edge.id)?.d).not.toMatch(/NaN|Infinity/);
+      expect(drawnOf(result).paths.get(edge.id)?.d).not.toMatch(/NaN|Infinity/);
     }
     if (!underCoverage) {
       expect(elapsed, `routeGutters took ${elapsed} ms`).toBeLessThan(500);

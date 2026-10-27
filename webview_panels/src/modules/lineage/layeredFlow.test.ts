@@ -4,6 +4,7 @@ import * as layered from "./layered";
 import type * as LayeredModule from "./layered";
 import type { LayeredNode } from "./layered";
 import { type LayeredFlowInput, layeredFlow } from "./layeredFlow";
+import { drawLayout } from "./routeDrawing";
 
 vi.mock("./layered", async (importOriginal) => {
   const actual = await importOriginal<typeof LayeredModule>();
@@ -54,8 +55,19 @@ describe("layeredFlow skip edges", () => {
       ),
     );
     const m = flow.positions.get("m")!;
+    const d = drawLayout(
+      { edges: [], traceOn: false },
+      {
+        edges: new Map(
+          Array.from(flow.paths, ([id, path]) => [
+            id,
+            { points: path.points, startsAt: path.startsAt },
+          ]),
+        ),
+      },
+    ).paths.get("t:s->d")?.d;
     const points = Array.from(
-      flow.paths.get("t:s->d")?.d.matchAll(/[MLQ]\s*([\d.]+),([\d.]+)/g) ?? [],
+      d?.matchAll(/[MLQ]\s*([\d.]+),([\d.]+)/g) ?? [],
       (match) => ({
         x: Number(match[1]),
         y: Number(match[2]),

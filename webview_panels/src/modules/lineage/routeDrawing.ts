@@ -1,5 +1,8 @@
-import type { Route } from "./channels";
-import type { Point } from "./layeredMetrics";
+import type {
+  LayoutRequest,
+  LayoutResponse,
+  Point,
+} from "./engine/layoutEngine";
 import { type Segment, distance, segmentsOf } from "./routeGeometry";
 
 const CORNER_RADIUS = 7;
@@ -88,25 +91,15 @@ function cornerCurve(p1: Point, p2: Point, r1: number): string {
 }
 
 /** The rounded path for one route, with a hop wherever a horizontal run crosses another route's vertical run. */
-export function drawPath({
-  index,
-  routes,
-  resolved,
-  verticals,
-  traceOn,
+function drawPath({
+  points,
+  crossable,
 }: {
-  index: number;
-  routes: readonly Route[];
-  resolved: readonly Point[][];
-  verticals: readonly (readonly Segment[])[];
-  traceOn: boolean;
+  points: readonly Point[];
+  /** The vertical runs of the other paths that this path's horizontal runs may hop over. */
+  crossable: readonly (readonly Segment[])[];
 }): { d: string; hops: number } {
-  const points = resolved[index] ?? [];
   const n = points.length;
-  const route = routes[index];
-  const crossable = verticals.filter(
-    (_, j) => j !== index && !(traceOn && route?.kind === "table"),
-  );
   const first = points[0] ?? { x: 0, y: 0 };
   let hops = 0;
   let d = `M${first.x},${first.y}`;
@@ -134,7 +127,55 @@ export function drawPath({
   return { d, hops };
 }
 
-export function labelPoint(points: readonly Point[]): Point {
+/** One routed edge, drawn: its path, where its label sits, and the card edges it leaves and enters. */
+export interface DrawnPath {
+  d: string;
+  labelAt: Point;
+  start: Point;
+  end: Point;
+  startsAt?: string | undefined;
+}
+
+/**
+ * Draws every routed edge of an engine's answer, engine-neutral: the rounded paths with a hop wherever a horizontal
+ * run crosses another edge's vertical run. A table edge under a trace never hops.
+ */
+export function drawLayout(
+  request: Pick<LayoutRequest, "edges" | "traceOn">,
+  response: Pick<LayoutResponse, "edges">,
+): { paths: Map<string, DrawnPath>; hops: number } {
+  const { traceOn } = request;
+  const roles = new Map(request.edges.map((edge) => [edge.id, edge.role]));
+  const edges = Array.from(response.edges, ([id, geometry]) => ({
+    id,
+    table: roles.get(id) === "table" || roles.get(id) === "group",
+    points: geometry.points,
+    startsAt: geometry.startsAt,
+  }));
+  const verticals = edges.map(({ points }) =>
+    segmentsOf(points).filter(([p, q]) => p.x === q.x),
+  );
+  const paths = new Map<string, DrawnPath>();
+  let hops = 0;
+  edges.forEach((edge, index) => {
+    const crossable = verticals.filter(
+      (_, j) => j !== index && !(traceOn && edge.table),
+    );
+    const drawn = drawPath({ points: edge.points, crossable });
+    hops += drawn.hops;
+    // Every routed edge has at least two stops, so its first and last points are both set.
+    paths.set(edge.id, {
+      d: drawn.d,
+      labelAt: labelPoint(edge.points),
+      start: edge.points[0] ?? { x: 0, y: 0 },
+      end: edge.points.at(-1) ?? { x: 0, y: 0 },
+      startsAt: edge.startsAt,
+    });
+  });
+  return { paths, hops };
+}
+
+function labelPoint(points: readonly Point[]): Point {
   let best: Segment | undefined;
   let bestLength = -1;
   for (const segment of segmentsOf(points)) {

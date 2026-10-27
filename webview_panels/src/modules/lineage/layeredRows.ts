@@ -1,3 +1,4 @@
+import type { Point } from "./engine/layoutEngine";
 /**
  * Sub-row placement for the layered layout: each generation is split into one sub-row per layer, adjacent sub-rows
  * merge where no edge joins them, and each row's cards are placed either side of the central corridor.
@@ -6,7 +7,6 @@ import {
   CARD_GAP,
   CORRIDOR,
   type LayeredNode,
-  type Point,
   type Side,
 } from "./layeredMetrics";
 import { OTHER_TAG, tagRank } from "./layerTags";
