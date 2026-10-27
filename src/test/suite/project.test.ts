@@ -1273,7 +1273,9 @@ describe("Project manifest trigger", () => {
     await vi.advanceTimersByTimeAsync(499);
     expect(rebuildManifest).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
-    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    });
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
     expect(project.manifest?.publicationEpoch ?? 0).toBe(0);
@@ -1320,7 +1322,10 @@ describe("Project manifest trigger", () => {
       const hold = demand.acquire();
       trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
       await vi.advanceTimersByTimeAsync(500);
-      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      // The parse starts once the changed file is hashed, a real read that the fake timers do not wait for.
+      await vi.waitFor(() => {
+        expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      });
       hold.dispose();
     });
 
@@ -1329,7 +1334,9 @@ describe("Project manifest trigger", () => {
       await vi.advanceTimersByTimeAsync(500);
       const hold = demand.acquire();
       await vi.advanceTimersByTimeAsync(0);
-      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      });
       hold.dispose();
     });
 
@@ -1350,7 +1357,9 @@ describe("Project manifest trigger", () => {
       const hold = demand.acquire();
       trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
       await vi.advanceTimersByTimeAsync(500);
-      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      });
 
       trackedWatcher.fire("change", path.join(root, "models", "b.sql"));
       await vi.advanceTimersByTimeAsync(500);
@@ -1358,7 +1367,9 @@ describe("Project manifest trigger", () => {
 
       release();
       await vi.advanceTimersByTimeAsync(0);
-      expect(rebuildManifest).toHaveBeenCalledTimes(2);
+      await vi.waitFor(() => {
+        expect(rebuildManifest).toHaveBeenCalledTimes(2);
+      });
       hold.dispose();
     });
 

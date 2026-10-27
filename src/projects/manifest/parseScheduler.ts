@@ -89,7 +89,10 @@ export class ParseScheduler implements Disposable {
       );
       await this.fingerprints.begin(sourceDriven);
       try {
-        await this.deps.rebuildOnce();
+        // Hashing reads the disk, so the project may have been disposed while it ran.
+        if (!this.deps.isDisposed()) {
+          await this.deps.rebuildOnce();
+        }
       } finally {
         this.fingerprints.finish();
       }
