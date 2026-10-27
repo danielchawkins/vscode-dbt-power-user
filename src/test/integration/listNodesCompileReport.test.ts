@@ -159,6 +159,8 @@ suite("Compile reports caused by our own requests", function () {
 
       const text = `${fs.readFileSync(file, "utf-8")}\n-- edit\n`;
       fs.writeFileSync(file, text);
+      // The source change arms the fetch before the server's compile report of the change arrives.
+      sourceChanged.fire();
       fixture.notify("textDocument/didChange", {
         textDocument: { uri: fileUri(file), version: 2 },
         contentChanges: [{ text }],
@@ -166,8 +168,6 @@ suite("Compile reports caused by our own requests", function () {
       fixture.notify("textDocument/didSave", {
         textDocument: { uri: fileUri(file) },
       });
-      await sleep(500);
-      sourceChanged.fire();
       await sleep(SETTLE_MS);
       assert.strictEqual(
         listNodesRequests,

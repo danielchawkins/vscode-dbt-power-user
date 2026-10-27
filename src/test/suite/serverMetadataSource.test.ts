@@ -109,11 +109,14 @@ describe("ServerMetadataSource", () => {
     await source.refresh();
     compiled.fire();
     sourceChanged.fire();
-    await source.refresh();
-    expect(listNodes).toHaveBeenCalledTimes(3);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(listNodes).toHaveBeenCalledTimes(1);
     compiled.fire();
     await new Promise((r) => setTimeout(r, 0));
-    expect(listNodes).toHaveBeenCalledTimes(3);
+    expect(listNodes).toHaveBeenCalledTimes(2);
+    compiled.fire();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(listNodes).toHaveBeenCalledTimes(2);
   });
 
   it("refreshes again for a source change that arrives during a refresh", async () => {
@@ -126,10 +129,10 @@ describe("ServerMetadataSource", () => {
       )
       .mockResolvedValue({ nodes: [node("model.p.a")] });
     const { source, sourceChanged, compiled } = setup(listNodes);
-    compiled.fire();
     const first = source.refresh();
     await new Promise((r) => setTimeout(r, 0));
     sourceChanged.fire();
+    compiled.fire();
     release();
     await first;
     expect(listNodes).toHaveBeenCalledTimes(2);

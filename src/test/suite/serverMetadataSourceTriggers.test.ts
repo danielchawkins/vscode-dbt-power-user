@@ -51,7 +51,7 @@ function setup(
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 describe("ServerMetadataSource triggers", () => {
-  it.fails("a source change waits for the server's compile report before it asks for the graph", async () => {
+  it("a source change waits for the server's compile report before it asks for the graph", async () => {
     const { compiled, sourceChanged, listNodes } = setup();
     compiled.fire();
     await tick();

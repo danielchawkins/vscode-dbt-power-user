@@ -32,6 +32,8 @@ export class ServerMetadataSource implements Disposable {
   private running: Promise<void> | undefined;
   private again = false;
   private stale = true;
+  /** A fetch is wanted: set by a source or client change and by refresh(); a compile report then fetches. */
+  private armed = true;
   /** The current client run has reported a compile; before that `listNodes` would wait on it, with a progress toast. */
   private compiled = false;
   private disposed = false;
@@ -57,21 +59,20 @@ export class ServerMetadataSource implements Disposable {
     this.subscriptions = [
       triggers.compileComplete(() => {
         this.compiled = true;
-        if (this.stale && this.lsp.state === "running") {
-          void this.refresh();
+        if (this.stale && this.armed && this.lsp.state === "running") {
+          void this.start();
         }
       }),
       triggers.sourceChanged(() => {
         this.stale = true;
-        if (this.compiled) {
-          void this.refresh();
-        }
+        this.armed = true;
       }),
       triggers.clientChanged(() => {
         if (this.lsp.state === "running") {
           this.stale = true;
+          this.armed = true;
           if (this.compiled) {
-            void this.refresh();
+            void this.start();
           }
         } else {
           this.compiled = false;
@@ -85,8 +86,13 @@ export class ServerMetadataSource implements Disposable {
     return this.value;
   }
 
-  /** Runs one refresh; a call during a refresh schedules exactly one more after it. */
+  /** Arms and runs one refresh; a call during a refresh schedules exactly one more after it. */
   refresh(): Promise<void> {
+    this.armed = true;
+    return this.start();
+  }
+
+  private start(): Promise<void> {
     if (this.running) {
       this.again = true;
       return this.running;
