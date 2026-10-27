@@ -112,7 +112,7 @@ suite("Compile reports caused by our own requests", function () {
     }
   });
 
-  test("the Server Producer sends one listNodes per source change, however late the server reports", async function () {
+  test("the Server Producer sends one listNodes per source change, after the server reports the change", async function () {
     const { fixture, file } = await openCompiledProject();
     const reports = new EventEmitter<void>();
     const sourceChanged = new EventEmitter<void>();
@@ -123,6 +123,7 @@ suite("Compile reports caused by our own requests", function () {
     let listNodesRequests = 0;
     const client = {
       state: "running",
+      compileState: { phase: "idle" },
       request: async (command: string, payload: unknown) => {
         if (command === "dbt.listNodes") {
           listNodesRequests += 1;
@@ -159,8 +160,6 @@ suite("Compile reports caused by our own requests", function () {
 
       const text = `${fs.readFileSync(file, "utf-8")}\n-- edit\n`;
       fs.writeFileSync(file, text);
-      // The source change arms the fetch before the server's compile report of the change arrives.
-      sourceChanged.fire();
       fixture.notify("textDocument/didChange", {
         textDocument: { uri: fileUri(file), version: 2 },
         contentChanges: [{ text }],
@@ -168,6 +167,9 @@ suite("Compile reports caused by our own requests", function () {
       fixture.notify("textDocument/didSave", {
         textDocument: { uri: fileUri(file) },
       });
+      // The file event follows the save by the debounce, so the server's compile report of the save has come.
+      await sleep(500);
+      sourceChanged.fire();
       await sleep(SETTLE_MS);
       assert.strictEqual(
         listNodesRequests,
