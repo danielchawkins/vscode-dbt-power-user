@@ -43,7 +43,7 @@ describe.skipIf(process.platform === "win32")(
     dir = realpathSync(mkdtempSync(join(tmpdir(), "fpu-nice-")));
   });
 
-  it.fails("runs the command under nice -n 10, ahead of its arguments", async () => {
+  it("runs the command under nice -n 10, ahead of its arguments", async () => {
       // A stand-in `nice` that prints its argv instead of running the command.
       const nice = join(dir, "nice");
       writeFileSync(nice, '#!/bin/sh\nprintf "%s\\n" "$@"\n');
@@ -57,7 +57,7 @@ describe.skipIf(process.platform === "win32")(
       expect(stdout).toBe(["-n", "10", node, "-e", printScript, ""].join("\n"));
   });
 
-  it.fails(
+  it(
     "falls back to normal priority with a debug line when nice is not on PATH",
     async () => {
       const debug = vi.fn();
@@ -93,7 +93,7 @@ describe("spawnProcess background priority on Windows", () => {
     }
   });
 
-  it.fails("lowers the child's priority with os.setPriority after spawn", () => {
+  it("lowers the child's priority with os.setPriority after spawn", () => {
     const child = spawnProcess(node, ["-e", idleScript], {
       stdio: "ignore",
       priority: "background",

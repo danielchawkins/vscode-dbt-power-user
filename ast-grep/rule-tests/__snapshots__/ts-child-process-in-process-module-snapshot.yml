@@ -1,0 +1,32 @@
+id: ts-child-process-in-process-module
+snapshots:
+  const cp = require("child_process");:
+    labels:
+    - source: require("child_process")
+      style: primary
+      start: 11
+      end: 35
+    - source: '"child_process"'
+      style: secondary
+      start: 19
+      end: 34
+  import * as cp from "child_process";:
+    labels:
+    - source: import * as cp from "child_process";
+      style: primary
+      start: 0
+      end: 36
+    - source: '"child_process"'
+      style: secondary
+      start: 20
+      end: 35
+  import { spawn } from "node:child_process";:
+    labels:
+    - source: import { spawn } from "node:child_process";
+      style: primary
+      start: 0
+      end: 43
+    - source: '"node:child_process"'
+      style: secondary
+      start: 22
+      end: 42

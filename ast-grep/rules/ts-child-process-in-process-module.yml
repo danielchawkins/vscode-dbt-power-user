@@ -1,0 +1,26 @@
+# Every process the extension starts goes through src/fusion/process.ts (`spawnProcess`, `runProcessText`), so a
+# process-wide launch property is set in one place: no shell, and the scheduling priority of background work (the
+# Parse Producer's `dbt parse`). A direct `node:child_process` import elsewhere is a spawn that skips both.
+id: ts-child-process-in-process-module
+language: typescript
+severity: error
+message: >-
+  Start processes through src/fusion/process.ts (spawnProcess / runProcessText), not node:child_process directly,
+  so the launch priority and the no-shell rule apply.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+  - src/fusion/process.ts
+rule:
+  any:
+    - kind: import_statement
+      has:
+        field: source
+        regex: '^["''](node:)?child_process["'']$'
+    - pattern: require($MOD)
+      has:
+        stopBy: end
+        kind: string
+        regex: '^["''](node:)?child_process["'']$'
