@@ -22,6 +22,7 @@ function setup() {
   let epoch = 0;
   let manifest: Manifest | undefined;
   const parsed = new EventEmitter<ParsedManifest>();
+  const ensureParsed = vi.fn(async (): Promise<void> => undefined);
   const project = {
     projectRoot: Uri.file("/p"),
     getProjectName: () => "p",
@@ -30,17 +31,20 @@ function setup() {
     },
     onDidParse: parsed.event,
     rebuildManifest: vi.fn(async () => undefined),
+    ensureParsed,
     publishMerged: vi.fn((merged: object) => {
       manifest = { ...(merged as Manifest), publicationEpoch: ++epoch };
       return manifest;
     }),
   } as unknown as Project;
   const serverChanged = new EventEmitter<unknown>();
+  const serverEnsureFresh = vi.fn(async (): Promise<void> => undefined);
   let serverValue: unknown;
   const server = {
     onDidChange: serverChanged.event,
     current: () => serverValue,
     refresh: vi.fn(async () => undefined),
+    ensureFresh: serverEnsureFresh,
     dispose: vi.fn(),
   } as unknown as ServerMetadataSource;
   const declared = { root: Uri.file("/p"), name: "p" } as DeclaredProject;
@@ -50,6 +54,8 @@ function setup() {
   return {
     source,
     published,
+    ensureParsed,
+    serverEnsureFresh,
     parse: () => {
       parsed.fire(emptyParsedManifest());
     },
@@ -95,6 +101,33 @@ describe("CompositeMetadataSource", () => {
     );
     parse();
     expect(published).toHaveLength(3);
+  });
+
+  it("ensureFresh resolves only after both a stale parse and the server graph are fresh", async () => {
+    const { source, ensureParsed, serverEnsureFresh } = setup();
+    let finishParse: () => void = () => {};
+    let finishServer: () => void = () => {};
+    ensureParsed.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finishParse = resolve)),
+    );
+    serverEnsureFresh.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finishServer = resolve)),
+    );
+    let settled = false;
+    const fresh = source.ensureFresh().then(() => {
+      settled = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(ensureParsed).toHaveBeenCalledTimes(1);
+    expect(serverEnsureFresh).toHaveBeenCalledTimes(1);
+
+    finishServer();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+
+    finishParse();
+    await fresh;
+    expect(settled).toBe(true);
   });
 
   it("refreshes both producers", async () => {
