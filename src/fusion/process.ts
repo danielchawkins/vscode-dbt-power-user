@@ -5,10 +5,16 @@ import {
   type ExecFileOptions,
   type SpawnOptions,
 } from "node:child_process";
+import { accessSync, constants as fsConstants, statSync } from "node:fs";
+import { constants as osConstants, setPriority } from "node:os";
+import { delimiter, join } from "node:path";
 import { promisify } from "node:util";
 import type { Log } from "../core/log";
 
 export type { ChildProcess };
+
+/** Niceness of background children: below normal, so interactive work keeps the CPU. */
+const BACKGROUND_NICE = "10";
 
 const execFileAsync = promisify(execFile);
 
@@ -30,13 +36,59 @@ export type ExecFileTextOptions = Pick<
   "env" | "maxBuffer" | "timeout"
 >;
 
-/** Spawns `command` directly, never through a shell. */
+/** Spawns `command` directly, never through a shell. `background` lowers the child's scheduling priority. */
 export function spawnProcess(
   command: string,
   args: readonly string[],
   options: SpawnProcessOptions,
 ): ChildProcess {
-  return spawn(command, args, { ...options, shell: false });
+  const { priority, log, ...spawnOptions } = options;
+  const launch = { ...spawnOptions, shell: false };
+  if (priority !== "background") {
+    return spawn(command, args, launch);
+  }
+  if (process.platform === "win32") {
+    const child = spawn(command, args, launch);
+    lowerPriority(child, log);
+    return child;
+  }
+  const nice = findOnPath("nice", spawnOptions.env ?? process.env);
+  if (nice === undefined) {
+    log?.debug(
+      "process",
+      `nice is not on PATH; running ${command} at normal priority`,
+    );
+    return spawn(command, args, launch);
+  }
+  return spawn(nice, ["-n", BACKGROUND_NICE, command, ...args], launch);
+}
+
+function lowerPriority(child: ChildProcess, log?: Pick<Log, "debug">): void {
+  if (child.pid === undefined) {
+    return;
+  }
+  try {
+    setPriority(child.pid, osConstants.priority.PRIORITY_BELOW_NORMAL);
+  } catch (error) {
+    log?.debug("process", `could not lower priority of pid ${child.pid}`, error);
+  }
+}
+
+function findOnPath(name: string, env: NodeJS.ProcessEnv): string | undefined {
+  return (env.PATH ?? "")
+    .split(delimiter)
+    .filter((dir) => dir !== "")
+    .map((dir) => join(dir, name))
+    .find(isExecutableFile);
+}
+
+function isExecutableFile(file: string): boolean {
+  try {
+    accessSync(file, fsConstants.X_OK);
+    return statSync(file).isFile();
+  } catch {
+    return false;
+  }
 }
 
 export interface RunProcessTextOptions {
