@@ -22,8 +22,9 @@ export interface ServerMetadataTriggers {
  * and fires only when the node set or project info changed.
  *
  * Every `dbt.listNodes` makes the server send one compile report of its own, so a report is a reason to refresh
- * only while the graph is `stale`: a source changed, the client (re)started, or the last fetch failed. A fetch clears
- * `stale` when it starts, which is what keeps its own reports from starting another.
+ * only while the graph is `stale` and a fetch is `armed`. A source change, a client change and an explicit
+ * `refresh()` arm it; a failed fetch disarms it, so the next report waits for one of those. A fetch clears `stale`
+ * when it starts, which is what keeps its own reports from starting another.
  */
 export class ServerMetadataSource implements Disposable {
   private readonly emitter = new EventEmitter<ServerMetadata | undefined>();
@@ -125,6 +126,7 @@ export class ServerMetadataSource implements Disposable {
         return;
       }
       this.stale = true;
+      this.armed = false;
       this.log.warn(LOG_SOURCE, "Server metadata refresh failed", error);
     }
   }
