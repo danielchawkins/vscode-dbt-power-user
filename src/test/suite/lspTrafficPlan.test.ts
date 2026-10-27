@@ -53,7 +53,7 @@ describe("compile report kinds", () => {
     dispose();
   });
 
-  it.fails("does not fire onDidCompile for a background compile report", () => {
+  it("does not fire onDidCompile for a background compile report", () => {
     // Today both kinds fire onDidCompile, so one server compile cycle renders the preview twice and re-arms
     // the server metadata source twice.
     const { send, onCompile, dispose } = harness();
