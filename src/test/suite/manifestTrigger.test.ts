@@ -102,17 +102,34 @@ describe("Project manifest trigger", () => {
     watcher.fire("change", b);
     watcher.fire("change", a);
     await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
-    expect(onSourceFileChanged).toHaveBeenLastCalledWith({ paths: [a, b] });
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ paths: [a, b] }),
+    );
     watcher.fire("delete", b);
     await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
-    expect(onSourceFileChanged).toHaveBeenLastCalledWith({ paths: [b] });
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ paths: [b] }),
+    );
   });
 
   it("passes the changed project file to the project handler", async () => {
     const project = path.join(root, "dbt_project.yml");
     watcher.fire("change", project);
     await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
-    expect(onProjectFileChanged).toHaveBeenCalledWith({ paths: [project] });
+    expect(onProjectFileChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ paths: [project] }),
+    );
+  });
+
+  it("stamps a burst with the arrival of its first event", async () => {
+    vi.setSystemTime(1_000);
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    await vi.advanceTimersByTimeAsync(200);
+    watcher.fire("change", path.join(root, "models", "b.sql"));
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ firstEventAt: 1_000 }),
+    );
   });
 
   it("drops a pending rebuild and stops watching on dispose", async () => {

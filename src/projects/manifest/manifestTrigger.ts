@@ -25,6 +25,8 @@ type PendingKind = "projectFile" | "sourceFile";
 /** The files one quiet period ended with: each changed path once, in the order its events arrived. */
 export interface ChangeBurst {
   paths: string[];
+  /** When the burst's first event arrived, in epoch milliseconds. */
+  firstEventAt: number;
 }
 
 export interface ManifestTriggerHandlers {
@@ -44,6 +46,8 @@ export class ManifestTrigger implements Disposable {
   private pendingKind: PendingKind | undefined;
   /** Every changed path since the last run, in arrival order. */
   private pendingPaths = new Set<string>();
+  /** When the pending burst's first event arrived; meaningful only while an event is pending. */
+  private burstStartedAt = 0;
   private readonly projectRoot: string;
   private readonly terminal: Log;
   private readonly handlers: ManifestTriggerHandlers;
@@ -116,6 +120,9 @@ export class ManifestTrigger implements Disposable {
 
   /** Restarts the quiet period. A project-file event replaces a pending source-file event, never the reverse. */
   private arm(kind: PendingKind, fsPath: string): void {
+    if (this.pendingKind === undefined) {
+      this.burstStartedAt = Date.now();
+    }
     if (kind === "projectFile" || this.pendingKind === undefined) {
       this.pendingKind = kind;
     }
@@ -127,7 +134,10 @@ export class ManifestTrigger implements Disposable {
   /** Runs the handler for the strongest pending kind, once, with every path the quiet period collected. */
   private flush(): void {
     const kind = this.pendingKind;
-    const change: ChangeBurst = { paths: [...this.pendingPaths] };
+    const change: ChangeBurst = {
+      paths: [...this.pendingPaths],
+      firstEventAt: this.burstStartedAt,
+    };
     this.quietTimer = undefined;
     this.pendingKind = undefined;
     this.pendingPaths.clear();
