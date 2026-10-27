@@ -4,6 +4,7 @@ import { FusionCommandError } from "../../core/lsp";
 import type { CompilePhase } from "../../fusion/compileSignal";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 
 /*
  * Refresh triggers of the Server Producer. A dbt.listNodes makes the server run a Parse and then a full background
@@ -39,6 +40,8 @@ function setup(
       .fn()
       .mockResolvedValue({ adapterType: "duckdb", projectName: "p" }),
   } as unknown as FusionCommands;
+  const demand = new MetadataDemand();
+  demand.acquire();
   const source = new ServerMetadataSource({
     lsp,
     projectName: () => "p",
@@ -48,6 +51,7 @@ function setup(
       sourceChanged: sourceChanged.event,
       clientChanged: clientChanged.event,
     },
+    demand,
     log: { debug: vi.fn(), warn: vi.fn() },
   });
   return { source, compiled, idle, sourceChanged, listNodes, phase };

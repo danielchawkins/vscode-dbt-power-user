@@ -4,6 +4,7 @@ import type { Log } from "../core/log";
 import { FusionCommandError } from "../core/lsp";
 import { serverMetadataFrom, type ServerMetadata } from "../core/metadata";
 import type { FusionCommands } from "../fusion/fusionCommands";
+import type { MetadataDemand } from "../projects/manifest/metadataDemand";
 
 const LOG_SOURCE = "ServerMetadataSource";
 
@@ -31,6 +32,10 @@ export interface ServerMetadataTriggers {
  * `refresh()` arm it; a failed fetch disarms it, so later reports wait for one of those. A due fetch starts on a
  * compile report or a source change when the phase is idle, and otherwise when the phase returns to idle. A fetch
  * clears `stale` and `armed` when it starts, which keeps its own reports from starting another.
+ *
+ * A due fetch also waits for a consumer of merged metadata to hold the {@link MetadataDemand}. While none does, a
+ * reason to fetch only marks the graph stale and armed, and the next activation starts the fetch. An explicit
+ * `refresh()` ignores the demand, since its caller is reading now.
  */
 export class ServerMetadataSource implements Disposable {
   private readonly emitter = new EventEmitter<ServerMetadata | undefined>();
@@ -47,23 +52,31 @@ export class ServerMetadataSource implements Disposable {
   private readonly subscriptions: Disposable[];
   private readonly lsp: FusionCommands;
   private readonly projectName: () => string;
+  private readonly demand: MetadataDemand;
   private readonly log: Pick<Log, "debug" | "warn">;
 
   constructor({
     lsp,
     projectName,
     triggers,
+    demand,
     log,
   }: {
     lsp: FusionCommands;
     projectName: () => string;
     triggers: ServerMetadataTriggers;
+    demand: MetadataDemand;
     log: Pick<Log, "debug" | "warn">;
   }) {
     this.lsp = lsp;
     this.projectName = projectName;
+    this.demand = demand;
     this.log = log;
     this.subscriptions = [
+      demand.onDidBecomeActive(() => {
+        this.armed = true;
+        this.startWhenDue();
+      }),
       triggers.compileComplete(() => {
         this.compiled = true;
         this.startWhenDue();
@@ -78,9 +91,7 @@ export class ServerMetadataSource implements Disposable {
         if (this.lsp.state === "running") {
           this.stale = true;
           this.armed = true;
-          if (this.compiled) {
-            void this.start();
-          }
+          this.startWhenDue();
         } else {
           this.compiled = false;
           this.set(undefined);
@@ -93,9 +104,10 @@ export class ServerMetadataSource implements Disposable {
     return this.value;
   }
 
-  /** Starts a due fetch once the server has compiled and is not compiling now. */
+  /** Starts a due fetch once a consumer holds the demand and the server has compiled and is not compiling now. */
   private startWhenDue(): void {
     if (
+      this.demand.active &&
       this.stale &&
       this.armed &&
       this.compiled &&
