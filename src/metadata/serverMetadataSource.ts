@@ -48,6 +48,8 @@ export class ServerMetadataSource implements Disposable {
   private armed = true;
   /** The current client run has reported a compile; before that `listNodes` would wait on it, with a progress toast. */
   private compiled = false;
+  /** Callers of ensureFresh waiting for the server to go idle; each wakes on the next compile or client change. */
+  private idleWaiters: (() => void)[] = [];
   private disposed = false;
   private readonly subscriptions: Disposable[];
   private readonly lsp: FusionCommands;
@@ -81,13 +83,17 @@ export class ServerMetadataSource implements Disposable {
         this.compiled = true;
         this.startWhenDue();
       }),
-      triggers.compileIdle(() => this.startWhenDue()),
+      triggers.compileIdle(() => {
+        this.wakeIdleWaiters();
+        this.startWhenDue();
+      }),
       triggers.sourceChanged(() => {
         this.stale = true;
         this.armed = true;
         this.startWhenDue();
       }),
       triggers.clientChanged(() => {
+        this.wakeIdleWaiters();
         if (this.lsp.state === "running") {
           this.stale = true;
           this.armed = true;
@@ -123,18 +129,41 @@ export class ServerMetadataSource implements Disposable {
   }
 
   /**
-   * For a reader that holds no demand: starts the fetch when one is due now, and waits for a fetch in flight. A
-   * stale graph is armed first, so a failed fetch does not leave the reader on a value nothing will refetch.
+   * For a reader that holds no demand: brings the graph up to date and resolves once it is. A due fetch starts now,
+   * and a stale graph while the server compiles waits for the compile to go idle. A stale graph is armed first, so a
+   * failed fetch does not leave the reader on a value nothing will refetch.
    */
   async ensureFresh(): Promise<void> {
     if (this.stale) {
       this.armed = true;
     }
-    if (this.due()) {
-      await this.start();
-    } else if (this.running) {
-      await this.running;
+    while (!this.disposed) {
+      if (this.running) {
+        await this.running;
+      } else if (this.due()) {
+        await this.start();
+      } else if (this.waitsForIdle()) {
+        await new Promise<void>((wake) => this.idleWaiters.push(wake));
+      } else {
+        return;
+      }
     }
+  }
+
+  /** A stale, armed graph while the server compiles: the compile going idle makes it due. */
+  private waitsForIdle(): boolean {
+    return (
+      this.stale &&
+      this.armed &&
+      this.lsp.state === "running" &&
+      this.lsp.compilePhase !== "idle"
+    );
+  }
+
+  private wakeIdleWaiters(): void {
+    const waiters = this.idleWaiters;
+    this.idleWaiters = [];
+    waiters.forEach((wake) => wake());
   }
 
   /** Arms and runs one refresh; a call during a refresh schedules exactly one more after it. */
@@ -191,6 +220,7 @@ export class ServerMetadataSource implements Disposable {
 
   dispose(): void {
     this.disposed = true;
+    this.wakeIdleWaiters();
     this.subscriptions.forEach((subscription) => subscription.dispose());
     this.emitter.dispose();
   }

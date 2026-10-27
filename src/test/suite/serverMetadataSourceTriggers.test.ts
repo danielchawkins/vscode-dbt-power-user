@@ -212,4 +212,29 @@ describe("ServerMetadataSource triggers", () => {
     await fresh;
     expect(settled).toBe(true);
   });
+
+  it("ensureFresh on a stale graph during a compile waits for idle, then fetches", async () => {
+    const { source, compiled, sourceChanged, listNodes, idle, phase } = setup(
+      undefined,
+      false,
+    );
+    compiled.fire();
+    await source.ensureFresh();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    sourceChanged.fire();
+    phase.current = "compiling";
+    let settled = false;
+    const fresh = source.ensureFresh().then(() => {
+      settled = true;
+    });
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+
+    phase.current = "idle";
+    idle.fire();
+    await fresh;
+    expect(listNodes).toHaveBeenCalledTimes(2);
+  });
 });
