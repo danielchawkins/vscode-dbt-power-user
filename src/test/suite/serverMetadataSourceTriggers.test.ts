@@ -24,6 +24,7 @@ const node = (id: string) => ({
 
 function setup(
   listNodes = vi.fn().mockResolvedValue({ nodes: [node("model.p.a")] }),
+  holdDemand = true,
 ) {
   const compiled = new EventEmitter<void>();
   const idle = new EventEmitter<void>();
@@ -41,7 +42,9 @@ function setup(
       .mockResolvedValue({ adapterType: "duckdb", projectName: "p" }),
   } as unknown as FusionCommands;
   const demand = new MetadataDemand();
-  demand.acquire();
+  if (holdDemand) {
+    demand.acquire();
+  }
   const source = new ServerMetadataSource({
     lsp,
     projectName: () => "p",
@@ -54,7 +57,16 @@ function setup(
     demand,
     log: { debug: vi.fn(), warn: vi.fn() },
   });
-  return { source, compiled, idle, sourceChanged, listNodes, phase };
+  return {
+    source,
+    compiled,
+    idle,
+    sourceChanged,
+    clientChanged,
+    listNodes,
+    phase,
+    demand,
+  };
 }
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -122,5 +134,82 @@ describe("ServerMetadataSource triggers", () => {
     compiled.fire();
     await tick();
     expect(calls).toHaveBeenCalledTimes(1);
+  });
+
+  it("no listNodes is sent while no consumer of merged metadata holds the demand", async () => {
+    const { compiled, sourceChanged, listNodes } = setup(undefined, false);
+    compiled.fire();
+    sourceChanged.fire();
+    compiled.fire();
+    await tick();
+    expect(listNodes).not.toHaveBeenCalled();
+  });
+
+  it("activating the demand on a stale graph sends one refresh", async () => {
+    const { compiled, sourceChanged, listNodes, demand } = setup(
+      undefined,
+      false,
+    );
+    compiled.fire();
+    sourceChanged.fire();
+    await tick();
+    expect(listNodes).not.toHaveBeenCalled();
+
+    const held = demand.acquire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    compiled.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+    held.dispose();
+  });
+
+  it("activating the demand during a compile waits for the server to go idle", async () => {
+    const { compiled, idle, listNodes, phase, demand } = setup(
+      undefined,
+      false,
+    );
+    compiled.fire();
+    phase.current = "compiling";
+    demand.acquire();
+    await tick();
+    expect(listNodes).not.toHaveBeenCalled();
+
+    phase.current = "idle";
+    idle.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+  });
+
+  it("ensureFresh fetches a stale graph whose compile is idle, without holding the demand", async () => {
+    const { source, compiled, listNodes } = setup(undefined, false);
+    compiled.fire();
+    await source.ensureFresh();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+    expect(source.current()?.nodes).toHaveLength(1);
+  });
+
+  it("ensureFresh waits for a fetch already in flight", async () => {
+    let finish: (value: { nodes: unknown[] }) => void = () => {};
+    const listNodes = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { source, compiled } = setup(listNodes as never, false);
+    compiled.fire();
+    const fresh = source.ensureFresh();
+    let settled = false;
+    void fresh.then(() => {
+      settled = true;
+    });
+    await tick();
+    expect(settled).toBe(false);
+
+    finish({ nodes: [node("model.p.a")] });
+    await fresh;
+    expect(settled).toBe(true);
   });
 });
