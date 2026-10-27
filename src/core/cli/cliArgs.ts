@@ -116,7 +116,12 @@ function body(command: CliCommand, params: readonly string[]): string[] {
     case "show":
       return showBody(command);
     case "parse":
-      return ["parse", "--log-format", "json"];
+      return [
+        "parse",
+        "--log-format",
+        "json",
+        ...(command.skipVersionCheck ? ["--no-version-check"] : []),
+      ];
     case "deps":
     case "clean":
     case "debug":

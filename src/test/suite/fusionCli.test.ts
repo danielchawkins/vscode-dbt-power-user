@@ -90,7 +90,7 @@ function fakeTerminal() {
 const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
 
 describe("FusionCli", () => {
-  it.fails("passes --no-version-check to the background parse only", async () => {
+  it("passes --no-version-check to the background parse only", async () => {
     const { calls, factory } = fakeProcesses();
     const cli = new FusionCli({
       executable,
