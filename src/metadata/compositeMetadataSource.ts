@@ -6,6 +6,7 @@ import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
 import { followClientIdle } from "../projects/clients/clientChange";
 import type { Manifest } from "../projects/manifest/manifestTypes";
+import type { MetadataDemand } from "../projects/manifest/metadataDemand";
 import type { Project } from "../projects/project/project";
 import type { ProjectMetadataSource } from "../projects/project/projectMetadataSource";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
@@ -87,13 +88,13 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
 
 /**
  * The Project Metadata Source for one Declared Project: the Server Producer over `project`'s language server,
- * merged with its Parse Producer.
+ * merged with its Parse Producer. The Server Producer fetches only while `demand` is held.
  * @adapter
  */
 export function createProjectMetadataSource(
   declared: DeclaredProject,
   project: Project,
-  log: Pick<Log, "debug" | "warn">,
+  deps: { demand: MetadataDemand; log: Pick<Log, "debug" | "warn"> },
 ): ProjectMetadataSource {
   return new CompositeMetadataSource(
     declared,
@@ -112,7 +113,8 @@ export function createProjectMetadataSource(
         sourceChanged: project.onSourceFileChanged,
         clientChanged: project.onDidChangeClient,
       },
-      log,
+      demand: deps.demand,
+      log: deps.log,
     }),
   );
 }

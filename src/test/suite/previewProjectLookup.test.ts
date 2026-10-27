@@ -5,6 +5,7 @@ import type { WorkspaceConfiguration, WorkspaceFolder } from "vscode";
 import { EventEmitter, Uri, window, workspace } from "vscode";
 import type { Log } from "../../core/log";
 import { createProjectMetadataSource } from "../../metadata/compositeMetadataSource";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { ProjectQuickPick } from "../../projects/project/projectQuickPick";
@@ -71,7 +72,10 @@ describe("compiled preview project lookup", () => {
       {
         project: stubProject,
         metadataSource: (declared, project) =>
-          createProjectMetadataSource(declared, project, terminal),
+          createProjectMetadataSource(declared, project, {
+            demand: new MetadataDemand(),
+            log: terminal,
+          }),
       },
       terminal,
     );

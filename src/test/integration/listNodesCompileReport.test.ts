@@ -11,6 +11,7 @@ import {
 import type { FusionClient } from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import { sleep } from "../async";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture, type LspFixture } from "./lspFixture";
@@ -162,6 +163,8 @@ suite("Compile reports caused by our own requests", function () {
         }
       },
     } as unknown as FusionClient;
+    const demand = new MetadataDemand();
+    demand.acquire();
     const source = new ServerMetadataSource({
       lsp: createFusionCommands(() => client),
       projectName: () => "single_project",
@@ -171,6 +174,7 @@ suite("Compile reports caused by our own requests", function () {
         sourceChanged: sourceChanged.event,
         clientChanged: clientChanged.event,
       },
+      demand,
       log: { debug: () => undefined, warn: () => undefined },
     });
     try {

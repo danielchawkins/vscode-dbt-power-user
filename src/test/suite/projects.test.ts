@@ -16,6 +16,7 @@ import {
   CompositeMetadataSource,
   createProjectMetadataSource,
 } from "../../metadata/compositeMetadataSource";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { Project } from "../../projects/project/project";
 import { Projects } from "../../projects/project/projects";
 
@@ -178,7 +179,10 @@ describe("Projects", () => {
       {
         project: mockDbtProjectFactory as any,
         metadataSource: (declared, project) =>
-          createProjectMetadataSource(declared, project, mockDbtTerminal),
+          createProjectMetadataSource(declared, project, {
+            demand: new MetadataDemand(),
+            log: mockDbtTerminal,
+          }),
       },
       mockDbtTerminal,
     );
@@ -224,7 +228,10 @@ describe("Projects", () => {
         {
           project: mockDbtProjectFactory as any,
           metadataSource: (declared, project) =>
-            createProjectMetadataSource(declared, project, mockDbtTerminal),
+            createProjectMetadataSource(declared, project, {
+              demand: new MetadataDemand(),
+              log: mockDbtTerminal,
+            }),
         },
         mockDbtTerminal,
       );

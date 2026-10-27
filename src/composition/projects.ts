@@ -44,6 +44,7 @@ export function composeProjects(context: ExtensionContext) {
     outputChannels.projectLog.bind(outputChannels),
   );
   const metadataDemand = new MetadataDemand();
+  const metadataSourceDeps = { demand: metadataDemand, log: terminal };
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
     return new Project({
@@ -72,7 +73,7 @@ export function composeProjects(context: ExtensionContext) {
     {
       project: projectFactory,
       metadataSource: (declared, project) =>
-        createProjectMetadataSource(declared, project, terminal),
+        createProjectMetadataSource(declared, project, metadataSourceDeps),
     },
     terminal,
   );
