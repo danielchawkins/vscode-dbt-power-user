@@ -1,7 +1,7 @@
 import type { queryResults } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
 import type { TextEditor, TreeItem } from "vscode";
-import { Uri, window, workspace } from "vscode";
+import { ProgressLocation, Uri, window, workspace } from "vscode";
 import { RunModelType } from "../../core/dbt/domain";
 import type { NodeMetaData } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
@@ -350,7 +350,13 @@ export class RunModel {
     if (!project) {
       return;
     }
-    await this.projects.ensureFresh(modelPath);
+    await window.withProgress(
+      {
+        location: ProgressLocation.Window,
+        title: "Updating project metadata…",
+      },
+      () => this.projects.ensureFresh(modelPath),
+    );
     void project.queries.generateSchemaYML(
       modelPath,
       path.basename(modelPath.fsPath, ".sql"),
