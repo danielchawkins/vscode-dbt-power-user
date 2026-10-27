@@ -21,6 +21,10 @@ export interface ServerMetadataTriggers {
  * The Server Producer: `dbt.listNodes ["+package:<root>"]` plus `dbt.getProjectInfo`. It refreshes single-flight,
  * and fires only when the node set or project info changed.
  *
+ * A `dbt.listNodes` costs the server one Parse and then one full background compile, even when nothing changed. It
+ * cancels a running background compile, which then starts again from the beginning. A compile report starts a fetch
+ * only while the graph is stale and armed; a source change arms it and sends nothing itself.
+ *
  * Every `dbt.listNodes` makes the server send one compile report of its own, so a report is a reason to refresh
  * only while the graph is `stale` and a fetch is `armed`. A source change, a client change and an explicit
  * `refresh()` arm it; a failed fetch disarms it, so the next report waits for one of those. A fetch clears `stale`
