@@ -19,6 +19,7 @@ import type {
   ResolverEnvironment,
 } from "../../fusion/fusionExecutable";
 import type { FusionVersion } from "../../fusion/fusionVersion";
+import { followClientCompiles } from "../clients/clientChange";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
 import type { ManifestParsers } from "../manifest/manifest";
 import { ManifestRebuild } from "../manifest/manifestRebuild";
@@ -140,7 +141,12 @@ export class Project implements Disposable, ManifestProject {
     this.lsp = createFusionCommands(this.fusionClient);
     this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     this.published = new ManifestState(this, this.fusionClient, {
-      clientChanged: this.onDidChangeClient,
+      follow: (listener) =>
+        followClientCompiles(
+          this.fusionClient,
+          this.onDidChangeClient,
+          listener,
+        ),
       reportErrors: (errors) => this.errors.reportCompile(errors),
     });
     this.onDidParse = this.published.onDidParse;

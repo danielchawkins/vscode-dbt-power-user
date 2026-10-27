@@ -1,0 +1,11 @@
+id: ts-dbt-notifications-from-compile-signal
+valid:
+  - 'client.onNotification("window/logMessage", handler);'
+  - 'client.onNotification("textDocument/publishDiagnostics", handler);'
+  - 'const label = "dbt/lspCompileComplete";'
+  - 'subscribeToCompileState(client, state);'
+  - 'client.onNotification(method, handler);'
+invalid:
+  - 'client.onNotification("dbt/lspCompileComplete", handler);'
+  - 'client.onNotification(`dbt/lspBackgroundCompileStart`, handler);'
+  - "client.onNotification('dbt/lspCompileStart', () => state.started('compiling'));"

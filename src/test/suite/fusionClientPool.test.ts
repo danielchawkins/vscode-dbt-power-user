@@ -15,6 +15,7 @@ import type {
 } from "vscode";
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot";
+import { ServerCompileState } from "../../fusion/compileSignal";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import type {
   FusionClient,
@@ -79,6 +80,7 @@ class FakeRegistry {
 }
 
 class FakeClient implements FusionClient {
+  readonly compileState = new ServerCompileState();
   readonly onDidChangeState = (
     _listener: (state: FusionClient["state"]) => void,
   ) => ({ dispose: () => {} });

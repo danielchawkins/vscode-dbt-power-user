@@ -10,6 +10,7 @@ import {
 import type { LspLaunch } from "../../core/lsp";
 import type { StaticAnalysisMode } from "../../core/snapshot";
 import { failureSummary } from "../../core/text";
+import { ServerCompileState } from "../../fusion/compileSignal";
 import type {
   FusionClient,
   FusionClientState,
@@ -48,6 +49,7 @@ const makeProject = (name: string, rootPath: string) =>
 class FakeClient implements FusionClient {
   private readonly stateEmitter = new EventEmitter<FusionClientState>();
   private _state: FusionClientState;
+  readonly compileState = new ServerCompileState();
 
   readonly outputChannel = createMockLogOutputChannel(
     "Fusion Power User: general",
