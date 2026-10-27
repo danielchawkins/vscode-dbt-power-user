@@ -48,7 +48,7 @@ describe("SqlPreviewContentProvider in a failing project", () => {
 
   afterEach(() => provider.dispose());
 
-  it.fails("stops re-rendering on compile reports after its compileFile failed", async () => {
+  it("stops re-rendering on compile reports after its compileFile failed", async () => {
     const preview = previewUriFor(model);
     const onChange = vi.fn();
     provider.onDidChange(onChange);
