@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { REQUEST_POLICIES } from "../../core/lsp/requestPolicy";
 import { ServerCompileState } from "../../fusion/compileSignal";
 import { languageClientOptions } from "../../fusion/lspClientSupport";
+
+const CEILING_MS = REQUEST_POLICIES.format.ceilingMs;
 
 const noState = () => ({
   code: -32803,
@@ -109,7 +112,7 @@ describe("formatting retry in middleware.sendRequest", () => {
     const connection = vi.fn().mockRejectedValue(noState());
 
     const result = run("textDocument/formatting", connection);
-    await vi.advanceTimersByTimeAsync(5_000);
+    await vi.advanceTimersByTimeAsync(CEILING_MS);
 
     await expect(result).resolves.toBeNull();
     expect(connection).toHaveBeenCalledTimes(2);
@@ -131,12 +134,41 @@ describe("formatting retry in middleware.sendRequest", () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it("waits for the running compile when an earlier one finished since the request began", async () => {
+    const { compiled, run } = setup();
+    const connection = vi
+      .fn()
+      .mockRejectedValueOnce(noState())
+      .mockResolvedValueOnce(["edit"]);
+
+    const result = run("textDocument/formatting", connection);
+    compiled.started("compiling");
+    compiled.finished({ kind: "foreground", errors: [] });
+    compiled.started("backgroundCompiling");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(connection).toHaveBeenCalledTimes(1);
+    compiled.finished({ kind: "background", errors: [] });
+
+    await expect(result).resolves.toEqual(["edit"]);
+    expect(connection).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays busy while a background compile outlasts a foreground one", () => {
+    const compiled = new ServerCompileState();
+    compiled.started("backgroundCompiling");
+    compiled.started("compiling");
+    compiled.finished({ kind: "foreground", errors: [] });
+    expect(compiled.phase).toBe("backgroundCompiling");
+    compiled.finished({ kind: "background", errors: [] });
+    expect(compiled.phase).toBe("idle");
+  });
+
   it("waits for the format policy's ceiling when no compile finishes", async () => {
     const { run } = setup();
     const connection = vi.fn().mockRejectedValue(noState());
 
     const result = run("textDocument/formatting", connection);
-    await vi.advanceTimersByTimeAsync(4_999);
+    await vi.advanceTimersByTimeAsync(CEILING_MS - 1);
     expect(connection).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
 

@@ -58,5 +58,6 @@ export class FailedFusionClient implements FusionClient {
 
   dispose(): void {
     this._onDidChangeState.dispose();
+    this.compileState.dispose();
   }
 }

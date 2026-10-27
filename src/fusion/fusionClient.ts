@@ -69,7 +69,7 @@ export interface FusionClient extends Disposable {
    * fakes can omit it.
    */
   readonly openDocuments?: readonly Uri[];
-  /** Compile state of this client's server, read by the errors and preview consumers; optional so fakes can omit it. */
+  /** Compile state of this client's server: its current phase, finished compiles, and one event per completion. */
   readonly compileState: ServerCompileState;
   /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
   readonly diagnostics?: DiagnosticCollection | undefined;
