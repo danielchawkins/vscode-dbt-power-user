@@ -25,6 +25,27 @@ export function followClientCompiles(
   });
 }
 
+/** Calls `listener` each time the compile phase of the client that `client` returns becomes idle. */
+export function followClientIdle(
+  client: () => FusionClient | undefined,
+  clientChanged: Event<void>,
+  listener: () => void,
+): Disposable {
+  let subscription: Disposable | undefined;
+  const follow = () => {
+    subscription?.dispose();
+    subscription = client()?.compileState.onDidChangePhase((phase) => {
+      if (phase === "idle") {
+        listener();
+      }
+    });
+  };
+  follow();
+  return Disposable.from(clientChanged(follow), {
+    dispose: () => subscription?.dispose(),
+  });
+}
+
 /** Fires when the project's client is replaced or changes state. */
 export function onClientChange(
   pool: FusionClientPool,

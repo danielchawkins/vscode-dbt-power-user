@@ -19,6 +19,7 @@ function setup(
   listNodes = vi.fn().mockResolvedValue({ nodes: [node("model.p.a")] }),
 ) {
   const compiled = new EventEmitter<void>();
+  const idle = new EventEmitter<void>();
   const sourceChanged = new EventEmitter<void>();
   const clientChanged = new EventEmitter<void>();
   const phase: { current: CompilePhase } = { current: "idle" };
@@ -38,6 +39,7 @@ function setup(
     projectName: () => "p",
     triggers: {
       compileComplete: compiled.event,
+      compileIdle: idle.event,
       sourceChanged: sourceChanged.event,
       clientChanged: clientChanged.event,
     },
@@ -48,6 +50,7 @@ function setup(
   return {
     source,
     compiled,
+    idle,
     sourceChanged,
     clientChanged,
     lsp: lsp as unknown as { state: string },

@@ -4,6 +4,10 @@ import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 import { EventEmitter } from "vscode";
 import { FusionCommandError } from "../../core/lsp";
+import {
+  ServerCompileState,
+  subscribeToCompileState,
+} from "../../fusion/compileSignal";
 import type { FusionClient } from "../../fusion/fusionClient";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
@@ -115,18 +119,38 @@ suite("Compile reports caused by our own requests", function () {
   test("the Server Producer sends one listNodes per source change, after the server reports the change", async function () {
     const { fixture, file } = await openCompiledProject();
     const reports = new EventEmitter<void>();
+    const idle = new EventEmitter<void>();
     const sourceChanged = new EventEmitter<void>();
     const clientChanged = new EventEmitter<void>();
-    const subscriptions = REPORTS.map((method) =>
-      fixture.onNotification(method, () => reports.fire()),
+    const compileState = new ServerCompileState();
+    subscribeToCompileState(
+      {
+        onNotification: ((method: string, handler: (params: unknown) => void) =>
+          fixture.onNotification(method, handler)) as never,
+      },
+      compileState,
     );
+    const subscriptions = [
+      compileState.onDidComplete((complete) => {
+        if (complete.kind === "foreground") {
+          reports.fire();
+        }
+      }),
+      compileState.onDidChangePhase((phase) => {
+        if (phase === "idle") {
+          idle.fire();
+        }
+      }),
+    ];
     let listNodesRequests = 0;
+    const phasesAtListNodes: string[] = [];
     const client = {
       state: "running",
-      compileState: { phase: "idle" },
+      compileState,
       request: async (command: string, payload: unknown) => {
         if (command === "dbt.listNodes") {
           listNodesRequests += 1;
+          phasesAtListNodes.push(compileState.phase);
         }
         try {
           return await fixture.request("workspace/executeCommand", {
@@ -143,6 +167,7 @@ suite("Compile reports caused by our own requests", function () {
       projectName: () => "single_project",
       triggers: {
         compileComplete: reports.event,
+        compileIdle: idle.event,
         sourceChanged: sourceChanged.event,
         clientChanged: clientChanged.event,
       },
@@ -176,9 +201,16 @@ suite("Compile reports caused by our own requests", function () {
         2,
         "a source change costs one listNodes, and the reports it causes start no more",
       );
+      assert.deepStrictEqual(
+        phasesAtListNodes,
+        ["idle", "idle"],
+        "a listNodes sent during a compile would cancel it",
+      );
     } finally {
       subscriptions.forEach((subscription) => subscription.dispose());
       source.dispose();
+      compileState.dispose();
+      idle.dispose();
       reports.dispose();
       sourceChanged.dispose();
       clientChanged.dispose();
