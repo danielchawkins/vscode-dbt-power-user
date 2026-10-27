@@ -187,7 +187,7 @@ function groupBundles(edges: readonly LayoutEdge[]): LayoutEdge[][] {
     if (e.source === e.target) {
       continue;
     }
-    const key = `${e.kind}|${e.source}|${e.target}`;
+    const key = JSON.stringify([e.kind, e.source, e.target]);
     const group = groups.get(key);
     if (group === undefined) {
       groups.set(key, [e]);

@@ -86,6 +86,19 @@ describe("layer", () => {
     expect(out.bundles.map((b) => b.kind)).toEqual(["dependency", "column"]);
   });
 
+  it("keeps bundles apart when node ids contain the separator", () => {
+    const graph: LayoutGraph = {
+      nodes: [node("a|b"), node("c"), node("a"), node("b|c")],
+      edges: [edge("e1", "a|b", "c"), edge("e2", "a", "b|c")],
+    };
+    const out = layer(
+      graph,
+      options,
+      ranking({ "a|b": 0, c: 1, a: 0, "b|c": 1 }),
+    );
+    expect(out.bundles.map((b) => b.edges)).toEqual([["e1"], ["e2"]]);
+  });
+
   it("keeps a same-rank bundle flat, with no dummies or segments", () => {
     const graph: LayoutGraph = {
       nodes: [node("a"), node("b")],
