@@ -443,9 +443,11 @@ describe("RunModel project commands", () => {
   let tasks: RecordingTasks;
   let other: string[];
   let owned: boolean;
+  let freshGate: Promise<void>;
   let runModel: RunModel;
 
   beforeEach(() => {
+    freshGate = Promise.resolve();
     vi.spyOn(fs.realpathSync, "native").mockImplementation(
       (value) => value as string,
     );
@@ -485,7 +487,7 @@ describe("RunModel project commands", () => {
     };
     const projects = {
       get: (uri: Uri) => (owned && uri === model ? project : undefined),
-      ensureFresh: async () => undefined,
+      ensureFresh: () => freshGate,
     };
     runModel = new RunModel(projects, {} as CurrentProject);
   });
@@ -522,6 +524,21 @@ describe("RunModel project commands", () => {
       `generateSchemaYML ${model} orders`,
       `showRunSQL ${model}`,
     ]);
+  });
+
+  it("generateSchemaYML waits for ensureFresh before it reads the model's queries", async () => {
+    let finishFresh: () => void = () => {};
+    freshGate = new Promise<void>((resolve) => {
+      finishFresh = resolve;
+    });
+
+    const pending = runModel.generateSchemaYML(model);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(other).toEqual([]);
+
+    finishFresh();
+    await pending;
+    expect(other).toEqual([`generateSchemaYML ${model.toString()} orders`]);
   });
 
   it("does nothing outside any project", () => {

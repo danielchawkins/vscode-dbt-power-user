@@ -464,6 +464,18 @@ describe("Projects", () => {
       );
     });
 
+    it("ensureFresh brings up to date only the source of the project owning the file", async () => {
+      const ensureFresh = vi
+        .spyOn(CompositeMetadataSource.prototype, "ensureFresh")
+        .mockResolvedValue(undefined);
+
+      await projects.ensureFresh(Uri.file("/project1/models/a.sql"));
+      expect(ensureFresh).toHaveBeenCalledTimes(1);
+
+      await projects.ensureFresh(Uri.file("/elsewhere/a.sql"));
+      expect(ensureFresh).toHaveBeenCalledTimes(1);
+    });
+
     it("replaces the source when Declared Project identity changes", async () => {
       const replacement = {
         ...declaredProject1,
