@@ -156,7 +156,10 @@ export function languageClientOptions(input: {
     config: input.config,
     dropInactive: inactiveGate(isInactive, input.outputChannel),
     ignoresWatchedFile: (uri) => {
-      const parsed = Uri.parse(uri);
+      // The event is a protocol URI, at the launch root's realpath for a symlinked project; map it back first.
+      const parsed = input.uriConverters
+        ? input.uriConverters.protocol2Code(uri)
+        : Uri.parse(uri);
       return (
         parsed.scheme === "file" &&
         serverIgnoresPath(project.root.fsPath, input.targetPath, parsed.fsPath)

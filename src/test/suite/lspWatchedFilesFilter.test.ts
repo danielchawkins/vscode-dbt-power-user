@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { URI as VsCodeUri } from "vscode-uri";
+import { canonicalProjectRoot } from "../../fusion/canonicalProjectRoot";
 import { languageClientOptions } from "../../fusion/lspClientSupport";
 
 /*
@@ -9,15 +10,22 @@ import { languageClientOptions } from "../../fusion/lspClientSupport";
  * server's own writes under target/ and logs/, and those start no compile.
  */
 
-function watchedHook() {
+function watchedHook(
+  overrides: {
+    root?: string;
+    targetPath?: string;
+    uriConverters?: unknown;
+  } = {},
+) {
+  const root = overrides.root ?? "/w/p";
   const options = languageClientOptions({
     project: {
       folder: { uri: {}, name: "p", index: 0 },
-      root: { fsPath: "/w/p" },
+      root: { fsPath: root },
     },
-    targetPath: "/w/p/target",
+    targetPath: overrides.targetPath ?? `${root}/target`,
     selector: undefined,
-    uriConverters: undefined,
+    uriConverters: overrides.uriConverters,
     outputChannel: { info: vi.fn(), debug: vi.fn(), warn: vi.fn() },
     diagnosticsFilter: { shouldForward: () => true },
     config: { lintEnabled: false, maxErrorReporting: undefined },
@@ -50,6 +58,22 @@ describe("watched-file forwarding", () => {
     );
     await hook({ uri: "file:///w/p/target/manifest.json", type: 2 }, next);
     await hook({ uri: "file:///w/p/logs/dbt-lsp.log", type: 2 }, next);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  // Fusion's launch root is the realpath of a symlinked project; the client's events arrive at that realpath.
+  it("drops the server's writes when the project root is a symlink", async () => {
+    const { uriConverters } = canonicalProjectRoot(
+      "/w/link/p",
+      () => "/w/real/p",
+    );
+    const next = vi.fn(() => Promise.resolve());
+    const hook = watchedHook({
+      root: "/w/link/p",
+      targetPath: "/w/link/p/target",
+      uriConverters,
+    });
+    await hook({ uri: "file:///w/real/p/target/manifest.json", type: 2 }, next);
     expect(next).not.toHaveBeenCalled();
   });
 });
