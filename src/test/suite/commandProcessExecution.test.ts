@@ -49,6 +49,27 @@ describe("CommandProcessExecution Tests", () => {
     expect(mockTerminal.debug).toHaveBeenCalled();
   });
 
+  it.skipIf(process.platform === "win32").fails(
+    "runs a background command under nice, from the PATH it is given",
+    async () => {
+      const binDir = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-nice-"));
+      const nice = path.join(binDir, "nice");
+      fs.writeFileSync(nice, '#!/bin/sh\nprintf "%s\\n" "$@"\n');
+      fs.chmodSync(nice, 0o755);
+      const execution = factory.createCommandProcessExecution({
+        command: process.execPath,
+        args: ["-e", "process.stdout.write('ran')"],
+        envVars: { PATH: binDir },
+        priority: "background",
+      });
+
+      const result = await execution.complete();
+      expect(result.stdout).toBe(
+        ["-n", "10", process.execPath, "-e", "process.stdout.write('ran')", ""].join("\n"),
+      );
+    },
+  );
+
   it("should handle command errors", async () => {
     const execution = factory.createCommandProcessExecution({
       command: "nonexistentcommand",

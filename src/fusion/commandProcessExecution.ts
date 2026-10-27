@@ -1,4 +1,4 @@
-import { spawnProcess } from "./process";
+import { spawnProcess, type ProcessPriority } from "./process";
 
 import type { Log } from "../core/log";
 import type { CommandProcessResult, EnvironmentVariables } from "../core/types";
@@ -23,6 +23,7 @@ export interface CommandSpec {
   cwd?: string;
   signal?: AbortSignal;
   envVars?: EnvironmentVariables;
+  priority?: ProcessPriority;
 }
 
 export class CommandProcessExecutionFactory {
