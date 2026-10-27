@@ -32,6 +32,7 @@ import type { ProjectPaths, ProjectSnapshot } from "../core/snapshot";
 import { dbtProjectFilePath, deferSettingsKey } from "../core/snapshot";
 import type { CommandProcessResult, DBColumn } from "../core/types";
 import type { CommandProcessExecutionFactory } from "./commandProcessExecution";
+import type { ProcessPriority } from "./process";
 
 /** The resolved dbt binary and the environment every invocation inherits. */
 export interface FusionCliExecutable {
@@ -45,6 +46,8 @@ export interface FusionCliRunOptions {
   env?: Record<string, string>;
   /** Receives each stdout and stderr chunk in arrival order. */
   onOutput?: ((chunk: string) => void) | undefined;
+  /** Scheduling priority of the child; normal when unset. */
+  priority?: ProcessPriority | undefined;
 }
 
 function diskProbe(target: string): PathKind {
@@ -154,6 +157,7 @@ export class FusionCli {
       args,
       cwd: snapshot.root,
       ...(options.signal ? { signal: options.signal } : {}),
+      ...(options.priority ? { priority: options.priority } : {}),
       envVars: { ...toCliEnvironment(snapshot), ...options.env },
     });
     return execution.complete(
@@ -247,7 +251,7 @@ export class FusionCli {
     try {
       const { stdout, stderr, exitCode } = await this.run(
         { kind: "parse" },
-        { signal: controller.signal },
+        { signal: controller.signal, priority: "background" },
       );
       if (controller.signal.aborted) {
         return;

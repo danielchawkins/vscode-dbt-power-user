@@ -49,7 +49,7 @@ describe("CommandProcessExecution Tests", () => {
     expect(mockTerminal.debug).toHaveBeenCalled();
   });
 
-  it.skipIf(process.platform === "win32").fails(
+  it.skipIf(process.platform === "win32")(
     "runs a background command under nice, from the PATH it is given",
     async () => {
       const binDir = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-nice-"));

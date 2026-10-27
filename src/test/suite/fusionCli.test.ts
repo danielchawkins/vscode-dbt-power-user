@@ -90,7 +90,7 @@ function fakeTerminal() {
 const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
 
 describe("FusionCli", () => {
-  it.fails(
+  it(
     "runs the parse at background priority and user commands at normal",
     async () => {
       const { calls, factory } = fakeProcesses();

@@ -47,6 +47,7 @@ export class CommandProcessExecution {
   private cwd: string | undefined;
   private signal: AbortSignal | undefined;
   private envVars: EnvironmentVariables | undefined;
+  private priority: ProcessPriority | undefined;
 
   constructor(terminal: Log, spec: CommandSpec) {
     this.terminal = terminal;
@@ -56,6 +57,7 @@ export class CommandProcessExecution {
     this.cwd = spec.cwd;
     this.signal = spec.signal;
     this.envVars = spec.envVars;
+    this.priority = spec.priority;
   }
 
   private spawn() {
@@ -68,6 +70,8 @@ export class CommandProcessExecution {
       // spawning the dbt CLI from the (console-less) extension host pops a
       // visible window per command.
       windowsHide: true,
+      priority: this.priority,
+      log: this.terminal,
     });
 
     if (this.signal) {
