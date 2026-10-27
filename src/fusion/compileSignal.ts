@@ -42,6 +42,7 @@ const REQUEST_FAILED = -32803;
  */
 export class ServerCompileState implements Disposable {
   private currentPhase: CompilePhase = "idle";
+  private readonly running = { foreground: 0, background: 0 };
   private count = 0;
   private readonly completed = new EventEmitter<CompileComplete>();
   private readonly phaseChanged = new EventEmitter<CompilePhase>();
@@ -60,17 +61,25 @@ export class ServerCompileState implements Disposable {
 
   /** Records a compile start; `phase` is the kind of compile that started. */
   started(phase: Exclude<CompilePhase, "idle">): void {
-    this.setPhase(phase);
+    this.running[phase === "compiling" ? "foreground" : "background"] += 1;
+    this.updatePhase();
   }
 
-  /** Records a finished compile and returns the phase to idle. */
+  /** Records a finished compile; the phase stays busy while a compile of the other kind still runs. */
   finished(complete: CompileComplete): void {
     this.count += 1;
-    this.setPhase("idle");
+    this.running[complete.kind] = Math.max(0, this.running[complete.kind] - 1);
+    this.updatePhase();
     this.completed.fire(complete);
   }
 
-  private setPhase(phase: CompilePhase): void {
+  private updatePhase(): void {
+    const phase: CompilePhase =
+      this.running.foreground > 0
+        ? "compiling"
+        : this.running.background > 0
+          ? "backgroundCompiling"
+          : "idle";
     if (this.currentPhase === phase) {
       return;
     }
@@ -183,7 +192,12 @@ export async function formatOnceCompiled<R>(
   if (compiled.phase === "idle" && compiled.completions > since) {
     return null as R;
   }
-  await compiled.after(since, REQUEST_POLICIES.format.ceilingMs, token);
+  // A compile is running, or none has finished yet: wait for the next one, not one that already finished.
+  await compiled.after(
+    compiled.completions,
+    REQUEST_POLICIES.format.ceilingMs,
+    token,
+  );
   if (token?.isCancellationRequested) {
     return null as R;
   }

@@ -128,6 +128,7 @@ class FusionLanguageClientImpl implements FusionClient {
     this.nestedRoots?.dispose();
     void this.stop().finally(() => {
       this._onDidChangeState.dispose();
+      this.compileState.dispose();
     });
   }
 

@@ -111,6 +111,7 @@ describe("registerFusionClientDiagnostics", () => {
               state: "running",
               failureReason: undefined,
               openDocuments: [Uri.file("/workspace/general/models/a.sql")],
+              compileState: { completions: 0 },
             }
           : undefined,
       ),
