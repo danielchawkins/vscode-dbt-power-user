@@ -10,7 +10,7 @@ import { found, type Found, search } from "./sweeps.js";
 type Effort = NonNullable<LayoutOptions["effort"]>;
 
 /** Sweeps (each a median or barycentre pass with transposition) by effort. */
-const SWEEPS: Record<Effort, number> = { fast: 4, balanced: 12, thorough: 12 };
+const SWEEPS: Record<Effort, number> = { fast: 4, balanced: 12, thorough: 24 };
 
 /** Sifting passes by effort. Sifting is skipped at `fast`. */
 const SIFT_ROUNDS: Record<Effort, number> = {
