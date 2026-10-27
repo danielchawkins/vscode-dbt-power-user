@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { CodeLens, Position, Range, type TextDocument, Uri } from "vscode";
 import type { Middleware } from "vscode-languageclient/node";
+import { URI as VsCodeUri } from "vscode-uri";
 import { ProjectDiagnosticsFilter } from "../../fusion/fusionDiagnostics";
 import {
   buildWorkspaceConfigurationResponse,
@@ -24,10 +25,12 @@ function setup() {
   const openDocuments = new OpenDocuments();
   const options = languageClientOptions({
     project: declaredProject("outer", outerRoot, folder),
+    targetPath: "/workspace/outer/target",
     selector: undefined,
     uriConverters: undefined,
     outputChannel: createMockLogOutputChannel("outer"),
     diagnosticsFilter: filter,
+
     config: { lintEnabled: false, maxErrorReporting: undefined },
     nestedRoots: {
       guard: new NestedRootGuard(Uri.file(outerRoot), () => [
@@ -119,6 +122,7 @@ describe("languageClientOptions inactive gate", () => {
     const outputChannel = createMockLogOutputChannel("outer");
     const options = languageClientOptions({
       project: declaredProject("outer", outerRoot, folder),
+      targetPath: "/workspace/outer/target",
       selector: undefined,
       uriConverters: undefined,
       outputChannel,
@@ -159,11 +163,15 @@ describe("languageClientOptions inactive gate", () => {
   });
 
   it("forwards notifications and logs nothing while the client is active", async () => {
+    vi.mocked(Uri.parse).mockImplementation((value: string) =>
+      VsCodeUri.parse(value),
+    );
     const { middleware, outputChannel } = inactiveSetup(() => false);
     const next = vi.fn();
+    const watched = { uri: "file:///workspace/outer/models/outer_model.sql", type: 2 };
 
     await middleware.didOpen?.(documentAt(outerModel), next);
-    await middleware.workspace?.didChangeWatchedFile?.({} as never, next);
+    await middleware.workspace?.didChangeWatchedFile?.(watched as never, next);
 
     expect(next).toHaveBeenCalledTimes(2);
     expect(outputChannel.debug).not.toHaveBeenCalled();

@@ -8,6 +8,7 @@ import type {
 } from "vscode-languageclient/node";
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { LspLaunch } from "../core/lsp";
+import { serverIgnoresPath } from "../core/paths";
 import { clientErrorHandler, inactiveGate } from "./clientLifecycle";
 import {
   ServerCompileState,
@@ -127,6 +128,8 @@ export function commandArguments(
 /** The options one Declared Project's `LanguageClient` is created with. */
 export function languageClientOptions(input: {
   project: FusionProjectRef;
+  /** The project's target directory. Watched-file events under it are the server's own writes, so they are dropped. */
+  targetPath: string;
   selector: LanguageClientOptions["documentSelector"] | undefined;
   uriConverters: LanguageClientOptions["uriConverters"] | undefined;
   outputChannel: LogOutputChannel;
@@ -152,6 +155,13 @@ export function languageClientOptions(input: {
     diagnosticsFilter: input.diagnosticsFilter,
     config: input.config,
     dropInactive: inactiveGate(isInactive, input.outputChannel),
+    ignoresWatchedFile: (uri) => {
+      const parsed = Uri.parse(uri);
+      return (
+        parsed.scheme === "file" &&
+        serverIgnoresPath(project.root.fsPath, input.targetPath, parsed.fsPath)
+      );
+    },
   });
   return {
     ...(input.selector ? { documentSelector: input.selector } : {}),
@@ -217,8 +227,11 @@ function fusionMiddleware(input: {
   diagnosticsFilter: ProjectDiagnosticsFilter;
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
   dropInactive: (method: string) => boolean;
+  /** Whether a watched-file event's URI is one the server writes itself. */
+  ignoresWatchedFile: (uri: string) => boolean;
 }): Middleware {
-  const { compiled, diagnosticsFilter, dropInactive } = input;
+  const { compiled, diagnosticsFilter, dropInactive, ignoresWatchedFile } =
+    input;
   const log = (message: string) => input.outputChannel.info(message);
   return {
     provideCodeLenses: async (document, token, next) =>
@@ -241,7 +254,8 @@ function fusionMiddleware(input: {
     ...gatedDocumentHooks(dropInactive),
     workspace: {
       didChangeWatchedFile: (event, next) =>
-        dropInactive("workspace/didChangeWatchedFiles")
+        dropInactive("workspace/didChangeWatchedFiles") ||
+        ignoresWatchedFile(event.uri)
           ? Promise.resolve()
           : next(event),
       configuration: async (params) =>
