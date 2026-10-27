@@ -7,8 +7,8 @@ import {
 import { lspProcessEnv, toLspArgs } from "../core/lsp";
 import { errorText } from "../core/text";
 import { canonicalProjectRoot } from "./canonicalProjectRoot";
-import type { CompileSignal } from "./compileSignal";
-import { subscribeToCompileComplete } from "./compileSignal";
+import type { ServerCompileState } from "./compileSignal";
+import { subscribeToCompileState } from "./compileSignal";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
@@ -40,7 +40,7 @@ import {
 
 /** What the transport reads from the client that owns it. */
 export interface LspTransportHost {
-  readonly compiled: CompileSignal;
+  readonly compiled: ServerCompileState;
   readonly nestedRoots: ClientNestedRoots | undefined;
   /** Whether the client is stopping or stopped; its notifications are then dropped. */
   readonly isInactive: () => boolean;
@@ -161,7 +161,10 @@ export class LspTransport {
         () => client.diagnostics,
       );
       const { onCompileErrors } = this.options;
-      subscribeToCompileComplete(client, this.host.compiled, onCompileErrors);
+      subscribeToCompileState(client, this.host.compiled);
+      this.host.compiled.onDidComplete((complete) =>
+        onCompileErrors?.(complete.errors),
+      );
       await client.start();
 
       const generation = (this.generation += 1);

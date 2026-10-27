@@ -7,8 +7,8 @@ import { firstLogLine } from "../../core/cli";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import {
-  CompileSignal,
-  subscribeToCompileComplete,
+  ServerCompileState,
+  subscribeToCompileState,
 } from "../../fusion/compileSignal";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
@@ -270,9 +270,11 @@ describe("configuration errors", () => {
           }
         },
       } as unknown as ClientHandle;
-      subscribeToCompileComplete(client, new CompileSignal(), (m) => {
-        messages = m;
+      const state = new ServerCompileState();
+      state.onDidComplete((complete) => {
+        messages = complete.errors;
       });
+      subscribeToCompileState(client, state);
       return messages;
     };
     project.errors.reportCompile(compileErrors(notification));
