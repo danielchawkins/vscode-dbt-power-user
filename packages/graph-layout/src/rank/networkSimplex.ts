@@ -1,13 +1,8 @@
 import { feasibleTree } from "./feasibleTree.js";
+import type { NetworkEdge } from "./networkEdge.js";
 import { SpanningTree } from "./spanningTree.js";
 
-/** A constraint `rank(head) - rank(tail) >= minLength`, with `weight` per unit of rank length. No self-loops. */
-export interface NetworkEdge {
-  tail: number;
-  head: number;
-  minLength: number;
-  weight: number;
-}
+export type { NetworkEdge } from "./networkEdge.js";
 
 /**
  * Ranks `count` nodes so that every edge's span is at least its `minLength` and the weighted sum of spans is least,

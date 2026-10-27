@@ -1,4 +1,4 @@
-import type { NetworkEdge } from "./networkSimplex.js";
+import type { NetworkEdge } from "./networkEdge.js";
 
 /**
  * The spanning tree that network simplex pivots on. Each node carries a postorder range (`low` to `lim`) so that
