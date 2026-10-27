@@ -453,7 +453,6 @@ function unitStepsOf(pts: Polyline): UnitSteps {
 }
 
 /** Brute force: a polyline runs straight through a grid point when it covers the steps on both sides of it. */
-/** Brute force: a polyline runs straight through a grid point when it covers the steps on both sides of it. */
 const passesHorizontally = (steps: Set<string>, x: number, y: number) =>
   steps.has(`${x - 1},${y}`) && steps.has(`${x},${y}`);
 const passesVertically = (steps: Set<string>, x: number, y: number) =>
@@ -655,6 +654,28 @@ describe("compareDrawings", () => {
     const result = compareDrawings(before, after);
     expect(result.orderFlips).toBe(0);
     expect(result.rankChanges).toBe(1);
+  });
+
+  it("reads bands along x and order along y when direction is right", () => {
+    // a and b share one column (they overlap in x); their y order swaps.
+    const before = drawingOf(
+      [
+        ["a", box(0, 0)],
+        ["b", box(0, 40)],
+      ],
+      [],
+    );
+    const after = drawingOf(
+      [
+        ["a", box(0, 40)],
+        ["b", box(0, 0)],
+      ],
+      [],
+    );
+    expect(
+      compareDrawings(before, after, { direction: "right" }).orderFlips,
+    ).toBe(1);
+    expect(compareDrawings(before, after).orderFlips).toBe(0);
   });
 
   it("leaves rankChanges undefined when one drawing has no ranks", () => {
