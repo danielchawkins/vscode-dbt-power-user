@@ -6,7 +6,7 @@ The package is pure TypeScript with no runtime dependencies. It reads no DOM, No
 
 It is private to this repository and not published; `package.json` keeps `"private": true` until the owner decides otherwise. The licence is MIT, as the extension's.
 
-> Status: the types (`src/types.ts`), the named presets (`src/presets.ts`) and `validateGraph` exist. `layout` and `measureLayout` land phase by phase; see "Build order".
+> Status: the types (`src/types.ts`), the named presets (`src/presets.ts`), `validateGraph` and the drawing metrics (`measureDrawing`, `compareDrawings`) exist. `layout` lands phase by phase; see "Build order".
 
 ## Use
 
@@ -76,6 +76,32 @@ Both values are starting points; the evaluation harness tunes them against the g
 - Standalone: the package imports only itself (dependency-cruiser rule `graph-layout-is-standalone`), and its `tsconfig.json` has no DOM or Node types.
 - Input is checked before layout: `validateGraph` reports every problem at once, including port sides and offsets and kind default sides that are not valid.
 
+## Metrics
+
+`measureDrawing(drawing)` measures any drawing, whichever engine made it, so two engines can be compared on the same terms. It runs without a layout.
+A `Drawing` holds `boxes`, a map from node id to `Rect`; `paths`, a map from edge id to `{ points, source, target }`, where `points` runs from the source end to the target end and `source` and `target` name the nodes it joins; and optionally `trunkOf` and `ranks`.
+It returns a `LayoutMetrics`:
+
+- `crossings`: pairs of pieces of different edges that cross properly, meaning a horizontal and a vertical piece meet at a point strictly inside both. Touching at an end does not count, and an edge never counts against itself.
+- `bends`: interior points where the direction turns or reverses. Points that continue a straight run are merged into it first, so they are not bends.
+- `edgeLength`: the sum of the Euclidean lengths of the polylines.
+- `area`: the width times the height of `bounds`, the smallest rectangle holding every box and every point.
+- `density`: the total node area over `area`; zero for an empty drawing.
+- `overlaps`: node pairs sharing interior area, plus pairs of an edge and a node the edge does not end at, where a piece of the edge runs through the node's interior.
+
+Trunk grouping: `trunkOf(edgeId)` returns the trunk of an edge, such as its source port. Edges with the same trunk never count crossings against each other.
+An edge with no trunk, because `trunkOf` is absent or returns undefined, shares a trunk with no other edge.
+The count sweeps all pieces once and then once per trunk group, so it stays O(S log S) in the number of pieces S.
+
+`compareDrawings(before, after, options)` compares two drawings of one graph, for example before and after an expansion. It returns:
+
+- `retained`: the number of nodes both drawings hold.
+- `meanDisplacement` and `maxDisplacement`: the distance between the centres of each retained node in the two drawings.
+  With `anchor`, a node both drawings hold, `after` is first shifted so the anchor's centre coincides with its centre in `before`; a translation of the whole drawing then costs nothing. Without `anchor`, no shift is applied.
+- `orderFlips`: pairs of retained nodes that overlap along the rank axis in both drawings and whose order across the ranks changed.
+  `direction` names the direction the ranks run. `down`, the default, puts ranks in rows: bands are compared along y and order is read along x. `right` puts them in columns: bands along x, order along y.
+- `rankChanges`: the number of retained nodes whose rank changed. It is counted only when both drawings carry `ranks` (rank by node id); otherwise it is undefined.
+
 ## Pipeline
 
 Each phase is a module with its own tests; `layout` composes them.
@@ -104,7 +130,7 @@ Rejected, with the reason:
 ## Build order
 
 1. Types, presets, `validateGraph`, package wiring and boundary rules: in place.
-2. `measureLayout` and the geometric metrics, so every later phase is measured.
+2. `measureDrawing` and `compareDrawings`, the geometric metrics, so every later phase is measured.
 3. Ranking: cycle removal, network simplex, partitions, rank hints.
 4. Ordering with ports, then clusters, then sifting.
 5. Placement, then cluster boxes.
