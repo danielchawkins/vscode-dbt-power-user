@@ -7,13 +7,18 @@ const EPSILON = 1e-9;
 /**
  * Sifting (Matuszewski, Schönfeld and Molitor, GD 1999): each node of a rank in turn moves to the place in that rank
  * that gives the fewest crossings, the other nodes keeping their order. A node moves only for a strict gain, so the
- * crossings never rise. Up to `rounds` passes over the drawing run, stopping early when a pass moves nothing.
+ * crossings never rise. Up to `rounds` passes over the drawing run, stopping early when a pass moves nothing. Only the
+ * nodes that `movable` accepts move; the others keep their places relative to one another.
  */
-export function sift(model: OrderModel, rounds: number): void {
+export function sift(
+  model: OrderModel,
+  rounds: number,
+  movable: (node: number) => boolean = () => true,
+): void {
   for (let round = 0; round < rounds; round++) {
     let moved = false;
     for (let rank = 0; rank < model.layers.length; rank++) {
-      moved = siftRank(model, rank) || moved;
+      moved = siftRank(model, rank, movable) || moved;
     }
     if (!moved) {
       return;
@@ -25,7 +30,11 @@ export function sift(model: OrderModel, rounds: number): void {
  * Sifts one rank. A pair's cost depends only on the neighbouring ranks, not on where the pair sits in this rank, so
  * the pair costs are computed once and the rank is written back once at the end.
  */
-function siftRank(model: OrderModel, rank: number): boolean {
+function siftRank(
+  model: OrderModel,
+  rank: number,
+  movable: (node: number) => boolean,
+): boolean {
   const original = model.layers[rank]!;
   const n = original.length;
   if (n < 2) {
@@ -37,6 +46,9 @@ function siftRank(model: OrderModel, rank: number): boolean {
   );
   let order = original.map((_, i) => i);
   for (let v = 0; v < n; v++) {
+    if (!movable(original[v]!)) {
+      continue;
+    }
     const others = order.filter((i) => i !== v);
     const costs = siftCosts(cost, v, others);
     const here = order.indexOf(v);

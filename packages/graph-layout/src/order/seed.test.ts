@@ -23,13 +23,15 @@ const options: LayoutOptions = {
 const hint = (rank: number, order: number) => ({ rank, order, x: 0, y: 0 });
 
 describe("startingLayers", () => {
-  it("places a new node at the mean of its hinted neighbours", () => {
+  it("places a new node by its neighbours' places in their ranks, not by their raw orders", () => {
     const graph: LayoutGraph = {
       nodes: [
         { id: "a", width: 80, height: 40 },
         { id: "b", width: 80, height: 40 },
         { id: "e", width: 80, height: 40 },
+        { id: "g", width: 80, height: 40 },
         { id: "c", width: 80, height: 40 },
+        { id: "d", width: 80, height: 40 },
       ],
       edges: [
         { id: "e1", source: "a", target: "b", kind: "dependency" },
@@ -41,20 +43,28 @@ describe("startingLayers", () => {
         ["a", 0],
         ["b", 1],
         ["e", 1],
+        ["g", 1],
         ["c", 2],
+        ["d", 2],
       ]),
       reversed: [],
     };
     const laid = layer(graph, options, ranking);
-    // b is new: its neighbours a (order 0) and c (order 4) average to 2, which puts it before e (order 3).
+    // b is new. Its neighbours a (the only node of rank 0) and c (the first of rank 2) sit at 0.5 and 0.25 of their
+    // ranks, so b falls at 0.375 of rank 1, between e (0.25) and g (0.75). Their raw orders (0 and 4) would put b first.
     const hints: LayoutHints = {
       nodes: new Map([
         ["a", hint(0, 0)],
         ["e", hint(1, 3)],
+        ["g", hint(1, 9)],
         ["c", hint(2, 4)],
+        ["d", hint(2, 5)],
       ]),
     };
-    expect(startingLayers(laid, hints)).toEqual([[0], [1, 2], [3]]);
+    const ids = startingLayers(laid, hints).map((layerNodes) =>
+      layerNodes.map((x) => laid.nodes[x].id),
+    );
+    expect(ids).toEqual([["a"], ["e", "b", "g"], ["c", "d"]]);
   });
 
   it("keeps the previous in-rank order of every hinted real node", () => {
