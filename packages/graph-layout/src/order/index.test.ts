@@ -1,8 +1,13 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { rank } from "../rank/index.js";
-import type { LayoutEdge, LayoutGraph, LayoutOptions } from "../types.js";
-import { order } from "./index.js";
+import type {
+  LayoutEdge,
+  LayoutGraph,
+  LayoutHints,
+  LayoutOptions,
+} from "../types.js";
+import { order, type OrderResult } from "./index.js";
 
 const options: LayoutOptions = {
   direction: "down",
@@ -78,6 +83,30 @@ describe("order", () => {
     );
   });
 
+  it("reproduces its own result when the hints come from that result", () => {
+    fc.assert(
+      fc.property(
+        graphArb,
+        fc.integer(),
+        fc.constantFrom<NonNullable<LayoutOptions["effort"]>>(
+          "fast",
+          "balanced",
+          "thorough",
+        ),
+        (graph, seed, effort) => {
+          const settings = { ...options, effort, seed };
+          const ranking = rank(graph, settings);
+          const first = order(graph, settings, ranking);
+          const hints = hintsFrom(first);
+          const again = order(graph, { ...settings, hints }, ranking);
+          expect(realOrders(again)).toEqual(realOrders(first));
+          expect(again.crossings).toBeLessThanOrEqual(first.crossings);
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
   it("keeps the previous order of a drawing that has no crossings", () => {
     // a feeds b and c, and b feeds d: b and c can sit in either order without crossing.
     const graph: LayoutGraph = {
@@ -104,3 +133,29 @@ describe("order", () => {
     ]);
   });
 });
+
+/** Hints that place each real node at its position in its rank of `result`, dummies included. */
+function hintsFrom(result: OrderResult): LayoutHints {
+  const nodes = new Map<
+    string,
+    { rank: number; order: number; x: number; y: number }
+  >();
+  result.layers.forEach((layerNodes, rank) =>
+    layerNodes.forEach((x, k) => {
+      const id = result.layered.nodes[x].id;
+      if (id !== undefined) {
+        nodes.set(id, { rank, order: k, x: 0, y: 0 });
+      }
+    }),
+  );
+  return { nodes };
+}
+
+/** The ids of the real nodes of each rank, left to right. */
+function realOrders(result: OrderResult): string[][] {
+  return result.layers.map((layerNodes) =>
+    layerNodes
+      .map((x) => result.layered.nodes[x].id)
+      .filter((id): id is string => id !== undefined),
+  );
+}

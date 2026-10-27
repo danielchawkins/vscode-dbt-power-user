@@ -1,7 +1,7 @@
 import type { LayeredGraph } from "../layering.js";
 import type { LayoutHints } from "../types.js";
 
-/** Passes in which a node without a key takes the mean of its neighbours' keys, so chains of new nodes settle. */
+/** Passes in which a node without a place takes the mean of its neighbours' places, so chains of new nodes settle. */
 const NEIGHBOUR_PASSES = 3;
 
 /** The key of a node that nothing reaches: it sorts after every keyed node of its rank. */
@@ -9,8 +9,8 @@ const UNKEYED = Number.MAX_SAFE_INTEGER;
 
 /**
  * The starting order of each rank, left to right, as layered node indices. With hints, a node the hints know keeps its
- * previous in-rank order, and a node they do not know (a new node, or a dummy) sits at the mean of its neighbours'
- * keys, after North and Woodhull (GD 2001). Without hints the order is depth-first from the top rank, so a node
+ * previous in-rank order, and a node they do not know (a new node, or a dummy) sits where its neighbours sit along
+ * their ranks, after North and Woodhull (GD 2001). Without hints the order is depth-first from the top rank, so a node
  * follows the nodes it feeds.
  */
 export function startingLayers(
@@ -24,26 +24,49 @@ export function startingLayers(
   return layers.map((layer) => layer.toSorted((a, b) => keys[a]! - keys[b]!));
 }
 
-/** Each node's previous order where the hints know it, the mean of its keyed neighbours' keys otherwise. */
+/**
+ * Each node's key on the scale of its own rank. A hinted node keeps its previous order: it takes the centre of its cell
+ * among the hinted nodes of its rank, so a rank of `n` hinted nodes spans [0, n]. Any other node (a new node or a
+ * dummy) takes the mean fraction of its neighbours, where a fraction is a position in [0, 1] along its rank. Its key is
+ * that fraction on its own rank's span, so it never compares with the orders of another rank.
+ */
 function hintKeys(graph: LayeredGraph, hints: LayoutHints): number[] {
-  const keys: (number | undefined)[] = graph.nodes.map((node) =>
+  const hinted: (number | undefined)[] = graph.nodes.map((node) =>
     node.id === undefined ? undefined : hints.nodes.get(node.id)?.order,
   );
+  const members: number[][] = Array.from({ length: graph.ranks }, () => []);
+  graph.nodes.forEach((node, x) => {
+    if (hinted[x] !== undefined) {
+      members[node.rank]!.push(x);
+    }
+  });
+  const fractions: (number | undefined)[] = graph.nodes.map(() => undefined);
+  for (const list of members) {
+    list.sort((a, b) => hinted[a]! - hinted[b]! || a - b);
+    list.forEach((x, k) => {
+      fractions[x] = (k + 0.5) / list.length;
+    });
+  }
   const neighbours = neighbourLists(graph);
   for (let pass = 0; pass < NEIGHBOUR_PASSES; pass++) {
-    keys.forEach((key, x) => {
-      if (key !== undefined) {
+    fractions.forEach((fraction, x) => {
+      if (fraction !== undefined) {
         return;
       }
-      const known = neighbours[x]!.map((y) => keys[y]).filter(
-        (k): k is number => k !== undefined,
+      const known = neighbours[x]!.map((y) => fractions[y]).filter(
+        (f): f is number => f !== undefined,
       );
       if (known.length > 0) {
-        keys[x] = known.reduce((sum, k) => sum + k, 0) / known.length;
+        fractions[x] = known.reduce((sum, f) => sum + f, 0) / known.length;
       }
     });
   }
-  return keys.map((key) => key ?? UNKEYED);
+  return graph.nodes.map((node, x) => {
+    const fraction = fractions[x];
+    return fraction === undefined
+      ? UNKEYED
+      : fraction * Math.max(members[node.rank]!.length, 1);
+  });
 }
 
 /** The position of each node in a depth-first walk from the top rank down, rank by rank. */
