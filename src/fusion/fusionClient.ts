@@ -54,6 +54,8 @@ export interface FusionClientOptions {
   outputChannel: LogOutputChannel;
   /** Live roots of every Declared Project; documents under a root nested in this project go to that root's client. */
   nestedRoots?: NestedRootSource;
+  /** The project's target directory, absolute. The client drops watched-file events under it. */
+  targetPath: string;
 }
 
 export interface FusionClient extends Disposable {

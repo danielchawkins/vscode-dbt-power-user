@@ -140,6 +140,7 @@ export class LspTransport {
         serverOptions,
         languageClientOptions({
           project: this.options.project,
+          targetPath: this.options.targetPath,
           selector,
           uriConverters,
           outputChannel: this.outputChannel,
