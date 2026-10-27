@@ -4,8 +4,8 @@ import {
   ServerCompileState,
   subscribeToCompileState,
 } from "../../fusion/compileSignal";
-import type { FusionClient } from "../../fusion/fusionClient";
 import { documentSelectorForProject } from "../../fusion/documentSelector";
+import type { FusionClient } from "../../fusion/fusionClient";
 import { followClientCompiles } from "../../projects/clients/clientChange";
 import { ManifestState } from "../../projects/manifest/manifestState";
 

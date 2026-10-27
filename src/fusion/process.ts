@@ -10,6 +10,7 @@ import { constants as osConstants, setPriority } from "node:os";
 import { delimiter, join } from "node:path";
 import { promisify } from "node:util";
 import type { Log } from "../core/log";
+import { readEnvironment } from "../settings";
 
 export type { ChildProcess };
 
@@ -25,9 +26,9 @@ export type SpawnProcessOptions = Pick<
   "cwd" | "env" | "stdio" | "windowsHide"
 > & {
   /** `background` lowers the child's scheduling priority so interactive work keeps the CPU. */
-  priority?: ProcessPriority;
+  priority?: ProcessPriority | undefined;
   /** Receives a debug line when `background` cannot be applied. */
-  log?: Pick<Log, "debug">;
+  log?: Pick<Log, "debug"> | undefined;
 };
 
 /** `timeout` kills the process after that many milliseconds; the call then rejects with `killed` set. */
@@ -52,7 +53,7 @@ export function spawnProcess(
     lowerPriority(child, log);
     return child;
   }
-  const nice = findOnPath("nice", spawnOptions.env ?? process.env);
+  const nice = findOnPath("nice", spawnOptions.env ?? readEnvironment());
   if (nice === undefined) {
     log?.debug(
       "process",
@@ -70,7 +71,11 @@ function lowerPriority(child: ChildProcess, log?: Pick<Log, "debug">): void {
   try {
     setPriority(child.pid, osConstants.priority.PRIORITY_BELOW_NORMAL);
   } catch (error) {
-    log?.debug("process", `could not lower priority of pid ${child.pid}`, error);
+    log?.debug(
+      "process",
+      `could not lower priority of pid ${child.pid}`,
+      error,
+    );
   }
 }
 

@@ -1,16 +1,12 @@
-import {
-  chmodSync,
-  mkdtempSync,
-  realpathSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { constants, setPriority, tmpdir } from "node:os";
+import type * as nodeOs from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { spawnProcess } from "../../fusion/process";
 
 vi.mock("node:os", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("node:os")>()),
+  ...(await importOriginal<typeof nodeOs>()),
   setPriority: vi.fn(),
 }));
 
@@ -37,13 +33,13 @@ async function captureStdout(
 describe.skipIf(process.platform === "win32")(
   "spawnProcess background priority on POSIX",
   () => {
-  let dir: string;
+    let dir: string;
 
-  beforeEach(() => {
-    dir = realpathSync(mkdtempSync(join(tmpdir(), "fpu-nice-")));
-  });
+    beforeEach(() => {
+      dir = realpathSync(mkdtempSync(join(tmpdir(), "fpu-nice-")));
+    });
 
-  it("runs the command under nice -n 10, ahead of its arguments", async () => {
+    it("runs the command under nice -n 10, ahead of its arguments", async () => {
       // A stand-in `nice` that prints its argv instead of running the command.
       const nice = join(dir, "nice");
       writeFileSync(nice, '#!/bin/sh\nprintf "%s\\n" "$@"\n');
@@ -55,27 +51,20 @@ describe.skipIf(process.platform === "win32")(
       });
 
       expect(stdout).toBe(["-n", "10", node, "-e", printScript, ""].join("\n"));
-  });
+    });
 
-  it(
-    "falls back to normal priority with a debug line when nice is not on PATH",
-    async () => {
+    it("falls back to normal priority with a debug line when nice is not on PATH", async () => {
       const debug = vi.fn();
-      const stdout = await captureStdout(
-        node,
-        ["-e", printScript],
-        {
-          env: { ...process.env, PATH: dir },
-          priority: "background",
-          log: { debug },
-        },
-      );
+      const stdout = await captureStdout(node, ["-e", printScript], {
+        env: { ...process.env, PATH: dir },
+        priority: "background",
+        log: { debug },
+      });
 
       expect(stdout).toBe("ran");
       expect(debug).toHaveBeenCalledTimes(1);
       expect(debug.mock.calls[0]?.join(" ")).toContain("nice");
-    },
-  );
+    });
   },
 );
 

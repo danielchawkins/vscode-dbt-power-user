@@ -21,6 +21,7 @@ describe("fusionLanguageClient helpers", () => {
       validateDocumentSelectorPatterns([
         {
           language: "jinja-sql",
+          scheme: "file",
           pattern: {
             baseUri: Uri.file("/workspace/general") as unknown as string,
             pattern: "**/*",
@@ -33,7 +34,7 @@ describe("fusionLanguageClient helpers", () => {
   it("fails closed when a selector filter loses its pattern", () => {
     expect(() =>
       validateDocumentSelectorPatterns([
-        { language: "jinja-sql", pattern: undefined as any },
+        { language: "jinja-sql", scheme: "file", pattern: undefined as any },
       ]),
     ).toThrow(/missing pattern/);
   });
@@ -43,6 +44,7 @@ describe("fusionLanguageClient helpers", () => {
       validateDocumentSelectorPatterns([
         {
           language: "jinja-sql",
+          scheme: "file",
           pattern: { baseUri: "file:///x", pattern: "  " },
         },
       ]),

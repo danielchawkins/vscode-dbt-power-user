@@ -215,6 +215,7 @@ export function startClient({
     launch: makeLaunch(),
     commandPrefix: "fusionPowerUser:test:",
     outputChannel: channel(),
+    targetPath: "/workspace/general/target",
     ...options,
   });
   return {

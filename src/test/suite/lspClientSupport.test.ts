@@ -168,7 +168,10 @@ describe("languageClientOptions inactive gate", () => {
     );
     const { middleware, outputChannel } = inactiveSetup(() => false);
     const next = vi.fn();
-    const watched = { uri: "file:///workspace/outer/models/outer_model.sql", type: 2 };
+    const watched = {
+      uri: "file:///workspace/outer/models/outer_model.sql",
+      type: 2,
+    };
 
     await middleware.didOpen?.(documentAt(outerModel), next);
     await middleware.workspace?.didChangeWatchedFile?.(watched as never, next);
