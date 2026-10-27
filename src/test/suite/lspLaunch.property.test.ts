@@ -207,13 +207,13 @@ describe("sameLspLaunch", () => {
     );
   });
 
-  it("keeps the launch when only defer, command params, paths or name differ", () => {
+  it("keeps the launch when only defer, command params, paths other than the target directory, or name differ", () => {
     fc.assert(
       fc.property(snapshots, snapshots, (s, other) => {
         const next: ProjectSnapshot = {
           ...s,
           name: other.name,
-          paths: other.paths,
+          paths: { ...other.paths, targetPath: s.paths.targetPath },
           invocation: {
             ...s.invocation,
             defer: other.invocation.defer,
