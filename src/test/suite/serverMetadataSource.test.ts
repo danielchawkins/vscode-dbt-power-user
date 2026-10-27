@@ -180,16 +180,24 @@ describe("ServerMetadataSource", () => {
     expect(source.current()).toBeDefined();
   });
 
-  it("stays open to the next compile report after a failed refresh", async () => {
+  it("a failed fetch is retried once the project changes again", async () => {
     const listNodes = vi
       .fn()
       .mockRejectedValueOnce(new FusionCommandError("timeout", "slow"))
       .mockResolvedValue({ nodes: [node("model.p.a")] });
-    const { source, compiled } = setup(listNodes);
+    const {
+      source,
+      compiled,
+      sourceChanged,
+      listNodes: calls,
+    } = setup(listNodes);
     await source.refresh();
+    expect(source.current()).toBeUndefined();
+
+    sourceChanged.fire();
     compiled.fire();
     await new Promise((r) => setTimeout(r, 0));
-    await source.refresh();
+    expect(calls).toHaveBeenCalledTimes(2);
     expect(source.current()).toBeDefined();
   });
 
