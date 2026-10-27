@@ -217,7 +217,7 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
 ];
 
 describe("toCliArgs golden examples", () => {
-  it.fails("a parse that skips the version check passes --no-version-check", () => {
+  it("a parse that skips the version check passes --no-version-check", () => {
     const snapshot = resolveProjectSnapshot({
       root,
       folder: snapshotFolder,

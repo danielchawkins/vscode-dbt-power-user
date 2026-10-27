@@ -250,7 +250,7 @@ export class FusionCli {
     const filePath = dbtProjectFilePath(root);
     try {
       const { stdout, stderr, exitCode } = await this.run(
-        { kind: "parse" },
+        { kind: "parse", skipVersionCheck: true },
         { signal: controller.signal, priority: "background" },
       );
       if (controller.signal.aborted) {
