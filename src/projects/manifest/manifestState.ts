@@ -25,15 +25,15 @@ export class ManifestState<
    * server graph and no epoch. Consumers read `Projects.onDidChangeManifest`.
    */
   readonly onDidParse = this.parsed.event;
-  /** Fires when the project's language server reports a finished compile. */
+  /** Fires when the project's language server finishes a foreground compile; background compiles do not fire it. */
   readonly onDidCompile = this.compiled.event;
   private readonly project: P;
   private readonly fusionClient: () => FusionClient | undefined;
   private readonly followedCompiles: Disposable;
 
   /**
-   * `reportErrors` receives the errors of each compile the pool's client finishes, before this state fires
-   * {@link onDidCompile}.
+   * `reportErrors` receives the errors of each compile the pool's client finishes, foreground or background.
+   * It runs before {@link onDidCompile} fires for a foreground compile.
    */
   constructor(
     project: P,
@@ -47,7 +47,9 @@ export class ManifestState<
     this.fusionClient = fusionClient;
     this.followedCompiles = compiles.follow((complete) => {
       compiles.reportErrors(complete.errors);
-      this.notifyCompileComplete();
+      if (complete.kind === "foreground") {
+        this.notifyCompileComplete();
+      }
     });
   }
 
@@ -82,7 +84,7 @@ export class ManifestState<
     return this.current;
   }
 
-  /** Called for every compile the server finishes. */
+  /** Called for every foreground compile the server finishes. */
   notifyCompileComplete(): void {
     if (!this.closed) {
       this.compiled.fire();
