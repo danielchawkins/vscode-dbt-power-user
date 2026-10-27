@@ -8,11 +8,13 @@ type LspRelativePattern = {
 
 type FusionDocumentFilter = {
   language: string;
+  scheme: "file";
   pattern: LspRelativePattern;
 };
 
 /**
- * Per-project LSP document filters using protocol RelativePattern bases.
+ * Per-project LSP document filters using protocol RelativePattern bases. Each names the `file` scheme: the server
+ * compiles files on disk only, and a path pattern alone also matches virtual copies of the same path.
  * Selectors isolate disjoint Declared Project roots. Overlapping roots are not
  * isolated by the selector; the nested-root guard in `nestedRoots.ts` keeps a
  * nested root's documents out of the outer project's client.
@@ -20,7 +22,11 @@ type FusionDocumentFilter = {
 export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
   const baseUri = root.toString();
   const selector: FusionDocumentFilter[] = FUSION_DOCUMENT_LANGUAGES.map(
-    (language) => ({ language, pattern: { baseUri, pattern: PROJECT_GLOB } }),
+    (language) => ({
+      language,
+      scheme: "file",
+      pattern: { baseUri, pattern: PROJECT_GLOB },
+    }),
   );
   validateDocumentSelectorPatterns(selector);
   return selector;
@@ -30,6 +36,7 @@ export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
 export function vscodeDocumentSelectorForProject(root: Uri): DocumentFilter[] {
   return FUSION_DOCUMENT_LANGUAGES.map((language) => ({
     language,
+    scheme: "file",
     pattern: new RelativePattern(root, PROJECT_GLOB),
   }));
 }

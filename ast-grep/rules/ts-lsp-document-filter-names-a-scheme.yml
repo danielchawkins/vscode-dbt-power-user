@@ -12,9 +12,6 @@ files:
 ignores:
   - src/test/**
   - "**/*.test.ts"
-  # Ratchet: the two filters in this file are the ones the rule was written for. Remove this entry in the revision
-  # that adds `scheme: "file"` to them.
-  - src/fusion/documentSelector.ts
 rule:
   kind: object
   all:

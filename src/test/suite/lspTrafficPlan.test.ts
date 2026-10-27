@@ -63,7 +63,7 @@ describe("compile report kinds", () => {
 });
 
 describe("Fusion document selector", () => {
-  it.fails("names the file scheme in every filter", () => {
+  it("names the file scheme in every filter", () => {
     const selector = documentSelectorForProject(Uri.file("/workspace/general"));
     for (const filter of selector) {
       expect((filter as { scheme?: string }).scheme).toBe("file");
