@@ -94,6 +94,33 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
+  it("raises the compile-complete path for a foreground and a background compile, counts only the foreground one", async () => {
+    const handlers = new Map<string, (params: unknown) => void>();
+    const languageClient = {
+      ...makeLanguageClient(),
+      onNotification: vi.fn(
+        (method: string, handler: (params: unknown) => void) => {
+          handlers.set(method, handler);
+          return { dispose: vi.fn() };
+        },
+      ),
+    };
+    const onCompileErrors = vi.fn();
+    const { client } = startClient({
+      languageClient,
+      options: { onCompileErrors },
+    });
+    await flushAsync();
+
+    handlers.get("dbt/lspCompileComplete")?.({ errors: [] });
+    handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
+    expect(onCompileErrors).toHaveBeenCalledTimes(2);
+    expect(client.compiled?.completions).toBe(1);
+
+    await client.stop();
+    client.dispose();
+  });
+
   it("disposes the deleted-file watcher when the client stops", async () => {
     const watcher = {
       onDidDelete: vi.fn().mockReturnValue({ dispose: vi.fn() }),
