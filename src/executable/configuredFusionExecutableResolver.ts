@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { type Uri, type WorkspaceFolder, workspace } from "vscode";
 import which from "which";
 import { resolveExecutable } from "../core/snapshot";
+import { BOUNDS } from "../core/timing";
 import {
   type FusionExecutable,
   type FusionExecutableResolver,
@@ -138,7 +139,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       stderr = captured.stderr;
       runError =
         (error as { killed?: boolean }).killed === true
-          ? `${absolutePath} --version did not finish within ${VERSION_PROBE_TIMEOUT_MS / 1000} s`
+          ? `${absolutePath} --version did not finish within ${BOUNDS.versionProbeTimeoutMs / 1000} s`
           : errorMessage(error);
     }
 
@@ -280,9 +281,6 @@ async function defaultFindOnPath(
     return undefined;
   }
 }
-/** A binary that prints nothing for this long is reported as not responding, so setup never waits on it. */
-const VERSION_PROBE_TIMEOUT_MS = 15_000;
-
 async function defaultRunVersion(
   executable: string,
   env: Record<string, string>,
@@ -290,6 +288,6 @@ async function defaultRunVersion(
   return execFileText(executable, ["--version"], {
     env,
     maxBuffer: 1024 * 1024,
-    timeout: VERSION_PROBE_TIMEOUT_MS,
+    timeout: BOUNDS.versionProbeTimeoutMs,
   });
 }

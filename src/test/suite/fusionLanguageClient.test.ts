@@ -11,9 +11,9 @@ import {
 import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
+import { BOUNDS } from "../../core/timing";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
-  DISPOSAL_GRACE_MS,
   FUSION_LSP_COMMANDS,
   MAX_UNEXPECTED_EXIT_RETRIES,
 } from "../../fusion/fusionClient";
@@ -287,7 +287,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const { client, languageClient, spawnProcess } = startClient({
       deps: {
         sleep: async (ms) => {
-          if (ms !== DISPOSAL_GRACE_MS) {
+          if (ms !== BOUNDS.disposalGraceMs) {
             sleeps.push(ms);
           }
         },
@@ -313,7 +313,7 @@ describe("FusionLanguageClient lifecycle", () => {
       startClient({
         deps: {
           sleep: async (ms) => {
-            if (ms !== DISPOSAL_GRACE_MS) {
+            if (ms !== BOUNDS.disposalGraceMs) {
               sleeps.push(ms);
             }
           },

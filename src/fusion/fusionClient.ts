@@ -85,7 +85,6 @@ export interface FusionClient extends Disposable {
 }
 
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-export const DISPOSAL_GRACE_MS = 5_000;
 export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
 export function commandPrefixForProject(project: FusionProjectRef): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;

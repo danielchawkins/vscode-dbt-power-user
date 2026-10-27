@@ -2,6 +2,7 @@ import type { CancellationToken, Event, LogOutputChannel, Uri } from "vscode";
 import { EventEmitter } from "vscode";
 import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
+import { BOUNDS } from "../core/timing";
 import { projectFileAvailable } from "./clientLifecycle";
 import { ServerCompileState } from "./compileSignal";
 import {
@@ -14,7 +15,6 @@ import {
 } from "./fusionClient";
 import { FusionRequests } from "./fusionRequests";
 import { type FusionLanguageClientDependencies } from "./lspClientSupport";
-import { BACKOFF_BASE_MS, BACKOFF_CAP_MS } from "./lspProcess";
 import { LspTransport } from "./lspTransport";
 import { ClientNestedRoots } from "./nestedRoots";
 
@@ -167,8 +167,8 @@ class FusionLanguageClientImpl implements FusionClient {
 
     if (reason === "unexpected") {
       const delay = Math.min(
-        BACKOFF_BASE_MS * 2 ** (this.exitAttempts - 1),
-        BACKOFF_CAP_MS,
+        BOUNDS.backoffBaseMs * 2 ** (this.exitAttempts - 1),
+        BOUNDS.backoffCapMs,
       );
       await this.sleep(delay);
       if (this.disposed) {
