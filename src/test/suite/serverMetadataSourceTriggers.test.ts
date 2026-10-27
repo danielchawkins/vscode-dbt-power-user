@@ -67,7 +67,7 @@ describe("ServerMetadataSource triggers", () => {
     expect(listNodes).toHaveBeenCalledTimes(2);
   });
 
-  it.fails("a failed fetch is not retried by the compile reports its own request causes", async () => {
+  it("a failed fetch is not retried by the compile reports its own request causes", async () => {
     const listNodes = vi
       .fn()
       .mockRejectedValueOnce(new FusionCommandError("cancelled", "stopped"))
