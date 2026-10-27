@@ -15,6 +15,7 @@ import type {
 } from "vscode";
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot";
+import { BOUNDS } from "../../core/timing";
 import { ServerCompileState } from "../../fusion/compileSignal";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import type {
@@ -49,7 +50,7 @@ const folder: WorkspaceFolder = {
 };
 
 /** The pool's reconcile debounce; registry changes apply once this much time passes without another. */
-const RECONCILE_DEBOUNCE_MS = 500;
+const RECONCILE_DEBOUNCE_MS = BOUNDS.reconcileQuietMs;
 
 /** Runs the debounced reconcile, then the work it queues. Call after a registry change. */
 async function flushAsync(): Promise<void> {
