@@ -307,14 +307,14 @@ export abstract class PanelHost<
    */
   protected followDemand(
     view: WebviewView,
-    parseDemand: DemandFollow | undefined,
+    metadataDemand: DemandFollow | undefined,
   ): void {
     this.demands.get(view)?.dispose();
     this.demands.delete(view);
-    if (parseDemand) {
+    if (metadataDemand) {
       this.demands.set(
         view,
-        parseDemand.follow(() => view.visible, view.onDidChangeVisibility),
+        metadataDemand.follow(() => view.visible, view.onDidChangeVisibility),
       );
     }
   }

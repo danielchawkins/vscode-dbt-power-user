@@ -26,7 +26,7 @@ import { ManifestRebuild } from "../manifest/manifestRebuild";
 import { ManifestState } from "../manifest/manifestState";
 import { ManifestTrigger } from "../manifest/manifestTrigger";
 import type { Manifest } from "../manifest/manifestTypes";
-import type { ParseDemand } from "../manifest/parseDemand";
+import type { MetadataDemand } from "../manifest/metadataDemand";
 import { ParseScheduler } from "../manifest/parseScheduler";
 import type { RunResultsHistory } from "../manifest/runResults";
 import { RunResultsReader, withRunResults } from "../manifest/runResults";
@@ -70,7 +70,7 @@ export interface ProjectOptions {
   /** Fires when that client is replaced or changes state. */
   clientChanged?: Event<void>;
   /** Views reading parse-owned fields; without it every source change rebuilds. */
-  parseDemand?: ParseDemand;
+  metadataDemand?: MetadataDemand;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -178,7 +178,7 @@ export class Project implements Disposable, ManifestProject {
       () => this.getProjectName(),
       this.terminal,
     );
-    this.scheduler = this.createScheduler(options.parseDemand);
+    this.scheduler = this.createScheduler(options.metadataDemand);
     this.disposables.push(this.scheduler);
     this.trigger = new ManifestTrigger(root, this.terminal, {
       sourcePaths: () => sourcePathsOf(this.paths()),
@@ -227,7 +227,7 @@ export class Project implements Disposable, ManifestProject {
     });
   }
 
-  private createScheduler(demand: ParseDemand | undefined): ParseScheduler {
+  private createScheduler(demand: MetadataDemand | undefined): ParseScheduler {
     return new ParseScheduler({
       log: this.terminal,
       root: this.projectRoot.fsPath,

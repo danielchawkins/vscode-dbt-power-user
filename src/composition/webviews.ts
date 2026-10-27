@@ -29,7 +29,7 @@ export function composeWebviews(
     dbtLineageService,
     eventEmitterService: sharedState,
     queryManifestService,
-    parseDemand: graph.parseDemand,
+    metadataDemand: graph.metadataDemand,
   });
   if (graph.clients.pool) {
     lineagePanel.renderOn(
@@ -59,7 +59,7 @@ export function composeWebviews(
         columnProposalRequests,
       },
       terminal,
-      parseDemand: graph.parseDemand,
+      metadataDemand: graph.metadataDemand,
     }),
     new LineageViewProvider(lineagePanel, projects),
   );

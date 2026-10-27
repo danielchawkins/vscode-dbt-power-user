@@ -1,6 +1,6 @@
 import type { Disposable, TreeDataProvider } from "vscode";
 import { window } from "vscode";
-import type { ParseDemand } from "../projects/manifest/parseDemand";
+import type { MetadataDemand } from "../projects/manifest/metadataDemand";
 import type { DocumentationTreeview } from "./modelTree/documentationTreeview";
 import type {
   ChildrenModelTreeview,
@@ -23,14 +23,14 @@ export class TreeviewProviders implements Disposable {
     parseTrees: {
       test: ModelTestTreeview;
       documentation: DocumentationTreeview;
-      parseDemand?: ParseDemand;
+      metadataDemand?: MetadataDemand;
     },
     runHistoryTreeviewProvider: RunHistoryTreeviewProvider,
   ) {
     this.childrenModelTreeview = childrenModelTreeview;
     this.parentModelTreeview = parentModelTreeview;
     this.runHistoryTreeviewProvider = runHistoryTreeviewProvider;
-    const { parseDemand } = parseTrees;
+    const { metadataDemand } = parseTrees;
     this.testModelTreeview = parseTrees.test;
     this.documentationTreeView = parseTrees.documentation;
     this.disposables.push(
@@ -42,7 +42,7 @@ export class TreeviewProviders implements Disposable {
       ...this.parseConsumerView(
         "model_test_treeview",
         this.testModelTreeview,
-        parseDemand,
+        metadataDemand,
       ),
       window.registerTreeDataProvider(
         "parent_model_treeview",
@@ -55,7 +55,7 @@ export class TreeviewProviders implements Disposable {
       ...this.parseConsumerView(
         "documentation_treeview",
         this.documentationTreeView,
-        parseDemand,
+        metadataDemand,
       ),
       window.registerTreeDataProvider(
         "run_history_treeview",
@@ -68,15 +68,15 @@ export class TreeviewProviders implements Disposable {
   private parseConsumerView<T>(
     id: string,
     provider: TreeDataProvider<T>,
-    parseDemand: ParseDemand | undefined,
+    metadataDemand: MetadataDemand | undefined,
   ): Disposable[] {
-    if (!parseDemand) {
+    if (!metadataDemand) {
       return [window.registerTreeDataProvider(id, provider)];
     }
     const view = window.createTreeView(id, { treeDataProvider: provider });
     return [
       view,
-      parseDemand.follow(() => view.visible, view.onDidChangeVisibility),
+      metadataDemand.follow(() => view.visible, view.onDidChangeVisibility),
     ];
   }
 

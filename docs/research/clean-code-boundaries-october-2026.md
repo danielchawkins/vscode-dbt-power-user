@@ -244,7 +244,7 @@ Antithesis: The thesis cites a jscpd-style check, but no such tool is configured
 
 Counter-evidence:
 
-- [a14](../../src/projects/manifest/parseDemand.ts): "/** Keeps a demand while `isVisible` holds, following `onDidChange`. */"
+- [a14](../../src/projects/manifest/metadataDemand.ts): "/** Keeps a demand while `isVisible` holds, following `onDidChange`. */"
 - [a15](../../src/features/treeViews.ts): "parseDemand.follow(() => view.visible, view.onDidChangeVisibility),"
 
 ### 7. core/ is free of vscode, not free of I/O. Five core files import node:fs: docParser, macroParser, manifest/utils, dbtProjectFile and dbtEnvironment. docParser and macroParser read files the same way inside their parse loops. The repo only promises 'no vscode', so nothing is broken. Still, 'functional core' should be read as 'vscode-free core'. The honest options are: (a) document that promise exactly; or (b) when a named test seam appears, apply the injected-reader pattern from dbtProjectFile to both parsers together, never to one alone. A depcruise rule against node:fs in core would need a five-file allowlist. As a freeze on new fs importers that is acceptable, but it is weak as a purity rule

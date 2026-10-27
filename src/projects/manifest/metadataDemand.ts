@@ -5,7 +5,7 @@ import { EventEmitter } from "vscode";
  * Which views currently read parse-owned fields (descriptions, tests, macros, docs). The Parse Producer rebuilds on
  * a source change only while one is showing; otherwise it marks the parse stale and rebuilds when one appears.
  */
-export class ParseDemand implements Disposable {
+export class MetadataDemand implements Disposable {
   private readonly holders = new Set<symbol>();
   private readonly emitter = new EventEmitter<void>();
   /** Fires when the first consumer appears. */
@@ -17,7 +17,7 @@ export class ParseDemand implements Disposable {
 
   /** Registers a visible consumer; dispose the result when it hides. */
   acquire(): Disposable {
-    const holder = Symbol("parseDemand");
+    const holder = Symbol("metadataDemand");
     const wasActive = this.active;
     this.holders.add(holder);
     if (!wasActive) {
