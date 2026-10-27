@@ -35,5 +35,8 @@
     "src/test",
     "src/**/*.test.ts"
   ],
-  "references": [{ "path": "./packages/webview-contract" }]
+  "references": [
+    { "path": "./packages/webview-contract" },
+    { "path": "./packages/graph-layout" }
+  ]
 }

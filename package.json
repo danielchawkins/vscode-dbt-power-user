@@ -1077,6 +1077,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build:contract && npm run build:app --workspace webview_panels && npm run build:app",
     "build:contract": "npm run build --workspace @fusion-power-user/webview-contract",
+    "build:graph-layout": "npm run build --workspace @fusion-power-user/graph-layout",
     "watch:contract": "npm run watch --workspace @fusion-power-user/webview-contract",
     "build": "npm run build:contract && npm run build:app",
     "build:app": "rsbuild build",
@@ -1100,7 +1101,7 @@
     "package:vsix": "vsce package",
     "prune:eslint": "eslint src scripts packages --prune-suppressions",
     "lint:unused": "knip --no-progress --no-tag-hints && knip --production --no-progress",
-    "lint:imports": "depcruise src packages/webview-contract/src --config .dependency-cruiser.cjs --output-type err"
+    "lint:imports": "depcruise src packages/webview-contract/src packages/graph-layout/src --config .dependency-cruiser.cjs --output-type err"
   },
   "workspaces": [
     "packages/*",

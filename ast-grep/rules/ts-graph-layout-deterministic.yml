@@ -1,0 +1,23 @@
+# The layout engine is a pure function of its graph, options and seed: the evaluation harness ratchets crossings,
+# bends and displacement on golden graphs, and a stable expansion depends on the same input giving the same drawing.
+# So the package reads no clock and no unseeded randomness; randomised search takes `LayoutOptions.seed` through the
+# package's own seeded generator, and work is bounded by counts, not by elapsed time. The harness times the engine
+# from outside.
+id: ts-graph-layout-deterministic
+language: typescript
+severity: error
+message: >-
+  The layout engine must be deterministic: use the seeded generator from LayoutOptions.seed instead of Math.random,
+  and bound work by iteration counts, not by Date or performance clocks.
+files:
+  - packages/graph-layout/src/**
+ignores:
+  - "**/*.test.ts"
+  - "**/*.bench.ts"
+rule:
+  any:
+    - pattern: Math.random()
+    - pattern: Date.now()
+    - pattern: performance.now()
+    - pattern: new Date($$$)
+    - pattern: crypto.getRandomValues($$$)
