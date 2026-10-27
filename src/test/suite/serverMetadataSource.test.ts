@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "vscode";
 import { FusionCommandError } from "../../core/lsp";
+import type { CompilePhase } from "../../fusion/compileSignal";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
 
@@ -20,8 +21,12 @@ function setup(
   const compiled = new EventEmitter<void>();
   const sourceChanged = new EventEmitter<void>();
   const clientChanged = new EventEmitter<void>();
+  const phase: { current: CompilePhase } = { current: "idle" };
   const lsp = {
     state: "running",
+    get compilePhase() {
+      return phase.current;
+    },
     listNodes,
     getProjectInfo: vi
       .fn()
@@ -49,6 +54,7 @@ function setup(
     listNodes,
     changes,
     log,
+    phase,
   };
 }
 
@@ -104,19 +110,59 @@ describe("ServerMetadataSource", () => {
     expect(listNodes).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes on a compile report after a source change, even just after a refresh", async () => {
+  it("a source change after a compile report fetches at once, and a later report refreshes nothing more", async () => {
     const { source, compiled, sourceChanged, listNodes } = setup();
     await source.refresh();
     compiled.fire();
     sourceChanged.fire();
     await new Promise((r) => setTimeout(r, 0));
+    expect(listNodes).toHaveBeenCalledTimes(2);
+    compiled.fire();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(listNodes).toHaveBeenCalledTimes(2);
+  });
+
+  it("a source change during a server compile waits for that compile's report", async () => {
+    const { source, compiled, sourceChanged, listNodes, phase } = setup();
+    await source.refresh();
+    compiled.fire();
+    phase.current = "compiling";
+    sourceChanged.fire();
+    await new Promise((r) => setTimeout(r, 0));
     expect(listNodes).toHaveBeenCalledTimes(1);
+    phase.current = "idle";
     compiled.fire();
     await new Promise((r) => setTimeout(r, 0));
     expect(listNodes).toHaveBeenCalledTimes(2);
+  });
+
+  it("a change during a fetch keeps its arm when that fetch fails", async () => {
+    let fail = () => {};
+    const listNodes = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise(
+            (_, reject) =>
+              (fail = () => reject(new FusionCommandError("timeout", "slow"))),
+          ),
+      )
+      .mockResolvedValue({ nodes: [node("model.p.a")] });
+    const {
+      source,
+      compiled,
+      sourceChanged,
+      listNodes: calls,
+    } = setup(listNodes);
+    const first = source.refresh();
+    await new Promise((r) => setTimeout(r, 0));
+    sourceChanged.fire();
+    fail();
+    await first;
     compiled.fire();
     await new Promise((r) => setTimeout(r, 0));
-    expect(listNodes).toHaveBeenCalledTimes(2);
+    expect(calls).toHaveBeenCalledTimes(2);
+    expect(source.current()).toBeDefined();
   });
 
   it("refreshes again for a source change that arrives during a refresh", async () => {
@@ -196,6 +242,10 @@ describe("ServerMetadataSource", () => {
     } = setup(listNodes);
     await source.refresh();
     expect(source.current()).toBeUndefined();
+
+    compiled.fire();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(calls).toHaveBeenCalledTimes(1);
 
     sourceChanged.fire();
     compiled.fire();

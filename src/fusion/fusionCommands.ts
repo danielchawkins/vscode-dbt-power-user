@@ -16,6 +16,7 @@ import {
   toListNodesResult,
   toProjectInfo,
 } from "../core/lsp";
+import type { CompilePhase } from "./compileSignal";
 import {
   FUSION_LSP_COMMANDS,
   type FusionClient,
@@ -39,6 +40,8 @@ interface RequestOptions {
 export interface FusionCommands {
   /** `notRunning` when the project has no client. */
   readonly state: FusionCommandsState;
+  /** What the project's client is compiling now; `idle` without a client. */
+  readonly compilePhase: CompilePhase;
   listNodes(
     selectors: readonly string[],
     request: RequestOptions,
@@ -365,6 +368,9 @@ export function createFusionCommands(
   return {
     get state() {
       return clientOf()?.state ?? "notRunning";
+    },
+    get compilePhase() {
+      return clientOf()?.compileState.phase ?? "idle";
     },
     async listNodes(selectors, request) {
       return lanes.request(

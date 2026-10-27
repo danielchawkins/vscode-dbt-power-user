@@ -1,15 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "vscode";
 import { FusionCommandError } from "../../core/lsp";
+import type { CompilePhase } from "../../fusion/compileSignal";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import { ServerMetadataSource } from "../../metadata/serverMetadataSource";
 
 /*
- * Refresh triggers of the Server Producer. Each `it.fails` is a behaviour the next change makes true; that change
- * flips it to `it`.
- *
- * A dbt.listNodes makes the server run a Parse and then a full background compile, and a request cancels a running
- * background compile. The server compiles a source change itself, so the graph is fetched on that compile report.
+ * Refresh triggers of the Server Producer. A dbt.listNodes makes the server run a Parse and then a full background
+ * compile, and a request cancels a running background compile, so the graph is fetched only when a compile report
+ * says the server has the change, and not while the server is still compiling it.
  */
 
 const node = (id: string) => ({
@@ -28,8 +27,12 @@ function setup(
   const compiled = new EventEmitter<void>();
   const sourceChanged = new EventEmitter<void>();
   const clientChanged = new EventEmitter<void>();
+  const phase: { current: CompilePhase } = { current: "idle" };
   const lsp = {
     state: "running",
+    get compilePhase() {
+      return phase.current;
+    },
     listNodes,
     getProjectInfo: vi
       .fn()
@@ -45,24 +48,38 @@ function setup(
     },
     log: { debug: vi.fn(), warn: vi.fn() },
   });
-  return { source, compiled, sourceChanged, listNodes };
+  return { source, compiled, sourceChanged, listNodes, phase };
 }
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 describe("ServerMetadataSource triggers", () => {
-  it("a source change waits for the server's compile report before it asks for the graph", async () => {
+  it("a source change does not send a listNodes while the server is still compiling that change", async () => {
+    const { compiled, sourceChanged, listNodes, phase } = setup();
+    compiled.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    phase.current = "compiling";
+    sourceChanged.fire();
+    await tick();
+    // A listNodes sent now would cancel the server's own compile of the same change.
+    expect(listNodes).toHaveBeenCalledTimes(1);
+
+    phase.current = "idle";
+    compiled.fire();
+    await tick();
+    expect(listNodes).toHaveBeenCalledTimes(2);
+  });
+
+  it("a source change after the server's compile report fetches once, since no later report comes for it", async () => {
     const { compiled, sourceChanged, listNodes } = setup();
     compiled.fire();
     await tick();
     expect(listNodes).toHaveBeenCalledTimes(1);
 
+    // The file event arrives about the debounce after the save, so the save's compile report has come already.
     sourceChanged.fire();
-    await tick();
-    // Today the file event itself sends a listNodes, which cancels the server's compile of the same change.
-    expect(listNodes).toHaveBeenCalledTimes(1);
-
-    compiled.fire();
     await tick();
     expect(listNodes).toHaveBeenCalledTimes(2);
   });

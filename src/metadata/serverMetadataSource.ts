@@ -22,13 +22,13 @@ export interface ServerMetadataTriggers {
  * and fires only when the node set or project info changed.
  *
  * A `dbt.listNodes` costs the server one Parse and then one full background compile, even when nothing changed. It
- * cancels a running background compile, which then starts again from the beginning. A compile report starts a fetch
- * only while the graph is stale and armed; a source change arms it and sends nothing itself.
+ * cancels a running background compile, which then starts again from the beginning.
  *
  * Every `dbt.listNodes` makes the server send one compile report of its own, so a report is a reason to refresh
  * only while the graph is `stale` and a fetch is `armed`. A source change, a client change and an explicit
- * `refresh()` arm it; a failed fetch disarms it, so the next report waits for one of those. A fetch clears `stale`
- * when it starts, which is what keeps its own reports from starting another.
+ * `refresh()` arm it; a failed fetch disarms it, so the next report waits for one of those. A source change also
+ * fetches at once when the server has reported and is not compiling, since its compile report has then come already.
+ * A fetch clears `stale` and `armed` when it starts, which keeps its own reports from starting another.
  */
 export class ServerMetadataSource implements Disposable {
   private readonly emitter = new EventEmitter<ServerMetadata | undefined>();
@@ -71,6 +71,16 @@ export class ServerMetadataSource implements Disposable {
       triggers.sourceChanged(() => {
         this.stale = true;
         this.armed = true;
+        // The file event follows the server's compile of the change by about the debounce, so that compile's report
+        // has usually come already and no later one will. Fetch now unless a compile is still running, whose report
+        // then refreshes.
+        if (
+          this.compiled &&
+          this.lsp.state === "running" &&
+          this.lsp.compilePhase !== "compiling"
+        ) {
+          void this.start();
+        }
       }),
       triggers.clientChanged(() => {
         if (this.lsp.state === "running") {
@@ -117,6 +127,7 @@ export class ServerMetadataSource implements Disposable {
 
   private async fetch(): Promise<void> {
     this.stale = false;
+    this.armed = false;
     try {
       const info = await this.lsp.getProjectInfo({ purpose: "projectInfo" });
       const name = info?.projectName ?? this.projectName();
@@ -130,7 +141,6 @@ export class ServerMetadataSource implements Disposable {
         return;
       }
       this.stale = true;
-      this.armed = false;
       this.log.warn(LOG_SOURCE, "Server metadata refresh failed", error);
     }
   }
