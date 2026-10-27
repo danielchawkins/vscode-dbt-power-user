@@ -17,7 +17,6 @@ ignores:
   - "**/*.test.ts"
   # Ratchet: remove each entry when its constant moves or goes.
   - src/core/lsp/commands.ts
-  - src/fusion/compileSignal.ts
   - src/fusion/fusionClient.ts
   - src/fusion/lspProcess.ts
   - src/fusion/toolEnvironment.ts
