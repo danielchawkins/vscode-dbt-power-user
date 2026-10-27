@@ -21,12 +21,13 @@ export interface Rect {
   height: number;
 }
 
-/** A side of a node, in the drawing's frame. */
+/** A side of a node, in the drawing's frame: north is the top, east the right, whatever `direction` is. */
 export type Side = "north" | "east" | "south" | "west";
 
 export interface LayoutPort {
   /** Unique within its node. */
   id: string;
+  /** The side of the node the port sits on; an edge that names the port leaves or enters the node there. */
   side: Side;
   /** Distance from the side's start (its top for east and west, its left for north and south) to the port. */
   offset: number;
@@ -42,9 +43,9 @@ export interface LayoutNode {
   /** The innermost cluster the node belongs to. */
   cluster?: string;
   /**
-   * The node's band. When `LayoutOptions.partitions` is `strict`, every node of a lower partition sits in an
-   * earlier rank than every node of a higher one; when `soft`, crossing a partition boundary backwards costs ranking
-   * weight instead.
+   * The node's band. When `LayoutOptions.partitions` is `strict`, every node of a lower partition sits in an earlier
+   * rank than every node of a higher one; when `soft` (the default), crossing a partition boundary backwards costs
+   * ranking weight instead.
    */
   partition?: number;
 }
@@ -86,6 +87,13 @@ export interface EdgeKindPolicy {
   weight?: number;
   /** The edge is routed and returned. Defaults to true; `false` makes a pure layout constraint. */
   routed?: boolean;
+  /**
+   * The side the edge leaves its source on, for an edge that names no `sourcePort`. Omitted, the engine picks the
+   * side that faces the target in `direction`. A port's own side wins over this.
+   */
+  sourceSide?: Side;
+  /** The side the edge enters its target on, for an edge that names no `targetPort`. Omitted, as for `sourceSide`. */
+  targetSide?: Side;
 }
 
 /** Where a previous result put each node, fed back so a grown graph keeps its shape. */
@@ -114,7 +122,10 @@ export interface LayoutOptions {
   /** The policy of every edge kind the graph uses; an edge of another kind is an input error. */
   edgeKinds: Readonly<Record<string, EdgeKindPolicy>>;
   spacing?: Partial<Spacing>;
-  /** How partitions constrain ranks. Defaults to `none`, which ignores `LayoutNode.partition`. */
+  /**
+   * How partitions constrain ranks. `none` ignores `LayoutNode.partition`; `soft` penalises a backward crossing of a
+   * partition boundary; `strict` forbids it. Defaults to `soft`.
+   */
   partitions?: "none" | "soft" | "strict";
   /** A node kept at the origin, such as the node a view is centred on. */
   anchor?: string;
@@ -174,7 +185,9 @@ export interface LayoutInputIssue {
     | "unknown-kind"
     | "unknown-cluster"
     | "cluster-cycle"
-    | "bad-size";
+    | "bad-size"
+    | "bad-side"
+    | "bad-offset";
   /** The node, edge, port or cluster id. */
   subject: string;
 }

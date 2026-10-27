@@ -1075,11 +1075,11 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:contract && npm run build:app --workspace webview_panels && npm run build:app",
+    "vscode:prepublish": "npm run build:contract && npm run build:graph-layout && npm run build:app --workspace webview_panels && npm run build:app",
     "build:contract": "npm run build --workspace @fusion-power-user/webview-contract",
     "build:graph-layout": "npm run build --workspace @fusion-power-user/graph-layout",
     "watch:contract": "npm run watch --workspace @fusion-power-user/webview-contract",
-    "build": "npm run build:contract && npm run build:app",
+    "build": "npm run build:contract && npm run build:graph-layout && npm run build:app",
     "build:app": "rsbuild build",
     "build:dev": "npm run build:contract && npm run build:dev:app",
     "build:dev:app": "rsbuild build --mode development",

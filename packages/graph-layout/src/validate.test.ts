@@ -1,5 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { layoutPresets } from "./presets.js";
 import type { LayoutGraph } from "./types.js";
 import { validateGraph } from "./validate.js";
 
@@ -16,6 +17,9 @@ const node = (id: string, extra: object = {}) => ({
   height: 60,
   ...extra,
 });
+
+const issuesOf = (graph: LayoutGraph, options = kinds) =>
+  validateGraph(graph, options).map((i) => `${i.code}:${i.subject}`);
 
 describe("validateGraph", () => {
   it("accepts a graph with ports, clusters and both edge kinds", () => {
@@ -68,6 +72,59 @@ describe("validateGraph", () => {
         "unknown-port:e",
       ].sort(),
     );
+  });
+
+  it("reports a port side that is not a side, and an offset outside its side", () => {
+    const graph: LayoutGraph = {
+      nodes: [
+        node("a", {
+          ports: [
+            { id: "up", side: "up" as never, offset: 10 },
+            { id: "low", side: "east", offset: 61 },
+            { id: "neg", side: "north", offset: -1 },
+            { id: "far", side: "north", offset: 200 },
+          ],
+        }),
+      ],
+      edges: [],
+    };
+    expect(issuesOf(graph)).toEqual([
+      "bad-side:a.up",
+      "bad-offset:a.low",
+      "bad-offset:a.neg",
+    ]);
+  });
+
+  it("reports a kind whose default side is not a side", () => {
+    const graph: LayoutGraph = { nodes: [node("a")], edges: [] };
+    const options = {
+      edgeKinds: {
+        column: { ranks: false, sourceSide: "right" as never },
+        dependency: { ranks: true, targetSide: "west" },
+      },
+    };
+    expect(issuesOf(graph, options)).toEqual(["bad-side:column"]);
+  });
+
+  it("accepts an edge whose kind sets its own default sides", () => {
+    const graph: LayoutGraph = {
+      nodes: [node("a"), node("b")],
+      edges: [{ id: "e", source: "a", target: "b", kind: "column" }],
+    };
+    const options = {
+      edgeKinds: {
+        column: { ranks: false, sourceSide: "south", targetSide: "north" },
+      },
+    };
+    expect(validateGraph(graph, options)).toEqual([]);
+  });
+
+  it("keeps each preset to options that do not describe one graph", () => {
+    for (const preset of Object.values(layoutPresets)) {
+      for (const key of ["direction", "edgeKinds", "anchor", "hints"]) {
+        expect(preset).not.toHaveProperty(key);
+      }
+    }
   });
 
   it("accepts any graph whose edges join known nodes by a known kind", () => {

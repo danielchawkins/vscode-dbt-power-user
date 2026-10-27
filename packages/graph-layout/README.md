@@ -1,22 +1,17 @@
 # @fusion-power-user/graph-layout
 
-Layered layout and orthogonal edge routing for directed graphs whose edges come in kinds. Some kinds rank the nodes
-(dependencies); others are drawn and routed but never move a node to another rank (declared relationships such as
-foreign keys). Nodes have their own sizes and may carry ports, for example one per column row. Nodes may belong to
-nested clusters and to ordered partitions. A previous result can be passed back as hints, so a graph that grows by
-expansion keeps its shape.
+Layered layout and orthogonal edge routing for directed graphs whose edges come in kinds. Some kinds rank the nodes (dependencies); others are drawn and routed but never move a node to another rank (declared relationships such as foreign keys). Nodes have their own sizes and may carry ports, for example one per column row. Nodes may belong to nested clusters and to ordered partitions. A previous result can be passed back as hints, so a graph that grows by expansion keeps its shape.
 
-The package is pure TypeScript with no runtime dependencies. It reads no DOM, Node or clock API, so it runs unchanged
-in a browser, a worker and Node. The extension's lineage panel is one consumer and is not special: nothing here names
-dbt, React or React Flow.
+The package is pure TypeScript with no runtime dependencies. It reads no DOM, Node or clock API, so it runs unchanged in a browser, a worker and Node. The extension's lineage panel is one consumer and is not special: nothing here names dbt, React or React Flow.
 
-> Status: the types (`src/types.ts`) and `validateGraph` exist. `layout` and `measureLayout` land phase by phase; see
-> "Build order".
+It is private to this repository and not published; `package.json` keeps `"private": true` until the owner decides otherwise. The licence is MIT, as the extension's.
+
+> Status: the types (`src/types.ts`), the named presets (`src/presets.ts`) and `validateGraph` exist. `layout` and `measureLayout` land phase by phase; see "Build order".
 
 ## Use
 
 ```ts
-import { layout } from "@fusion-power-user/graph-layout";
+import { layout, layoutPresets } from "@fusion-power-user/graph-layout";
 
 const result = layout(
   {
@@ -30,6 +25,7 @@ const result = layout(
     ],
   },
   {
+    ...layoutPresets.circuit,
     direction: "right",
     edgeKinds: {
       dependency: { ranks: true },
@@ -44,15 +40,41 @@ const result = layout(
 
 Pass `result.hints` as `hints` on the next call, with `stability` to weigh them against edge length.
 
+Every call is a pure function of its graph and options: the engine keeps no state between calls, so a caller that wants a preset merges it with its own options and calls `layout` again.
+
+## Ports and sides
+
+Sides are absolute, in the drawing's frame: `north` is the top of a node, `east` its right, whatever `direction` is.
+A port sits on one side at an `offset` from that side's start (its top for east and west, its left for north and south); the offset must lie within the node's extent on that side.
+Column rows are ports on a fixed side of their card, so a card keeps its rows where they are drawn, whichever way the ranks run.
+
+An edge that names a `sourcePort` or `targetPort` leaves or enters the node on that port's side.
+An edge that names no port uses the default side of its kind: `EdgeKindPolicy.sourceSide` and `targetSide`.
+Omitted, the engine picks the side that faces the other end in `direction`.
+Nothing is hard-coded to east-out and west-in: `direction: "down"` with a kind that sets `sourceSide: "south"` leaves a node downwards.
+
+## Partitions
+
+`LayoutNode.partition` orders nodes into bands, and `LayoutOptions.partitions` says how strictly the order binds.
+`none` ignores partitions. `soft`, the default, penalises a backward crossing of a boundary in the ranking. `strict` forbids it: every node of a lower partition sits in an earlier rank than every node of a higher one.
+The lineage panel will expose this as a setting that lays the view out again when it changes; the setting is not wired yet.
+
+## Presets
+
+`layoutPresets` is a plain object of named option sets: `circuit` and `compact`.
+A preset sets only the options that describe a drawing's look (`effort`, `spacing`, `partitions`, `stability`, `seed`); it never sets `direction`, `edgeKinds`, `anchor` or `hints`, which belong to one graph.
+The caller merges a preset with its own options, as the example does, and may override any field.
+`circuit` is orthogonal with few crossings: it searches the ordering phase hardest (`effort: "thorough"`) and packs nodes at moderate spacing.
+`compact` is orthogonal and packed into the least area: a quick search (`effort: "fast"`) and the tightest spacing.
+Both values are starting points; the evaluation harness tunes them against the golden graphs.
+
 ## Guarantees
 
-- Deterministic: the same graph, options and `seed` give the same result. No `Math.random`, no clocks
-  (ast-grep rule `ts-graph-layout-deterministic`).
-- No overlaps: no two nodes overlap, and no edge passes through a node it does not end at. The property tests assert
-  this on random graphs.
+- Deterministic: the same graph, options and `seed` give the same result. No `Math.random`, no clocks (ast-grep rule `ts-graph-layout-deterministic`).
+- No overlaps: no two nodes overlap, and no edge passes through a node it does not end at. The property tests assert this on random graphs.
 - Orthogonal edges: every polyline alternates horizontal and vertical segments, and starts and ends at its ports.
-- Standalone: the package imports only itself (dependency-cruiser rule `graph-layout-is-standalone`), and its
-  `tsconfig.json` has no DOM or Node types.
+- Standalone: the package imports only itself (dependency-cruiser rule `graph-layout-is-standalone`), and its `tsconfig.json` has no DOM or Node types.
+- Input is checked before layout: `validateGraph` reports every problem at once, including port sides and offsets and kind default sides that are not valid.
 
 ## Pipeline
 
@@ -72,20 +94,17 @@ Each phase is a module with its own tests; `layout` composes them.
 
 Rejected, with the reason:
 
-- Kernighan–Lin and Fiduccia–Mattheyses refinement: built for cut minimisation of a partition. In a layered drawing the
-  same local search is transpose and sifting, which target crossings directly.
+- Kernighan–Lin and Fiduccia–Mattheyses refinement: built for cut minimisation of a partition. In a layered drawing the same local search is transpose and sifting, which target crossings directly.
 - Multilevel ordering: pays off on graphs of thousands of nodes; the spike's sweeps take under 30 ms at 600 nodes.
-- Kraftwerk-style spreading: needed when quadratic placement has no ordering to legalise against; within ranks, the
-  ordered separation constraints already legalise exactly.
-- PathFinder or A* grid routing: every edge here follows a dummy chain through the ranks, so each piece lies in one
-  channel and channel routing is exact for it. A grid router is for free-placed nodes, which this engine does not
-  produce.
+- Kraftwerk-style spreading: needed when quadratic placement has no ordering to legalise against; within ranks, the ordered separation constraints already legalise exactly.
+- PathFinder or A* grid routing: every edge here follows a dummy chain through the ranks, so each piece lies in one channel and channel routing is exact for it. A grid router is for free-placed nodes, which this engine does not produce.
 - WASM: the spike's slowest phase at 600 nodes with columns is under 100 ms in plain TypeScript.
+- Direction-relative port sides (before, after, left, right): a port belongs to its card's shape, and column rows stay on the same side of a card whatever the direction, so absolute sides match the drawing's frame.
 
 ## Build order
 
-1. Types, `validateGraph`, package wiring, boundary rules (this step).
-2. `measureLayout` and the geometric metrics, so every later step is measured.
+1. Types, presets, `validateGraph`, package wiring and boundary rules: in place.
+2. `measureLayout` and the geometric metrics, so every later phase is measured.
 3. Ranking: cycle removal, network simplex, partitions, rank hints.
 4. Ordering with ports, then clusters, then sifting.
 5. Placement, then cluster boxes.
@@ -94,5 +113,4 @@ Rejected, with the reason:
 
 ## References and benchmarks
 
-elkjs (elk-layered), d3-dag and dagre are references and benchmark baselines, never dependencies. A benchmark script
-under the consumer's harness may load them as dev dependencies to compare metrics on the same golden graphs.
+elkjs (elk-layered), d3-dag and dagre are references and benchmark baselines, never dependencies. A benchmark script under the consumer's harness may load them as dev dependencies to compare metrics on the same golden graphs.
