@@ -4,7 +4,9 @@ import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
 import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
+import { followClientIdle } from "../projects/clients/clientChange";
 import type { Manifest } from "../projects/manifest/manifestTypes";
+import type { MetadataDemand } from "../projects/manifest/metadataDemand";
 import type { Project } from "../projects/project/project";
 import type { ProjectMetadataSource } from "../projects/project/projectMetadataSource";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
@@ -54,6 +56,13 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
     await Promise.all([this.parseProducer.refresh(), this.server.refresh()]);
   }
 
+  async ensureFresh(): Promise<void> {
+    await Promise.all([
+      this.dbtProject.ensureParsed(),
+      this.server.ensureFresh(),
+    ]);
+  }
+
   private publish(): void {
     if (!this.parsed) {
       return;
@@ -86,13 +95,13 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
 
 /**
  * The Project Metadata Source for one Declared Project: the Server Producer over `project`'s language server,
- * merged with its Parse Producer.
+ * merged with its Parse Producer. The Server Producer fetches only while `demand` is held.
  * @adapter
  */
 export function createProjectMetadataSource(
   declared: DeclaredProject,
   project: Project,
-  log: Pick<Log, "debug" | "warn">,
+  deps: { demand: MetadataDemand; log: Pick<Log, "debug" | "warn"> },
 ): ProjectMetadataSource {
   return new CompositeMetadataSource(
     declared,
@@ -102,10 +111,17 @@ export function createProjectMetadataSource(
       projectName: () => project.getProjectName(),
       triggers: {
         compileComplete: project.onDidCompile,
+        compileIdle: (listener) =>
+          followClientIdle(
+            project.fusionClient,
+            project.onDidChangeClient,
+            listener,
+          ),
         sourceChanged: project.onSourceFileChanged,
         clientChanged: project.onDidChangeClient,
       },
-      log,
+      demand: deps.demand,
+      log: deps.log,
     }),
   );
 }

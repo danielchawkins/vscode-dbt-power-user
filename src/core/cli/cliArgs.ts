@@ -18,7 +18,8 @@ export type CliCommand =
       defer?: "off";
     }
   | { kind: "show"; sql: string; limit: number }
-  | { kind: "parse" }
+  /** `skipVersionCheck` passes `--no-version-check`, so the parse makes no network request for a version. */
+  | { kind: "parse"; skipVersionCheck?: boolean }
   | { kind: "deps" }
   | { kind: "clean" }
   | { kind: "debug" };
@@ -115,7 +116,12 @@ function body(command: CliCommand, params: readonly string[]): string[] {
     case "show":
       return showBody(command);
     case "parse":
-      return ["parse", "--log-format", "json"];
+      return [
+        "parse",
+        "--log-format",
+        "json",
+        ...(command.skipVersionCheck ? ["--no-version-check"] : []),
+      ];
     case "deps":
     case "clean":
     case "debug":

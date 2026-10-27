@@ -3,7 +3,7 @@ import type { LineageViewState } from "@modules/app/viewState";
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { traceColumn } from "./columnTrace";
+import { columnKey, traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
 import { showMore } from "./expansionCap";
 import { closeGroup, openGroup, showMoreInGroup } from "./expansionGroups";
@@ -33,6 +33,24 @@ import { planRender, viewStateOf } from "./viewModel";
 
 const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);
+
+/** Traces `column` and then draws the tables its traced edges touch. */
+const traceSelected = (store: GraphStore, column: ColumnRef): void => {
+  traceColumn(store, column, fetchConnected)
+    .then((touched) => showColumns(store, touched, fetchColumns))
+    .catch(logError("column trace"));
+};
+
+/** Cancels the trace in flight on the host and ends it here, so none of its later hops is posted. */
+const stopTrace = (store: GraphStore): void => {
+  const tracing = store.get().tracing;
+  if (tracing) {
+    executeRequestInAsync("cancelColumnTrace", {
+      trace: columnKey(tracing.column),
+    });
+    store.update((s) => ({ ...s, tracing: undefined }));
+  }
+};
 
 /** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
 export interface ExpansionOptions {
@@ -104,6 +122,9 @@ const actionsFor = (
   toggleColumns: (table: string) => {
     const s = store();
     if (s.get().columnTables.includes(table)) {
+      if (s.get().selectedColumn?.[0] === table) {
+        stopTrace(s);
+      }
       s.update((g) => hideColumns(g, table));
       return;
     }
@@ -113,13 +134,20 @@ const actionsFor = (
     const s = store();
     const ref: ColumnRef = [table, column];
     if (columnClick(s.get(), ref) === "clear") {
+      stopTrace(s);
       s.update(clearColumn);
       return;
     }
-    traceColumn(s, ref, fetchConnected)
-      .then((touched) => showColumns(s, touched, fetchColumns))
-      .catch(logError("column trace"));
+    traceSelected(s, ref);
   },
+  retryTrace: () => {
+    const s = store();
+    const column = s.get().selectedColumn;
+    if (column) {
+      traceSelected(s, column);
+    }
+  },
+  cancelTrace: () => stopTrace(store()),
   openDetails,
   openFile,
 });

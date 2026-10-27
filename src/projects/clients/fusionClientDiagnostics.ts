@@ -86,7 +86,7 @@ export function registerFusionClientDiagnostics({
         target: launch?.target,
         origin: project.origin,
         openDocuments: client?.openDocuments?.map((uri) => uri.fsPath) ?? [],
-        compiles: client?.compiled?.completions ?? 0,
+        compiles: client?.compileState.completions ?? 0,
         diagnosticCounts: countsByFile(client?.diagnostics),
         environmentSource: environments.peek(project)?.source,
         executablePath: launch?.resolvedPath,

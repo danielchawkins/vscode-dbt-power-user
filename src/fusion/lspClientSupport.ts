@@ -8,9 +8,10 @@ import type {
 } from "vscode-languageclient/node";
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { LspLaunch } from "../core/lsp";
+import { serverIgnoresPath } from "../core/paths";
 import { clientErrorHandler, inactiveGate } from "./clientLifecycle";
 import {
-  CompileSignal,
+  ServerCompileState,
   FORMAT_METHODS,
   formatOnceCompiled,
 } from "./compileSignal";
@@ -127,13 +128,15 @@ export function commandArguments(
 /** The options one Declared Project's `LanguageClient` is created with. */
 export function languageClientOptions(input: {
   project: FusionProjectRef;
+  /** The project's target directory. Watched-file events under it are the server's own writes, so they are dropped. */
+  targetPath: string;
   selector: LanguageClientOptions["documentSelector"] | undefined;
   uriConverters: LanguageClientOptions["uriConverters"] | undefined;
   outputChannel: LogOutputChannel;
   diagnosticsFilter: ProjectDiagnosticsFilter;
   /** What the client answers `workspace/configuration` for section `dbt` with. */
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
-  compiled?: CompileSignal;
+  compileState?: ServerCompileState;
   /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
   nestedRoots?:
     | { guard: NestedRootGuard; openDocuments: OpenDocuments }
@@ -147,11 +150,21 @@ export function languageClientOptions(input: {
   const { project, nestedRoots } = input;
   const isInactive = input.isInactive ?? (() => false);
   const middleware = fusionMiddleware({
-    compiled: input.compiled ?? new CompileSignal(),
+    compiled: input.compileState ?? new ServerCompileState(),
     outputChannel: input.outputChannel,
     diagnosticsFilter: input.diagnosticsFilter,
     config: input.config,
     dropInactive: inactiveGate(isInactive, input.outputChannel),
+    ignoresWatchedFile: (uri) => {
+      // The event is a protocol URI, at the launch root's realpath for a symlinked project; map it back first.
+      const parsed = input.uriConverters
+        ? input.uriConverters.protocol2Code(uri)
+        : Uri.parse(uri);
+      return (
+        parsed.scheme === "file" &&
+        serverIgnoresPath(project.root.fsPath, input.targetPath, parsed.fsPath)
+      );
+    },
   });
   return {
     ...(input.selector ? { documentSelector: input.selector } : {}),
@@ -212,13 +225,16 @@ function gatedDocumentHooks(
  * inactive.
  */
 function fusionMiddleware(input: {
-  compiled: CompileSignal;
+  compiled: ServerCompileState;
   outputChannel: LogOutputChannel;
   diagnosticsFilter: ProjectDiagnosticsFilter;
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
   dropInactive: (method: string) => boolean;
+  /** Whether a watched-file event's URI is one the server writes itself. */
+  ignoresWatchedFile: (uri: string) => boolean;
 }): Middleware {
-  const { compiled, diagnosticsFilter, dropInactive } = input;
+  const { compiled, diagnosticsFilter, dropInactive, ignoresWatchedFile } =
+    input;
   const log = (message: string) => input.outputChannel.info(message);
   return {
     provideCodeLenses: async (document, token, next) =>
@@ -241,7 +257,8 @@ function fusionMiddleware(input: {
     ...gatedDocumentHooks(dropInactive),
     workspace: {
       didChangeWatchedFile: (event, next) =>
-        dropInactive("workspace/didChangeWatchedFiles")
+        dropInactive("workspace/didChangeWatchedFiles") ||
+        ignoresWatchedFile(event.uri)
           ? Promise.resolve()
           : next(event),
       configuration: async (params) =>

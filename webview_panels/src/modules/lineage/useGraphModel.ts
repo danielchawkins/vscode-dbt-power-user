@@ -97,6 +97,7 @@ const flowOf = ({
     errors: graph.errors,
     selectedTable: graph.selectedTable,
     selectedColumn: graph.selectedColumn,
+    tracing: graph.tracing,
     columnsNeedStrict,
     connections: settings.connections,
     refs: visibleRefs(refs, settings, drawn),

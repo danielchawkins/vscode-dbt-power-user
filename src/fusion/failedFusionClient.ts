@@ -1,6 +1,7 @@
 import type { Event, LogOutputChannel } from "vscode";
 import { EventEmitter } from "vscode";
 import type { StaticAnalysisMode } from "../core/snapshot";
+import { ServerCompileState } from "./compileSignal";
 import type {
   FusionClient,
   FusionClientState,
@@ -11,6 +12,8 @@ import type {
 export class FailedFusionClient implements FusionClient {
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   readonly state: FusionClientState = "failed";
+  /** Idle for good: the server never runs, so no compile finishes. */
+  readonly compileState = new ServerCompileState();
   readonly staticAnalysis: StaticAnalysisMode;
   readonly failureReason: string;
   readonly project: FusionProjectRef;
@@ -55,5 +58,6 @@ export class FailedFusionClient implements FusionClient {
 
   dispose(): void {
     this._onDidChangeState.dispose();
+    this.compileState.dispose();
   }
 }

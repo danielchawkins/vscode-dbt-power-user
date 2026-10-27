@@ -6,12 +6,12 @@ import {
 } from "vscode-languageclient/node";
 import { lspProcessEnv, toLspArgs } from "../core/lsp";
 import { errorText } from "../core/text";
+import { BOUNDS } from "../core/timing";
 import { canonicalProjectRoot } from "./canonicalProjectRoot";
-import type { CompileSignal } from "./compileSignal";
-import { subscribeToCompileComplete } from "./compileSignal";
+import type { ServerCompileState } from "./compileSignal";
+import { subscribeToCompileState } from "./compileSignal";
 import { documentSelectorForProject } from "./documentSelector";
 import {
-  DISPOSAL_GRACE_MS,
   languageClientIdForProject,
   type FusionClientOptions,
 } from "./fusionClient";
@@ -26,11 +26,7 @@ import {
   type ClientHandle,
   type FusionLanguageClientDependencies,
 } from "./lspClientSupport";
-import {
-  CONNECTION_TIMEOUT_MS,
-  SpawnedLspProcess,
-  terminateProcess,
-} from "./lspProcess";
+import { SpawnedLspProcess, terminateProcess } from "./lspProcess";
 import type { ClientNestedRoots } from "./nestedRoots";
 import type { ReverseSocketServer } from "./reverseSocketTransport";
 import {
@@ -40,7 +36,7 @@ import {
 
 /** What the transport reads from the client that owns it. */
 export interface LspTransportHost {
-  readonly compiled: CompileSignal;
+  readonly compileState: ServerCompileState;
   readonly nestedRoots: ClientNestedRoots | undefined;
   /** Whether the client is stopping or stopped; its notifications are then dropped. */
   readonly isInactive: () => boolean;
@@ -134,7 +130,7 @@ export class LspTransport {
         this.deps.createLanguageClient ?? defaultCreateLanguageClient;
 
       const serverOptions: ServerOptions = async () => {
-        return accept(server, processAdapter, CONNECTION_TIMEOUT_MS);
+        return accept(server, processAdapter, BOUNDS.connectionTimeoutMs);
       };
 
       // vscode-languageclient ProgressFeature owns window workDone progress UI.
@@ -144,12 +140,13 @@ export class LspTransport {
         serverOptions,
         languageClientOptions({
           project: this.options.project,
+          targetPath: this.options.targetPath,
           selector,
           uriConverters,
           outputChannel: this.outputChannel,
           diagnosticsFilter,
           config: launch,
-          compiled: this.host.compiled,
+          compileState: this.host.compileState,
           nestedRoots: this.host.nestedRoots,
           isInactive: this.host.isInactive,
         }),
@@ -160,8 +157,7 @@ export class LspTransport {
         this.options.project.root,
         () => client.diagnostics,
       );
-      const { onCompileErrors } = this.options;
-      subscribeToCompileComplete(client, this.host.compiled, onCompileErrors);
+      subscribeToCompileState(client, this.host.compileState);
       await client.start();
 
       const generation = (this.generation += 1);
@@ -206,7 +202,7 @@ export class LspTransport {
     }
 
     await terminateProcess(processAdapter, {
-      graceMs: DISPOSAL_GRACE_MS,
+      graceMs: BOUNDS.disposalGraceMs,
       sleep: (ms) => this.host.sleep(ms),
       warn: (message) => this.outputChannel.warn(message),
       name: this.options.project.name,

@@ -11,6 +11,11 @@ export interface ProjectMetadataSource extends Disposable {
   /** Latest snapshot, or undefined before the first successful build. */
   current(): Manifest | undefined;
   refresh(): Promise<void>;
+  /**
+   * Brings the snapshot up to date for a reader that holds no demand: rebuilds a stale parse and fetches a due
+   * server graph, and resolves once both are done.
+   */
+  ensureFresh(): Promise<void>;
   /** Fires once per publication epoch, with the manifest `current()` now returns. */
   readonly onDidPublish: Event<Manifest>;
 }

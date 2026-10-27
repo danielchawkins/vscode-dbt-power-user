@@ -5,16 +5,31 @@ import {
   type ExecFileOptions,
   type SpawnOptions,
 } from "node:child_process";
+import { accessSync, constants as fsConstants, statSync } from "node:fs";
+import { constants as osConstants, setPriority } from "node:os";
+import { delimiter, join } from "node:path";
 import { promisify } from "node:util";
+import type { Log } from "../core/log";
+import { readEnvironment } from "../settings";
 
 export type { ChildProcess };
 
+/** Niceness of background children: below normal, so interactive work keeps the CPU. */
+const BACKGROUND_NICE = "10";
+
 const execFileAsync = promisify(execFile);
+
+export type ProcessPriority = "normal" | "background";
 
 export type SpawnProcessOptions = Pick<
   SpawnOptions,
   "cwd" | "env" | "stdio" | "windowsHide"
->;
+> & {
+  /** `background` lowers the child's scheduling priority so interactive work keeps the CPU. */
+  priority?: ProcessPriority | undefined;
+  /** Receives a debug line when `background` cannot be applied. */
+  log?: Pick<Log, "debug"> | undefined;
+};
 
 /** `timeout` kills the process after that many milliseconds; the call then rejects with `killed` set. */
 export type ExecFileTextOptions = Pick<
@@ -22,13 +37,75 @@ export type ExecFileTextOptions = Pick<
   "env" | "maxBuffer" | "timeout"
 >;
 
-/** Spawns `command` directly, never through a shell. */
+/** Spawns `command` directly, never through a shell. `background` lowers the child's scheduling priority. */
 export function spawnProcess(
   command: string,
   args: readonly string[],
   options: SpawnProcessOptions,
 ): ChildProcess {
-  return spawn(command, args, { ...options, shell: false });
+  const { priority, log, ...spawnOptions } = options;
+  const launch = { ...spawnOptions, shell: false };
+  if (priority !== "background") {
+    return spawn(command, args, launch);
+  }
+  if (process.platform === "win32") {
+    const child = spawn(command, args, launch);
+    lowerPriority(child, log);
+    return child;
+  }
+  const env = spawnOptions.env ?? readEnvironment();
+  // A command that is not there is left to spawn, so ENOENT reaches the caller as it does at normal priority.
+  if (findExecutable(command, env) === undefined) {
+    return spawn(command, args, launch);
+  }
+  const nice = findExecutable("nice", env);
+  if (nice === undefined) {
+    log?.debug(
+      "process",
+      `nice is not on PATH; running ${command} at normal priority`,
+    );
+    return spawn(command, args, launch);
+  }
+  return spawn(nice, ["-n", BACKGROUND_NICE, command, ...args], launch);
+}
+
+function lowerPriority(child: ChildProcess, log?: Pick<Log, "debug">): void {
+  if (child.pid === undefined) {
+    return;
+  }
+  try {
+    setPriority(child.pid, osConstants.priority.PRIORITY_BELOW_NORMAL);
+  } catch (error) {
+    log?.debug(
+      "process",
+      `could not lower priority of pid ${child.pid}`,
+      error,
+    );
+  }
+}
+
+/** The file `name` runs as: a name with a slash is taken as given, a bare name is looked up on PATH. */
+function findExecutable(
+  name: string,
+  env: NodeJS.ProcessEnv,
+): string | undefined {
+  if (name.includes("/")) {
+    return isExecutableFile(name) ? name : undefined;
+  }
+  return (env.PATH ?? "")
+    .split(delimiter)
+    .filter((dir) => dir !== "")
+    .map((dir) => join(dir, name))
+    .find(isExecutableFile);
+}
+
+function isExecutableFile(file: string): boolean {
+  try {
+    accessSync(file, fsConstants.X_OK);
+    return statSync(file).isFile();
+  } catch {
+    return false;
+  }
 }
 
 export interface RunProcessTextOptions {

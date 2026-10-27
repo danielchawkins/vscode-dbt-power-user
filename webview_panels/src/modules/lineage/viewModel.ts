@@ -170,6 +170,10 @@ export interface TableActions {
   closeGroup: (id: string) => void;
   toggleColumns: (table: string) => void;
   selectColumn: (table: string, column: string) => void;
+  /** Stops the column trace in flight; its pending request answers cancelled. */
+  cancelTrace: () => void;
+  /** Traces the selected column again. */
+  retryTrace: () => void;
   openDetails: (table: string) => void;
   openFile: (url: string) => void;
 }
@@ -185,6 +189,8 @@ export const TableActionsContext = createContext<TableActions>({
   closeGroup: noop,
   toggleColumns: noop,
   selectColumn: noop,
+  cancelTrace: noop,
+  retryTrace: noop,
   openDetails: noop,
   openFile: noop,
 });

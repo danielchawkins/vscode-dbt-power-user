@@ -21,12 +21,12 @@
     "webview_panels/dist/assets/documentationEditor.css": 8760,
     "webview_panels/dist/assets/documentationEditor.js": 39770,
     "webview_panels/dist/assets/lineage.css": 36000,
-    "webview_panels/dist/assets/lineage.js": 295637,
+    "webview_panels/dist/assets/lineage.js": 295906,
     "webview_panels/dist/assets/queryResults.css": 9800,
     "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200
   },
   "oxlintSuppressions.host": 59,
-  "oxlintSuppressions.webview": 27,
+  "oxlintSuppressions.webview": 26,
   "plannedTags": 0
 }

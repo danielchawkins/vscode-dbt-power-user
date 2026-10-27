@@ -9,12 +9,12 @@ import type {
   WebviewViewProvider,
   WebviewViewResolveContext,
 } from "vscode";
-import { CancellationTokenSource, commands, Uri, window } from "vscode";
+import { commands, Uri, window } from "vscode";
 import type { CancellationToken } from "vscode";
 import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
-import type { ParseDemand } from "../../projects/manifest/parseDemand";
+import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
@@ -24,9 +24,9 @@ import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
 import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
+import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
 import type { DbtLineageService } from "./dbtLineageService";
-import { connectedColumnsBody } from "./lineageBodies";
 import { detailRequestHandlers } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
 import type { ResolvedSourceTable } from "./lineageSources";
@@ -34,6 +34,7 @@ import {
   resolveSourceStartingNode,
   SOURCE_YAML_EXTENSIONS,
 } from "./lineageSources";
+import { columnTraceHandlers } from "./lineageTraceHandlers";
 
 type HostMessage = lineage.HostMessage;
 type PanelMessage = lineage.PanelMessage;
@@ -77,7 +78,7 @@ export class LineagePanel
   declare protected extensionContext: ExtensionContextStore;
   private terminal: Log;
   private dbtLineageService: DbtLineageService;
-  private parseDemand: ParseDemand | undefined;
+  private metadataDemand: MetadataDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
@@ -85,6 +86,8 @@ export class LineagePanel
   private seenPublication:
     | { root: string; epoch: number | undefined }
     | undefined;
+  // The column trace whose requests are in flight; a new trace, a cancel, or the end of a page ends them.
+  private readonly columnTraces = new ColumnTraceRequests();
 
   public constructor({
     extensionContext,
@@ -92,14 +95,14 @@ export class LineagePanel
     dbtLineageService,
     eventEmitterService,
     queryManifestService,
-    parseDemand,
+    metadataDemand,
   }: {
     extensionContext: ExtensionContextStore;
     terminal: Log;
     dbtLineageService: DbtLineageService;
     eventEmitterService: SharedStateService;
     queryManifestService: QueryManifestService;
-    parseDemand?: ParseDemand;
+    metadataDemand?: MetadataDemand;
   }) {
     super({
       extensionContext,
@@ -109,13 +112,14 @@ export class LineagePanel
     });
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
-    this.parseDemand = parseDemand;
+    this.metadataDemand = metadataDemand;
     const columnsCommand = registerLineageColumnsCommand((params) =>
       this.getColumns(params),
     );
     if (columnsCommand) {
       this._disposables.push(columnsCommand);
     }
+    this._disposables.push(this.columnTraces);
   }
 
   /**
@@ -127,7 +131,7 @@ export class LineagePanel
     context: WebviewViewResolveContext<unknown>,
     token: CancellationToken,
   ): void | Thenable<void> {
-    this.followDemand(panel, this.parseDemand);
+    this.followDemand(panel, this.metadataDemand);
     return super.resolveWebviewView(panel, context, token);
   }
 
@@ -211,6 +215,12 @@ export class LineagePanel
     this.renderStartingNode();
   }
 
+  /** A page that ends takes its column trace's requests with it, so no answer goes to a page that is gone. */
+  protected override endPage(page: WebviewView | WebviewPanel) {
+    this.columnTraces.cancel();
+    super.endPage(page);
+  }
+
   init() {
     this.terminal.debug("lineagePanel:init", "init", this._panel);
     this.renderStartingNode();
@@ -261,7 +271,6 @@ export class LineagePanel
     | "tableEdges"
     | "getColumns"
     | "getRelationships"
-    | "getConnectedColumns"
   > {
     return {
       childTables: ({ args, syncRequestId }) =>
@@ -297,18 +306,6 @@ export class LineagePanel
           syncRequestId,
           this.details.getRelationships(args?.params),
         ),
-      getConnectedColumns: async ({ args, syncRequestId }) => {
-        const { targets, upstreamExpansion } = args.params;
-        const result = await this.dbtLineageService.getConnectedColumns(
-          { targets, upstreamExpansion },
-          new CancellationTokenSource().token,
-        );
-        this.respond(
-          "getConnectedColumns",
-          syncRequestId,
-          connectedColumnsBody(result, targets),
-        );
-      },
     };
   }
 
@@ -329,6 +326,12 @@ export class LineagePanel
           preserveFocus: true,
         }),
       ...this.queryRequestHandlers(),
+      ...columnTraceHandlers({
+        dbtLineageService: this.dbtLineageService,
+        traces: this.columnTraces,
+        respond: (command, syncRequestId, body) =>
+          this.respond(command, syncRequestId, body),
+      }),
       ...detailRequestHandlers({
         details: this.details,
         extensionContext: this.extensionContext,

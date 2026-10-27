@@ -1,6 +1,7 @@
 import type { Disposable } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
+import type { CompileComplete } from "../../fusion/compileSignal";
 import type { FusionClient } from "../../fusion/fusionClient";
 import { graphUnavailable } from "./graphAvailability";
 import { nextManifestPublication } from "./manifest";
@@ -24,14 +25,32 @@ export class ManifestState<
    * server graph and no epoch. Consumers read `Projects.onDidChangeManifest`.
    */
   readonly onDidParse = this.parsed.event;
-  /** Fires when the project's language server reports a finished compile. */
+  /** Fires when the project's language server finishes a foreground compile; background compiles do not fire it. */
   readonly onDidCompile = this.compiled.event;
   private readonly project: P;
   private readonly fusionClient: () => FusionClient | undefined;
+  private readonly followedCompiles: Disposable;
 
-  constructor(project: P, fusionClient: () => FusionClient | undefined) {
+  /**
+   * `reportErrors` receives the errors of each compile the pool's client finishes, foreground or background.
+   * It runs before {@link onDidCompile} fires for a foreground compile.
+   */
+  constructor(
+    project: P,
+    fusionClient: () => FusionClient | undefined,
+    compiles: {
+      follow: (listener: (complete: CompileComplete) => void) => Disposable;
+      reportErrors: (errors: string[]) => void;
+    },
+  ) {
     this.project = project;
     this.fusionClient = fusionClient;
+    this.followedCompiles = compiles.follow((complete) => {
+      compiles.reportErrors(complete.errors);
+      if (complete.kind === "foreground") {
+        this.notifyCompileComplete();
+      }
+    });
   }
 
   /** The latest complete metadata publication. */
@@ -65,7 +84,7 @@ export class ManifestState<
     return this.current;
   }
 
-  /** Called for every compile the server finishes. */
+  /** Called for every foreground compile the server finishes. */
   notifyCompileComplete(): void {
     if (!this.closed) {
       this.compiled.fire();
@@ -83,6 +102,7 @@ export class ManifestState<
 
   dispose(): void {
     this.closed = true;
+    this.followedCompiles.dispose();
     this.parsed.dispose();
     this.compiled.dispose();
   }

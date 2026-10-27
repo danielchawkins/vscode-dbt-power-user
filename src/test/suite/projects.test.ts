@@ -16,6 +16,7 @@ import {
   CompositeMetadataSource,
   createProjectMetadataSource,
 } from "../../metadata/compositeMetadataSource";
+import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { Project } from "../../projects/project/project";
 import { Projects } from "../../projects/project/projects";
 
@@ -106,6 +107,7 @@ describe("Projects", () => {
       onDidCompile: new EventEmitter<void>().event,
       onSourceFileChanged: new EventEmitter<void>().event,
       onDidChangeClient: new EventEmitter<void>().event,
+      fusionClient: () => undefined,
       lsp: {},
       publishMerged: publishMerged,
       rebuildManifest: vi.fn(() => {
@@ -128,6 +130,7 @@ describe("Projects", () => {
       onDidCompile: new EventEmitter<void>().event,
       onSourceFileChanged: new EventEmitter<void>().event,
       onDidChangeClient: new EventEmitter<void>().event,
+      fusionClient: () => undefined,
       lsp: {},
       publishMerged: publishMerged,
       rebuildManifest: vi.fn(() => {
@@ -176,7 +179,10 @@ describe("Projects", () => {
       {
         project: mockDbtProjectFactory as any,
         metadataSource: (declared, project) =>
-          createProjectMetadataSource(declared, project, mockDbtTerminal),
+          createProjectMetadataSource(declared, project, {
+            demand: new MetadataDemand(),
+            log: mockDbtTerminal,
+          }),
       },
       mockDbtTerminal,
     );
@@ -222,7 +228,10 @@ describe("Projects", () => {
         {
           project: mockDbtProjectFactory as any,
           metadataSource: (declared, project) =>
-            createProjectMetadataSource(declared, project, mockDbtTerminal),
+            createProjectMetadataSource(declared, project, {
+              demand: new MetadataDemand(),
+              log: mockDbtTerminal,
+            }),
         },
         mockDbtTerminal,
       );
@@ -453,6 +462,18 @@ describe("Projects", () => {
       expect(steps.filter((step) => step === "source disposed")).toHaveLength(
         1,
       );
+    });
+
+    it("ensureFresh brings up to date only the source of the project owning the file", async () => {
+      const ensureFresh = vi
+        .spyOn(CompositeMetadataSource.prototype, "ensureFresh")
+        .mockResolvedValue(undefined);
+
+      await projects.ensureFresh(Uri.file("/project1/models/a.sql"));
+      expect(ensureFresh).toHaveBeenCalledTimes(1);
+
+      await projects.ensureFresh(Uri.file("/elsewhere/a.sql"));
+      expect(ensureFresh).toHaveBeenCalledTimes(1);
     });
 
     it("replaces the source when Declared Project identity changes", async () => {

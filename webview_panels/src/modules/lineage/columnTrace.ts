@@ -8,11 +8,12 @@ import type {
 import { clearColumn, drawnIds } from "./graph";
 
 type ColumnLineage = lineage.ColumnLineage;
+type Trace = NonNullable<GraphState["tracing"]>;
 
 /** Most `getConnectedColumns` rounds per direction of one trace. */
 const MAX_TRACE_HOPS = 10;
 
-const columnKey = ([table, column]: readonly [string, string]) =>
+export const columnKey = ([table, column]: readonly [string, string]): string =>
   `${table}\u0000${column.toLowerCase()}`;
 
 const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
@@ -20,31 +21,40 @@ const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
 
 /**
  * Selects `column` and traces its column lineage through the drawn tables, children then parents, one
- * `getConnectedColumns` round per hop. Returns the tables the traced edges touch. Answers arriving after another
- * column was selected are dropped.
+ * `getConnectedColumns` round per hop. Returns the tables the traced edges touch. A trace replaced or cancelled
+ * meanwhile posts no further hops, and its answers are dropped.
  */
 export async function traceColumn(
   store: GraphStore,
   column: ColumnRef,
   fetch: FetchConnected,
 ): Promise<string[]> {
+  const run: Trace = { column, since: Date.now() };
   store.update((s) => ({
     ...clearColumn(s),
     selectedColumn: column,
     selectedTable: column[0],
+    tracing: run,
   }));
   const touched = new Set<string>();
   for (const upstreamExpansion of [true, false]) {
     const done = await traceDirection(store, fetch, {
-      column,
+      run,
       upstreamExpansion,
       touched,
     });
     if (!done) {
+      store.update((s) => settle(s, run));
       return [];
     }
   }
+  store.update((s) => settle(s, run));
   return [...touched];
+}
+
+/** Ends `run` once it has answered or been stopped; a trace started since is left as it is. */
+function settle(state: GraphState, run: Trace): GraphState {
+  return state.tracing === run ? { ...state, tracing: undefined } : state;
 }
 
 /** The columns at the far end of `edges` not yet in `seen`, which it then records. */
@@ -64,16 +74,17 @@ function nextFrontier(
   return next;
 }
 
-/** One direction of `traceColumn`; false when another column was selected meanwhile. `touched` collects tables. */
+/** One direction of `traceColumn`; false when `run` was replaced or stopped meanwhile. `touched` collects tables. */
 async function traceDirection(
   store: GraphStore,
   fetch: FetchConnected,
   {
-    column,
+    run,
     upstreamExpansion,
     touched,
-  }: { column: ColumnRef; upstreamExpansion: boolean; touched: Set<string> },
+  }: { run: Trace; upstreamExpansion: boolean; touched: Set<string> },
 ): Promise<boolean> {
+  const { column } = run;
   const seen = new Set([columnKey(column)]);
   let frontier: ColumnRef[] = [column];
   for (let hop = 0; hop < MAX_TRACE_HOPS && frontier.length > 0; hop++) {
@@ -81,8 +92,15 @@ async function traceDirection(
     const body = await fetch({
       targets: frontier,
       upstreamExpansion,
+      trace: columnKey(column),
     });
-    if (!sameColumn(store.get().selectedColumn, column)) {
+    if (
+      store.get().tracing !== run ||
+      !sameColumn(store.get().selectedColumn, column)
+    ) {
+      return false;
+    }
+    if (body.cancelled) {
       return false;
     }
     const edges = body.column_lineage.filter(

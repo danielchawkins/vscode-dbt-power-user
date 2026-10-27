@@ -24,6 +24,7 @@ describe("LineagePanel", () => {
   let mockPostMessage: Mock;
   let queryManifestService: Record<string, Mock>;
   let send: (message: unknown) => Promise<unknown>;
+  let closePage: () => void;
 
   /** Sends a request as the page does, and returns the body the panel answered with. */
   const ask = async (message: Record<string, unknown>) => {
@@ -55,9 +56,11 @@ describe("LineagePanel", () => {
       },
       queryManifestService,
     });
-    const page = openPage(panel, fakeView(), false);
+    const view = fakeView();
+    const page = openPage(panel, view, false);
     mockPostMessage = page.page.webview.postMessage;
     send = page.send;
+    closePage = () => view.close();
   });
 
   describe("manifestChanged", () => {
@@ -546,7 +549,11 @@ describe("LineagePanel", () => {
     await send({
       command: "getConnectedColumns",
       args: {
-        params: { targets: [["model.p.a", "id"]], upstreamExpansion: true },
+        params: {
+          targets: [["model.p.a", "id"]],
+          upstreamExpansion: true,
+          trace: "model.p.a.id",
+        },
       },
       syncRequestId: "cll-2",
     });
@@ -571,7 +578,11 @@ describe("LineagePanel", () => {
     await send({
       command: "getConnectedColumns",
       args: {
-        params: { targets: [["model.p.x", "y"]], upstreamExpansion: false },
+        params: {
+          targets: [["model.p.x", "y"]],
+          upstreamExpansion: false,
+          trace: "model.p.x.y",
+        },
       },
       syncRequestId: "cll-3",
     });
@@ -579,6 +590,110 @@ describe("LineagePanel", () => {
     const body = mockPostMessage.mock.calls[0][0].args.body;
     expect(body.errors).toEqual({
       "model.p.x": ["Could not read column lineage for y: timeout"],
+    });
+  });
+
+  describe("column trace cancellation", () => {
+    const traced = (trace: string, syncRequestId: string) => ({
+      command: "getConnectedColumns",
+      args: {
+        params: {
+          targets: [["model.p.a", "id"]],
+          upstreamExpansion: true,
+          trace,
+        },
+      },
+      syncRequestId,
+    });
+    const answerTo = (syncRequestId: string) =>
+      mockPostMessage.mock.calls.find(
+        ([response]) =>
+          response.command === "response" &&
+          response.args.syncRequestId === syncRequestId,
+      )?.[0].args.body;
+
+    it("answers a trace that a new trace supersedes as cancelled, with no columns", async () => {
+      let finish: (value: unknown) => void = () => undefined;
+      (panel as any).dbtLineageService = {
+        getConnectedColumns: vi
+          .fn<(...args: any[]) => Promise<any>>()
+          .mockImplementationOnce(
+            () =>
+              new Promise((resolve) => {
+                finish = resolve;
+              }),
+          )
+          .mockResolvedValueOnce({ kind: "lineage", columnLineage: [] }),
+      };
+
+      const first = send(traced("a", "trace-a"));
+      await send(traced("b", "trace-b"));
+      finish({ kind: "lineage", columnLineage: [] });
+      await first;
+
+      expect(answerTo("trace-a")).toEqual({
+        column_lineage: [],
+        cancelled: true,
+      });
+      expect(answerTo("trace-b")).toEqual({ column_lineage: [] });
+    });
+
+    it("cancels only the trace that cancelColumnTrace names", async () => {
+      const tokens: { isCancellationRequested: boolean }[] = [];
+      let finish: (value: unknown) => void = () => undefined;
+      (panel as any).dbtLineageService = {
+        getConnectedColumns: vi.fn((_request, token) => {
+          tokens.push(token);
+          return new Promise((resolve) => {
+            finish = resolve;
+          });
+        }),
+      };
+
+      const pending = send(traced("a", "trace-a"));
+      await send({ command: "cancelColumnTrace", trace: "other" });
+      expect(tokens[0].isCancellationRequested).toBe(false);
+
+      await send({ command: "cancelColumnTrace", trace: "a" });
+      expect(tokens[0].isCancellationRequested).toBe(true);
+      finish({ kind: "lineage", columnLineage: [] });
+      await pending;
+      expect(answerTo("trace-a")).toEqual({
+        column_lineage: [],
+        cancelled: true,
+      });
+    });
+
+    it("cancels the trace's requests when the panel is disposed", async () => {
+      const tokens: { isCancellationRequested: boolean }[] = [];
+      (panel as any).dbtLineageService = {
+        getConnectedColumns: vi.fn((_request, token) => {
+          tokens.push(token);
+          return new Promise(() => undefined);
+        }),
+      };
+
+      void send(traced("a", "trace-a"));
+      await vi.waitFor(() => expect(tokens).toHaveLength(1));
+      expect(tokens[0].isCancellationRequested).toBe(false);
+      panel.dispose();
+      expect(tokens[0].isCancellationRequested).toBe(true);
+    });
+
+    it("cancels the trace's requests when its page closes", async () => {
+      const tokens: { isCancellationRequested: boolean }[] = [];
+      (panel as any).dbtLineageService = {
+        getConnectedColumns: vi.fn((_request, token) => {
+          tokens.push(token);
+          return new Promise(() => undefined);
+        }),
+      };
+
+      void send(traced("a", "trace-a"));
+      await vi.waitFor(() => expect(tokens).toHaveLength(1));
+      expect(tokens[0].isCancellationRequested).toBe(false);
+      closePage();
+      expect(tokens[0].isCancellationRequested).toBe(true);
     });
   });
 });

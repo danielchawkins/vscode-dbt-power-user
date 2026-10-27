@@ -47,11 +47,6 @@
       "count": 1
     }
   },
-  "src/modules/lineage/TableNode.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/graph.ts": {
     "max-params": {
       "count": 2

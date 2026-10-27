@@ -1,7 +1,7 @@
 # Every wall-clock bound the extension sets lives in src/core/timing.ts (process and OS bounds, each with its reason)
 # or src/core/lsp/requestPolicy.ts (server request classes). A timeout tuned at a call site is how the fixed 5 s
-# `dbt.listNodes` deadline broke column lineage on a 995-model project. The `ignores` list below is a ratchet: each
-# refactor step that moves or deletes a constant removes its file from it; nothing is added.
+# `dbt.listNodes` deadline broke column lineage on a 995-model project. Nothing outside the two policy modules and
+# the test trees is ignored, so a new timing bound in another module fails the scan.
 id: ts-timing-bounds-in-one-module
 language: typescript
 severity: error
@@ -15,16 +15,6 @@ ignores:
   - src/core/lsp/requestPolicy.ts
   - src/test/**
   - "**/*.test.ts"
-  # Ratchet: remove each entry when its constant moves or goes.
-  - src/core/lsp/commands.ts
-  - src/fusion/compileSignal.ts
-  - src/fusion/fusionClient.ts
-  - src/fusion/lspProcess.ts
-  - src/fusion/toolEnvironment.ts
-  - src/executable/configuredFusionExecutableResolver.ts
-  - src/projects/clients/fusionClientPool.ts
-  - src/projects/manifest/manifestTrigger.ts
-  - src/features/docs/docsEditPanel.ts
 rule:
   any:
     # const COMMAND_DEADLINE_MS = 5_000;

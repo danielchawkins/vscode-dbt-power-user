@@ -14,13 +14,10 @@ ignores:
   - src/test/**
   - "**/*.test.ts"
   - src/core/lsp/requestPolicy.ts
-  # SIGTERM grace against the exit event; the bound is DISPOSAL_GRACE_MS.
+  # SIGTERM grace against the exit event; the bound is BOUNDS.disposalGraceMs.
   - src/fusion/lspProcess.ts
   # Task start against task end; no timer involved.
   - src/projects/project/projectTasks.ts
-  # Ratchet: the ceiling timer rejects the caller but does not yet cancel the server request. The lane scheduler
-  # (refactor 2) ends the request through its token; remove this entry then.
-  - src/fusion/fusionCommands.ts
 rule:
   any:
     - pattern: Promise.race($$$)

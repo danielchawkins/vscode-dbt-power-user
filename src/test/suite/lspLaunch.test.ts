@@ -37,6 +37,7 @@ const run = {
 const launch = (overrides: Partial<LspLaunch> = {}): LspLaunch => ({
   executable: { source: "path" },
   projectDir: folder,
+  targetPath: `${folder}/target`,
   target: undefined,
   profile: undefined,
   profilesDir: undefined,
@@ -116,6 +117,7 @@ describe("toLspLaunch", () => {
     expect(launchFor({ lintEnabled: true })).toEqual({
       executable: { source: "path" },
       projectDir: folder,
+      targetPath: `${folder}/target`,
       target: undefined,
       profile: undefined,
       profilesDir: undefined,
@@ -169,6 +171,12 @@ describe("sameLspLaunch", () => {
       expect(sameLspLaunch(a, { ...a })).toBe(true);
     },
   );
+
+  it("restarts when the target directory changes", () => {
+    const a = launch({ targetPath: `${folder}/target` });
+    const b = launch({ targetPath: `${folder}/out` });
+    expect(sameLspLaunch(a, b)).toBe(false);
+  });
 
   it("treats a path source and a configured source at the same resolved path as different", () => {
     const resolvedPath = "/opt/dbt";

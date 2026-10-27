@@ -1,0 +1,8 @@
+id: ts-child-process-in-process-module
+valid:
+  - 'import { spawnProcess } from "./process";'
+  - 'import { promisify } from "node:util";'
+invalid:
+  - 'import { spawn } from "node:child_process";'
+  - 'import * as cp from "child_process";'
+  - 'const cp = require("child_process");'

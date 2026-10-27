@@ -11,9 +11,9 @@ import {
 import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
+import { BOUNDS } from "../../core/timing";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
-  DISPOSAL_GRACE_MS,
   FUSION_LSP_COMMANDS,
   MAX_UNEXPECTED_EXIT_RETRIES,
 } from "../../fusion/fusionClient";
@@ -70,15 +70,17 @@ describe("FusionLanguageClient lifecycle", () => {
         },
       ),
     };
-    const onCompileErrors = vi.fn();
-    const { client } = startClient({
-      languageClient,
-      options: { onCompileErrors },
-    });
+    const { client } = startClient({ languageClient });
     await flushAsync();
+    const errors: string[][] = [];
+    client.compileState?.onDidComplete((complete) =>
+      errors.push(complete.errors),
+    );
 
     expect([...handlers.keys()]).toEqual([
+      "dbt/lspCompileStart",
       "dbt/lspCompileComplete",
+      "dbt/lspBackgroundCompileStart",
       "dbt/lspBackgroundCompileComplete",
     ]);
     handlers.get("dbt/lspCompileComplete")?.({
@@ -88,7 +90,32 @@ describe("FusionLanguageClient lifecycle", () => {
       ],
     });
     handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
-    expect(onCompileErrors.mock.calls).toEqual([[["bad env"]], [[]]]);
+    expect(errors).toEqual([["bad env"], []]);
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("raises the compile-complete path for a foreground and a background compile, counts both", async () => {
+    const handlers = new Map<string, (params: unknown) => void>();
+    const languageClient = {
+      ...makeLanguageClient(),
+      onNotification: vi.fn(
+        (method: string, handler: (params: unknown) => void) => {
+          handlers.set(method, handler);
+          return { dispose: vi.fn() };
+        },
+      ),
+    };
+    const { client } = startClient({ languageClient });
+    await flushAsync();
+    const kinds: string[] = [];
+    client.compileState?.onDidComplete((complete) => kinds.push(complete.kind));
+
+    handlers.get("dbt/lspCompileComplete")?.({ errors: [] });
+    handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
+    expect(kinds).toEqual(["foreground", "background"]);
+    expect(client.compileState?.completions).toBe(2);
 
     await client.stop();
     client.dispose();
@@ -260,7 +287,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const { client, languageClient, spawnProcess } = startClient({
       deps: {
         sleep: async (ms) => {
-          if (ms !== DISPOSAL_GRACE_MS) {
+          if (ms !== BOUNDS.disposalGraceMs) {
             sleeps.push(ms);
           }
         },
@@ -286,7 +313,7 @@ describe("FusionLanguageClient lifecycle", () => {
       startClient({
         deps: {
           sleep: async (ms) => {
-            if (ms !== DISPOSAL_GRACE_MS) {
+            if (ms !== BOUNDS.disposalGraceMs) {
               sleeps.push(ms);
             }
           },

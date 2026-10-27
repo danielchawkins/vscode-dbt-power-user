@@ -1,0 +1,39 @@
+# A document filter with a `language` and a path `pattern` but no `scheme` also matches the virtual copies of a project
+# file (chat-editing snapshots, `git:` diff sides). VS Code matches the pattern against `fsPath` whatever the scheme,
+# and the server only compiles files on disk, so a filter names `scheme: "file"`.
+id: ts-lsp-document-filter-names-a-scheme
+language: typescript
+severity: error
+message: >-
+  Name the URI scheme in this document filter (`scheme: "file"`); a language + pattern filter without one also
+  matches chat-editing, git: and diff-view copies of the same path.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+rule:
+  kind: object
+  all:
+    - has:
+        any:
+          - kind: shorthand_property_identifier
+            regex: '^language$'
+          - kind: pair
+            has:
+              field: key
+              regex: '^language$'
+    - has:
+        kind: pair
+        has:
+          field: key
+          regex: '^pattern$'
+    - not:
+        has:
+          any:
+            - kind: shorthand_property_identifier
+              regex: '^scheme$'
+            - kind: pair
+              has:
+                field: key
+                regex: '^scheme$'

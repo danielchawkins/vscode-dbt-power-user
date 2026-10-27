@@ -40,6 +40,9 @@ export function fakeFusionCommands(
     get state() {
       return clientOf()?.state ?? "notRunning";
     },
+    get compilePhase() {
+      return clientOf()?.compileState.phase ?? "idle";
+    },
     async listNodes(selectors, request) {
       return toListNodesResult(
         await send("listNodes", [...selectors], request.token),

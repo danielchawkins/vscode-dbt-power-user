@@ -49,6 +49,46 @@ describe("CommandProcessExecution Tests", () => {
     expect(mockTerminal.debug).toHaveBeenCalled();
   });
 
+  it.skipIf(process.platform === "win32")(
+    "runs a background command under nice, from the PATH it is given",
+    async () => {
+      const binDir = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-nice-"));
+      const nice = path.join(binDir, "nice");
+      fs.writeFileSync(nice, '#!/bin/sh\nprintf "%s\\n" "$@"\n');
+      fs.chmodSync(nice, 0o755);
+      const execution = factory.createCommandProcessExecution({
+        command: process.execPath,
+        args: ["-e", "process.stdout.write('ran')"],
+        envVars: { PATH: binDir },
+        priority: "background",
+      });
+
+      const result = await execution.complete();
+      expect(result.stdout).toBe(
+        [
+          "-n",
+          "10",
+          process.execPath,
+          "-e",
+          "process.stdout.write('ran')",
+          "",
+        ].join("\n"),
+      );
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "reports a missing background command as not found, not as a nice error",
+    async () => {
+      const execution = factory.createCommandProcessExecution({
+        command: path.join(os.tmpdir(), "fpu-missing-dbt"),
+        priority: "background",
+      });
+
+      await expect(execution.complete()).rejects.toThrow(/Command not found/);
+    },
+  );
+
   it("should handle command errors", async () => {
     const execution = factory.createCommandProcessExecution({
       command: "nonexistentcommand",

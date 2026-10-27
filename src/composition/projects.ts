@@ -7,7 +7,7 @@ import { createProjectMetadataSource } from "../metadata/compositeMetadataSource
 import { onClientChange } from "../projects/clients/clientChange";
 import type { FusionClientPool } from "../projects/clients/fusionClientPool";
 import { ProjectEnvironments } from "../projects/clients/projectEnvironments";
-import { ParseDemand } from "../projects/manifest/parseDemand";
+import { MetadataDemand } from "../projects/manifest/metadataDemand";
 import { bindExtensionOutput } from "../projects/output/notifications";
 import { OutputChannels } from "../projects/output/outputChannels";
 import { RunHistoryService } from "../projects/output/runHistoryService";
@@ -43,7 +43,8 @@ export function composeProjects(context: ExtensionContext) {
   const projectEnvironments = new ProjectEnvironments(
     outputChannels.projectLog.bind(outputChannels),
   );
-  const parseDemand = new ParseDemand();
+  const metadataDemand = new MetadataDemand();
+  const metadataSourceDeps = { demand: metadataDemand, log: terminal };
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
     return new Project({
@@ -61,7 +62,7 @@ export function composeProjects(context: ExtensionContext) {
         clients.pool
           ? onClientChange(clients.pool, declared)(listener)
           : Disposable.from(),
-      parseDemand,
+      metadataDemand,
     });
   };
 
@@ -72,7 +73,7 @@ export function composeProjects(context: ExtensionContext) {
     {
       project: projectFactory,
       metadataSource: (declared, project) =>
-        createProjectMetadataSource(declared, project, terminal),
+        createProjectMetadataSource(declared, project, metadataSourceDeps),
     },
     terminal,
   );
@@ -98,7 +99,7 @@ export function composeProjects(context: ExtensionContext) {
     currentProject,
     queryManifestService,
     clients,
-    parseDemand,
+    metadataDemand,
   };
 }
 

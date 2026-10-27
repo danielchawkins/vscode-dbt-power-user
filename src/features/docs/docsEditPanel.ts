@@ -10,9 +10,10 @@ import type {
 } from "vscode";
 import { commands, window } from "vscode";
 import type { Log } from "../../core/log";
+import { BOUNDS } from "../../core/timing";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
-import type { ParseDemand } from "../../projects/manifest/parseDemand";
+import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import { notifyError } from "../../projects/output/notifications";
 import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
@@ -65,14 +66,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private projects: PanelProjects;
-  private parseDemand: ParseDemand | undefined;
+  private metadataDemand: MetadataDemand | undefined;
 
   public constructor({
     projects,
     extensionContext,
     services,
     terminal,
-    parseDemand,
+    metadataDemand,
   }: {
     projects: PanelProjects;
     extensionContext: ExtensionContextStore;
@@ -85,7 +86,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       columnProposalRequests: ColumnProposalRequests;
     };
     terminal: Log;
-    parseDemand?: ParseDemand;
+    metadataDemand?: MetadataDemand;
   }) {
     super({
       extensionContext,
@@ -94,7 +95,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       queryManifestService: services.queryManifestService,
     });
     this.projects = projects;
-    this.parseDemand = parseDemand;
+    this.metadataDemand = metadataDemand;
     this.docGenService = services.docGenService;
     this.dbtTestService = services.dbtTestService;
     this.columnProposals = services.columnProposals;
@@ -226,7 +227,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   ) {
     super.resolveWebviewView(panel, context, token);
     panel.title = "";
-    this.followDemand(panel, this.parseDemand);
+    this.followDemand(panel, this.metadataDemand);
     void this.transmitData();
   }
 
@@ -310,7 +311,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
 
   /** A command asked for proposals: waits for the page, makes the active model's documentation current, then proposes. */
   private async onProposalRequest(kind: ProposalKind) {
-    if (!(await this.whenReady("bottom", 10_000))) {
+    if (!(await this.whenReady("bottom", BOUNDS.pageReadyMs))) {
       void window.showWarningMessage(
         "The documentation editor did not load; try again",
       );

@@ -19,13 +19,14 @@ import type {
   ResolverEnvironment,
 } from "../../fusion/fusionExecutable";
 import type { FusionVersion } from "../../fusion/fusionVersion";
+import { followClientCompiles } from "../clients/clientChange";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
 import type { ManifestParsers } from "../manifest/manifest";
 import { ManifestRebuild } from "../manifest/manifestRebuild";
 import { ManifestState } from "../manifest/manifestState";
 import { ManifestTrigger } from "../manifest/manifestTrigger";
 import type { Manifest } from "../manifest/manifestTypes";
-import type { ParseDemand } from "../manifest/parseDemand";
+import type { MetadataDemand } from "../manifest/metadataDemand";
 import { ParseScheduler } from "../manifest/parseScheduler";
 import type { RunResultsHistory } from "../manifest/runResults";
 import { RunResultsReader, withRunResults } from "../manifest/runResults";
@@ -69,7 +70,7 @@ export interface ProjectOptions {
   /** Fires when that client is replaced or changes state. */
   clientChanged?: Event<void>;
   /** Views reading parse-owned fields; without it every source change rebuilds. */
-  parseDemand?: ParseDemand;
+  metadataDemand?: MetadataDemand;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -92,7 +93,8 @@ export class Project implements Disposable, ManifestProject {
   private readonly projectCount: () => number;
   /** Server commands over the project's current Fusion Client. */
   readonly lsp: FusionCommands;
-  private readonly fusionClient: () => FusionClient | undefined;
+  /** The project's current Fusion Client, resolved per call. */
+  readonly fusionClient: () => FusionClient | undefined;
   private disposed = false;
 
   private _onSourceFileChanged = new EventEmitter<void>();
@@ -138,11 +140,19 @@ export class Project implements Disposable, ManifestProject {
     this.projectCount = options.projectCount ?? (() => 1);
     this.fusionClient = options.fusionClient ?? (() => undefined);
     this.lsp = createFusionCommands(this.fusionClient);
-    this.published = new ManifestState(this, this.fusionClient);
+    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
+    this.published = new ManifestState(this, this.fusionClient, {
+      follow: (listener) =>
+        followClientCompiles(
+          this.fusionClient,
+          this.onDidChangeClient,
+          listener,
+        ),
+      reportErrors: (errors) => this.errors.reportCompile(errors),
+    });
     this.onDidParse = this.published.onDidParse;
     this.onDidCompile = this.published.onDidCompile;
     this.disposables.push(this.published);
-    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -168,12 +178,12 @@ export class Project implements Disposable, ManifestProject {
       () => this.getProjectName(),
       this.terminal,
     );
-    this.scheduler = this.createScheduler(options.parseDemand);
+    this.scheduler = this.createScheduler(options.metadataDemand);
     this.disposables.push(this.scheduler);
     this.trigger = new ManifestTrigger(root, this.terminal, {
       sourcePaths: () => sourcePathsOf(this.paths()),
       onProjectFileChanged: () => this.scheduler.projectFileChanged(),
-      onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
+      onSourceFileChanged: (change) => this.scheduler.sourceFileChanged(change),
     });
     this.lifecycle = this.createLifecycle(options);
     this.manifestRebuild = new ManifestRebuild({
@@ -217,7 +227,7 @@ export class Project implements Disposable, ManifestProject {
     });
   }
 
-  private createScheduler(demand: ParseDemand | undefined): ParseScheduler {
+  private createScheduler(demand: MetadataDemand | undefined): ParseScheduler {
     return new ParseScheduler({
       log: this.terminal,
       root: this.projectRoot.fsPath,
@@ -404,11 +414,6 @@ export class Project implements Disposable, ManifestProject {
       "manifest succesfully parsed",
       parsed,
     );
-  }
-
-  /** Called by the Fusion client pool for every compile the server finishes. */
-  notifyCompileComplete(): void {
-    this.published.notifyCompileComplete();
   }
 
   /** Replaces the published manifest with the composite producer's merged value, stamped as the next publication. */

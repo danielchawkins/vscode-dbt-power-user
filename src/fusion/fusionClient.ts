@@ -9,6 +9,7 @@ import type {
 } from "vscode";
 import type { LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/snapshot";
+import type { ServerCompileState } from "./compileSignal";
 import type { FusionExecutable } from "./fusionExecutable";
 import type { NestedRootSource } from "./nestedRoots";
 
@@ -51,10 +52,10 @@ export interface FusionClientOptions {
   env?: Record<string, string>;
   /** The Declared Project's log channel; receives client, trace and server output. The client never disposes it. */
   outputChannel: LogOutputChannel;
-  /** Receives the error messages of each compile the server reports; empty after a clean compile. */
-  onCompileErrors?: (messages: string[]) => void;
   /** Live roots of every Declared Project; documents under a root nested in this project go to that root's client. */
   nestedRoots?: NestedRootSource;
+  /** The project's target directory, absolute. The client drops watched-file events under it. */
+  targetPath: string;
 }
 
 export interface FusionClient extends Disposable {
@@ -70,8 +71,8 @@ export interface FusionClient extends Disposable {
    * fakes can omit it.
    */
   readonly openDocuments?: readonly Uri[];
-  /** Compile signal of this client's server, read by the smoke suite; optional so fakes can omit it. */
-  readonly compiled?: { readonly completions: number };
+  /** Compile state of this client's server: its current phase, finished compiles, and one event per completion. */
+  readonly compileState: ServerCompileState;
   /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
   readonly diagnostics?: DiagnosticCollection | undefined;
   /** Sends `workspace/executeCommand`; {@link FusionCommands} schedules and bounds the calls. */
@@ -86,7 +87,6 @@ export interface FusionClient extends Disposable {
 }
 
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-export const DISPOSAL_GRACE_MS = 5_000;
 export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
 export function commandPrefixForProject(project: FusionProjectRef): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;

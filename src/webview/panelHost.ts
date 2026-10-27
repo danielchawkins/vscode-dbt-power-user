@@ -307,20 +307,20 @@ export abstract class PanelHost<
    */
   protected followDemand(
     view: WebviewView,
-    parseDemand: DemandFollow | undefined,
+    metadataDemand: DemandFollow | undefined,
   ): void {
     this.demands.get(view)?.dispose();
     this.demands.delete(view);
-    if (parseDemand) {
+    if (metadataDemand) {
       this.demands.set(
         view,
-        parseDemand.follow(() => view.visible, view.onDidChangeVisibility),
+        metadataDemand.follow(() => view.visible, view.onDidChangeVisibility),
       );
     }
   }
 
-  /** Ends a page's subscription and demand, and forgets its readiness. */
-  private endPage(page: WebviewView | WebviewPanel) {
+  /** Ends a page's subscription and demand, and forgets its readiness. A subclass ends its own state here too. */
+  protected endPage(page: WebviewView | WebviewPanel) {
     for (const end of this.listening.get(page) ?? []) {
       end.dispose();
     }

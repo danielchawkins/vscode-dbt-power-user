@@ -30,7 +30,7 @@ interface Preview {
   dirty: boolean;
   /** The last render found no project yet; it renders again when projects appear. */
   loading: boolean;
-  /** Renders that found the file not yet compiled; bounded so a server that never compiles it cannot loop. */
+  /** Re-renders fired by compile reports since the last successful render or dirty flip; at most MAX_WAITS. */
   waits: number;
   compileSubscription?: Disposable;
 }
@@ -60,6 +60,7 @@ export class SqlPreviewContentProvider
             modelUriOf(preview.uri)?.toString() === changed &&
             e.document.isDirty !== preview.dirty
           ) {
+            preview.waits = 0;
             this._onDidChange.fire(preview.uri);
           }
         }
@@ -138,16 +139,17 @@ export class SqlPreviewContentProvider
           document?.getText() ?? "",
         );
       }
-      // `compileFile` on a compiled file sends no report, so a report is never this preview's own echo.
+      // A failed compileFile starts compiles, so their reports can arrive after a failed render too.
       preview.compileSubscription ??= project.onDidCompile(() => {
-        if (preview.waits <= MAX_WAITS) {
+        // Each re-render a report causes is a wait, counted when fired, so reports that arrive before a render count.
+        if (preview.waits < MAX_WAITS) {
+          preview.waits += 1;
           this._onDidChange.fire(preview.uri);
         }
       });
       const sql = await project.queries.compiledSql(modelUri);
       if (sql === undefined) {
         // Not compiled yet: the next compile-complete renders again, at most MAX_WAITS times.
-        preview.waits = Math.min(preview.waits + 1, MAX_WAITS + 1);
         return WAITING;
       }
       preview.waits = 0;

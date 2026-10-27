@@ -1,7 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { memo, use } from "react";
+import { Fragment, memo, use } from "react";
 import {
   cardFile,
   cardSubtitle,
@@ -16,6 +16,7 @@ import { GroupChips } from "./GroupChips";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
 import { useZoomedOut } from "./semanticZoom";
+import { ErrorFlag, TraceStatus } from "./TraceStatus";
 import { TableActionsContext } from "./viewModel";
 
 const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
@@ -83,14 +84,7 @@ const Header = ({
     <NameBlock table={table} mode={mode} file={file} zoomedOut={zoomedOut} />
     {errors?.length || hiddenFromLineage ? (
       <span className={styles.flags}>
-        {errors?.length ? (
-          <span
-            role="img"
-            className={`codicon codicon-warning ${styles.error}`}
-            title={errors.join("\n")}
-            aria-label={errors.join("\n")}
-          />
-        ) : null}
+        {errors?.length ? <ErrorFlag errors={errors} /> : null}
         {hiddenFromLineage ? (
           <>
             <i
@@ -271,12 +265,14 @@ const ColumnList = ({
   columns,
   traced,
   selectedColumn,
+  tracing,
   columnsNeedStrict,
 }: {
   table: string;
   columns: lineage.LineageColumn[];
   traced: string[];
   selectedColumn?: string | undefined;
+  tracing?: { column: string; since: number } | undefined;
   columnsNeedStrict?: boolean | undefined;
 }) => {
   const tracedSet = new Set(traced);
@@ -296,14 +292,17 @@ const ColumnList = ({
           {columnsNeedStrict ? STRICT_EMPTY : "No columns"}
         </div>
       ) : (
-        columns.map((column) => (
-          <ColumnRow
-            key={column.name}
-            table={table}
-            column={column}
-            state={stateOf(column.name.toLowerCase())}
-          />
-        ))
+        columns.map((column) => {
+          const name = column.name.toLowerCase();
+          return (
+            <Fragment key={column.name}>
+              <ColumnRow table={table} column={column} state={stateOf(name)} />
+              {tracing?.column === name ? (
+                <TraceStatus since={tracing.since} />
+              ) : null}
+            </Fragment>
+          );
+        })
       )}
     </div>
   );
@@ -355,6 +354,7 @@ const TableNodeView = ({
           columns={data.columns}
           traced={data.traced}
           selectedColumn={data.selectedColumn}
+          tracing={data.tracing}
           columnsNeedStrict={data.columnsNeedStrict}
         />
       ) : null}

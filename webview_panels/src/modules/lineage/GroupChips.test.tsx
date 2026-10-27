@@ -28,6 +28,8 @@ const actions = () => ({
   closeGroup: vi.fn(),
   toggleColumns: vi.fn(),
   selectColumn: vi.fn(),
+  cancelTrace: vi.fn(),
+  retryTrace: vi.fn(),
   openDetails: vi.fn(),
   openFile: vi.fn(),
 });

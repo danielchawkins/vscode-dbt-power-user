@@ -1,0 +1,9 @@
+id: ts-lsp-document-filter-names-a-scheme
+valid:
+  - 'const f = { language, scheme: "file", pattern: { baseUri, pattern: PROJECT_GLOB } };'
+  - 'const f = { language: "sql", scheme, pattern: new RelativePattern(root, "**/*") };'
+  - 'const f = { language: "jinja-sql", scheme: "untitled" };'
+  - 'const p = { baseUri, pattern: "**/*" };'
+invalid:
+  - 'const f = { language, pattern: { baseUri, pattern: PROJECT_GLOB } };'
+  - 'const f = { language: "yaml", pattern: new RelativePattern(root, "**/*") };'

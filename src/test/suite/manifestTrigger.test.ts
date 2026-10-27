@@ -8,15 +8,13 @@ import {
   type Mock,
   vi,
 } from "vitest";
+import { BOUNDS } from "../../core/timing";
 import { ManifestTrigger } from "../../projects/manifest/manifestTrigger";
 import {
   createdFileSystemWatchers,
   type MockFileSystemWatcher,
 } from "../mock/vscode";
 import { silentLog } from "../testLog";
-
-/** Debounce applied to every watched file event before its handler runs. */
-const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
 
 describe("Project manifest trigger", () => {
   const root = "/project";
@@ -56,7 +54,7 @@ describe("Project manifest trigger", () => {
     watcher.fire("change", path.join(root, "models", "a.sql"));
     watcher.fire("create", path.join(root, "models", "b.sql"));
     watcher.fire("delete", path.join(root, "seeds", "c.csv"));
-    await vi.advanceTimersByTimeAsync(MANIFEST_TRIGGER_DEBOUNCE_MS - 1);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs - 1);
     expect(onSourceFileChanged).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(onSourceFileChanged).toHaveBeenCalledTimes(1);
@@ -72,9 +70,66 @@ describe("Project manifest trigger", () => {
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
     watcher.fire("change", path.join(root, "dbt_project.yml"));
-    await vi.advanceTimersByTimeAsync(MANIFEST_TRIGGER_DEBOUNCE_MS);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
     expect(onProjectFileChanged).toHaveBeenCalledTimes(1);
     expect(onSourceFileChanged).not.toHaveBeenCalled();
+  });
+
+  it("runs the project handler once when a project-file change shares a burst with source edits", async () => {
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    watcher.fire("change", path.join(root, "dbt_project.yml"));
+    watcher.fire("change", path.join(root, "models", "b.sql"));
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onProjectFileChanged).toHaveBeenCalledTimes(1);
+    expect(onSourceFileChanged).not.toHaveBeenCalled();
+  });
+
+  it("runs the source handler once per source-only burst", async () => {
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    watcher.fire("change", path.join(root, "macros", "m.sql"));
+    watcher.fire("create", path.join(root, "seeds", "s.csv"));
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenCalledTimes(2);
+    expect(onProjectFileChanged).not.toHaveBeenCalled();
+  });
+
+  it("passes each changed path of a burst once, in arrival order, and only that burst's paths", async () => {
+    const a = path.join(root, "models", "a.sql");
+    const b = path.join(root, "models", "b.sql");
+    watcher.fire("change", a);
+    watcher.fire("change", b);
+    watcher.fire("change", a);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ paths: [a, b] }),
+    );
+    watcher.fire("delete", b);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ paths: [b] }),
+    );
+  });
+
+  it("passes the changed project file to the project handler", async () => {
+    const project = path.join(root, "dbt_project.yml");
+    watcher.fire("change", project);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onProjectFileChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ paths: [project] }),
+    );
+  });
+
+  it("stamps a burst with the arrival of its first event", async () => {
+    vi.setSystemTime(1_000);
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    await vi.advanceTimersByTimeAsync(200);
+    watcher.fire("change", path.join(root, "models", "b.sql"));
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith(
+      expect.objectContaining({ firstEventAt: 1_000 }),
+    );
   });
 
   it("drops a pending rebuild and stops watching on dispose", async () => {
