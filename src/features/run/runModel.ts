@@ -11,7 +11,7 @@ import type { GenerateModelFromSourceParams } from "../../projects/project/proje
 import { modelParamsFor } from "../../projects/project/projectCommands";
 import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
-import type { ProjectLookup } from "../../projects/project/projects";
+import type { ProjectLookup, Projects } from "../../projects/project/projects";
 
 /** What running, compiling and generating a model read from its project. */
 type ModelProject = {
@@ -95,14 +95,14 @@ const labelText = (label: NonNullable<TreeItem["label"]>): string =>
 
 const EXECUTE_SQL = "Execute dbt SQL";
 
+/** The model projects, which also bring a project's manifest up to date before a codegen read. */
+type ModelLookup = ProjectLookup<ModelProject> & Pick<Projects, "ensureFresh">;
+
 export class RunModel {
-  private projects: ProjectLookup<ModelProject>;
+  private projects: ModelLookup;
   private currentProject: CurrentProject;
 
-  constructor(
-    projects: ProjectLookup<ModelProject>,
-    currentProject: CurrentProject,
-  ) {
+  constructor(projects: ModelLookup, currentProject: CurrentProject) {
     this.projects = projects;
     this.currentProject = currentProject;
   }
@@ -270,7 +270,7 @@ export class RunModel {
     const activeUri = window.activeTextEditor?.document.uri;
     if (activeUri !== undefined) {
       const fullPath = activeModelUri(activeUri);
-      this.generateSchemaYML(fullPath);
+      void this.generateSchemaYML(fullPath);
     }
   }
   showRunSQLOnActiveWindow() {
@@ -345,11 +345,12 @@ export class RunModel {
     );
   }
 
-  generateSchemaYML(modelPath: Uri) {
+  async generateSchemaYML(modelPath: Uri) {
     const project = this.projects.get(modelPath);
     if (!project) {
       return;
     }
+    await this.projects.ensureFresh(modelPath);
     void project.queries.generateSchemaYML(
       modelPath,
       path.basename(modelPath.fsPath, ".sql"),
