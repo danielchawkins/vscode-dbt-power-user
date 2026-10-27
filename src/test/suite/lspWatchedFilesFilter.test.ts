@@ -4,11 +4,7 @@ import { URI as VsCodeUri } from "vscode-uri";
 import { canonicalProjectRoot } from "../../fusion/canonicalProjectRoot";
 import { languageClientOptions } from "../../fusion/lspClientSupport";
 
-/*
- * Characterization of "do not forward watched-file events the server ignores". `it.fails` states the behaviour the
- * refactor must deliver; flip it to `it` when it lands. The server registers every file, so the client forwards the
- * server's own writes under target/ and logs/, and those start no compile.
- */
+/* Watched-file events under the target and log directories are dropped; other project files are forwarded. */
 
 function watchedHook(
   overrides: {

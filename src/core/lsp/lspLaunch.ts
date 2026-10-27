@@ -15,7 +15,7 @@ export interface LspLaunch {
   resolvedPath?: string | undefined;
   /** The snapshot root; the client resolves its realpath at spawn. */
   projectDir: string;
-  /** The directory Fusion writes its own files to, absolute; a change restarts the client so the watched-file filter follows it. */
+  /** Absolute directory Fusion writes its own files to; a change restarts the client. */
   targetPath: string;
   target: string | undefined;
   profile: string | undefined;
