@@ -44,7 +44,7 @@ export class ServerMetadataSource implements Disposable {
   private running: Promise<void> | undefined;
   private again = false;
   private stale = true;
-  /** A fetch is wanted: set by a source or client change and by refresh(); a compile report then fetches. */
+  /** A fetch is wanted: set by a source or client change, refresh(), demand activation and ensureFresh(). */
   private armed = true;
   /** The current client run has reported a compile; before that `listNodes` would wait on it, with a progress toast. */
   private compiled = false;
