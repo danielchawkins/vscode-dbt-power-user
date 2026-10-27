@@ -40,7 +40,7 @@ import {
 
 /** What the transport reads from the client that owns it. */
 export interface LspTransportHost {
-  readonly compiled: ServerCompileState;
+  readonly compileState: ServerCompileState;
   readonly nestedRoots: ClientNestedRoots | undefined;
   /** Whether the client is stopping or stopped; its notifications are then dropped. */
   readonly isInactive: () => boolean;
@@ -149,7 +149,7 @@ export class LspTransport {
           outputChannel: this.outputChannel,
           diagnosticsFilter,
           config: launch,
-          compiled: this.host.compiled,
+          compileState: this.host.compileState,
           nestedRoots: this.host.nestedRoots,
           isInactive: this.host.isInactive,
         }),
@@ -160,11 +160,7 @@ export class LspTransport {
         this.options.project.root,
         () => client.diagnostics,
       );
-      const { onCompileErrors } = this.options;
-      subscribeToCompileState(client, this.host.compiled);
-      this.host.compiled.onDidComplete((complete) =>
-        onCompileErrors?.(complete.errors),
-      );
+      subscribeToCompileState(client, this.host.compileState);
       await client.start();
 
       const generation = (this.generation += 1);

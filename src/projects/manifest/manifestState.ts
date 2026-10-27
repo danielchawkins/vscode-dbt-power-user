@@ -1,7 +1,8 @@
-import type { Disposable } from "vscode";
+import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
 import type { FusionClient } from "../../fusion/fusionClient";
+import { followClientCompiles } from "../clients/clientChange";
 import { graphUnavailable } from "./graphAvailability";
 import { nextManifestPublication } from "./manifest";
 import type { Manifest } from "./manifestTypes";
@@ -28,10 +29,30 @@ export class ManifestState<
   readonly onDidCompile = this.compiled.event;
   private readonly project: P;
   private readonly fusionClient: () => FusionClient | undefined;
+  private readonly followedCompiles: Disposable;
 
-  constructor(project: P, fusionClient: () => FusionClient | undefined) {
+  /**
+   * `reportErrors` receives the errors of each compile the pool's client finishes, before this state fires
+   * {@link onDidCompile}.
+   */
+  constructor(
+    project: P,
+    fusionClient: () => FusionClient | undefined,
+    compiles: {
+      clientChanged: Event<void>;
+      reportErrors: (errors: string[]) => void;
+    },
+  ) {
     this.project = project;
     this.fusionClient = fusionClient;
+    this.followedCompiles = followClientCompiles(
+      fusionClient,
+      compiles.clientChanged,
+      (complete) => {
+        compiles.reportErrors(complete.errors);
+        this.notifyCompileComplete();
+      },
+    );
   }
 
   /** The latest complete metadata publication. */
@@ -83,6 +104,7 @@ export class ManifestState<
 
   dispose(): void {
     this.closed = true;
+    this.followedCompiles.dispose();
     this.parsed.dispose();
     this.compiled.dispose();
   }

@@ -133,7 +133,7 @@ export function languageClientOptions(input: {
   diagnosticsFilter: ProjectDiagnosticsFilter;
   /** What the client answers `workspace/configuration` for section `dbt` with. */
   config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
-  compiled?: ServerCompileState;
+  compileState?: ServerCompileState;
   /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
   nestedRoots?:
     | { guard: NestedRootGuard; openDocuments: OpenDocuments }
@@ -147,7 +147,7 @@ export function languageClientOptions(input: {
   const { project, nestedRoots } = input;
   const isInactive = input.isInactive ?? (() => false);
   const middleware = fusionMiddleware({
-    compiled: input.compiled ?? new ServerCompileState(),
+    compiled: input.compileState ?? new ServerCompileState(),
     outputChannel: input.outputChannel,
     diagnosticsFilter: input.diagnosticsFilter,
     config: input.config,
