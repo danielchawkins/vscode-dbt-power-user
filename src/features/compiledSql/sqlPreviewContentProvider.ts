@@ -30,7 +30,7 @@ interface Preview {
   dirty: boolean;
   /** The last render found no project yet; it renders again when projects appear. */
   loading: boolean;
-  /** Renders that found the file not yet compiled; bounded so a server that never compiles it cannot loop. */
+  /** Re-renders fired by compile reports since the last successful render or dirty flip; at most MAX_WAITS. */
   waits: number;
   compileSubscription?: Disposable;
 }
