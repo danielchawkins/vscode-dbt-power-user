@@ -56,6 +56,13 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
     await Promise.all([this.parseProducer.refresh(), this.server.refresh()]);
   }
 
+  async ensureFresh(): Promise<void> {
+    await Promise.all([
+      this.dbtProject.ensureParsed(),
+      this.server.ensureFresh(),
+    ]);
+  }
+
   private publish(): void {
     if (!this.parsed) {
       return;

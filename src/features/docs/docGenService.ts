@@ -217,6 +217,9 @@ export class DocGenService {
     filePath?: string,
     compiled = true,
   ): Promise<DBTDocumentationMessage> {
+    if (filePath) {
+      await this.projects.ensureFresh(Uri.file(filePath));
+    }
     const gate = this.documentationGate(filePath);
     if ("stop" in gate) {
       return gate.stop;

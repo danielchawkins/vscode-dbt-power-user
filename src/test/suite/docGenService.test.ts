@@ -22,7 +22,7 @@ const makeService = (root: string, setup: Setup = {}) => {
         }),
         log: { error: vi.fn() },
       };
-  const projects = { get: () => project };
+  const projects = { get: () => project, ensureFresh: async () => undefined };
   const queryManifestService = {
     getEventByCurrentProject: () => ({
       event: { nodeMetaMap: { lookupByBaseName: () => setup.node } },

@@ -40,7 +40,7 @@ describe("RunModel SQL execution", () => {
     preview?: queryResults.ModelPreview | undefined;
   }[];
   let dbtProject: Project;
-  let projects: { get: Mock };
+  let projects: { get: Mock; ensureFresh: Mock };
   let context: Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
@@ -90,6 +90,7 @@ describe("RunModel SQL execution", () => {
       get: vi.fn((root: Uri) =>
         root === project.root ? dbtProject : undefined,
       ),
+      ensureFresh: vi.fn().mockResolvedValue(undefined),
     };
     context = {
       requireForCommand: vi.fn(),
@@ -484,6 +485,7 @@ describe("RunModel project commands", () => {
     };
     const projects = {
       get: (uri: Uri) => (owned && uri === model ? project : undefined),
+      ensureFresh: async () => undefined,
     };
     runModel = new RunModel(projects, {} as CurrentProject);
   });
@@ -504,11 +506,11 @@ describe("RunModel project commands", () => {
     ]);
   });
 
-  it("builds test commands and delegates query, schema, and run-SQL operations", () => {
+  it("builds test commands and delegates query, schema, and run-SQL operations", async () => {
     runModel.compileDBTQuery(model, "select 1");
     runModel.runDBTTest(model, "unique_orders");
     runModel.runDBTModelTest(model);
-    runModel.generateSchemaYML(model);
+    await runModel.generateSchemaYML(model);
     runModel.showRunSQL(model);
 
     expect(tasks.commands).toEqual([

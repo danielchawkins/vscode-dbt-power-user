@@ -39,20 +39,22 @@ export class TreeviewProviders implements Disposable {
       this.childrenModelTreeview,
       this.documentationTreeView,
       this.runHistoryTreeviewProvider,
-      ...this.parseConsumerView(
+      ...this.metadataConsumerView(
         "model_test_treeview",
         this.testModelTreeview,
         metadataDemand,
       ),
-      window.registerTreeDataProvider(
+      ...this.metadataConsumerView(
         "parent_model_treeview",
         this.parentModelTreeview,
+        metadataDemand,
       ),
-      window.registerTreeDataProvider(
+      ...this.metadataConsumerView(
         "children_model_treeview",
         this.childrenModelTreeview,
+        metadataDemand,
       ),
-      ...this.parseConsumerView(
+      ...this.metadataConsumerView(
         "documentation_treeview",
         this.documentationTreeView,
         metadataDemand,
@@ -64,8 +66,8 @@ export class TreeviewProviders implements Disposable {
     );
   }
 
-  /** Registers a tree that reads parse-owned fields; its visibility keeps the parse current. */
-  private parseConsumerView<T>(
+  /** Registers a tree that reads merged metadata; its visibility holds the demand that keeps that metadata current. */
+  private metadataConsumerView<T>(
     id: string,
     provider: TreeDataProvider<T>,
     metadataDemand: MetadataDemand | undefined,

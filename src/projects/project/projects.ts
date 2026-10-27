@@ -119,6 +119,16 @@ export class Projects implements Disposable {
     });
   }
 
+  /** Makes the project owning `uri` current for a reader that holds no demand; see `ProjectMetadataSource`. */
+  async ensureFresh(uri: Uri): Promise<void> {
+    const declared = this.projectRegistry.findProject(uri);
+    if (declared) {
+      await this.projectsByRoot
+        .get(declared.root.fsPath)
+        ?.metadataSource.ensureFresh();
+    }
+  }
+
   byName(projectName: string): Project | undefined {
     return this.all().find(
       (project) => project.getProjectName() === projectName,

@@ -104,17 +104,36 @@ export class ServerMetadataSource implements Disposable {
     return this.value;
   }
 
-  /** Starts a due fetch once a consumer holds the demand and the server has compiled and is not compiling now. */
-  private startWhenDue(): void {
-    if (
-      this.demand.active &&
+  /** Whether a fetch is wanted now: the graph is stale and armed, and the server has compiled and is idle. */
+  private due(): boolean {
+    return (
       this.stale &&
       this.armed &&
       this.compiled &&
       this.lsp.state === "running" &&
       this.lsp.compilePhase === "idle"
-    ) {
+    );
+  }
+
+  /** Starts a due fetch once a consumer holds the demand. */
+  private startWhenDue(): void {
+    if (this.demand.active && this.due()) {
       void this.start();
+    }
+  }
+
+  /**
+   * For a reader that holds no demand: starts the fetch when one is due now, and waits for a fetch in flight. A
+   * stale graph is armed first, so a failed fetch does not leave the reader on a value nothing will refetch.
+   */
+  async ensureFresh(): Promise<void> {
+    if (this.stale) {
+      this.armed = true;
+    }
+    if (this.due()) {
+      await this.start();
+    } else if (this.running) {
+      await this.running;
     }
   }
 
