@@ -11,7 +11,10 @@ import { languageClientOptions } from "../../fusion/lspClientSupport";
 
 function watchedHook() {
   const options = languageClientOptions({
-    project: { folder: { uri: {}, name: "p", index: 0 }, root: { fsPath: "/w/p" } },
+    project: {
+      folder: { uri: {}, name: "p", index: 0 },
+      root: { fsPath: "/w/p" },
+    },
     targetPath: "/w/p/target",
     selector: undefined,
     uriConverters: undefined,
@@ -41,7 +44,10 @@ describe("watched-file forwarding", () => {
   it("drops the server's own target/.lsp writes and log writes", async () => {
     const next = vi.fn(() => Promise.resolve());
     const hook = watchedHook();
-    await hook({ uri: "file:///w/p/target/.lsp/compiled/p/models/a.sql", type: 2 }, next);
+    await hook(
+      { uri: "file:///w/p/target/.lsp/compiled/p/models/a.sql", type: 2 },
+      next,
+    );
     await hook({ uri: "file:///w/p/target/manifest.json", type: 2 }, next);
     await hook({ uri: "file:///w/p/logs/dbt-lsp.log", type: 2 }, next);
     expect(next).not.toHaveBeenCalled();

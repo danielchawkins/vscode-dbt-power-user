@@ -105,24 +105,21 @@ describe("FusionCli", () => {
     ).toEqual([true, false]);
   });
 
-  it(
-    "runs the parse at background priority and user commands at normal",
-    async () => {
-      const { calls, factory } = fakeProcesses();
-      const cli = new FusionCli({
-        executable,
-        snapshot: () => snapshot(),
-        processes: factory,
-        terminal: fakeTerminal().terminal,
-      });
-      await cli.rebuildManifest();
-      await cli.run({ kind: "parse" });
-      expect(calls.map((call) => call.priority)).toEqual([
-        "background",
-        undefined,
-      ]);
-    },
-  );
+  it("runs the parse at background priority and user commands at normal", async () => {
+    const { calls, factory } = fakeProcesses();
+    const cli = new FusionCli({
+      executable,
+      snapshot: () => snapshot(),
+      processes: factory,
+      terminal: fakeTerminal().terminal,
+    });
+    await cli.rebuildManifest();
+    await cli.run({ kind: "parse" });
+    expect(calls.map((call) => call.priority)).toEqual([
+      "background",
+      undefined,
+    ]);
+  });
 
   it("runs the executable in the project root with --project-dir", async () => {
     const { calls, factory } = fakeProcesses();

@@ -46,22 +46,46 @@ describe("isStrictlyBelow", () => {
 
 describe("serverIgnoresPath", () => {
   it("covers the target directory and the default log directory", () => {
-    expect(serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/target/manifest.json")).toBe(true);
-    expect(serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/logs/dbt-lsp.log")).toBe(true);
+    expect(
+      serverIgnoresPath(
+        "/a/proj",
+        "/a/proj/target",
+        "/a/proj/target/manifest.json",
+      ),
+    ).toBe(true);
+    expect(
+      serverIgnoresPath(
+        "/a/proj",
+        "/a/proj/target",
+        "/a/proj/logs/dbt-lsp.log",
+      ),
+    ).toBe(true);
   });
 
   it("keeps project files, including sibling names that share a prefix", () => {
-    expect(serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/models/a.sql")).toBe(false);
-    expect(serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/target2/a.sql")).toBe(false);
-    expect(serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/logsx/a.log")).toBe(false);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/models/a.sql"),
+    ).toBe(false);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/target2/a.sql"),
+    ).toBe(false);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj/target", "/a/proj/logsx/a.log"),
+    ).toBe(false);
   });
 
   it("follows a configured target path, and no longer ignores the default one", () => {
-    expect(serverIgnoresPath("/a/proj", "/a/proj/out", "/a/proj/out/x.json")).toBe(true);
-    expect(serverIgnoresPath("/a/proj", "/a/proj/out", "/a/proj/target/x.json")).toBe(false);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj/out", "/a/proj/out/x.json"),
+    ).toBe(true);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj/out", "/a/proj/target/x.json"),
+    ).toBe(false);
   });
 
   it("never excludes the whole project when the target path is the root", () => {
-    expect(serverIgnoresPath("/a/proj", "/a/proj", "/a/proj/models/a.sql")).toBe(false);
+    expect(
+      serverIgnoresPath("/a/proj", "/a/proj", "/a/proj/models/a.sql"),
+    ).toBe(false);
   });
 });

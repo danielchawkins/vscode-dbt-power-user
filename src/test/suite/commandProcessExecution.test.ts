@@ -65,7 +65,14 @@ describe("CommandProcessExecution Tests", () => {
 
       const result = await execution.complete();
       expect(result.stdout).toBe(
-        ["-n", "10", process.execPath, "-e", "process.stdout.write('ran')", ""].join("\n"),
+        [
+          "-n",
+          "10",
+          process.execPath,
+          "-e",
+          "process.stdout.write('ran')",
+          "",
+        ].join("\n"),
       );
     },
   );

@@ -229,10 +229,13 @@ describe("toCliArgs golden examples", () => {
       projectFile: { kind: "parsed", text: "", config: { name: "proj" } },
     });
     expect(
-      toCliArgs(snapshot, { kind: "parse", skipVersionCheck: true }, every("directory")),
+      toCliArgs(
+        snapshot,
+        { kind: "parse", skipVersionCheck: true },
+        every("directory"),
+      ),
     ).toEqual(argv(`parse --log-format json --no-version-check ${P}`));
   });
-
 
   it.each(golden)("%s", (_label, command, expected, options = {}) => {
     const { settings = {}, defer, probe = "directory" } = options;

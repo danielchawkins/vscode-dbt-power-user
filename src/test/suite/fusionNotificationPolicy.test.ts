@@ -117,6 +117,7 @@ describe("fusionNotificationPolicy", () => {
       launch: toLspLaunch(readProjectSnapshot(makeProject().root)),
       commandPrefix: "fusionPowerUser:test:",
       outputChannel: createMockLogOutputChannel("project"),
+      targetPath: "/workspace/general/target",
     });
 
     await flushAsync();
