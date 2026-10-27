@@ -117,6 +117,33 @@ describe("formatting retry in middleware.sendRequest", () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
+  it("returns no edits at once when the server is idle after a compile since the request began", async () => {
+    const { compiled, info, run, toast } = setup();
+    const connection = vi.fn().mockRejectedValue(noState());
+
+    const result = run("textDocument/formatting", connection);
+    compiled.started("compiling");
+    compiled.finished({ kind: "foreground", errors: [] });
+
+    await expect(result).resolves.toBeNull();
+    expect(connection).toHaveBeenCalledTimes(1);
+    expect(info).not.toHaveBeenCalled();
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it("waits for the format policy's ceiling when no compile finishes", async () => {
+    const { run } = setup();
+    const connection = vi.fn().mockRejectedValue(noState());
+
+    const result = run("textDocument/formatting", connection);
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(connection).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(result).resolves.toBeNull();
+    expect(connection).toHaveBeenCalledTimes(2);
+  });
+
   it("stops waiting and does not retry when the token is cancelled", async () => {
     const { info, run, toast } = setup();
     const { token, cancel } = cancellable();

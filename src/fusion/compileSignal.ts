@@ -1,6 +1,7 @@
 import type { CancellationToken, Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
+import { REQUEST_POLICIES } from "../core/lsp/requestPolicy";
 
 /** Fusion's notifications that start or end a compile. */
 const FUSION_COMPILE_NOTIFICATIONS = [
@@ -156,9 +157,6 @@ export const FORMAT_METHODS = new Set([
   "textDocument/rangeFormatting",
 ]);
 
-/** How long a formatting request waits for the server's first compile before giving up. */
-const FORMAT_COMPILE_WAIT_MS = 5_000;
-
 /**
  * Runs a formatting request; on the no-compiler-state error waits once for the next compile and retries once.
  * Still failing, or cancelled while waiting, it returns no edits. Other errors propagate.
@@ -170,10 +168,9 @@ export async function formatOnceCompiled<R>(
     compiled: ServerCompileState;
     log: (message: string) => void;
     token: CancellationToken | undefined;
-    timeoutMs?: number;
   },
 ): Promise<R> {
-  const { compiled, log, token, timeoutMs = FORMAT_COMPILE_WAIT_MS } = input;
+  const { compiled, log, token } = input;
   const since = compiled.completions;
   try {
     return await request();
@@ -182,7 +179,11 @@ export async function formatOnceCompiled<R>(
       throw error;
     }
   }
-  await compiled.after(since, timeoutMs, token);
+  // Idle with a compile finished since the request began: another compile is not coming, so no retry.
+  if (compiled.phase === "idle" && compiled.completions > since) {
+    return null as R;
+  }
+  await compiled.after(since, REQUEST_POLICIES.format.ceilingMs, token);
   if (token?.isCancellationRequested) {
     return null as R;
   }
