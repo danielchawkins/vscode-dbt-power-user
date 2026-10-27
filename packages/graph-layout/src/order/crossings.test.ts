@@ -1,8 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { layer } from "../layering.js";
-import { rank } from "../rank/index.js";
 import { seededRandom, shuffled } from "../random.js";
+import { rank } from "../rank/index.js";
 import type { LayoutEdge, LayoutGraph, LayoutOptions } from "../types.js";
 import { pairCrossings, totalCrossings } from "./crossings.js";
 import { createModel, type OrderModel, setLayer, slot } from "./model.js";
@@ -70,9 +70,7 @@ describe("totalCrossings", () => {
             const b = layer[k + 1];
             const before = totalCrossings(model);
             const expected =
-              before +
-              pairCrossings(model, b, a) -
-              pairCrossings(model, a, b);
+              before + pairCrossings(model, b, a) - pairCrossings(model, a, b);
             const swapped = [...layer];
             swapped[k] = b;
             swapped[k + 1] = a;
@@ -91,31 +89,26 @@ describe("totalCrossings", () => {
 const graphArb: fc.Arbitrary<LayoutGraph> = fc
   .integer({ min: 1, max: 9 })
   .chain((count) =>
-    fc.array(
-      fc.tuple(
-        fc.nat(count - 1),
-        fc.nat(count - 1),
-        fc.nat(1),
-        fc.boolean(),
-      ),
-      { maxLength: 16 },
-    ).map((specs) => ({
-      nodes: Array.from({ length: count }, (_, i) => ({
-        id: `n${i}`,
-        width: 80,
-        height: 40,
-        ports: [{ id: "p", side: "south" as const, offset: 60 }],
-      })),
-      edges: specs.map(
-        ([a, b, k, port], i): LayoutEdge => ({
+    fc
+      .array(
+        fc.tuple(fc.nat(count - 1), fc.nat(count - 1), fc.nat(1), fc.boolean()),
+        { maxLength: 16 },
+      )
+      .map((specs) => ({
+        nodes: Array.from({ length: count }, (_, i) => ({
+          id: `n${i}`,
+          width: 80,
+          height: 40,
+          ports: [{ id: "p", side: "south" as const, offset: 60 }],
+        })),
+        edges: specs.map(([a, b, k, port], i): LayoutEdge => ({
           id: `e${i}`,
           source: `n${a}`,
           target: `n${b}`,
           kind: k === 0 ? "dependency" : "column",
           sourcePort: port ? "p" : undefined,
-        }),
-      ),
-    })),
+        })),
+      })),
   );
 
 /** A model of `graph` with each rank's order shuffled by `seed`. */

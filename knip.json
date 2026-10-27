@@ -19,7 +19,11 @@
       "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
     },
     "packages/graph-layout": {
-      "entry": ["src/**/*.test.ts", "src/rank/index.ts!"],
+      "entry": [
+        "src/**/*.test.ts",
+        "src/rank/index.ts!",
+        "src/order/index.ts!"
+      ],
       "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
     },
     "webview_panels": {

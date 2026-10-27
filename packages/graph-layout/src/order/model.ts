@@ -42,7 +42,11 @@ export function createModel(
 }
 
 /** Replaces the order of one rank and updates the indices of its nodes. */
-export function setLayer(model: OrderModel, rank: number, order: number[]): void {
+export function setLayer(
+  model: OrderModel,
+  rank: number,
+  order: number[],
+): void {
   model.layers[rank] = order;
   reindex(model, order);
 }
