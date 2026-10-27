@@ -53,7 +53,12 @@ export function spawnProcess(
     lowerPriority(child, log);
     return child;
   }
-  const nice = findOnPath("nice", spawnOptions.env ?? readEnvironment());
+  const env = spawnOptions.env ?? readEnvironment();
+  // A command that is not there is left to spawn, so ENOENT reaches the caller as it does at normal priority.
+  if (findExecutable(command, env) === undefined) {
+    return spawn(command, args, launch);
+  }
+  const nice = findExecutable("nice", env);
   if (nice === undefined) {
     log?.debug(
       "process",
@@ -79,7 +84,14 @@ function lowerPriority(child: ChildProcess, log?: Pick<Log, "debug">): void {
   }
 }
 
-function findOnPath(name: string, env: NodeJS.ProcessEnv): string | undefined {
+/** The file `name` runs as: a name with a slash is taken as given, a bare name is looked up on PATH. */
+function findExecutable(
+  name: string,
+  env: NodeJS.ProcessEnv,
+): string | undefined {
+  if (name.includes("/")) {
+    return isExecutableFile(name) ? name : undefined;
+  }
   return (env.PATH ?? "")
     .split(delimiter)
     .filter((dir) => dir !== "")
