@@ -2,13 +2,41 @@ import type {
   LayoutCluster,
   LayoutGraph,
   LayoutInputIssue,
+  LayoutNode,
   LayoutOptions,
+  LayoutPort,
+  Side,
 } from "./types.js";
 
 /** Port ids by node id. */
 type PortsByNode = ReadonlyMap<string, ReadonlySet<string>>;
 
+const SIDES: readonly unknown[] = [
+  "north",
+  "east",
+  "south",
+  "west",
+] satisfies Side[];
+const isSide = (side: unknown): side is Side => SIDES.includes(side);
 const isSize = (size: number): boolean => Number.isFinite(size) && size > 0;
+
+/** A port names a side, and an offset within that side of its node. */
+function portIssues(
+  node: LayoutNode,
+  port: LayoutPort,
+  issues: LayoutInputIssue[],
+): void {
+  const subject = `${node.id}.${port.id}`;
+  if (!isSide(port.side)) {
+    issues.push({ code: "bad-side", subject });
+    return;
+  }
+  const extent =
+    port.side === "north" || port.side === "south" ? node.width : node.height;
+  if (!(port.offset >= 0 && port.offset <= extent)) {
+    issues.push({ code: "bad-offset", subject });
+  }
+}
 
 function nodeIssues(
   graph: LayoutGraph,
@@ -28,6 +56,7 @@ function nodeIssues(
         issues.push({ code: "duplicate-id", subject: `${node.id}.${port.id}` });
       }
       ports.add(port.id);
+      portIssues(node, port, issues);
     }
     nodes.set(node.id, ports);
   }
@@ -76,6 +105,20 @@ function clusterIssues(graph: LayoutGraph, issues: LayoutInputIssue[]): void {
   }
 }
 
+/** The default sides of each kind, when set, must be sides. */
+function kindIssues(
+  kinds: LayoutOptions["edgeKinds"],
+  issues: LayoutInputIssue[],
+): void {
+  for (const [kind, policy] of Object.entries(kinds)) {
+    for (const side of [policy.sourceSide, policy.targetSide]) {
+      if (side !== undefined && !isSide(side)) {
+        issues.push({ code: "bad-side", subject: kind });
+      }
+    }
+  }
+}
+
 function edgeIssues(
   graph: LayoutGraph,
   context: {
@@ -110,8 +153,9 @@ function edgeIssues(
 
 /**
  * Every problem `layout` would refuse in `graph` under `options`: duplicate ids, edges to unknown nodes, ports or
- * kinds, members of unknown clusters, cluster cycles, and sizes that are not finite and positive. Empty when the
- * input is valid. A consumer calls it to report bad input itself; `layout` calls it first and throws on any issue.
+ * kinds, members of unknown clusters, cluster cycles, sizes that are not finite and positive, port sides that are not
+ * sides, port offsets outside their side, and kind default sides that are not sides. Empty when the input is valid.
+ * A consumer calls it to report bad input itself; `layout` calls it first and throws on any issue.
  */
 export function validateGraph(
   graph: LayoutGraph,
@@ -120,6 +164,7 @@ export function validateGraph(
   const issues: LayoutInputIssue[] = [];
   const nodes = nodeIssues(graph, issues);
   clusterIssues(graph, issues);
+  kindIssues(options.edgeKinds, issues);
   edgeIssues(graph, { kinds: options.edgeKinds, nodes, issues });
   return issues;
 }
