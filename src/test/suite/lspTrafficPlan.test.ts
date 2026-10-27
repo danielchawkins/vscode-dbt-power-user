@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { EventEmitter } from "vscode";
+import { EventEmitter, Uri } from "vscode";
 import {
   ServerCompileState,
   subscribeToCompileState,
 } from "../../fusion/compileSignal";
 import type { FusionClient } from "../../fusion/fusionClient";
+import { documentSelectorForProject } from "../../fusion/documentSelector";
 import { followClientCompiles } from "../../projects/clients/clientChange";
 import { ManifestState } from "../../projects/manifest/manifestState";
 
@@ -58,5 +59,14 @@ describe("compile report kinds", () => {
     send("dbt/lspBackgroundCompileComplete", { errors: [] });
     expect(onCompile).not.toHaveBeenCalled();
     dispose();
+  });
+});
+
+describe("Fusion document selector", () => {
+  it.fails("names the file scheme in every filter", () => {
+    const selector = documentSelectorForProject(Uri.file("/workspace/general"));
+    for (const filter of selector) {
+      expect((filter as { scheme?: string }).scheme).toBe("file");
+    }
   });
 });

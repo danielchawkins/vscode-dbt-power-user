@@ -1,0 +1,42 @@
+id: ts-lsp-document-filter-names-a-scheme
+snapshots:
+  'const f = { language, pattern: { baseUri, pattern: PROJECT_GLOB } };':
+    labels:
+    - source: '{ language, pattern: { baseUri, pattern: PROJECT_GLOB } }'
+      style: primary
+      start: 10
+      end: 67
+    - source: language
+      style: secondary
+      start: 12
+      end: 20
+    - source: pattern
+      style: secondary
+      start: 22
+      end: 29
+    - source: 'pattern: { baseUri, pattern: PROJECT_GLOB }'
+      style: secondary
+      start: 22
+      end: 65
+  'const f = { language: "yaml", pattern: new RelativePattern(root, "**/*") };':
+    labels:
+    - source: '{ language: "yaml", pattern: new RelativePattern(root, "**/*") }'
+      style: primary
+      start: 10
+      end: 74
+    - source: language
+      style: secondary
+      start: 12
+      end: 20
+    - source: 'language: "yaml"'
+      style: secondary
+      start: 12
+      end: 28
+    - source: pattern
+      style: secondary
+      start: 30
+      end: 37
+    - source: 'pattern: new RelativePattern(root, "**/*")'
+      style: secondary
+      start: 30
+      end: 72
