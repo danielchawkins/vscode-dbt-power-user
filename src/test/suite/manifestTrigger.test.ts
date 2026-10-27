@@ -95,6 +95,26 @@ describe("Project manifest trigger", () => {
     expect(onProjectFileChanged).not.toHaveBeenCalled();
   });
 
+  it("passes each changed path of a burst once, in arrival order, and only that burst's paths", async () => {
+    const a = path.join(root, "models", "a.sql");
+    const b = path.join(root, "models", "b.sql");
+    watcher.fire("change", a);
+    watcher.fire("change", b);
+    watcher.fire("change", a);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith({ paths: [a, b] });
+    watcher.fire("delete", b);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onSourceFileChanged).toHaveBeenLastCalledWith({ paths: [b] });
+  });
+
+  it("passes the changed project file to the project handler", async () => {
+    const project = path.join(root, "dbt_project.yml");
+    watcher.fire("change", project);
+    await vi.advanceTimersByTimeAsync(BOUNDS.fileEventQuietMs);
+    expect(onProjectFileChanged).toHaveBeenCalledWith({ paths: [project] });
+  });
+
   it("drops a pending rebuild and stops watching on dispose", async () => {
     watcher.fire("change", path.join(root, "models", "a.sql"));
     trigger.dispose();
