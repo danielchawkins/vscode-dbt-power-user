@@ -77,7 +77,7 @@ describe("CommandProcessExecution Tests", () => {
     },
   );
 
-  it.skipIf(process.platform === "win32").fails(
+  it.skipIf(process.platform === "win32")(
     "reports a missing background command as not found, not as a nice error",
     async () => {
       const execution = factory.createCommandProcessExecution({
