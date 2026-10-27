@@ -19,6 +19,9 @@ const PROJECT_LEVEL_FILES = [
   "selectors.yml",
 ];
 
+/** The handler a quiet period ends with; a project-file change covers a source-file change in the same burst. */
+type PendingKind = "projectFile" | "sourceFile";
+
 export interface ManifestTriggerHandlers {
   /** Model, macro and seed paths; read on every event. */
   sourcePaths(): string[] | undefined;
@@ -31,8 +34,9 @@ export interface ManifestTriggerHandlers {
 export class ManifestTrigger implements Disposable {
   private watcher: FileSystemWatcher | undefined;
   private subscriptions: Disposable[] = [];
-  private projectFileTimer: ReturnType<typeof setTimeout> | undefined;
-  private sourceFileTimer: ReturnType<typeof setTimeout> | undefined;
+  private quietTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The strongest kind of event since the last run; undefined while no event is pending. */
+  private pendingKind: PendingKind | undefined;
   private readonly projectRoot: string;
   private readonly terminal: Log;
   private readonly handlers: ManifestTriggerHandlers;
@@ -66,10 +70,9 @@ export class ManifestTrigger implements Disposable {
 
   /** Stops watching and drops pending events. */
   stop(): void {
-    clearTimeout(this.projectFileTimer);
-    clearTimeout(this.sourceFileTimer);
-    this.projectFileTimer = undefined;
-    this.sourceFileTimer = undefined;
+    clearTimeout(this.quietTimer);
+    this.quietTimer = undefined;
+    this.pendingKind = undefined;
     for (const subscription of this.subscriptions) {
       subscription.dispose();
     }
@@ -93,26 +96,39 @@ export class ManifestTrigger implements Disposable {
         "ManifestTrigger",
         `${DBT_PROJECT_FILE} changed in ${this.projectRoot}`,
       );
-      clearTimeout(this.projectFileTimer);
-      this.projectFileTimer = setTimeout(() => {
-        this.projectFileTimer = undefined;
-        void this.run("project config refresh", () =>
-          this.handlers.onProjectFileChanged(),
-        );
-      }, BOUNDS.fileEventQuietMs);
+      this.arm("projectFile");
       return;
     }
     if (!this.isUnderSourcePath(fsPath)) {
       return;
     }
     this.terminal.debug("ManifestTrigger", `Source file changed: ${fsPath}`);
-    clearTimeout(this.sourceFileTimer);
-    this.sourceFileTimer = setTimeout(() => {
-      this.sourceFileTimer = undefined;
+    this.arm("sourceFile");
+  }
+
+  /** Restarts the quiet period. A project-file event replaces a pending source-file event, never the reverse. */
+  private arm(kind: PendingKind): void {
+    if (kind === "projectFile" || this.pendingKind === undefined) {
+      this.pendingKind = kind;
+    }
+    clearTimeout(this.quietTimer);
+    this.quietTimer = setTimeout(() => this.flush(), BOUNDS.fileEventQuietMs);
+  }
+
+  /** Runs the handler for the strongest pending kind, once. */
+  private flush(): void {
+    const kind = this.pendingKind;
+    this.quietTimer = undefined;
+    this.pendingKind = undefined;
+    if (kind === "projectFile") {
+      void this.run("project config refresh", () =>
+        this.handlers.onProjectFileChanged(),
+      );
+    } else if (kind === "sourceFile") {
       void this.run("manifest rebuild", () =>
         this.handlers.onSourceFileChanged(),
       );
-    }, BOUNDS.fileEventQuietMs);
+    }
   }
 
   private isUnderSourcePath(fsPath: string): boolean {
