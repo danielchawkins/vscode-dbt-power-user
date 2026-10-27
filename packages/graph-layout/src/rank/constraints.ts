@@ -11,7 +11,7 @@ export interface Extension {
 }
 
 /** Cost per rank a node of a higher band sits above its gate, under soft partitions. */
-export const SOFT_PARTITION_WEIGHT = 1;
+const SOFT_PARTITION_WEIGHT = 1;
 
 /** Weight that keeps each link of a hint's reference chain at exactly one rank. */
 const CHAIN_WEIGHT = 1000;

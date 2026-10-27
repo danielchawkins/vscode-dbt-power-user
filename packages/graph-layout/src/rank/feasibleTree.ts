@@ -1,4 +1,4 @@
-import type { NetworkEdge } from "./networkSimplex.js";
+import type { NetworkEdge } from "./networkEdge.js";
 
 interface TreeBuild {
   readonly edges: readonly NetworkEdge[];
