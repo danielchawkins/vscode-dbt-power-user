@@ -32,12 +32,18 @@ export function onClientChange(
 ): Event<void> {
   return (listener) => {
     let stateSubscription: Disposable | undefined;
+    let followed = pool.get(project);
     const follow = () => {
       stateSubscription?.dispose();
-      stateSubscription = pool.get(project)?.onDidChangeState(() => listener());
+      followed = pool.get(project);
+      stateSubscription = followed?.onDidChangeState(() => listener());
     };
     follow();
+    // The pool announces every project's replacement; only this project's client matters here.
     const replaced = pool.onDidChangeClients(() => {
+      if (pool.get(project) === followed) {
+        return;
+      }
       follow();
       listener();
     });
