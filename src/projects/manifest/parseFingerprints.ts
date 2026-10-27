@@ -40,7 +40,9 @@ export class ParseFingerprints {
     }
     const paths = [...this.reported];
     this.reported.clear();
-    const hashes = await Promise.all(paths.map((fsPath) => this.hashOf(fsPath)));
+    const hashes = await Promise.all(
+      paths.map((fsPath) => this.hashOf(fsPath)),
+    );
     this.starting = new Map(paths.map((fsPath, i) => [fsPath, hashes[i]]));
   }
 
@@ -69,9 +71,12 @@ export class ParseFingerprints {
     this.lastParseEndedAt = Date.now();
   }
 
-  /** Whether a burst's files are all recorded, all hash the same now, and the burst began after the last parse ended. */
+  /** Whether a burst's files are all recorded and hash the same now, and the burst began after the last parse. */
   async unchanged(change: ChangeBurst): Promise<boolean> {
-    if (change.paths.length === 0 || change.firstEventAt <= this.lastParseEndedAt) {
+    if (
+      change.paths.length === 0 ||
+      change.firstEventAt <= this.lastParseEndedAt
+    ) {
       return false;
     }
     for (const fsPath of change.paths) {
@@ -92,7 +97,9 @@ export class ParseFingerprints {
   /** The SHA-256 of a file's bytes, or undefined when the file cannot be read. */
   private async hashOf(fsPath: string): Promise<string | undefined> {
     try {
-      return createHash("sha256").update(await this.read(fsPath)).digest("hex");
+      return createHash("sha256")
+        .update(await this.read(fsPath))
+        .digest("hex");
     } catch {
       return undefined;
     }
