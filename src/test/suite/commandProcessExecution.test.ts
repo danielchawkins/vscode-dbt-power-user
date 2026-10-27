@@ -77,6 +77,18 @@ describe("CommandProcessExecution Tests", () => {
     },
   );
 
+  it.skipIf(process.platform === "win32").fails(
+    "reports a missing background command as not found, not as a nice error",
+    async () => {
+      const execution = factory.createCommandProcessExecution({
+        command: path.join(os.tmpdir(), "fpu-missing-dbt"),
+        priority: "background",
+      });
+
+      await expect(execution.complete()).rejects.toThrow(/Command not found/);
+    },
+  );
+
   it("should handle command errors", async () => {
     const execution = factory.createCommandProcessExecution({
       command: "nonexistentcommand",
