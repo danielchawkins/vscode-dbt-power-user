@@ -52,7 +52,7 @@ export function launchClient(
         commandPrefix: commandPrefixForProject(project),
         env,
         outputChannel: sources.outputChannel(project),
-        targetPath: snapshot.paths.targetPath,
+        targetPath: launch.targetPath,
         nestedRoots: {
           roots: () => sources.registry.projects.map((other) => other.root),
           onDidChange: sources.registry.onDidChangeProjects,

@@ -133,6 +133,7 @@ export function sameLspLaunch(a: LspLaunch, b: LspLaunch): boolean {
   return (
     sameExecutable(a, b) &&
     a.projectDir === b.projectDir &&
+    a.targetPath === b.targetPath &&
     a.target === b.target &&
     a.profile === b.profile &&
     a.profilesDir === b.profilesDir &&

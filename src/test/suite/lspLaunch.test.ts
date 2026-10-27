@@ -172,7 +172,7 @@ describe("sameLspLaunch", () => {
     },
   );
 
-  it.fails("restarts when the target directory changes", () => {
+  it("restarts when the target directory changes", () => {
     const a = launch({ targetPath: `${folder}/target` });
     const b = launch({ targetPath: `${folder}/out` });
     expect(sameLspLaunch(a, b)).toBe(false);
