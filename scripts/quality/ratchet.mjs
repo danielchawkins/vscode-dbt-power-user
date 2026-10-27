@@ -38,7 +38,12 @@ const productionFiles = (dir) =>
     .filter(isProductionSource);
 
 const tagCount = (tag) => () =>
-  ["src", "packages/webview-contract/src", "webview_panels/src"]
+  [
+    "src",
+    "packages/webview-contract/src",
+    "packages/graph-layout/src",
+    "webview_panels/src",
+  ]
     .flatMap(productionFiles)
     .reduce(
       (total, file) =>

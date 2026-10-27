@@ -16,7 +16,21 @@ const PANEL_STATE_PURE =
 const LINEAGE_PURE =
   "^src/modules/lineage/(card|channels|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|" +
   "groupEdges|grouping|gutterPlan|gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredInput|" +
-  "layeredMetrics|layeredRanks|layeredRows|layout|minimap|routeDrawing|routeGeometry|routeTypes)\\.ts$";
+  "layeredMetrics|layeredRanks|layeredRows|layout|minimap|routeDrawing|routeGeometry|routeTypes|" +
+  "engine/[A-Za-z]+)\\.ts$";
+
+// The lineage layout-engine port (engine/layoutEngine.ts), the registry that picks an engine (engine/engines.ts),
+// and the adapters behind the port. The owned engine's own modules are listed so that, outside the adapter, nothing
+// reaches around the port to them; retiring the engine is then a deletion.
+const LAYOUT_PORT = "^src/modules/lineage/engine/layoutEngine\\.ts$";
+const LAYOUT_REGISTRY = "^src/modules/lineage/engine/engines\\.ts$";
+const LAYOUT_ADAPTERS =
+  "^src/modules/lineage/engine/(ownedEngine|graphLayoutEngine)\\.ts$";
+const OWNED_ENGINE =
+  "^src/modules/lineage/(layered|layeredFlow|layeredMetrics|layeredRanks|layeredRows|gutterPlan|gutterRouter|" +
+  "channels|routeTypes)\\.ts$";
+const GRAPH_LAYOUT =
+  "(^|/)packages/graph-layout/|(^|/)node_modules/@fusion-power-user/graph-layout/|^@fusion-power-user/graph-layout$";
 
 module.exports = {
   forbidden: [
@@ -48,7 +62,8 @@ module.exports = {
       from: { path: "^src/" },
       to: {
         path: "^\\.\\./",
-        pathNot: "^\\.\\./packages/webview-contract/|node_modules/",
+        pathNot:
+          "^\\.\\./packages/(webview-contract|graph-layout)/|node_modules/",
       },
     },
     {
@@ -61,6 +76,42 @@ module.exports = {
         path: "^src/|node_modules/(react|react-dom|@xyflow/react)/|\\.css$",
         pathNot: LINEAGE_PURE,
       },
+    },
+    {
+      name: "lineage-layout-port-is-plain",
+      severity: "error",
+      comment:
+        "The layout-engine port declares plain data and the LayoutEngine interface; it imports nothing, so no engine leaks into it.",
+      from: { path: LAYOUT_PORT },
+      to: {},
+    },
+    {
+      name: "lineage-layout-adapters-from-registry",
+      severity: "error",
+      comment:
+        "Only engines.ts imports an engine adapter; the panel asks for an engine through the registry and talks to the port.",
+      from: { pathNot: `${LAYOUT_REGISTRY}|${LAYOUT_ADAPTERS}` },
+      to: { path: LAYOUT_ADAPTERS },
+    },
+    {
+      name: "lineage-owned-engine-behind-its-adapter",
+      severity: "error",
+      comment:
+        "The owned layered layout and gutter router are reached only through engine/ownedEngine.ts, so retiring them deletes files and nothing else.",
+      from: {
+        pathNot: `${OWNED_ENGINE}|^src/modules/lineage/engine/ownedEngine\\.ts$`,
+      },
+      to: { path: OWNED_ENGINE },
+    },
+    {
+      name: "graph-layout-behind-its-adapter",
+      severity: "error",
+      comment:
+        "The webview uses @fusion-power-user/graph-layout only in engine/graphLayoutEngine.ts, the adapter that maps a LayoutRequest to the package's graph.",
+      from: {
+        pathNot: `^src/modules/lineage/engine/graphLayoutEngine\\.ts$|${GRAPH_LAYOUT}`,
+      },
+      to: { path: GRAPH_LAYOUT },
     },
   ],
   options: {

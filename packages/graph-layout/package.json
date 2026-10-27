@@ -1,0 +1,28 @@
+{
+  "name": "@fusion-power-user/graph-layout",
+  "version": "0.0.0",
+  "description": "Layered layout and orthogonal routing for directed graphs with typed edges, ports and clusters. Pure TypeScript, no runtime dependencies, browser and Node.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../node_modules/typescript-7/bin/tsc -b",
+    "watch": "node ../../node_modules/typescript-7/bin/tsc -b --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "typescript": "npm:@typescript/typescript6@^6.0.0",
+    "typescript-7": "npm:typescript@^7.0.2"
+  }
+}

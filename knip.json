@@ -18,6 +18,10 @@
       "entry": ["src/**/*.test.ts"],
       "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
     },
+    "packages/graph-layout": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
+    },
     "webview_panels": {
       "entry": ["src/entries/*.tsx!", "src/**/*.test.{ts,tsx}"],
       "project": [

@@ -1,0 +1,11 @@
+id: ts-graph-layout-deterministic
+valid:
+  - 'const next = seeded(options.seed ?? 0);'
+  - 'for (let sweep = 0; sweep < budget.sweeps; sweep++) { order(layers); }'
+  - 'const jitter = random() * 0.5;'
+invalid:
+  - 'const jitter = Math.random() * 0.5;'
+  - 'const deadline = Date.now() + 50;'
+  - 'if (performance.now() - start > 16) { break; }'
+  - 'const stamp = new Date();'
+  - 'crypto.getRandomValues(buffer);'

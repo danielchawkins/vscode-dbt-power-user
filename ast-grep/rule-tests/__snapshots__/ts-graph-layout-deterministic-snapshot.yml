@@ -1,0 +1,32 @@
+id: ts-graph-layout-deterministic
+snapshots:
+  const deadline = Date.now() + 50;:
+    labels:
+    - source: Date.now()
+      style: primary
+      start: 17
+      end: 27
+  const jitter = Math.random() * 0.5;:
+    labels:
+    - source: Math.random()
+      style: primary
+      start: 15
+      end: 28
+  const stamp = new Date();:
+    labels:
+    - source: new Date()
+      style: primary
+      start: 14
+      end: 24
+  crypto.getRandomValues(buffer);:
+    labels:
+    - source: crypto.getRandomValues(buffer)
+      style: primary
+      start: 0
+      end: 30
+  if (performance.now() - start > 16) { break; }:
+    labels:
+    - source: performance.now()
+      style: primary
+      start: 4
+      end: 21
