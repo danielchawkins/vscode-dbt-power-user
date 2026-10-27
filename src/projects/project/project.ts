@@ -183,7 +183,7 @@ export class Project implements Disposable, ManifestProject {
     this.trigger = new ManifestTrigger(root, this.terminal, {
       sourcePaths: () => sourcePathsOf(this.paths()),
       onProjectFileChanged: () => this.scheduler.projectFileChanged(),
-      onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
+      onSourceFileChanged: (change) => this.scheduler.sourceFileChanged(change),
     });
     this.lifecycle = this.createLifecycle(options);
     this.manifestRebuild = new ManifestRebuild({
