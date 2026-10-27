@@ -127,9 +127,11 @@ export function subscribeToCompileState(
         case "dbt/lspCompileComplete":
         case "dbt/lspBackgroundCompileComplete":
           state.finished({
-            kind: method === "dbt/lspCompileComplete" ? "foreground" : "background",
+            kind:
+              method === "dbt/lspCompileComplete" ? "foreground" : "background",
             errors: compileErrorMessages(params),
-            modelsCount: (params as { models_count?: number } | null)?.models_count,
+            modelsCount: (params as { models_count?: number } | null)
+              ?.models_count,
           });
       }
     });

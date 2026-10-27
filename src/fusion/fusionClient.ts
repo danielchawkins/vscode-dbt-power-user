@@ -52,8 +52,6 @@ export interface FusionClientOptions {
   env?: Record<string, string>;
   /** The Declared Project's log channel; receives client, trace and server output. The client never disposes it. */
   outputChannel: LogOutputChannel;
-  /** Receives the error messages of each compile the server reports; empty after a clean compile. */
-  onCompileErrors?: (messages: string[]) => void;
   /** Live roots of every Declared Project; documents under a root nested in this project go to that root's client. */
   nestedRoots?: NestedRootSource;
 }
@@ -71,8 +69,8 @@ export interface FusionClient extends Disposable {
    * fakes can omit it.
    */
   readonly openDocuments?: readonly Uri[];
-  /** Compile signal of this client's server, read by the smoke suite; optional so fakes can omit it. */
-  readonly compiled?: ServerCompileState;
+  /** Compile state of this client's server, read by the errors and preview consumers; optional so fakes can omit it. */
+  readonly compileState: ServerCompileState;
   /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
   readonly diagnostics?: DiagnosticCollection | undefined;
   /** Sends `workspace/executeCommand`; {@link FusionCommands} schedules and bounds the calls. */

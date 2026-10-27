@@ -168,7 +168,7 @@ describe("registerFusionClientDiagnostics", () => {
         state: "running",
         failureReason: undefined,
         openDocuments: [],
-        compiled: { completions: 2 },
+        compileState: { completions: 2 },
         diagnostics,
       })),
       getLaunch: vi.fn(() => undefined),

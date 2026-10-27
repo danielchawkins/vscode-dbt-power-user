@@ -70,12 +70,12 @@ describe("FusionLanguageClient lifecycle", () => {
         },
       ),
     };
-    const onCompileErrors = vi.fn();
-    const { client } = startClient({
-      languageClient,
-      options: { onCompileErrors },
-    });
+    const { client } = startClient({ languageClient });
     await flushAsync();
+    const errors: string[][] = [];
+    client.compileState?.onDidComplete((complete) =>
+      errors.push(complete.errors),
+    );
 
     expect([...handlers.keys()]).toEqual([
       "dbt/lspCompileStart",
@@ -90,7 +90,7 @@ describe("FusionLanguageClient lifecycle", () => {
       ],
     });
     handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
-    expect(onCompileErrors.mock.calls).toEqual([[["bad env"]], [[]]]);
+    expect(errors).toEqual([["bad env"], []]);
 
     await client.stop();
     client.dispose();
@@ -107,20 +107,15 @@ describe("FusionLanguageClient lifecycle", () => {
         },
       ),
     };
-    const onCompileErrors = vi.fn();
-    const { client } = startClient({
-      languageClient,
-      options: { onCompileErrors },
-    });
+    const { client } = startClient({ languageClient });
     await flushAsync();
     const kinds: string[] = [];
-    client.compiled?.onDidComplete((complete) => kinds.push(complete.kind));
+    client.compileState?.onDidComplete((complete) => kinds.push(complete.kind));
 
     handlers.get("dbt/lspCompileComplete")?.({ errors: [] });
     handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
-    expect(onCompileErrors).toHaveBeenCalledTimes(2);
     expect(kinds).toEqual(["foreground", "background"]);
-    expect(client.compiled?.completions).toBe(2);
+    expect(client.compileState?.completions).toBe(2);
 
     await client.stop();
     client.dispose();

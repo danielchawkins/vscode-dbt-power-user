@@ -29,11 +29,6 @@ export function composeFusion(graph: ProjectsGraph) {
           schemaOriginLaunchEnv(projects.get(declared.root)),
         onDidChange: projects.onDidChangeManifest,
       },
-      reportCompileErrors: (declared, messages) => {
-        const project = projects.get(declared.root);
-        project?.errors.reportCompile(messages);
-        project?.notifyCompileComplete();
-      },
     },
   );
   graph.clients.pool = fusionClientPool;

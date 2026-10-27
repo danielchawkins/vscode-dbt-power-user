@@ -1,7 +1,29 @@
 import type { Event } from "vscode";
 import { Disposable } from "vscode";
+import type { CompileComplete } from "../../fusion/compileSignal";
+import type { FusionClient } from "../../fusion/fusionClient";
 import type { DeclaredProject } from "../registry/projectRegistry";
 import type { FusionClientPool } from "./fusionClientPool";
+
+/**
+ * Calls `listener` with each compile of the client that `client` returns. The subscription moves to the new client
+ * each time `clientChanged` fires.
+ */
+export function followClientCompiles(
+  client: () => FusionClient | undefined,
+  clientChanged: Event<void>,
+  listener: (complete: CompileComplete) => void,
+): Disposable {
+  let subscription: Disposable | undefined;
+  const follow = () => {
+    subscription?.dispose();
+    subscription = client()?.compileState.onDidComplete(listener);
+  };
+  follow();
+  return Disposable.from(clientChanged(follow), {
+    dispose: () => subscription?.dispose(),
+  });
+}
 
 /** Fires when the project's client is replaced or changes state. */
 export function onClientChange(

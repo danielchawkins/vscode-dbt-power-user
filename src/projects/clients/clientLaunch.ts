@@ -24,9 +24,6 @@ export interface ClientLaunchSources {
   registry: ProjectRegistry;
   factory: FusionClientFactory;
   outputChannel: (project: DeclaredProject) => LogOutputChannel;
-  reportCompileErrors?:
-    | ((project: DeclaredProject, messages: string[]) => void)
-    | undefined;
 }
 
 /** The per-client inputs {@link launchClient} builds from. */
@@ -55,8 +52,6 @@ export function launchClient(
         commandPrefix: commandPrefixForProject(project),
         env,
         outputChannel: sources.outputChannel(project),
-        onCompileErrors: (messages) =>
-          sources.reportCompileErrors?.(project, messages),
         nestedRoots: {
           roots: () => sources.registry.projects.map((other) => other.root),
           onDidChange: sources.registry.onDidChangeProjects,

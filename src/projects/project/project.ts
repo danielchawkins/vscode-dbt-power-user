@@ -138,11 +138,14 @@ export class Project implements Disposable, ManifestProject {
     this.projectCount = options.projectCount ?? (() => 1);
     this.fusionClient = options.fusionClient ?? (() => undefined);
     this.lsp = createFusionCommands(this.fusionClient);
-    this.published = new ManifestState(this, this.fusionClient);
+    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
+    this.published = new ManifestState(this, this.fusionClient, {
+      clientChanged: this.onDidChangeClient,
+      reportErrors: (errors) => this.errors.reportCompile(errors),
+    });
     this.onDidParse = this.published.onDidParse;
     this.onDidCompile = this.published.onDidCompile;
     this.disposables.push(this.published);
-    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -404,11 +407,6 @@ export class Project implements Disposable, ManifestProject {
       "manifest succesfully parsed",
       parsed,
     );
-  }
-
-  /** Called by the Fusion client pool for every compile the server finishes. */
-  notifyCompileComplete(): void {
-    this.published.notifyCompileComplete();
   }
 
   /** Replaces the published manifest with the composite producer's merged value, stamped as the next publication. */

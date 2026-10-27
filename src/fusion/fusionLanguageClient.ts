@@ -63,7 +63,7 @@ class FusionLanguageClientImpl implements FusionClient {
         this.transport.release(uri),
       );
     this.transport = new LspTransport(options, deps, {
-      compiled: this.compiled,
+      compileState: this.compileState,
       nestedRoots: this.nestedRoots,
       isInactive: this.isInactive,
       isDisposed: () => this.disposed,
@@ -101,7 +101,7 @@ class FusionLanguageClientImpl implements FusionClient {
     return this.transport.languageClient?.diagnostics;
   }
 
-  readonly compiled = new ServerCompileState();
+  readonly compileState = new ServerCompileState();
 
   get outputChannel(): LogOutputChannel {
     return this.options.outputChannel;

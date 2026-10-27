@@ -68,10 +68,6 @@ export interface FusionLaunchSources {
   /** The Declared Project's log channel, shared by every client the pool starts for it. */
   outputChannel: (project: DeclaredProject) => LogOutputChannel;
   launchEnv?: FusionLaunchEnvironment | undefined;
-  /** Receives each compile's error messages from the project's client. */
-  reportCompileErrors?:
-    | ((project: DeclaredProject, messages: string[]) => void)
-    | undefined;
   /** Whether the root still holds a project file; a root without one gets no client. Defaults to the file system. */
   rootExists?: ((root: Uri) => boolean) | undefined;
 }
@@ -384,7 +380,6 @@ export class FusionClientPoolImpl implements FusionClientPool {
         registry: this.registry,
         factory: this.deps.factory,
         outputChannel: this.deps.outputChannel,
-        reportCompileErrors: this.deps.reportCompileErrors,
       },
       { project, verdict, snapshot, env },
     );
