@@ -9,9 +9,8 @@ import {
 import type { Log } from "../../core/log";
 import { isStrictlyBelow } from "../../core/paths";
 import { isDbtProjectFilePath, DBT_PROJECT_FILE } from "../../core/snapshot";
+import { BOUNDS } from "../../core/timing";
 
-/** Delay between the last watched file event and the rebuild it triggers. */
-const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
 /** Files at the project root whose change always calls for a config refresh and a parse. */
 const PROJECT_LEVEL_FILES = [
   "profiles.yml",
@@ -100,7 +99,7 @@ export class ManifestTrigger implements Disposable {
         void this.run("project config refresh", () =>
           this.handlers.onProjectFileChanged(),
         );
-      }, MANIFEST_TRIGGER_DEBOUNCE_MS);
+      }, BOUNDS.fileEventQuietMs);
       return;
     }
     if (!this.isUnderSourcePath(fsPath)) {
@@ -113,7 +112,7 @@ export class ManifestTrigger implements Disposable {
       void this.run("manifest rebuild", () =>
         this.handlers.onSourceFileChanged(),
       );
-    }, MANIFEST_TRIGGER_DEBOUNCE_MS);
+    }, BOUNDS.fileEventQuietMs);
   }
 
   private isUnderSourcePath(fsPath: string): boolean {

@@ -1,9 +1,6 @@
 import type { ChildProcess } from "./process";
 import type { ExitingProcess } from "./reverseSocketTransport";
 
-export const CONNECTION_TIMEOUT_MS = 30_000;
-export const BACKOFF_BASE_MS = 500;
-export const BACKOFF_CAP_MS = 8_000;
 const STDERR_BUFFER_LIMIT = 16_384;
 const PARTIAL_LINE_LIMIT = 4_096;
 

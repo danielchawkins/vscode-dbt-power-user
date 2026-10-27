@@ -6,12 +6,12 @@ import {
 } from "vscode-languageclient/node";
 import { lspProcessEnv, toLspArgs } from "../core/lsp";
 import { errorText } from "../core/text";
+import { BOUNDS } from "../core/timing";
 import { canonicalProjectRoot } from "./canonicalProjectRoot";
 import type { ServerCompileState } from "./compileSignal";
 import { subscribeToCompileState } from "./compileSignal";
 import { documentSelectorForProject } from "./documentSelector";
 import {
-  DISPOSAL_GRACE_MS,
   languageClientIdForProject,
   type FusionClientOptions,
 } from "./fusionClient";
@@ -26,11 +26,7 @@ import {
   type ClientHandle,
   type FusionLanguageClientDependencies,
 } from "./lspClientSupport";
-import {
-  CONNECTION_TIMEOUT_MS,
-  SpawnedLspProcess,
-  terminateProcess,
-} from "./lspProcess";
+import { SpawnedLspProcess, terminateProcess } from "./lspProcess";
 import type { ClientNestedRoots } from "./nestedRoots";
 import type { ReverseSocketServer } from "./reverseSocketTransport";
 import {
@@ -134,7 +130,7 @@ export class LspTransport {
         this.deps.createLanguageClient ?? defaultCreateLanguageClient;
 
       const serverOptions: ServerOptions = async () => {
-        return accept(server, processAdapter, CONNECTION_TIMEOUT_MS);
+        return accept(server, processAdapter, BOUNDS.connectionTimeoutMs);
       };
 
       // vscode-languageclient ProgressFeature owns window workDone progress UI.
@@ -205,7 +201,7 @@ export class LspTransport {
     }
 
     await terminateProcess(processAdapter, {
-      graceMs: DISPOSAL_GRACE_MS,
+      graceMs: BOUNDS.disposalGraceMs,
       sleep: (ms) => this.host.sleep(ms),
       warn: (message) => this.outputChannel.warn(message),
       name: this.options.project.name,

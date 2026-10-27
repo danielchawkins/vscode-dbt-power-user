@@ -7,6 +7,7 @@ import {
   hasDbtProjectFile,
   type ProjectSnapshot,
 } from "../../core/snapshot/index";
+import { BOUNDS } from "../../core/timing";
 import { type FusionClient } from "../../fusion/fusionClient";
 import type {
   FusionExecutable,
@@ -24,9 +25,6 @@ import type { FusionClientFactory } from "./fusionClientFactory";
 import type { ProjectEnvironments } from "./projectEnvironments";
 import { sameEnv } from "./projectEnvironments";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
-
-/** Registry changes that arrive within this window reconcile once, so a burst of folder changes starts no extra client. */
-const RECONCILE_DEBOUNCE_MS = 500;
 
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */
@@ -193,7 +191,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     return changed;
   }
 
-  /** Runs one reconcile after registry changes stop for {@link RECONCILE_DEBOUNCE_MS}. */
+  /** Runs one reconcile after registry changes stop for `BOUNDS.reconcileQuietMs`. */
   private scheduleReconcile(): void {
     if (this.disposed) {
       return;
@@ -202,7 +200,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     this.reconcileTimer = setTimeout(() => {
       this.reconcileTimer = undefined;
       void this.enqueue(() => this.reconcile());
-    }, RECONCILE_DEBOUNCE_MS);
+    }, BOUNDS.reconcileQuietMs);
   }
 
   private enqueue(task: () => Promise<void>): Promise<void> {

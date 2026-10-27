@@ -10,6 +10,7 @@ import type {
 } from "vscode";
 import { commands, window } from "vscode";
 import type { Log } from "../../core/log";
+import { BOUNDS } from "../../core/timing";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
 import type { ParseDemand } from "../../projects/manifest/parseDemand";
@@ -310,7 +311,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
 
   /** A command asked for proposals: waits for the page, makes the active model's documentation current, then proposes. */
   private async onProposalRequest(kind: ProposalKind) {
-    if (!(await this.whenReady("bottom", 10_000))) {
+    if (!(await this.whenReady("bottom", BOUNDS.pageReadyMs))) {
       void window.showWarningMessage(
         "The documentation editor did not load; try again",
       );

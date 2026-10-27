@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import which from "which";
 import { isStrictlyBelow } from "../core/paths";
+import { BOUNDS } from "../core/timing";
 import { runProcessText } from "./process";
 
 /** `value` as one shell word, quoted only when it needs to be. */
@@ -67,8 +68,6 @@ export interface ToolEnvironmentDeps {
   fileExists(path: string): boolean;
 }
 
-const TIMEOUT_MS = 5000;
-
 const defaultDeps: ToolEnvironmentDeps = {
   which: async (name, path) => {
     try {
@@ -112,7 +111,11 @@ export async function resolveToolEnvironment(
   deps: ToolEnvironmentDeps = defaultDeps,
 ): Promise<ToolEnvironment> {
   const run: Run = (command, args) =>
-    deps.run(command, args, { cwd: root, env: host, timeoutMs: TIMEOUT_MS });
+    deps.run(command, args, {
+      cwd: root,
+      env: host,
+      timeoutMs: BOUNDS.toolEnvTimeoutMs,
+    });
 
   let miseOutput: ToolEnvironment | undefined;
   if (await deps.which("mise", host.PATH)) {
