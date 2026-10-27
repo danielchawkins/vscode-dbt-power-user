@@ -5,11 +5,11 @@
  * Pure functions only. Card sizes come in with the input, so the layout never reads the DOM.
  */
 
+import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
   BAND_PAD,
   GUTTER,
   type LayeredNode,
-  type Point,
   SAME_ROW,
   type Side,
   SIDE_MARGIN,
@@ -32,14 +32,6 @@ import { OTHER_TAG } from "./layerTags";
 
 export * from "./layeredMetrics";
 export * from "./layerTags";
-
-export interface LayerBand {
-  tag: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 export interface LayeredPlan {
   /** Top-left corner of every node. */

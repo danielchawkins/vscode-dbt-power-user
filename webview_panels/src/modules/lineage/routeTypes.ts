@@ -1,4 +1,4 @@
-import type { Point } from "./layeredMetrics";
+import type { Point } from "./engine/layoutEngine";
 
 export interface RouteInput {
   focus: string;
@@ -19,16 +19,11 @@ export interface RouteInput {
 export interface RouteResult {
   paths: Map<string, RoutedPath>;
   crossings: number;
-  hops: number;
 }
 
 export interface RoutedPath {
-  d: string;
-  /** The middle of the path's longest run, where a label sits. */
-  labelAt: Point;
-  /** The first and last points of the path: the card edges it leaves and enters. */
-  start: Point;
-  end: Point;
+  /** The orthogonal polyline of the path, from its first card to its last. */
+  points: Point[];
   /** A relationship's path: the card it starts at, which is its upper card, or `from` when both share a row. */
   startsAt?: string | undefined;
 }

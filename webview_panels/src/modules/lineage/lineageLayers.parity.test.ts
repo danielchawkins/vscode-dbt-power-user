@@ -7,12 +7,14 @@ import {
   lineageLayersTables,
 } from "../../test/fixtures/lineageLayers";
 import { relationshipEdgeId, tableEdgeId } from "./edgeIds";
+import type { LayerBand, Point } from "./engine/layoutEngine";
+import { type FlowInput, layoutRequest } from "./engine/layoutRequest";
+import { ownedEngine } from "./engine/ownedEngine";
 import { fitGraph, fitPadding } from "./fit";
 import { hiddenTables } from "./hiddenNodes";
 import { OTHER_TAG } from "./layered";
-import { layeredFlow, type LayeredFlow } from "./layeredFlow";
-import { type FlowInput, layeredInput } from "./layeredInput";
 import { geometry, tableHeight } from "./layout";
+import { type DrawnPath, drawLayout } from "./routeDrawing";
 import { ZOOM_OUT_BELOW } from "./semanticZoom";
 
 const {
@@ -68,16 +70,39 @@ const hidden = hiddenTables({ known: lineageLayersKnown, start: INT_ORDERS });
 const drawnDbtEdges = lineageLayersEdges.filter(
   ([parent, child]) => !hidden.has(parent) && !hidden.has(child),
 );
-const nodes = layeredInput(flowInput("both"), () => undefined, heightOf).nodes;
+const nodes = layoutRequest(flowInput("both"), () => undefined, heightOf).cards;
 
-/** Runs the real layered layout and gutter router, on the input `layeredInput` builds from the fixture. */
+/** The owned layout as the parity tests read it: positions, bands, crossings, hops and drawn paths. */
+type LayeredFlow = ReturnType<typeof layout>;
+
+/**
+ * Runs the owned layout and the drawing, on the request `layoutRequest` builds from the fixture. `d` and `hops` come
+ * from the drawing; `crossings` from the layout.
+ */
 function layout(
   connections: Connections,
   dbtEdges = drawnDbtEdges,
-): LayeredFlow {
-  return layeredFlow(
-    layeredInput(flowInput(connections, dbtEdges), () => undefined, heightOf),
+): {
+  positions: ReadonlyMap<string, Point>;
+  bands: readonly LayerBand[];
+  crossings: number;
+  hops: number;
+  paths: Map<string, DrawnPath>;
+} {
+  const request = layoutRequest(
+    flowInput(connections, dbtEdges),
+    () => undefined,
+    heightOf,
   );
+  const response = ownedEngine.layout(request);
+  const drawn = drawLayout(request, response);
+  return {
+    positions: response.positions,
+    bands: response.bands,
+    crossings: (response.hints.data as { crossings: number }).crossings,
+    hops: drawn.hops,
+    paths: drawn.paths,
+  };
 }
 
 /**
@@ -381,7 +406,7 @@ describe("lineage-layers fixture, the layered fit", () => {
 
 describe("lineage-layers fixture, edges and cards", () => {
   /** The paths' vertical runs that pass through a card other than the two the path joins. */
-  function edgesUnderCards(flow: LayeredFlow): string[] {
+  function edgesUnderCards(flow: ReturnType<typeof layout>): string[] {
     const size = new Map(nodes.map((node) => [node.id, node]));
     const ends = (id: string): string[] => {
       const route = drawnDbtEdges.find(([p, c]) => id === tableEdgeId(p, c));
@@ -419,6 +444,19 @@ describe("lineage-layers fixture, edges and cards", () => {
     "draws no %s edge under a card it does not join",
     (connections) => {
       expect(edgesUnderCards(layout(connections))).toEqual([]);
+    },
+  );
+});
+
+describe("lineage-layers fixture, edge geometry", () => {
+  it.each(["dbt", "declared", "both"] as const)(
+    "draws the same path strings for %s connections",
+    (connections) => {
+      const paths = layout(connections).paths;
+      const drawn = [...paths.keys()]
+        .sort()
+        .map((id) => [id, paths.get(id)?.d]);
+      expect(drawn).toMatchSnapshot();
     },
   );
 });

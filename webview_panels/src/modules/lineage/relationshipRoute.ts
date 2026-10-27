@@ -2,7 +2,7 @@
  * A declared relationship's routed path, with the card end at each side of it, for the relationship edge's marks.
  */
 import { type Edge, Position } from "@xyflow/react";
-import type { Point } from "./layeredMetrics";
+import type { Point } from "./engine/layoutEngine";
 
 /** The routed path the gutter router gives an edge; `flow.ts` imports this module, so the type is restated here. */
 interface RoutedPath {

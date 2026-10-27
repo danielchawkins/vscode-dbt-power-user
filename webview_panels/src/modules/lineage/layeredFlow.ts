@@ -1,3 +1,4 @@
+import type { LayerBand, Point } from "./engine/layoutEngine";
 /**
  * The layered lineage drawing: the layout, then the gutter router over every edge at once. When a node sits in the
  * Other column, the column is tried on both sides and the side with fewer crossings is kept.
@@ -8,12 +9,12 @@ import {
   routeGutters,
   type TableRoute,
 } from "./gutterRouter";
-import { type LayerBand, layoutLayered } from "./layered";
-import { type LayeredNode, type Point, type Side } from "./layeredMetrics";
+import { layoutLayered } from "./layered";
+import type { LayeredNode, Side } from "./layeredMetrics";
 import { OTHER_TAG } from "./layerTags";
 
 /** A column edge, with each end's offset from its card's top. */
-export interface LayeredColumnEdge {
+interface LayeredColumnEdge {
   id: string;
   from: string;
   fromOffset: number;
@@ -37,7 +38,6 @@ export interface LayeredFlow {
   bands: LayerBand[];
   paths: Map<string, RoutedPath>;
   crossings: number;
-  hops: number;
 }
 
 export function layeredFlow(input: LayeredFlowInput): LayeredFlow {
@@ -94,6 +94,5 @@ export function layeredFlow(input: LayeredFlowInput): LayeredFlow {
       : keep.plan.bands,
     paths: keep.routed.paths,
     crossings: keep.routed.crossings,
-    hops: keep.routed.hops,
   };
 }

@@ -13,10 +13,6 @@ export const SAME_ROW = 58;
 export const TOP_MARGIN = 40;
 export const SIDE_MARGIN = BAND_PAD + GUTTER + 8;
 export type Side = 1 | -1;
-export interface Point {
-  x: number;
-  y: number;
-}
 export interface LayeredNode {
   id: string;
   width: number;

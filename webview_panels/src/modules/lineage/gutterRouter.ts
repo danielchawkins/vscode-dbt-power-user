@@ -9,8 +9,6 @@
  * Pure functions: boxes in, SVG path strings out.
  */
 import { GutterPlan } from "./gutterPlan";
-import { drawPath, labelPoint } from "./routeDrawing";
-import { segmentsOf } from "./routeGeometry";
 import type { RoutedPath, RouteInput, RouteResult } from "./routeTypes";
 
 export type {
@@ -41,23 +39,12 @@ export function routeGutters(input: RouteInput): RouteResult {
 
   const { routes } = channels;
   const resolved = routes.map((route) => channels.resolve(route));
-  const verticals = resolved.map((points) =>
-    segmentsOf(points).filter(([p, q]) => p.x === q.x),
-  );
   const paths = new Map<string, RoutedPath>();
-  let hops = 0;
   routes.forEach((route, index) => {
-    const drawn = drawPath({ index, routes, resolved, verticals, traceOn });
-    hops += drawn.hops;
-    // Every route has at least two stops, so its first and last points are both set.
-    const points = resolved[index] ?? [];
     paths.set(route.id, {
-      d: drawn.d,
-      labelAt: labelPoint(points),
-      start: points[0] ?? { x: 0, y: 0 },
-      end: points.at(-1) ?? { x: 0, y: 0 },
+      points: resolved[index] ?? [],
       startsAt: route.startsAt,
     });
   });
-  return { paths, crossings, hops };
+  return { paths, crossings };
 }
