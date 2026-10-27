@@ -30,13 +30,12 @@ const node = (id: string, extra: Partial<LayoutNode> = {}): LayoutNode => ({
   ...extra,
 });
 
-const edge = (
-  id: string,
-  source: string,
-  target: string,
-  kind = "dependency",
-  extra: Partial<LayoutEdge> = {},
-): LayoutEdge => ({ id, source, target, kind, ...extra });
+const edge = (id: string, source: string, target: string): LayoutEdge => ({
+  id,
+  source,
+  target,
+  kind: "dependency",
+});
 
 const ranking = (
   ranks: Record<string, number>,
@@ -166,10 +165,10 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
       )
       .map((specs) => ({
         nodes: Array.from({ length: count }, (_, i) => node(`n${i}`)),
-        edges: specs.map(
-          ([a, b, k], i): LayoutEdge =>
-            edge(`e${i}`, `n${a}`, `n${b}`, KIND_NAMES[k]),
-        ),
+        edges: specs.map(([a, b, k], i): LayoutEdge => ({
+          ...edge(`e${i}`, `n${a}`, `n${b}`),
+          kind: KIND_NAMES[k],
+        })),
       })),
   );
 
@@ -192,9 +191,7 @@ function expectWellFormed(
       expect(out.nodes[chain[0]].rank).toBe(out.nodes[chain[1]].rank);
       continue;
     }
-    expect(bundle.reversed).toBe(
-      rankOf(bundle.source) > rankOf(bundle.target),
-    );
+    expect(bundle.reversed).toBe(rankOf(bundle.source) > rankOf(bundle.target));
     chain.forEach((x, k) => {
       expect(out.nodes[x].rank).toBe(out.nodes[chain[0]].rank + k);
     });

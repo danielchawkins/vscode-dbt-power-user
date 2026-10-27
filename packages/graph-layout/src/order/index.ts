@@ -1,11 +1,11 @@
-import type { RankResult } from "../rank/index.js";
-import { seededRandom, shuffled } from "../random.js";
 import { type LayeredGraph, layer } from "../layering.js";
+import { seededRandom, shuffled } from "../random.js";
+import type { RankResult } from "../rank/index.js";
 import type { LayoutGraph, LayoutOptions } from "../types.js";
 import { createModel, type OrderModel } from "./model.js";
-import { found, type Found, search } from "./sweeps.js";
-import { sift } from "./sifting.js";
 import { startingLayers } from "./seed.js";
+import { sift } from "./sifting.js";
+import { found, type Found, search } from "./sweeps.js";
 
 type Effort = NonNullable<LayoutOptions["effort"]>;
 
@@ -13,7 +13,11 @@ type Effort = NonNullable<LayoutOptions["effort"]>;
 const SWEEPS: Record<Effort, number> = { fast: 4, balanced: 12, thorough: 12 };
 
 /** Sifting passes by effort. Sifting is skipped at `fast`. */
-const SIFT_ROUNDS: Record<Effort, number> = { fast: 0, balanced: 3, thorough: 3 };
+const SIFT_ROUNDS: Record<Effort, number> = {
+  fast: 0,
+  balanced: 3,
+  thorough: 3,
+};
 
 /** Seeded restarts from shuffled starting orders, beyond the hinted or depth-first start. */
 const RESTARTS: Record<Effort, number> = { fast: 0, balanced: 0, thorough: 8 };

@@ -36,11 +36,7 @@ export function search(model: OrderModel, count: number): Found {
  * barycentre. A node with no neighbour in the rank the sweep came from keeps its place. The sweep runs downward from
  * the top rank, or upward from the bottom one.
  */
-function sweep(
-  model: OrderModel,
-  downward: boolean,
-  median: boolean,
-): void {
+function sweep(model: OrderModel, downward: boolean, median: boolean): void {
   const ranks = model.layers.map((_, rank) => rank);
   const visit = downward ? ranks.slice(1) : ranks.slice(0, -1).reverse();
   for (const rank of visit) {

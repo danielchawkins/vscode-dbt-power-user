@@ -1,9 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { layer } from "../layering.js";
+import { seededRandom, shuffled } from "../random.js";
 import type { RankResult } from "../rank/index.js";
 import { rank } from "../rank/index.js";
-import { seededRandom, shuffled } from "../random.js";
 import type { LayoutEdge, LayoutGraph, LayoutOptions } from "../types.js";
 import { totalCrossings } from "./crossings.js";
 import { createModel, type OrderModel } from "./model.js";
@@ -82,14 +82,12 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
           width: 80,
           height: 40,
         })),
-        edges: specs.map(
-          ([a, b, k], i): LayoutEdge => ({
-            id: `e${i}`,
-            source: `n${a}`,
-            target: `n${b}`,
-            kind: k === 0 ? "dependency" : "column",
-          }),
-        ),
+        edges: specs.map(([a, b, k], i): LayoutEdge => ({
+          id: `e${i}`,
+          source: `n${a}`,
+          target: `n${b}`,
+          kind: k === 0 ? "dependency" : "column",
+        })),
       })),
   );
 

@@ -25,14 +25,12 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
           width: 80,
           height: 40,
         })),
-        edges: specs.map(
-          ([a, b, k], i): LayoutEdge => ({
-            id: `e${i}`,
-            source: `n${a}`,
-            target: `n${b}`,
-            kind: k === 0 ? "dependency" : "column",
-          }),
-        ),
+        edges: specs.map(([a, b, k], i): LayoutEdge => ({
+          id: `e${i}`,
+          source: `n${a}`,
+          target: `n${b}`,
+          kind: k === 0 ? "dependency" : "column",
+        })),
       })),
   );
 
@@ -45,7 +43,7 @@ describe("order", () => {
         expect(seen).toEqual(result.layered.nodes.map((_, i) => i));
         result.layers.forEach((layer, r) => {
           for (const x of layer) {
-            expect(result.layered.nodes[x]!.rank).toBe(r);
+            expect(result.layered.nodes[x].rank).toBe(r);
           }
         });
       }),
@@ -100,7 +98,7 @@ describe("order", () => {
     };
     const result = order(graph, { ...options, hints }, rank(graph, options));
     expect(result.crossings).toBe(0);
-    expect(result.layers[1]!.map((x) => result.layered.nodes[x]!.id)).toEqual([
+    expect(result.layers[1].map((x) => result.layered.nodes[x].id)).toEqual([
       "c",
       "b",
     ]);
