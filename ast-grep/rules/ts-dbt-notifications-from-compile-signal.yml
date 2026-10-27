@@ -1,0 +1,29 @@
+# The four `dbt/*` compile notifications feed one server compile state, through subscribeToCompileState in
+# src/fusion/compileSignal.ts. A second listener would count a compile twice or miss a phase, so no other module
+# subscribes to a `dbt/` method directly.
+id: ts-dbt-notifications-from-compile-signal
+language: typescript
+severity: error
+message: >-
+  Subscribe to dbt/* notifications through subscribeToCompileState (src/fusion/compileSignal.ts), not onNotification
+  here. The compile state is the one place that counts compiles.
+files:
+  - src/**
+ignores:
+  - src/fusion/compileSignal.ts
+  - src/test/**
+  - "**/*.test.ts"
+rule:
+  all:
+    - kind: call_expression
+    - has:
+        field: function
+        regex: '(^|\.)onNotification$'
+    - has:
+        field: arguments
+        has:
+          any:
+            - kind: string
+              regex: '^["''`]dbt/'
+            - kind: template_string
+              regex: '^`dbt/'

@@ -1,8 +1,8 @@
-import type { Disposable, Event } from "vscode";
+import type { Disposable } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
+import type { CompileComplete } from "../../fusion/compileSignal";
 import type { FusionClient } from "../../fusion/fusionClient";
-import { followClientCompiles } from "../clients/clientChange";
 import { graphUnavailable } from "./graphAvailability";
 import { nextManifestPublication } from "./manifest";
 import type { Manifest } from "./manifestTypes";
@@ -39,20 +39,16 @@ export class ManifestState<
     project: P,
     fusionClient: () => FusionClient | undefined,
     compiles: {
-      clientChanged: Event<void>;
+      follow: (listener: (complete: CompileComplete) => void) => Disposable;
       reportErrors: (errors: string[]) => void;
     },
   ) {
     this.project = project;
     this.fusionClient = fusionClient;
-    this.followedCompiles = followClientCompiles(
-      fusionClient,
-      compiles.clientChanged,
-      (complete) => {
-        compiles.reportErrors(complete.errors);
-        this.notifyCompileComplete();
-      },
-    );
+    this.followedCompiles = compiles.follow((complete) => {
+      compiles.reportErrors(complete.errors);
+      this.notifyCompileComplete();
+    });
   }
 
   /** The latest complete metadata publication. */
