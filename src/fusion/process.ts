@@ -6,15 +6,23 @@ import {
   type SpawnOptions,
 } from "node:child_process";
 import { promisify } from "node:util";
+import type { Log } from "../core/log";
 
 export type { ChildProcess };
 
 const execFileAsync = promisify(execFile);
 
+export type ProcessPriority = "normal" | "background";
+
 export type SpawnProcessOptions = Pick<
   SpawnOptions,
   "cwd" | "env" | "stdio" | "windowsHide"
->;
+> & {
+  /** `background` lowers the child's scheduling priority so interactive work keeps the CPU. */
+  priority?: ProcessPriority;
+  /** Receives a debug line when `background` cannot be applied. */
+  log?: Pick<Log, "debug">;
+};
 
 /** `timeout` kills the process after that many milliseconds; the call then rejects with `killed` set. */
 export type ExecFileTextOptions = Pick<
