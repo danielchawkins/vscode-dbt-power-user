@@ -8,7 +8,7 @@ import { onClientChange } from "../../projects/clients/clientChange";
  */
 
 describe("onClientChange", () => {
-  it.fails("does not fire for a client replaced in another project", () => {
+  it("does not fire for a client replaced in another project", () => {
     const clients = new EventEmitter<void>();
     const stateA = new EventEmitter<void>();
     const clientA = { onDidChangeState: stateA.event };
