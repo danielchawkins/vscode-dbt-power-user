@@ -32,7 +32,6 @@ import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
-import type { DBTDocumentation } from "./docGenTypes";
 import { DocsDrafts } from "./docsDrafts";
 import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
@@ -62,7 +61,7 @@ export class DocsEditViewPanel extends PanelHost<
   protected readonly csp = {};
   protected readonly guard = documentationEditor.isPanelMessage;
   protected override panelDescription = "Edit model documentation";
-  private documentation: DBTDocumentation | undefined;
+  private documentation: documentationEditor.Documentation | undefined;
   private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;

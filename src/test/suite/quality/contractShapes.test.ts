@@ -16,8 +16,6 @@ const CONTRACT = "packages/webview-contract/src";
 const SCANNED = ["src", "webview_panels/src"];
 
 const BASELINE = new Set([
-  "src/features/docs/docGenTypes.ts Documentation",
-  "src/features/docs/docGenTypes.ts DocumentationColumn",
   "webview_panels/src/modules/documentationEditor/state/types.ts Documentation",
   "webview_panels/src/modules/documentationEditor/state/types.ts DocumentationColumn",
   "webview_panels/src/modules/lineage/graph.ts ColumnRef",
