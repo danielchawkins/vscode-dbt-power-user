@@ -1,0 +1,56 @@
+# The graph-layout tests share their fixtures: the layout options every stage test runs with, the random-graph
+# arbitrary, and the helpers that shuffle a graph into an order model and read its layers back sorted. Seven test
+# files declared the same `options` byte for byte, four the same `graphArb` and three the same `sortedRanks`, so a
+# change to the graph generator (a new edge kind, ports, clusters) had to be made in each copy. Declare a fixture once
+# in src/testing/ and import it.
+# The ignores are the baseline: the test files that still declare their own. Remove each as it imports the shared one.
+id: ts-graph-layout-shared-fixtures
+language: typescript
+severity: error
+message: >-
+  Import this fixture from packages/graph-layout/src/testing/ instead of declaring it in the test file; give a test its
+  own fixture only when it differs, under a name that says how.
+files:
+  - packages/graph-layout/src/**/*.test.ts
+ignores:
+  - packages/graph-layout/src/layering.test.ts
+  - packages/graph-layout/src/order/crossings.test.ts
+  - packages/graph-layout/src/order/index.test.ts
+  - packages/graph-layout/src/order/seed.test.ts
+  - packages/graph-layout/src/order/sifting.test.ts
+  - packages/graph-layout/src/order/sweeps.test.ts
+  - packages/graph-layout/src/order/transpose.test.ts
+  - packages/graph-layout/src/place/index.test.ts
+  - packages/graph-layout/src/place/ports.test.ts
+rule:
+  any:
+    # const options: LayoutOptions = { ... };  const graphArb: fc.Arbitrary<LayoutGraph> = fc...;
+    - kind: variable_declarator
+      all:
+        - has:
+            field: name
+            regex: '^(options|graphArb)$'
+        - has:
+            field: type
+            regex: '(LayoutOptions|Arbitrary<LayoutGraph>)'
+        - inside:
+            kind: lexical_declaration
+            inside:
+              kind: program
+    # const sortedRanks = (model) => model.layers.map(...);
+    - kind: variable_declarator
+      all:
+        - has:
+            field: name
+            regex: '^sortedRanks$'
+        - inside:
+            kind: lexical_declaration
+            inside:
+              kind: program
+    # function randomModel(graph, seed) { ... }
+    - kind: function_declaration
+      has:
+        field: name
+        regex: '^randomModel$'
+      inside:
+        kind: program
