@@ -29,6 +29,8 @@ const LAYOUT_ADAPTERS =
 const OWNED_ENGINE =
   "^src/modules/lineage/(layered|layeredFlow|layeredMetrics|layeredRanks|layeredRows|gutterPlan|gutterRouter|" +
   "channels|routeTypes)\\.ts$";
+// The panel modules, one per webview entry.
+const PANELS = "documentationEditor|lineage|queryPanel";
 const GRAPH_LAYOUT =
   "(^|/)packages/graph-layout/|(^|/)node_modules/@fusion-power-user/graph-layout/|^@fusion-power-user/graph-layout$";
 
@@ -111,6 +113,33 @@ module.exports = {
         pathNot: `^src/modules/lineage/engine/graphLayoutEngine\\.ts$|${GRAPH_LAYOUT}`,
       },
       to: { path: GRAPH_LAYOUT },
+    },
+    {
+      name: "panels-are-independent",
+      severity: "error",
+      comment:
+        "A panel module (documentationEditor, lineage, queryPanel) imports no other panel; what two panels share lives in uiCore/ or a shared module.",
+      from: { path: `^src/modules/(${PANELS})/` },
+      to: { path: `^src/modules/(${PANELS})/`, pathNot: "^src/modules/$1/" },
+    },
+    {
+      name: "shared-modules-import-no-panel",
+      severity: "error",
+      comment:
+        "A module outside the panels imports no panel: one that does belongs to that panel.",
+      from: {
+        path: "^src/(uiCore|modules)/",
+        pathNot: `^src/modules/(${PANELS})/`,
+      },
+      to: { path: `^src/modules/(${PANELS})/` },
+    },
+    {
+      name: "ui-core-imports-no-module",
+      severity: "error",
+      comment:
+        "uiCore/ holds the primitives every panel uses, so it imports no module; a primitive takes what it needs (a theme, a callback) as a prop.",
+      from: { path: "^src/uiCore/" },
+      to: { path: "^src/modules/" },
     },
   ],
   options: {
