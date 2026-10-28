@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { ModelTestService } from "../../features/docs/dbtTestService";
+import { ModelTestService } from "../../features/docs/modelTestService";
 
 const SCHEMA = [
   "models:",

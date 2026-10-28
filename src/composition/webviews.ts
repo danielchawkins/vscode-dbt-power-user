@@ -1,8 +1,8 @@
 import type { ColumnProposalRequests } from "../features/docs/columnProposals";
 import { ColumnProposalService } from "../features/docs/columnProposals";
-import { ModelTestService } from "../features/docs/dbtTestService";
 import { DocGenService } from "../features/docs/docGenService";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
+import { ModelTestService } from "../features/docs/modelTestService";
 import { LineagePanel } from "../features/lineage/lineagePanel";
 import type { LineageService } from "../features/lineage/lineageService";
 import { LineageViewProvider } from "../features/lineage/lineageViewProvider";

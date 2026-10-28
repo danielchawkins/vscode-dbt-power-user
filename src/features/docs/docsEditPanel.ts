@@ -30,12 +30,12 @@ import type {
 } from "./columnProposals";
 import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
-import type { ModelTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import { DocsDrafts } from "./docsDrafts";
 import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { registerDocsHarnessCommands } from "./docsHarnessCommands";
+import type { ModelTestService } from "./modelTestService";
 import { withProgress } from "./progress";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
