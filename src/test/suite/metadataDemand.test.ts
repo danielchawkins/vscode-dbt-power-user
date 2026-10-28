@@ -38,7 +38,7 @@ describe("QueryManifestService.freshManifest", () => {
   it("awaits a stale parse before returning the manifest", async () => {
     const order: string[] = [];
     const project = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       ensureParsed: vi.fn(async () => void order.push("parsed")),
     };
     const service = new QueryManifestService({

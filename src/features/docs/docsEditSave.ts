@@ -31,10 +31,7 @@ async function chooseSchemaFile(
 ): Promise<string | undefined> {
   if (message.patchPath) {
     // the location comes from the manifest, parse it
-    return path.join(
-      project.root.fsPath,
-      removeProtocol(message.patchPath),
-    );
+    return path.join(project.root.fsPath, removeProtocol(message.patchPath));
   }
   switch (message.dialogType) {
     case "Existing file": {

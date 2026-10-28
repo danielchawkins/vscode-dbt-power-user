@@ -13,10 +13,7 @@ import { whyNotStrict } from "../../projects/registry/schemaOrigin";
 import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 
 /** The project's parts the type attempts read. */
-export type TypeSourceProject = Pick<
-  Project,
-  "root" | "lsp" | "getFusionCli"
->;
+export type TypeSourceProject = Pick<Project, "root" | "lsp" | "getFusionCli">;
 
 /** The model whose column types are asked for: its name, and its file, which the language server looks up. */
 export interface ModelRef {

@@ -71,7 +71,7 @@ const setup = (over: { event?: unknown; document?: string } = {}) => {
   const project = {
     log,
     manifest: event,
-    projectRoot: { fsPath: root },
+    root: { fsPath: root },
     getProjectName: () => "p",
   };
   const currentProject = {

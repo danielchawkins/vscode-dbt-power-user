@@ -437,10 +437,7 @@ export class LineagePanel
       }
     }
 
-    this.log.info(
-      "Lineage:getStartingNode",
-      `No node found for ${tableName}`,
-    );
+    this.log.info("Lineage:getStartingNode", `No node found for ${tableName}`);
     return {
       missingLineageMessage: this.getMissingLineageMessage(),
     };

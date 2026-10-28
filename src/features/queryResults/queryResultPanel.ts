@@ -214,11 +214,7 @@ export class QueryResultPanel extends PanelHost<
       await runOnQueryPanel(project.queries, message);
     } catch (error) {
       void notifyErrorWithoutProject("Unable to execute query", error);
-      this.log.error(
-        "ExecuteSqlError",
-        "Unable to execute query",
-        error,
-      );
+      this.log.error("ExecuteSqlError", "Unable to execute query", error);
     }
   }
 

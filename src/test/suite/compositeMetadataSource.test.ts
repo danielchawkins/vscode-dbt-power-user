@@ -24,7 +24,7 @@ function setup() {
   const parsed = new EventEmitter<ParsedManifest>();
   const ensureParsed = vi.fn(async (): Promise<void> => undefined);
   const project = {
-    projectRoot: Uri.file("/p"),
+    root: Uri.file("/p"),
     getProjectName: () => "p",
     get manifest() {
       return manifest;

@@ -37,7 +37,7 @@ const columnTest = {
 /** A panel for the project at `root`, built without its constructor's collaborators. */
 function savePanel(root: string): SavePanel {
   const project = {
-    projectRoot: Uri.file(root),
+    root: Uri.file(root),
     getAdapterType: () => "duckdb",
   };
   return Object.assign(Object.create(DocsEditViewPanel.prototype), {

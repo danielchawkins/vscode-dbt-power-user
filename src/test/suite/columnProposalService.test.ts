@@ -59,7 +59,7 @@ function fakeProject(
 ) {
   const spy = vi.fn(describeModel);
   const project = {
-    projectRoot: { fsPath: "/p" },
+    root: { fsPath: "/p" },
     lsp: {
       state: "running",
       getCurrentNode: vi.fn(async () => currentNode),
@@ -209,7 +209,7 @@ function describingProject(
 ) {
   const listNodes = vi.fn(answer);
   const project = {
-    projectRoot: { fsPath: "/p" },
+    root: { fsPath: "/p" },
     lsp: { state, getCurrentNode: vi.fn(async () => undefined), listNodes },
     getFusionCli: () => ({
       describeModel: vi.fn(),

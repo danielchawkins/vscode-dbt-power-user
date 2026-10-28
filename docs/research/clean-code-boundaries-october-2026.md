@@ -157,8 +157,8 @@ Thesis (high): DBTPowerUserExtension's constructor takes 21 parameters (dbtPower
 
 Thesis citations:
 
-- [c08](../../src/dbtPowerUserExtension.ts): "private projects: Projects,"
-- [c09](../../src/dbtPowerUserExtension.ts): "private projectEnvironments: ProjectEnvironments,"
+- [c08](../../src/fusionPowerUserExtension.ts): "private projects: Projects,"
+- [c09](../../src/fusionPowerUserExtension.ts): "private projectEnvironments: ProjectEnvironments,"
 - [c10](../../oxlint-suppressions.json): ""src/dbtPowerUserExtension.ts": {"
 - [c11](https://martinfowler.com/articles/injection.html): "The choice between them is less important than the principle of separating configuration from use."
 

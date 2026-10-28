@@ -228,8 +228,7 @@ export abstract class PanelHost<
   ): Responder<R> {
     // A reply records no replay slot, so it goes straight out rather than through `postTo`.
     const sink = {
-      reply: (response: Response) =>
-        postToWebview(page, response, this.log),
+      reply: (response: Response) => postToWebview(page, response, this.log),
     };
     return {
       respond: (_command, syncRequestId, body) =>
@@ -320,8 +319,7 @@ export abstract class PanelHost<
           sink: {
             log: this.log,
             // A reply records no replay slot, so it goes straight out rather than through `postTo`.
-            reply: (response) =>
-              postToWebview(page, response, this.log),
+            reply: (response) => postToWebview(page, response, this.log),
           },
         }),
       ),

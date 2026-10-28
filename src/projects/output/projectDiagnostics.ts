@@ -103,10 +103,7 @@ export class ProjectDiagnostics implements Disposable {
   }
 
   /** Replaces one kind's diagnostics and publishes every kind. */
-  setKind(
-    kind: ProjectDiagnosticKind,
-    data: readonly DiagnosticData[],
-  ): void {
+  setKind(kind: ProjectDiagnosticKind, data: readonly DiagnosticData[]): void {
     if (this.disposed) {
       return;
     }

@@ -17,15 +17,11 @@ describe("ManifestState compile wiring", () => {
     let current = clientA as unknown as FusionClient;
     const reportErrors = vi.fn();
     const onCompile = vi.fn();
-    const state = new ManifestState(
-      { root: { fsPath: "/p" } },
-      () => current,
-      {
-        follow: (listener) =>
-          followClientCompiles(() => current, changed.event, listener),
-        reportErrors,
-      },
-    );
+    const state = new ManifestState({ root: { fsPath: "/p" } }, () => current, {
+      follow: (listener) =>
+        followClientCompiles(() => current, changed.event, listener),
+      reportErrors,
+    });
     state.onDidCompile(onCompile);
 
     clientA.compileState.started("compiling");

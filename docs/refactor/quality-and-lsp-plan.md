@@ -105,7 +105,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.5 Remove the dependency cycles
 
 - Goal: dependency-cruiser runs without a known-violations file.
-- Files: new `src/fusion/documentSelectors.ts` (`DBT_SQL_SELECTOR` and `DBT_YAML_SELECTOR` move out of `dbtPowerUserExtension.ts`; `features/codeLenses.ts` imports them); new `src/projects/projectEvents.ts` (`RunResultsEvent`, `ProjectConfigChangedEvent`); delete `src/dbt_client/`; `projects/manifestTypes.ts` drops `project: Project`, or types it as a narrow interface if something reads it; delete `.dependency-cruiser-known-violations.json` and `--ignore-known` from `lint:imports`; the `AGENTS.md` tree loses `dbt_client/`.
+- Files: new `src/fusion/documentSelectors.ts` (`DBT_SQL_SELECTOR` and `DBT_YAML_SELECTOR` move out of `fusionPowerUserExtension.ts`; `features/codeLenses.ts` imports them); new `src/projects/projectEvents.ts` (`RunResultsEvent`, `ProjectConfigChangedEvent`); delete `src/dbt_client/`; `projects/manifestTypes.ts` drops `project: Project`, or types it as a narrow interface if something reads it; delete `.dependency-cruiser-known-violations.json` and `--ignore-known` from `lint:imports`; the `AGENTS.md` tree loses `dbt_client/`.
 - Resolves: Prac 6; Qual §4 (cycles), S2; Qual §4 (stale `dbt_client` in `AGENTS.md`).
 - Revisions: (1) selectors; (2) events; (3) manifest types; (4) baseline removal and docs.
 - Verify: `just lint-code` passes with no baseline file; `rg -n dbt_client src AGENTS.md docs/architecture.md` is empty.
@@ -587,7 +587,7 @@ Remaining Phase 3 work for 3.10:
 - Done: `cliArgs.test.ts` (498 → 345) is a golden `it.each` table plus `deferState`; with `cliArgs.property.test.ts` (286, unchanged) 784 → 631.
 - Done: `lspLaunch.test.ts` (208 → 186), `lspLaunch.property.test.ts` (280, unchanged) and `projectSnapshot.test.ts` (228 → 195) share `baseInputs`/`snapshotWith` in `src/test/arbitraries/projectSnapshot.ts`; 716 → 661.
 - Done: `configErrors.test.ts` (457 → 452) keeps the `errorHint` and `ProjectErrors` unit cases plus the Project-level tests with no other home (parse wiring, the profiles directory and target hints through a real parse, profiles.yml placement, LSP config errors, `dbtPath` text, Declared Project warning).
-- `src/test/suite/dbtPowerUserExtension.test.ts` (352) has no single composition fixture.
+- `src/test/suite/fusionPowerUserExtension.test.ts` (352) has no single composition fixture.
 - `src/test/suite/lineagePanel.test.ts` (955) has only two `it.each` groups.
 - Done: `fusionClientPool.test.ts` (734 → 652) has `startPool`/`expectRestarted` helpers.
 - `src/test/integration/lspEditorFeatures.test.ts` and `nativeEditorFeatures.test.ts` do not import `lspFixture`.
@@ -631,7 +631,7 @@ Remaining Phase 3 work for 3.11:
 - Done, `src/test/suite/runModel.test.ts` (22 → 0 call assertions): the project-command tests run a real `ProjectTasks` through the shared `src/test/recordingTasks.ts` and assert the `QueuedCliCommand` values it starts (`{ kind: "run", select: "+orders" }` and so on); the SQL tests assert what the project executed.
 - Done, `src/test/suite/projectSetupCommands.test.ts` (8 → 0): the `ran` recorder is replaced by the `debug` run (the argv `toCliArgs` builds for `{ kind: "debug" }` and the project root as cwd) and the `deps` command from `RecordingTasks`, each asserted as its own ordered list (`ran()` returns `{ debug, tasks }`; a non-zero exit code drives the failure), plus the shown error messages and logged errors as values. The `projectSetupCommands.ts` clone (`:55-70`/`:100-116`) was already extracted into `runSetup` before this step, so no production change was made.
 - Done, `src/test/suite/commands.test.ts` (22 → 0 by `rg -c`; the plan counted 21): handlers are checked against an ordered log of what the fakes were asked to do and against the message lists.
-- Done, `src/test/suite/dbtPowerUserExtension.test.ts` (39 → 0) and `src/test/suite/projects.test.ts` (30 → 0): startup order is one `started` list, project lifecycle, removal events and factory builds are ordered lists. Remaining mock-call reads (`showErrorMessage`, `executeCommand`, `registerCommand`, `getConfiguration`) are asserted as `mock.calls` values because the call is the outcome.
+- Done, `src/test/suite/fusionPowerUserExtension.test.ts` (39 → 0) and `src/test/suite/projects.test.ts` (30 → 0): startup order is one `started` list, project lifecycle, removal events and factory builds are ordered lists. Remaining mock-call reads (`showErrorMessage`, `executeCommand`, `registerCommand`, `getConfiguration`) are asserted as `mock.calls` values because the call is the outcome.
 - `toHaveBeenCalled` lines in `src/test/suite` (`rg -c`): 625 at the tip of Phase 3 (598 at its start), 506 after this step. Coverage floors are unchanged.
 
 ### 3.12 Meet the suppression targets

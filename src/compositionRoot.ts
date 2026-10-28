@@ -4,7 +4,6 @@ import { composeEditorProviders } from "./composition/editorProviders";
 import { composeFusion } from "./composition/fusion";
 import { composeProjects, type ProjectFactory } from "./composition/projects";
 import { composeWebviews } from "./composition/webviews";
-import { FusionPowerUserExtension } from "./dbtPowerUserExtension";
 import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { ColumnProposalRequests } from "./features/docs/columnProposals";
@@ -14,6 +13,7 @@ import { ProjectConfigCommands } from "./features/projectSetup/projectConfigComm
 import { UnservedProjectsNotice } from "./features/projectSetup/unservedProjects";
 import { StatusBars } from "./features/statusBars";
 import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
+import { FusionPowerUserExtension } from "./fusionPowerUserExtension";
 import type { FusionLaunchSources } from "./projects/clients/fusionClientPool";
 import type { FusionStatus } from "./projects/clients/fusionStatus";
 import { StartupGate } from "./startupGate";
