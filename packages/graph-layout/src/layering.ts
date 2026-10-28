@@ -1,4 +1,5 @@
 import { groupBundles } from "./bundles.js";
+import { clusterChains } from "./clusters.js";
 import { lateralPort } from "./lateral.js";
 import {
   TOWARD_LOWER,
@@ -83,6 +84,11 @@ export interface LayeredGraph {
    * A block is kept contiguous in every rank, so an owner and its port dummies are ordered as one unit.
    */
   block: number[];
+  /**
+   * The cluster chain of each layered node's block, outermost cluster first, as indices into `graph.clusters`. A dummy
+   * outside every cluster, and a node in none, has an empty chain.
+   */
+  paths: number[][];
   /** Number of ranks, from 0 up to the highest rank. */
   ranks: number;
 }
@@ -129,11 +135,16 @@ export function layer(
   for (const members of groupBundles(graph, options.direction)) {
     addBundle(build, members);
   }
+  const block = build.nodes.map((node, x) => node.port?.owner ?? x);
   return {
     nodes: build.nodes,
     bundles: build.bundles,
     segments: build.segments,
-    block: build.nodes.map((node, x) => node.port?.owner ?? x),
+    block,
+    paths: clusterChains(
+      graph,
+      block.map((owner) => build.nodes[owner]!.id),
+    ),
     ranks: build.nodes.reduce((high, node) => Math.max(high, node.rank + 1), 0),
   };
 }

@@ -2,6 +2,7 @@ import { type LayeredGraph, layer } from "../layering.js";
 import { seededRandom, shuffled } from "../random.js";
 import type { RankResult } from "../rank/index.js";
 import type { LayoutGraph, LayoutOptions } from "../types.js";
+import { gatherClusters } from "./clusters.js";
 import { createModel, type OrderModel, unitsOf } from "./model.js";
 import { startingLayers } from "./seed.js";
 import { sift } from "./sifting.js";
@@ -71,6 +72,7 @@ function refine(
     layered,
     layers.map((layer) => [...layer]),
   );
+  gatherClusters(model);
   sift(model, DUMMY_SIFT_ROUNDS, (x) => layered.nodes[x]!.id === undefined);
   search(model, SWEEPS[effort]);
   sift(model, SIFT_ROUNDS[effort]);

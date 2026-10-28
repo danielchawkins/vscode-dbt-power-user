@@ -1,3 +1,4 @@
+import { arrangeRank, arrangement } from "./clusters.js";
 import { totalCrossings } from "./crossings.js";
 import { type OrderModel, setLayer, slot, unitsOf } from "./model.js";
 import { transpose } from "./transpose.js";
@@ -37,20 +38,14 @@ export function search(model: OrderModel, count: number): Found {
 function sweep(model: OrderModel, downward: boolean, median: boolean): void {
   const ranks = model.layers.map((_, rank) => rank);
   const visit = downward ? ranks.slice(1) : ranks.slice(0, -1).reverse();
+  const context = arrangement(model);
+  for (const rank of ranks.filter((r) => !visit.includes(r))) {
+    arrangeRank(model, rank, context, (unit) => model.index[unit[0]!]!);
+  }
   for (const rank of visit) {
-    const keyed = unitsOf(model.layers[rank]!, model.graph.block).map(
-      (unit) => ({
-        unit,
-        key:
-          target(model, unit, { fromAbove: downward, median }) ??
-          model.index[unit[0]!]!,
-      }),
-    );
-    keyed.sort((a, b) => a.key - b.key);
-    setLayer(
-      model,
-      rank,
-      keyed.flatMap((k) => k.unit),
+    arrangeRank(model, rank, context, (unit) =>
+      target(model, unit, { fromAbove: downward, median }) ??
+      model.index[unit[0]!]!,
     );
   }
 }
