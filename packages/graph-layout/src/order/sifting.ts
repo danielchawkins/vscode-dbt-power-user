@@ -1,14 +1,15 @@
-import { pairCrossings } from "./crossings.js";
-import { type OrderModel, setLayer } from "./model.js";
+import { groupCrossings } from "./crossings.js";
+import { type OrderModel, setLayer, unitsOf } from "./model.js";
 
 /** A gain smaller than this is rounding, not a change of crossings. */
 const EPSILON = 1e-9;
 
 /**
- * Sifting (Matuszewski, Schönfeld and Molitor, GD 1999): each node of a rank in turn moves to the place in that rank
- * that gives the fewest crossings, the other nodes keeping their order. A node moves only for a strict gain, so the
- * crossings never rise. Up to `rounds` passes over the drawing run, stopping early when a pass moves nothing. Only the
- * nodes that `movable` accepts move; the others keep their places relative to one another.
+ * Sifting (Matuszewski, Schönfeld and Molitor, GD 1999): each unit of a rank in turn moves to the place in that rank
+ * that gives the fewest crossings, the other units keeping their order. A unit is a node with its lateral port dummies,
+ * so a block moves whole. A unit moves only for a strict gain, so the crossings never rise. Up to `rounds` passes over
+ * the drawing run, stopping early when a pass moves nothing. Only the units whose block `movable` accepts move; the
+ * others keep their places relative to one another.
  */
 export function sift(
   model: OrderModel,
@@ -35,18 +36,18 @@ function siftRank(
   rank: number,
   movable: (node: number) => boolean,
 ): boolean {
-  const original = model.layers[rank]!;
+  const original = unitsOf(model.layers[rank]!, model.graph.block);
   const n = original.length;
   if (n < 2) {
     return false;
   }
   // cost[i][j] is the crossing count when original[i] sits left of original[j].
   const cost = original.map((a, i) =>
-    original.map((b, j) => (i === j ? 0 : pairCrossings(model, a, b))),
+    original.map((b, j) => (i === j ? 0 : groupCrossings(model, a, b))),
   );
   let order = original.map((_, i) => i);
   for (let v = 0; v < n; v++) {
-    if (!movable(original[v]!)) {
+    if (!movable(model.graph.block[original[v]![0]!]!)) {
       continue;
     }
     const others = order.filter((i) => i !== v);
@@ -68,15 +69,15 @@ function siftRank(
     setLayer(
       model,
       rank,
-      order.map((i) => original[i]!),
+      order.flatMap((i) => original[i]!),
     );
   }
   return moved;
 }
 
 /**
- * The crossings of placing node `v` in each slot of `others` (the other nodes, in order): slot k puts `v` after the
- * first k of them. Moving `v` past a node swaps the two orders of that pair.
+ * The crossings of placing unit `v` in each slot of `others` (the other units, in order): slot k puts `v` after the
+ * first k of them. Moving `v` past a unit swaps the two orders of that pair.
  */
 function siftCosts(
   cost: readonly (readonly number[])[],

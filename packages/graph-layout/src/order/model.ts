@@ -57,6 +57,26 @@ export function slot(model: OrderModel, node: number, offset: number): number {
   return model.index[node]! + (offset / breadth) * PORT_SHARE;
 }
 
+/**
+ * The units of a layer, left to right: each block's members in their order, and every other node alone. The ordering
+ * moves units, never the members of a block apart, so a node and its lateral port dummies stay together.
+ */
+export function unitsOf(
+  layer: readonly number[],
+  block: readonly number[],
+): number[][] {
+  const units: number[][] = [];
+  for (const x of layer) {
+    const last = units.at(-1);
+    if (last !== undefined && block[last[0]!] === block[x]) {
+      last.push(x);
+    } else {
+      units.push([x]);
+    }
+  }
+  return units;
+}
+
 function reindex(model: OrderModel, order: readonly number[]): void {
   order.forEach((x, k) => {
     model.index[x] = k;

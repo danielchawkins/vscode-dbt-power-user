@@ -135,9 +135,9 @@ describe("layer", () => {
       ],
     };
     const out = layer(graph, options, ranking({ a: 0, b: 1 }));
-    // The south port sits 70 from the left of a 100-wide node, so +20 from its centre; the east port does not face south.
-    // The mean over the two members is 10.
-    expect(out.segments[0].topOffset).toBeCloseTo(10);
+    // The south port sits 70 from the left of a 100-wide node, so +20 from its centre. The east port is lateral, so it
+    // has a dummy and a bundle of its own, and its segment carries no offset.
+    expect(out.segments[0].topOffset).toBeCloseTo(20);
     expect(out.segments[0].bottomOffset).toBe(0);
   });
 

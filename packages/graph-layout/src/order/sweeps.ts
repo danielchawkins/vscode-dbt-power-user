@@ -1,5 +1,5 @@
 import { totalCrossings } from "./crossings.js";
-import { type OrderModel, setLayer, slot } from "./model.js";
+import { type OrderModel, setLayer, slot, unitsOf } from "./model.js";
 import { transpose } from "./transpose.js";
 
 /** An order of the layered nodes with its weighted crossings. */
@@ -38,15 +38,19 @@ function sweep(model: OrderModel, downward: boolean, median: boolean): void {
   const ranks = model.layers.map((_, rank) => rank);
   const visit = downward ? ranks.slice(1) : ranks.slice(0, -1).reverse();
   for (const rank of visit) {
-    const keyed = model.layers[rank]!.map((x) => ({
-      x,
-      key: target(model, x, { fromAbove: downward, median }) ?? model.index[x]!,
-    }));
+    const keyed = unitsOf(model.layers[rank]!, model.graph.block).map(
+      (unit) => ({
+        unit,
+        key:
+          target(model, unit, { fromAbove: downward, median }) ??
+          model.index[unit[0]!]!,
+      }),
+    );
     keyed.sort((a, b) => a.key - b.key);
     setLayer(
       model,
       rank,
-      keyed.map((k) => k.x),
+      keyed.flatMap((k) => k.unit),
     );
   }
 }
@@ -60,21 +64,23 @@ export function found(model: OrderModel): Found {
 }
 
 /**
- * The position a node aims for: the weighted median or barycentre of the positions its neighbours in the reference
- * rank take, each read at its port's offset. Undefined when it has no neighbour there.
+ * The position a unit aims for: the weighted median or barycentre of the positions its members' neighbours in the
+ * reference rank take, each read at its port's offset. Undefined when no member has a neighbour there.
  */
 function target(
   model: OrderModel,
-  x: number,
+  members: readonly number[],
   { fromAbove, median }: { fromAbove: boolean; median: boolean },
 ): number | undefined {
   const { segments } = model.graph;
-  const reads = (fromAbove ? model.up[x]! : model.down[x]!).map((si) => {
-    const s = segments[si]!;
-    return fromAbove
-      ? { at: slot(model, s.top, s.topOffset), weight: s.weight }
-      : { at: slot(model, s.bottom, s.bottomOffset), weight: s.weight };
-  });
+  const reads = members
+    .flatMap((x) => (fromAbove ? model.up[x]! : model.down[x]!))
+    .map((si) => {
+      const s = segments[si]!;
+      return fromAbove
+        ? { at: slot(model, s.top, s.topOffset), weight: s.weight }
+        : { at: slot(model, s.bottom, s.bottomOffset), weight: s.weight };
+    });
   if (reads.length === 0) {
     return undefined;
   }
