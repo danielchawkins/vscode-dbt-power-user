@@ -13,22 +13,19 @@ import type { LayoutEdge, LayoutGraph, LayoutOptions } from "./types.js";
 const DEFAULT_EDGE_SPACING = 4;
 
 /**
- * The port a dummy stands for: a lateral port's dummy sits in its owner's rank, beside the owner, and the bundle's edge
- * leaves the owner's side at the port's offset and runs to the dummy.
+ * The port a dummy stands for: it sits in its owner's rank, beside the owner, and the bundle's edge leaves the owner's
+ * side at the port's offset and runs to the dummy.
  */
 export interface PortDummy {
   /** Layered index of the owner, a real node in the same rank. */
   owner: number;
   /** Whether the dummy lies after the owner in the in-rank order (east, or south when ranks run right). */
   after: boolean;
-  /**
-   * Whether the dummy's run leaves toward the band below its rank (the dummy is the upper end of its bundle, or the
-   * bundle is flat); false when the run arrives from the band above.
-   */
+  /** Whether the run goes toward the band below the rank (an upper end, or a flat bundle), else from above. */
   below: boolean;
   /** The port's offset from the start of its side, as in `LayoutPort`. */
   offset: number;
-  /** Member edges of the bundle that are routed, each with its own stub and run; zero for a kind that is not routed. */
+  /** Routed member edges, each with its own stub and run; zero for a kind that is not routed. */
   runs: number;
 }
 
@@ -50,10 +47,7 @@ interface Bundle {
   target: string;
   /** Ids of the member edges, in input order. */
   edges: string[];
-  /**
-   * Layered node indices from the upper rank to the lower one, dummies included. A flat bundle holds its source and
-   * target only.
-   */
+  /** Layered indices from the upper rank to the lower one, dummies included; a flat bundle holds its two ends. */
   chain: number[];
   /** The ranks run against the edge: the target sits in the upper rank. */
   reversed: boolean;
@@ -109,9 +103,8 @@ interface Build {
 
 /**
  * Lays the graph out in ranks: one bundle per kind and ordered pair of nodes, with a dummy chain across each rank the
- * bundle spans. A lateral port's end starts or ends at its own port dummy in the owner's rank. Self-loops take no part.
- * A port counts towards its end's offset only when it sits on the side that faces the adjacent rank, because only that
- * side's offset runs along the in-rank axis.
+ * bundle spans, and a port dummy for each lateral port end. Self-loops take no part. A port counts towards its end's
+ * offset only on the side that faces the adjacent rank.
  */
 export function layer(
   graph: LayoutGraph,
@@ -166,21 +159,21 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
       (options.edgeKinds[first.kind]?.weight ?? 1) * Math.sqrt(members.length),
   };
   build.bundles.push(bundle);
-  const runs =
-    options.edgeKinds[first.kind]?.routed === false ? 0 : members.length;
+  const ends = {
+    count: members.length,
+    runs: options.edgeKinds[first.kind]?.routed === false ? 0 : members.length,
+  };
   const top = endNode(build, {
     node: upper,
     port: reversed ? first.targetPort : first.sourcePort,
     below: true,
-    count: members.length,
-    runs,
+    ...ends,
   });
   const bottom = endNode(build, {
     node: lower,
     port: reversed ? first.sourcePort : first.targetPort,
     below: bundle.flat,
-    count: members.length,
-    runs,
+    ...ends,
   });
   if (bundle.flat) {
     bundle.chain = [top, bottom];
@@ -218,8 +211,7 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
 }
 
 /**
- * The node standing for one end of a bundle: a dummy in the end's rank when the port sits on a lateral side, else the
- * end node itself. The dummy's breadth is the same as a chain dummy's for the bundle's members.
+ * The node standing for one end of a bundle: a port dummy in the end's rank when the port is lateral, else the end node.
  */
 function endNode(
   build: Build,

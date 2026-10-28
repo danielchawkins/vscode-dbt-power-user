@@ -18,6 +18,13 @@ const PAIR_BUDGET: Record<Effort, number> = {
   thorough: 4_000_000,
 };
 
+/** Piece pairs a band's doglegs may test, by effort. */
+const DOGLEG_WORK: Record<Effort, number> = {
+  fast: 20_000,
+  balanced: 200_000,
+  thorough: 1_000_000,
+};
+
 export interface RouteWork {
   /** Overlapping pairs of hyperedges examined, over every band. */
   pairs: number;
@@ -66,6 +73,7 @@ export function route(
     edge: spacing.edge,
     rank: spacing.rank,
     budget: PAIR_BUDGET[effort],
+    doglegWork: DOGLEG_WORK[effort],
   });
 
   const nodeHalves = layered.nodes.map((node, i) => {
@@ -117,7 +125,7 @@ export function route(
  */
 function routeBands(
   bands: readonly Run[][],
-  options: { edge: number; rank: number; budget: number },
+  options: { edge: number; rank: number; budget: number; doglegWork: number },
 ): { widths: number[]; work: RouteWork } {
   const work: RouteWork = { pairs: 0, tracks: 0, crossings: 0, capped: false };
   const widths = bands.map((runs, r) => {
@@ -130,9 +138,11 @@ function routeBands(
     const result = routeChannel(pieces, {
       edge: options.edge,
       budget: options.budget - work.pairs,
+      doglegWork: options.doglegWork,
     });
     runs.forEach((run, i) => {
       run.track = result.track[i] ?? -1;
+      run.jog = result.jogs[i];
     });
     work.pairs += result.pairs;
     work.tracks += result.trackCount;

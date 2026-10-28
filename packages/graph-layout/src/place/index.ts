@@ -1,3 +1,4 @@
+import type { LayeredGraph } from "../layering.js";
 import type { OrderResult } from "../order/index.js";
 import type { LayoutGraph, LayoutOptions, Point, Spacing } from "../types.js";
 import { brandesKoepf } from "./brandesKoepf.js";
@@ -73,7 +74,7 @@ export function place(
   const dummy = layered.nodes.map((node) => node.id === undefined);
   const problem: Problem = {
     layers,
-    gapLeft: gapsLeft(layers, layered.nodes, spacing),
+    gapLeft: gapsLeft(layers, layered, spacing),
     dummy,
     links: layered.segments.map((segment) => {
       const ends = [segment.top, segment.bottom].filter((i) => dummy[i]).length;
@@ -131,22 +132,27 @@ function rankCentres(half: readonly number[], gap: number): number[] {
 }
 
 /**
- * The least gap between each node and its left neighbour in its rank: half of each breadth plus the node spacing
- * between two real nodes, or the edge spacing when a dummy is one of them. The leftmost node of a rank has no gap.
+ * The least gap between each node and its left neighbour in its rank: half of each breadth plus a spacing. Two nodes of
+ * one block (an owner and its lateral port dummies) and two chain dummies keep the edge spacing. Otherwise the gap is
+ * the node spacing when each side is a real node or a port dummy, so the stubs of one card stay apart from the next
+ * card. The leftmost node of a rank has no gap.
  */
 function gapsLeft(
   layers: readonly (readonly number[])[],
-  nodes: readonly { id: string | undefined; breadth: number }[],
+  layered: LayeredGraph,
   spacing: Pick<Spacing, "node" | "edge">,
 ): number[] {
+  const { nodes, block } = layered;
+  const anchored = (x: number): boolean =>
+    nodes[x]?.id !== undefined || nodes[x]?.port !== undefined;
   const gaps = nodes.map(() => 0);
   for (const layer of layers) {
     layer.slice(1).forEach((v, k) => {
-      const left = nodes[layer[k]!]!;
-      const right = nodes[v]!;
-      const real = left.id !== undefined && right.id !== undefined;
-      const gap = real ? spacing.node : spacing.edge;
-      gaps[v] = (left.breadth + right.breadth) / 2 + gap;
+      const u = layer[k]!;
+      const sameBlock = block[u] === block[v];
+      const gap =
+        !sameBlock && anchored(u) && anchored(v) ? spacing.node : spacing.edge;
+      gaps[v] = (nodes[u]!.breadth + nodes[v]!.breadth) / 2 + gap;
     });
   }
   return gaps;

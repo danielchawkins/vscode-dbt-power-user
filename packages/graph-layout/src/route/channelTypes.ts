@@ -13,6 +13,15 @@ export interface ChannelPiece {
   trunk?: string | undefined;
 }
 
+/**
+ * A dogleg: the run leaves its first track, runs across to `at` in-rank, drops or rises to `track` and continues to its
+ * lower end from there.
+ */
+export interface Jog {
+  at: number;
+  track: number;
+}
+
 /** Pieces that leave or enter one point, and the span of the track they need. */
 export interface Hyperedge {
   members: number[];

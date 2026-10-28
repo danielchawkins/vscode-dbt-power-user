@@ -7,6 +7,7 @@ import type {
   LayoutOptions,
   Side,
 } from "../types.js";
+import type { Jog } from "./channelTypes.js";
 
 /** One member edge's run through the band below `rank`, from its upper end to its lower end. */
 export interface Run {
@@ -22,6 +23,8 @@ export interface Run {
   flat: boolean;
   /** The track the band gave the run, counted from the band's upper edge; -1 for a straight run. */
   track: number;
+  /** The second track and the in-rank coordinate of a dogleg; undefined for a run on one track. */
+  jog?: Jog | undefined;
   /** The edge's source port as a key, shared by every edge from that port; undefined without one. */
   trunk: string | undefined;
   /**
