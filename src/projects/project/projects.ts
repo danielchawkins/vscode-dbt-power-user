@@ -49,11 +49,15 @@ export class Projects implements Disposable {
   private _onDidChangeErrors = new EventEmitter<Project>();
   /** Fires when a project's current configuration error changes. */
   readonly onDidChangeErrors: Event<Project> = this._onDidChangeErrors.event;
+  private _onDidChangeProjects = new EventEmitter<void>();
+  /** Fires once the set of Projects follows a registry change, before the new ones finish initializing. */
+  readonly onDidChangeProjects: Event<void> = this._onDidChangeProjects.event;
   private disposables: Disposable[] = [
     this._onDidInitialize,
     this._onDidChangeManifest,
     this._onDidRemoveProject,
     this._onDidChangeErrors,
+    this._onDidChangeProjects,
     onDidChangeSettings(["target", "profilesDir", "perProject"], (change) => {
       for (const { project } of this.projectsByRoot.values()) {
         if (change.affects(project.projectRoot)) {
@@ -204,6 +208,7 @@ export class Projects implements Disposable {
         this.projectsByRoot.delete(rootPath);
       }
     }
+    this._onDidChangeProjects.fire();
 
     for (const entry of removed) {
       this._onDidRemoveProject.fire(entry.project.projectRoot);

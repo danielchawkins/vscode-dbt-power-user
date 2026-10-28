@@ -6,7 +6,6 @@ import { type ManifestProject } from "../../core/manifest/index";
 import { isAtOrBelow } from "../../core/paths";
 import type { ProjectPaths, ResolvedDefer } from "../../core/snapshot/index";
 import { dbtProjectFilePath } from "../../core/snapshot/index";
-import type { FusionCommandIntegrationFactory } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { FusionClient } from "../../fusion/fusionClient";
@@ -14,14 +13,9 @@ import {
   createFusionCommands,
   type FusionCommands,
 } from "../../fusion/fusionCommands";
-import type {
-  FusionExecutableResolver,
-  ResolverEnvironment,
-} from "../../fusion/fusionExecutable";
 import type { FusionVersion } from "../../fusion/fusionVersion";
 import { followClientCompiles } from "../clients/clientChange";
 import { readProjectSnapshot } from "../clients/readProjectSnapshot";
-import type { ManifestParsers } from "../manifest/manifest";
 import { ManifestRebuild } from "../manifest/manifestRebuild";
 import { ManifestState } from "../manifest/manifestState";
 import { ManifestTrigger } from "../manifest/manifestTrigger";
@@ -34,12 +28,14 @@ import { notifyError } from "../output/notifications";
 import { ProjectDiagnostics } from "../output/projectDiagnostics";
 import { ProjectErrors } from "../output/projectErrors";
 import type { RunHistoryService } from "../output/runHistoryService";
+import type { DeclaredProject } from "../registry/projectRegistry";
 import type { SchemaOriginStatus } from "../registry/schemaOrigin";
 import { projectOptIns, projectSchemaOrigin } from "../registry/schemaOrigin";
 import { CommandQueue } from "./commandQueue";
 import type { ProjectCommandDeps } from "./projectCommands";
 import { refreshCliConfig } from "./projectCommands";
 import { ProjectDbtCommands } from "./projectDbtCommands";
+import type { ProjectOptions } from "./projectOptions";
 import { ProjectQueries } from "./projectQueries";
 import {
   packageNameOf,
@@ -51,30 +47,9 @@ import type { SharedStateService } from "./sharedStateService";
 
 const LOG_SOURCE = "Project";
 
-/** The collaborators a `Project` is built from. */
-export interface ProjectOptions {
-  /** The Declared Project's log; the Project does not dispose it. */
-  terminal: Log;
-  sharedState: SharedStateService;
-  runHistoryService: RunHistoryService;
-  resolver: FusionExecutableResolver;
-  cliFactory: FusionCommandIntegrationFactory;
-  /** The project's resolved environment for executable lookup; the host's when absent. */
-  environment?: () => Promise<ResolverEnvironment>;
-  parsers: ManifestParsers;
-  projectRoot: Uri;
-  /** The number of Declared Projects, which decides whether task names carry the project name. */
-  projectCount?: () => number;
-  /** The project's current Fusion Client; resolved per call so a restart leaves no stale reference. */
-  fusionClient?: () => FusionClient | undefined;
-  /** Fires when that client is replaced or changes state. */
-  clientChanged?: Event<void>;
-  /** Views reading parse-owned fields; without it every source change rebuilds. */
-  metadataDemand?: MetadataDemand;
-}
-
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
 export class Project implements Disposable, ManifestProject {
+  readonly declared: DeclaredProject;
   readonly projectRoot: Uri;
   private readonly terminal: Log;
   private readonly sharedState: SharedStateService;
@@ -133,6 +108,7 @@ export class Project implements Disposable, ManifestProject {
   };
 
   constructor(options: ProjectOptions) {
+    this.declared = options.declared;
     this.projectRoot = options.projectRoot;
     this.terminal = options.terminal;
     this.sharedState = options.sharedState;

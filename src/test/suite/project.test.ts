@@ -38,12 +38,10 @@ import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import { DbtTaskTerminal } from "../../projects/project/dbtTask";
-import {
-  type Project,
-  type ProjectOptions,
-} from "../../projects/project/project";
+import type { Project } from "../../projects/project/project";
 import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
 import { queueCli } from "../../projects/project/projectCommands";
+import type { ProjectOptions } from "../../projects/project/projectOptions";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
