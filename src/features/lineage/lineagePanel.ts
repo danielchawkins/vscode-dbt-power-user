@@ -26,9 +26,9 @@ import type { Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
-import type { LineageService } from "./dbtLineageService";
 import { detailRequestHandlers } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
+import type { LineageService } from "./lineageService";
 import type { ResolvedSourceTable } from "./lineageSources";
 import {
   resolveSourceStartingNode,

@@ -3,7 +3,7 @@ import { CancellationTokenSource, workspace } from "vscode";
 import {
   LineageService,
   describeNoLineage,
-} from "../../features/lineage/dbtLineageService";
+} from "../../features/lineage/lineageService";
 import { lineageTable } from "../../features/lineage/lineageTables";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { fakeFusionCommands } from "../fusionCommandsFake";

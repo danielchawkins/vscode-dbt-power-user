@@ -10,7 +10,7 @@ import {
 import type {
   ConnectedColumnsRequest,
   ConnectedColumnsResult,
-} from "../../features/lineage/dbtLineageService";
+} from "../../features/lineage/lineageService";
 import { pollUntil } from "../async";
 
 /**

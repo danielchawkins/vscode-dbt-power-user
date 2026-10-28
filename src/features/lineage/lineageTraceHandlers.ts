@@ -1,9 +1,9 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Handlers } from "../../webview/messageRouter";
 import type { ColumnTraceRequests } from "./columnTraceRequests";
-import type { LineageService } from "./dbtLineageService";
 import { connectedColumnsBody } from "./lineageBodies";
 import type { Respond } from "./lineageDetailHandlers";
+import type { LineageService } from "./lineageService";
 
 type PanelMessage = lineage.PanelMessage;
 

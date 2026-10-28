@@ -19,7 +19,7 @@ import {
   PARENT_TABLES_COMMAND,
   registerConnectedColumnsCommand,
 } from "../../features/lineage/connectedColumnsCommand";
-import type { LineageService } from "../../features/lineage/dbtLineageService";
+import type { LineageService } from "../../features/lineage/lineageService";
 import { FusionPowerUserExtension } from "../../fusionPowerUserExtension";
 import {
   FUSION_CLIENT_STATES_COMMAND,

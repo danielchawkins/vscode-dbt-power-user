@@ -23,7 +23,7 @@ type DetailsProject = Pick<Project, "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
 };
 
-import type { LineageService } from "./dbtLineageService";
+import type { LineageService } from "./lineageService";
 
 /** What the lineage panel shows for one node's columns. */
 export interface ColumnsBody {

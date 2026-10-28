@@ -1,5 +1,5 @@
 import { Disposable } from "vscode";
-import { LineageService } from "../features/lineage/dbtLineageService";
+import { LineageService } from "../features/lineage/lineageService";
 import { DefaultFusionClientFactory } from "../languageClient/defaultFusionClientFactory";
 import {
   type FusionLaunchSources,
