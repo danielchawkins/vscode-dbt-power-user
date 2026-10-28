@@ -51,8 +51,8 @@ export interface BoxInput {
 /**
  * Plans one box per cluster that has members. A box's left and right edges are variables after the layered nodes, so
  * the separations are all of the form x[to] - x[from] >= gap. Each box keeps its members inside with its padding, and
- * each node next to a box stays outside it. A nested box keeps its parent's padding, and sibling boxes keep one order
- * in every rank, which the ordering makes consistent, so that no two of them overlap.
+ * each node next to a box stays outside it. A nested box keeps its parent's padding. Sibling boxes that share a rank
+ * keep one order, which the ordering makes consistent, so that no two of them overlap in that rank.
  */
 export function planBoxes(input: BoxInput): BoxPlan {
   const boxes = boxesOf(input);

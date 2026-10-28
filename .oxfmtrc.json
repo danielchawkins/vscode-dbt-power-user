@@ -38,6 +38,7 @@
     "media",
     "altimate_packages",
     "src/lib",
+    "packages/graph-layout/src/testing/webcolaVpsc.ts",
     "webview_panels/dist",
     "webview_panels/src/lib",
     "scripts/spikes",
