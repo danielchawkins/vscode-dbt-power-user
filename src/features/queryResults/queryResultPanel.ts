@@ -90,14 +90,14 @@ export class QueryResultPanel extends PanelHost<
 
   public constructor({
     extensionContext,
-    eventEmitterService,
+    sharedState,
     log,
     queryManifestService,
     currentProject,
     onDidRemoveProject,
   }: {
     extensionContext: ExtensionContextStore;
-    eventEmitterService: SharedStateService;
+    sharedState: SharedStateService;
     log: Log;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
@@ -105,7 +105,7 @@ export class QueryResultPanel extends PanelHost<
   }) {
     super({
       extensionContext,
-      sharedState: eventEmitterService,
+      sharedState,
       log,
       queryManifestService,
     });

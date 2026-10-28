@@ -18,7 +18,7 @@ vi.mock("../../webview/panelHtml", async (importOriginal) => ({
 function realPanel(removed = new EventEmitter<Uri>()) {
   return new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as any,
-    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as any,
+    sharedState: { eventEmitter: new EventEmitter<unknown>() } as any,
     log: spyLog(),
     queryManifestService: {} as any,
     currentProject: {} as any,

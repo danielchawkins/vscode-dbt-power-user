@@ -157,7 +157,7 @@ export function queryResultPanel(
 ): QueryResultPanel {
   return new QueryResultPanel({
     extensionContext,
-    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
+    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
     log: terminal,
     queryManifestService: queryManifestService as never,
     currentProject: currentProject as never,

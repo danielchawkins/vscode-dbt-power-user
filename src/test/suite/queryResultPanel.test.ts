@@ -37,7 +37,7 @@ function makePanel(
   };
   const panel = new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as never,
-    eventEmitterService: {
+    sharedState: {
       eventEmitter: { event: () => ({ dispose: vi.fn() }) },
     } as never,
     log: silentLog(),
