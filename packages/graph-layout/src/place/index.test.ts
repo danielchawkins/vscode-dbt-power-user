@@ -2,6 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { order } from "../order/index.js";
 import { rank } from "../rank/index.js";
+import { options } from "../testing/graphs.js";
 import type {
   LayoutGraph,
   LayoutHints,
@@ -10,15 +11,8 @@ import type {
 } from "../types.js";
 import { place } from "./index.js";
 
-const options: LayoutOptions = {
-  direction: "down",
-  edgeKinds: {
-    dependency: { ranks: true, weight: 1 },
-    column: { ranks: false, weight: 0.5 },
-  },
-};
-
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
+/** Random graphs whose nodes have random sizes, on two to nine nodes. */
+const sizedGraphArb: fc.Arbitrary<LayoutGraph> = fc
   .integer({ min: 2, max: 9 })
   .chain((count) =>
     fc
@@ -50,7 +44,7 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
   );
 
 const caseArb = fc.record({
-  graph: graphArb,
+  graph: sizedGraphArb,
   direction: fc.constantFrom("down" as const, "right" as const),
   effort: fc.constantFrom(
     "fast" as const,
@@ -187,7 +181,7 @@ describe("place", () => {
 
   it("holds an anchor exactly at the origin", () => {
     fc.assert(
-      fc.property(graphArb, (graph) => {
+      fc.property(sizedGraphArb, (graph) => {
         const placed = placeGraph(graph, { ...options, anchor: "n0" });
         const anchor = placed.nodes.get("n0");
         expect(anchor?.x).toBe(0);
@@ -198,7 +192,7 @@ describe("place", () => {
 
   it("returns a point for every layered node, real nodes first", () => {
     fc.assert(
-      fc.property(graphArb, (graph) => {
+      fc.property(sizedGraphArb, (graph) => {
         const ordering = order(graph, options, rank(graph, options));
         const placed = place(graph, options, ordering);
         expect(placed.points).toHaveLength(ordering.layered.nodes.length);
@@ -214,7 +208,7 @@ describe("place", () => {
 
   it("does no solver work at fast effort and at most its cap otherwise", () => {
     fc.assert(
-      fc.property(graphArb, (graph) => {
+      fc.property(sizedGraphArb, (graph) => {
         expect(placeGraph(graph, { ...options, effort: "fast" }).work).toBe(0);
         expect(
           placeGraph(graph, { ...options, effort: "balanced" }).work,

@@ -4,7 +4,7 @@ import { rank } from "../rank/index.js";
 import type { LayoutGraph, LayoutOptions } from "../types.js";
 import { place } from "./index.js";
 
-const options: LayoutOptions = {
+const optionsWithNodeSpacing: LayoutOptions = {
   direction: "down",
   edgeKinds: { dependency: { ranks: true, weight: 1 } },
   spacing: { node: 40 },
@@ -30,8 +30,8 @@ describe("place lateral ports", () => {
   it("keeps two cards of different blocks node spacing apart when a lateral port dummy sits between them", () => {
     const placed = place(
       graph,
-      options,
-      order(graph, options, rank(graph, options)),
+      optionsWithNodeSpacing,
+      order(graph, optionsWithNodeSpacing, rank(graph, optionsWithNodeSpacing)),
     ).nodes;
     const [first, second] = ["a", "b"]
       .map((id) => ({ id, centre: placed.get(id)! }))
