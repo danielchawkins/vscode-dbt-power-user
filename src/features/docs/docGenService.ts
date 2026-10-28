@@ -13,7 +13,7 @@ import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { Projects } from "../../projects/project/projects";
 
-interface DBTDocumentationMessage {
+interface DocumentationMessage {
   documentation: documentationEditor.Documentation | undefined;
   message?: PanelNotice;
 }
@@ -153,7 +153,7 @@ export class DocGenService {
    */
   private documentationGate(
     filePath?: string,
-  ): { stop: DBTDocumentationMessage } | { model: OpenModel } {
+  ): { stop: DocumentationMessage } | { model: OpenModel } {
     const initialValidation = this.getDocumentationValidationMessage(filePath);
     if (initialValidation.type === "error" || !filePath) {
       return { stop: { documentation: undefined, message: initialValidation } };
@@ -217,7 +217,7 @@ export class DocGenService {
   private async getDocumentation(
     filePath?: string,
     compiled = true,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     const gate = this.documentationGate(filePath);
     if ("stop" in gate) {
       return gate.stop;
@@ -276,13 +276,13 @@ export class DocGenService {
 
   public async getCompiledDocumentation(
     filePath?: string,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     return this.getDocumentation(filePath, true);
   }
 
   public async getUncompiledDocumentation(
     filePath?: string,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     return this.getDocumentation(filePath, false);
   }
 }
