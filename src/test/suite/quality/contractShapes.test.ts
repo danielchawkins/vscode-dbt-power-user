@@ -9,17 +9,23 @@ import { describe, expect, it } from "vitest";
 // the contract type (`type ModelTest = documentationEditor.ModelTest;`) is an import, not a copy. Any other
 // declaration with the same name is a copy, including an `Omit<…>`, `Pick<…>` or intersection that re-declares
 // fields, unless it is listed in ALLOWED_VIEWS with the reason it narrows the contract on purpose.
-// BASELINE lists the copies that exist today; the refactor that removes one deletes its entry, and the second test
-// fails until it does, so the list only shrinks.
+// BASELINE lists the copies that exist today; the refactor that removes one deletes its entry, and `keeps no baseline
+// entry the code no longer has` fails until it does, so the list only shrinks.
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const CONTRACT = "packages/webview-contract/src";
 const SCANNED = ["src", "webview_panels/src"];
 
-/** Views of a contract shape that are intended, as `"<file> <name>"`, each with the reason it stays a view. */
-const ALLOWED_VIEWS = new Set([
+/**
+ * Views of a contract shape that are intended: `"<file> <name>"` to the text its declaration must start with after the
+ * `=`, so a field-by-field copy under the same name is still reported.
+ */
+const ALLOWED_VIEWS = new Map([
   // Narrows only `viewsType`, to the core's own union; every other field is the contract's.
-  "src/core/lineage/columnLineage.ts ColumnLineage",
+  [
+    "src/core/lineage/columnLineage.ts ColumnLineage",
+    "Omit<lineage.ColumnLineage,",
+  ],
 ]);
 
 const BASELINE = new Set<string>([]);
@@ -62,7 +68,9 @@ function copiesIn(
     const name = match[1];
     const line = match[0];
     const alias = new RegExp(`=\\s*(?:\\w+\\.)?${name}\\s*;`).test(line);
-    const allowed = ALLOWED_VIEWS.has(`${file} ${name}`);
+    const view = ALLOWED_VIEWS.get(`${file} ${name}`);
+    const allowed =
+      view !== undefined && line.replace(/^[^=]*=\s*/, "").startsWith(view);
     if (names.has(name) && !alias && !allowed) {
       found.push(`${file} ${name}`);
     }
@@ -89,6 +97,15 @@ describe("copiesIn", () => {
       "a.ts Documentation",
       "a.ts ColumnLineage",
     ]);
+  });
+  it("reports a listed view's name when it is re-declared field by field", () => {
+    expect(
+      copiesIn(
+        "src/core/lineage/columnLineage.ts",
+        "export interface ColumnLineage { source: [string, string]; }",
+        names,
+      ),
+    ).toEqual(["src/core/lineage/columnLineage.ts ColumnLineage"]);
   });
   it("skips an exact alias, an import, and a listed view", () => {
     const text = [
@@ -127,5 +144,17 @@ describe("contract shapes", () => {
 
   it("keeps no baseline entry the code no longer has", () => {
     expect([...BASELINE].filter((copy) => !copies.has(copy))).toEqual([]);
+  });
+
+  it("keeps no allowed view the code no longer declares", () => {
+    const stale = [...ALLOWED_VIEWS].filter(([key, prefix]) => {
+      const [file, name] = key.split(" ");
+      const text = file === undefined ? "" : read(file);
+      return !new RegExp(
+        `^export type ${name} = ${prefix.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+        "m",
+      ).test(text);
+    });
+    expect(stale).toEqual([]);
   });
 });

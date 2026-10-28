@@ -24,7 +24,10 @@ import {
   syncRequestId,
 } from "./guards.js";
 
-export type { DocumentationColumn, Source } from "./documentationColumn.js";
+export type {
+  DocumentationSource,
+  DocumentationColumn,
+} from "./documentationColumn.js";
 
 /** The documentation of the model in the active editor; manifest-derived fields may be `null`. */
 export interface Documentation {
