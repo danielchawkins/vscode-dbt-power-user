@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 import { Constraint, Solver, Variable } from "../testing/webcolaVpsc.js";
 import { type Separation, solveSeparations } from "./vpsc.js";
 
