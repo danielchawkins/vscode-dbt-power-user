@@ -3,12 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// Workspace packages (packages/*) are built in one place: the root `build:packages` and `watch:packages` scripts,
-// which every build, watch, lint and test entrypoint calls. An entrypoint that names one package itself
-// (`build:contract`, `--workspace @fusion-power-user/…`, `--prefix ../packages/…`) has to be edited for every new
-// package and every new consumer, and drifts: `npm run build` builds graph-layout while `just build` does not.
-// BASELINE lists the entrypoints that still name a package. Entries only leave it: the second test fails on a
-// stale entry, so the list shrinks.
+// Only build:packages and watch:packages name a workspace package; every entrypoint calls them.
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const PACKAGE_DIRS = readdirSync(join(ROOT, "packages"), {
@@ -22,8 +17,6 @@ const ALLOWED = new Set([
   "package.json build:packages",
   "package.json watch:packages",
 ]);
-
-const BASELINE = new Set<string>();
 
 /**
  * Whether a command names a workspace package in `dirs`: its `@fusion-power-user/` name, its `packages/<dir>` path,
@@ -49,7 +42,7 @@ function recipes(justfile: string): Map<string, string> {
   const bodies = new Map<string, string>();
   let current: string | undefined;
   for (const line of justfile.split("\n")) {
-    const header = /^([a-z][\w-]*)(?:\s[^:=]*)?:(?!=)/.exec(line);
+    const header = /^@?([A-Za-z_][\w-]*)(?:\s[^:]*)?:(?!=)/.exec(line);
     if (header) {
       current = header[1];
       bodies.set(current, "");
@@ -87,10 +80,14 @@ function packageNamingSites(): string[] {
 
 describe("recipes", () => {
   it("returns each recipe's indented body and skips assignments", () => {
-    const justfile = 'x := "1"\na:\n    one\n\n    two\nb *args:\n    three\n';
+    const justfile =
+      'x := "1"\na:\n    one\n\n    two\nb *args:\n    three\nc x="1":\n    four\n_d:\n    five\n@e:\n    six\n';
     expect([...recipes(justfile)]).toEqual([
       ["a", "one\ntwo\n"],
       ["b", "three\n"],
+      ["c", "four\n"],
+      ["_d", "five\n"],
+      ["e", "six\n"],
     ]);
   });
 });
@@ -127,12 +124,8 @@ describe("namesAPackage", () => {
 describe("build wiring", () => {
   const sites = new Set(packageNamingSites());
 
-  it("names a workspace package only in the baseline", () => {
-    expect([...sites].filter((site) => !BASELINE.has(site))).toEqual([]);
-  });
-
-  it("keeps no baseline entry the scripts no longer have", () => {
-    expect([...BASELINE].filter((site) => !sites.has(site))).toEqual([]);
+  it("names a workspace package only in build:packages and watch:packages", () => {
+    expect([...sites]).toEqual([]);
   });
 
   const scripts = (
