@@ -26,7 +26,7 @@ import type { Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
-import type { DbtLineageService } from "./dbtLineageService";
+import type { LineageService } from "./dbtLineageService";
 import { detailRequestHandlers } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
 import type { ResolvedSourceTable } from "./lineageSources";
@@ -77,7 +77,7 @@ export class LineagePanel
   // active file. Used to avoid redundant re-renders on every cursor move; the
   declare protected extensionContext: ExtensionContextStore;
   private terminal: Log;
-  private dbtLineageService: DbtLineageService;
+  private dbtLineageService: LineageService;
   private metadataDemand: MetadataDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
   private readonly currentProject: CurrentProject;
@@ -101,7 +101,7 @@ export class LineagePanel
   }: {
     extensionContext: ExtensionContextStore;
     terminal: Log;
-    dbtLineageService: DbtLineageService;
+    dbtLineageService: LineageService;
     eventEmitterService: SharedStateService;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;

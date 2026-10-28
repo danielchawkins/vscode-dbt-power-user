@@ -84,7 +84,7 @@ export function describeNoLineage(reason: NoLineage): string {
   }
 }
 
-export class DbtLineageService {
+export class LineageService {
   private currentProject: CurrentProject;
   /** The Fusion Client of the Current Project. */
   private currentClient: () => FusionClient | undefined;

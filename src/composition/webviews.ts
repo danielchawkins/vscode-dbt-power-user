@@ -3,7 +3,7 @@ import { ColumnProposalService } from "../features/docs/columnProposals";
 import { DbtTestService } from "../features/docs/dbtTestService";
 import { DocGenService } from "../features/docs/docGenService";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
-import type { DbtLineageService } from "../features/lineage/dbtLineageService";
+import type { LineageService } from "../features/lineage/dbtLineageService";
 import { LineagePanel } from "../features/lineage/lineagePanel";
 import { LineageViewProvider } from "../features/lineage/lineageViewProvider";
 import { WebviewViewProviders } from "../features/panels";
@@ -13,7 +13,7 @@ import type { ProjectsGraph } from "./projects";
 
 export function composeWebviews(
   graph: ProjectsGraph,
-  dbtLineageService: DbtLineageService,
+  dbtLineageService: LineageService,
   columnProposalRequests: ColumnProposalRequests,
 ): WebviewViewProviders {
   const {

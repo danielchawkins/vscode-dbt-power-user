@@ -19,7 +19,7 @@ import {
   PARENT_TABLES_COMMAND,
   registerConnectedColumnsCommand,
 } from "../../features/lineage/connectedColumnsCommand";
-import type { DbtLineageService } from "../../features/lineage/dbtLineageService";
+import type { LineageService } from "../../features/lineage/dbtLineageService";
 import { FusionPowerUserExtension } from "../../fusionPowerUserExtension";
 import {
   FUSION_CLIENT_STATES_COMMAND,
@@ -108,7 +108,7 @@ describe("disposable ownership", () => {
       }),
     ).toBeUndefined();
     expect(
-      registerConnectedColumnsCommand({} as DbtLineageService),
+      registerConnectedColumnsCommand({} as LineageService),
     ).toBeUndefined();
   });
 
@@ -122,7 +122,7 @@ describe("disposable ownership", () => {
         environments: {} as ProjectEnvironments,
         status: {} as FusionStatus,
       }),
-      registerConnectedColumnsCommand({} as DbtLineageService),
+      registerConnectedColumnsCommand({} as LineageService),
     ];
 
     owned.forEach((disposable) => disposable?.dispose());

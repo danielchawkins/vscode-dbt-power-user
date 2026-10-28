@@ -12,7 +12,7 @@ import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
 import { BOUNDS } from "../../core/timing";
-import { DbtLineageService } from "../../features/lineage/dbtLineageService";
+import { LineageService } from "../../features/lineage/dbtLineageService";
 import {
   FUSION_LSP_COMMANDS,
   MAX_UNEXPECTED_EXIT_RETRIES,
@@ -591,7 +591,7 @@ describe("FusionLanguageClient lifecycle", () => {
     });
     await waitForState(client, "running");
     const lsp = createFusionCommands(() => client);
-    const service = new DbtLineageService({
+    const service = new LineageService({
       currentProject: {} as any,
       currentClient: () => client,
       currentLsp: () => lsp,

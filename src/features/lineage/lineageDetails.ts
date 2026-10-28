@@ -23,7 +23,7 @@ type DetailsProject = Pick<Project, "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
 };
 
-import type { DbtLineageService } from "./dbtLineageService";
+import type { LineageService } from "./dbtLineageService";
 
 /** What the lineage panel shows for one node's columns. */
 export interface ColumnsBody {
@@ -43,12 +43,12 @@ export interface ColumnsBody {
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
   private readonly currentProject: CurrentProject;
-  private readonly dbtLineageService: DbtLineageService;
+  private readonly dbtLineageService: LineageService;
   private readonly terminal: Log;
 
   constructor(
     currentProject: CurrentProject,
-    dbtLineageService: DbtLineageService,
+    dbtLineageService: LineageService,
     terminal: Log,
   ) {
     this.currentProject = currentProject;
