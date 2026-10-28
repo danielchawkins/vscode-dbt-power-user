@@ -10,3 +10,8 @@ invalid:
   - 'const graphArb: fc.Arbitrary<LayoutGraph> = fc.integer().map(() => ({ nodes: [], edges: [] }));'
   - 'function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'
   - 'const sortedRanks = (model: OrderModel) => model.layers.map((l) => l.toSorted((a, b) => a - b));'
+  - 'const options = { direction: "down", edgeKinds: {} } satisfies LayoutOptions;'
+  - 'const graphArb = fc.integer().map(() => ({ nodes: [], edges: [] }));'
+  - 'const randomModel = (graph: LayoutGraph, seed: number) => createModel(graph, seed);'
+  - 'export const sortedRanks = (model: OrderModel) => model.layers;'
+  - 'export function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'

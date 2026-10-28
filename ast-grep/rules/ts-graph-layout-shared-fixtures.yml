@@ -11,35 +11,35 @@ message: >-
   own fixture only when it differs, under a name that says how.
 files:
   - packages/graph-layout/src/**/*.test.ts
+utils:
+  top-level:
+    any:
+      - inside:
+          kind: lexical_declaration
+          inside:
+            kind: program
+      - inside:
+          kind: lexical_declaration
+          inside:
+            kind: export_statement
 rule:
   any:
-    # const options: LayoutOptions = { ... };  const graphArb: fc.Arbitrary<LayoutGraph> = fc...;
+    # const options = ...; const graphArb = ...; const randomModel = (...) => ...; const sortedRanks = ...;
+    # with or without a type annotation, exported or not.
     - kind: variable_declarator
       all:
         - has:
             field: name
-            regex: '^(options|graphArb)$'
-        - has:
-            field: type
-            regex: '(LayoutOptions|Arbitrary<LayoutGraph>)'
-        - inside:
-            kind: lexical_declaration
-            inside:
-              kind: program
-    # const sortedRanks = (model) => model.layers.map(...);
-    - kind: variable_declarator
-      all:
-        - has:
-            field: name
-            regex: '^sortedRanks$'
-        - inside:
-            kind: lexical_declaration
-            inside:
-              kind: program
-    # function randomModel(graph, seed) { ... }
+            regex: '^(options|graphArb|randomModel|sortedRanks)$'
+        - matches: top-level
+    # function randomModel(graph, seed) { ... }, exported or not.
     - kind: function_declaration
-      has:
-        field: name
-        regex: '^randomModel$'
-      inside:
-        kind: program
+      all:
+        - has:
+            field: name
+            regex: '^(randomModel|sortedRanks)$'
+        - any:
+            - inside:
+                kind: program
+            - inside:
+                kind: export_statement
