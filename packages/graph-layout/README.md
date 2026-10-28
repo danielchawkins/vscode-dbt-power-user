@@ -133,7 +133,7 @@ Rejected, with the reason:
 2. `measureDrawing` and `compareDrawings`, the geometric metrics, so every later phase is measured: in place.
 3. Ranking: cycle removal, network simplex, partitions, rank hints: in place.
 4. Ordering with ports, then sifting: in place. Keeping clusters contiguous is step 7 of the engine plan and not yet done.
-5. Placement, then cluster boxes.
+5. Placement: in place. Node centres along each rank from the quadratic objective, with the Brandes and Köpf warm start and the effort caps. Cluster boxes are not yet placed: they are a later step.
 6. Channel routing, then lateral ports, then doglegs.
 7. `layout` composes the phases; the property tests run on it.
 
