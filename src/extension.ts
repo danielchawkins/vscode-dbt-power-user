@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "vscode";
 import { compose } from "./compositionRoot";
-import type { DBTPowerUserExtension } from "./dbtPowerUserExtension";
+import type { FusionPowerUserExtension } from "./dbtPowerUserExtension";
 
 /** The value `activate` returns, read by test harnesses through `Extension.exports`. */
 export interface FusionPowerUserApi {
@@ -10,7 +10,7 @@ export interface FusionPowerUserApi {
   readonly readyMs: number | undefined;
 }
 
-let activeExtension: DBTPowerUserExtension | undefined;
+let activeExtension: FusionPowerUserExtension | undefined;
 
 export function activate(context: ExtensionContext): FusionPowerUserApi {
   const start = performance.now();

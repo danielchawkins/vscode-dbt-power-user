@@ -4,8 +4,6 @@ valid:
   - 'export class DbtTaskProvider {}'
   - 'export type ModelTest = documentationEditor.ModelTest;'
   - 'const DBT_PROJECT_FILE = "dbt_project.yml";'
-  # Baselined names, still to rename.
-  - 'export class DBTPowerUserExtension {}'
 invalid:
   - 'export interface DBTColumnProposal { column: string }'
   - 'export class DBTClientPool {}'

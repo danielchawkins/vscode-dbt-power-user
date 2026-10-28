@@ -11,7 +11,7 @@ import type { WorkspaceFolder } from "vscode";
 import { extensions, Uri, window, workspace } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import {
-  DBTPowerUserExtension,
+  FusionPowerUserExtension,
   type ExtensionServices,
 } from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
@@ -88,7 +88,7 @@ describe("fusionNotificationPolicy", () => {
       dbtLineageService: {},
       projectEnvironments: {},
     };
-    const extension = new DBTPowerUserExtension(
+    const extension = new FusionPowerUserExtension(
       services as unknown as ExtensionServices,
       [],
     );

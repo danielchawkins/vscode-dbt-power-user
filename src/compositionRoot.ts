@@ -4,7 +4,7 @@ import { composeEditorProviders } from "./composition/editorProviders";
 import { composeFusion } from "./composition/fusion";
 import { composeProjects, type ProjectFactory } from "./composition/projects";
 import { composeWebviews } from "./composition/webviews";
-import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
+import { FusionPowerUserExtension } from "./dbtPowerUserExtension";
 import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { ColumnProposalRequests } from "./features/docs/columnProposals";
@@ -20,7 +20,7 @@ import { StartupGate } from "./startupGate";
 
 /** The composed graph: the extension plus the collaborators tests inspect. */
 export interface Composition {
-  extension: DBTPowerUserExtension;
+  extension: FusionPowerUserExtension;
   extensionContextStore: ExtensionContextStore;
   fusionStatus: FusionStatus;
   fusionExecutableResolver: ConfiguredFusionExecutableResolver;
@@ -77,7 +77,7 @@ export function compose(context: ExtensionContext): Composition {
     new UnservedProjectsNotice(projectRegistry),
   ];
   return {
-    extension: new DBTPowerUserExtension(services, owned),
+    extension: new FusionPowerUserExtension(services, owned),
     extensionContextStore: graph.extensionContextStore,
     fusionStatus: fusion.fusionStatus,
     fusionExecutableResolver: graph.fusionExecutableResolver,
