@@ -91,8 +91,8 @@ function macroShapes(macros: Map<string, { unique_id: string; name: string }>) {
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function nodeShapes(event: ParsedManifest) {
-  return Array.from(event.nodeMetaMap.nodes(), (node) => ({
+function nodeShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.nodeMetaMap.nodes(), (node) => ({
     unique_id: node.unique_id,
     name: node.name,
     alias: node.alias,
@@ -103,8 +103,8 @@ function nodeShapes(event: ParsedManifest) {
   })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function sourceShapes(event: ParsedManifest) {
-  return Array.from(event.sourceMetaMap.values(), (source) => ({
+function sourceShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.sourceMetaMap.values(), (source) => ({
     unique_id: source.unique_id,
     name: source.name,
     database: source.database,
@@ -117,8 +117,8 @@ function sourceShapes(event: ParsedManifest) {
   })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function testShapes(event: ParsedManifest) {
-  return Array.from(event.testMetaMap.entries(), ([key, test]) => ({
+function testShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.testMetaMap.entries(), ([key, test]) => ({
     key,
     unique_id: test.unique_id,
     alias: test.alias,
@@ -196,7 +196,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       onDidParse: manifestEvents.event,
       rebuildManifest: async () => {},
     } as unknown as Project;
-    const event: ParsedManifest = {
+    const manifest: ParsedManifest = {
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(
@@ -235,11 +235,11 @@ describe("Metadata contract — shape and key set snapshot", () => {
     const source = new ManifestMetadataSource(declaredProject, project);
     const published: ParsedManifest[] = [];
     source.onDidParse((m) => published.push(m));
-    manifestEvents.fire(event);
-    manifestEvents.fire(event);
-    expect(published).toEqual([event, event]);
+    manifestEvents.fire(manifest);
+    manifestEvents.fire(manifest);
+    expect(published).toEqual([manifest, manifest]);
     const forwarded = source.current();
-    expect(forwarded).toBe(event);
+    expect(forwarded).toBe(manifest);
     if (!forwarded) {
       throw new Error("Expected metadata publication");
     }
