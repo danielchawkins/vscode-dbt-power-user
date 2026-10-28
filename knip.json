@@ -23,7 +23,8 @@
         "src/**/*.test.ts",
         "src/rank/index.ts!",
         "src/order/index.ts!",
-        "src/place/index.ts!"
+        "src/place/index.ts!",
+        "src/route/index.ts!"
       ],
       "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
     },
