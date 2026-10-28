@@ -70,17 +70,19 @@ const setup = (over: { event?: unknown; document?: string } = {}) => {
   };
   const project = {
     log,
+    manifest: event,
     projectRoot: { fsPath: root },
     getProjectName: () => "p",
   };
-  const service = new DbtTestService({
-    getEventByCurrentProject: () => ({
-      event,
-      currentDocument: { uri: { fsPath: over.document ?? "/x/orders.sql" } },
+  const currentProject = {
+    current: project,
+    forResource: () => project,
+    activeEditor: () => ({
+      modelUri: { fsPath: over.document ?? "/x/orders.sql" },
+      project,
     }),
-    getEventByDocument: () => event,
-    getProject: () => project,
-  } as never);
+  };
+  const service = new DbtTestService(currentProject as never);
   return { service };
 };
 
@@ -146,13 +148,13 @@ describe("DbtTestService", () => {
 
     it("reads the given model's manifest, not the active editor's", () => {
       const { service } = setup();
-      const current = vi.spyOn(
+      const activeEditor = vi.spyOn(
         (
           service as unknown as {
-            queryManifestService: { getEventByCurrentProject: () => unknown };
+            currentProject: { activeEditor: () => unknown };
           }
-        ).queryManifestService,
-        "getEventByCurrentProject",
+        ).currentProject,
+        "activeEditor",
       );
       const yaml = service.getConfigByTest(
         {
@@ -168,7 +170,7 @@ describe("DbtTestService", () => {
         },
       );
       expect(yaml).toBe("severity: warn\n");
-      expect(current).not.toHaveBeenCalled();
+      expect(activeEditor).not.toHaveBeenCalled();
     });
   });
 

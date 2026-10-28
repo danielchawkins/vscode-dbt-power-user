@@ -93,7 +93,7 @@ describe("RunTest — singular test classification and dispatch", () => {
     mockProjects = { get: vi.fn().mockReturnValue(mockProject) };
 
     mockQueryManifestService = {
-      getEventByDocument: vi.fn().mockReturnValue(makeEvent()),
+      manifestFor: vi.fn().mockReturnValue(makeEvent()),
       freshManifest: vi.fn(async () => undefined),
     } as unknown as Mocked<QueryManifestService>;
 
@@ -123,7 +123,7 @@ describe("RunTest — singular test classification and dispatch", () => {
     });
 
     it("returns undefined when the manifest event is missing", () => {
-      mockQueryManifestService.getEventByDocument = vi
+      mockQueryManifestService.manifestFor = vi
         .fn()
         .mockReturnValue(undefined) as any;
       expect(
@@ -153,7 +153,7 @@ describe("RunTest — singular test classification and dispatch", () => {
         order.push("parsed");
         return undefined;
       });
-      mockQueryManifestService.getEventByDocument = vi.fn(() => {
+      mockQueryManifestService.manifestFor = vi.fn(() => {
         order.push("read");
         return makeEvent();
       });
@@ -185,7 +185,7 @@ describe("RunTest — singular test classification and dispatch", () => {
 
     it("returns false when the manifest has no matching test", async () => {
       setActiveEditor(singularTestPath);
-      mockQueryManifestService.getEventByDocument = vi
+      mockQueryManifestService.manifestFor = vi
         .fn()
         .mockReturnValue(undefined) as any;
 

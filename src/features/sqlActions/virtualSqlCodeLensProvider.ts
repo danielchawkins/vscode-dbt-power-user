@@ -6,16 +6,16 @@ import type {
   TextDocument,
 } from "vscode";
 import { CodeLens, Range } from "vscode";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 
 export class VirtualSqlCodeLensProvider
   implements CodeLensProvider, Disposable
 {
   private disposables: Disposable[] = [];
-  private queryManifestService: QueryManifestService;
+  private currentProject: CurrentProject;
 
-  constructor(queryManifestService: QueryManifestService) {
-    this.queryManifestService = queryManifestService;
+  constructor(currentProject: CurrentProject) {
+    this.currentProject = currentProject;
   }
 
   dispose() {
@@ -28,7 +28,7 @@ export class VirtualSqlCodeLensProvider
   }
 
   private getProjectName() {
-    return this.queryManifestService.getProject()?.getProjectName();
+    return this.currentProject.current?.getProjectName();
   }
 
   public provideCodeLenses(

@@ -330,11 +330,7 @@ export class RunModel {
   }
 
   async executeSQL(uri: Uri, query: string, target: QueryTarget) {
-    const declared = await this.currentProject.requireForCommand(uri);
-    if (!declared) {
-      return;
-    }
-    const project = this.projects.get(declared.root);
+    const project = await this.currentProject.requireForCommand(uri);
     if (!project) {
       return;
     }

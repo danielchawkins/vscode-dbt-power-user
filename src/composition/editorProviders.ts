@@ -33,7 +33,7 @@ export function composeEditorProviders(graph: ProjectsGraph) {
     codeLensProviders: new CodeLensProviders(
       projects,
       new SourceModelCreationCodeLensProvider(),
-      new VirtualSqlCodeLensProvider(graph.queryManifestService),
+      new VirtualSqlCodeLensProvider(graph.currentProject),
       new SqlActionsCodeLensProvider(),
     ),
   };

@@ -1,15 +1,14 @@
 import type { PanelNotice } from "@fusion-power-user/webview-contract";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 import { parse as parseYaml } from "yaml";
 import type { NodeMetaData } from "../../core/manifest/types";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { errorText, removeProtocol } from "../../core/text";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { Projects } from "../../projects/project/projects";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import { activeModelUri } from "../../projects/registry/previewUri";
 import type { DBTDocumentation } from "./docGenTypes";
 import { Source } from "./docGenTypes";
 
@@ -48,14 +47,11 @@ interface OpenModel {
 
 export class DocGenService {
   protected projects: Projects;
-  private queryManifestService: QueryManifestService;
+  private currentProject: CurrentProject;
 
-  public constructor(
-    projects: Projects,
-    queryManifestService: QueryManifestService,
-  ) {
+  public constructor(projects: Projects, currentProject: CurrentProject) {
     this.projects = projects;
-    this.queryManifestService = queryManifestService;
+    this.currentProject = currentProject;
   }
 
   private getCompiledDocumentationFromNode(
@@ -84,18 +80,22 @@ export class DocGenService {
     };
   }
 
+  private activeModelPath(): string | undefined {
+    return this.currentProject.activeEditor()?.modelUri.fsPath;
+  }
+
   private getCurrentNode(modelName: string): NodeMetaData | undefined {
-    return this.queryManifestService
-      .getEventByCurrentProject()
-      ?.event?.nodeMetaMap.lookupByBaseName(modelName);
+    return this.currentProject
+      .activeEditor()
+      ?.project?.manifest?.nodeMetaMap.lookupByBaseName(modelName);
   }
 
   public async getCompiledDocumentationForCurrentActiveFile() {
-    return this.getCompiledDocumentation(activeModelPath());
+    return this.getCompiledDocumentation(this.activeModelPath());
   }
 
   public async getUncompiledDocumentationForCurrentActiveFile() {
-    return this.getUncompiledDocumentation(activeModelPath());
+    return this.getUncompiledDocumentation(this.activeModelPath());
   }
 
   private getDocumentationValidationMessage(
@@ -111,8 +111,8 @@ export class DocGenService {
     }
 
     try {
-      this.queryManifestService
-        .getProjectByUri(Uri.file(filePath))
+      this.currentProject
+        .forResource(Uri.file(filePath))
         ?.throwDiagnosticsErrorIfAvailable();
     } catch (err) {
       return { message: (err as Error).message, type: "error" };
@@ -310,10 +310,4 @@ function fromYamlModel(
       type: column.data_type?.toLowerCase(),
     })),
   };
-}
-
-/** The active editor model path; a focused compiled preview resolves to its model. */
-function activeModelPath(): string | undefined {
-  const uri = window.activeTextEditor?.document?.uri;
-  return uri && activeModelUri(uri).fsPath;
 }

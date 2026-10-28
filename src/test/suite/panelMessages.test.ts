@@ -62,10 +62,9 @@ function lineageHarness() {
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
   };
   const queryManifestService = {
-    getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-    getProject: vi.fn().mockReturnValue(undefined),
     manifestFor: vi.fn().mockReturnValue(undefined),
   };
+  const currentProject = { current: undefined };
   const globalState = new Map<string, unknown>();
   const extensionContext = {
     extensionUri: Uri.file("/ext"),
@@ -77,6 +76,7 @@ function lineageHarness() {
     extensionContext,
     dbtLineageService,
     queryManifestService,
+    currentProject,
   }) as any;
   // `details` is a getter that builds a LineageDetails on each read; shadow it with one stub.
   Object.defineProperty(panel, "details", {
@@ -117,7 +117,7 @@ describe("lineage panel messages", () => {
     runNoticeAction: async () => {
       const h = lineageHarness();
       const projectRoot = Uri.file("/p");
-      h.panel.queryManifestService.getProject = () => ({ projectRoot });
+      h.panel.currentProject.current = { projectRoot };
       await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.useStrictAnalysis",
@@ -339,13 +339,16 @@ function queryHarness(ready = true) {
       executeSQLWithLimitOnQueryPanel: vi.fn(),
     },
   };
-  const service = {
-    manifestFor: () => undefined,
-    getProject: () => project,
-    getProjectByName: () => project,
-    getOrPickProjectFromWorkspace: async () => project,
+  const currentProject = {
+    current: project,
+    byName: () => project,
+    requireForActiveEditor: async () => project,
   };
-  const panel = queryResultPanel(silentLog(), service) as any;
+  const panel = queryResultPanel(
+    silentLog(),
+    { manifestFor: () => undefined },
+    currentProject,
+  ) as any;
   const page = openPage(panel, fakeView(), ready);
   return {
     panel,

@@ -11,12 +11,12 @@ import { commands, Uri, window } from "vscode";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { DbtPowerUserActionsCenter } from "../../features/projectPicker/actionsCenter";
 import type { CurrentProject } from "../../projects/project/currentProject";
-import type { DeclaredProject } from "../../projects/registry/projectRegistry";
+import type { Project } from "../../projects/project/project";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: Mocked<CurrentProject>;
   let store: Mocked<ExtensionContextStore>;
-  let project: DeclaredProject;
+  let project: Project;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,17 +27,13 @@ describe("DbtPowerUserActionsCenter project picker", () => {
       setToWorkspaceState: vi.fn(),
     } as unknown as Mocked<ExtensionContextStore>;
     project = {
-      root: Uri.file("/project"),
-      name: "project",
-      origin: "explicit",
-      folder: {
-        uri: Uri.file("/workspace"),
-        name: "workspace",
-        index: 0,
+      declared: {
+        root: Uri.file("/project"),
+        name: "project",
       },
-      contains: () => true,
-      dispose: vi.fn(),
-    };
+      projectRoot: Uri.file("/project"),
+      getProjectName: () => "project",
+    } as unknown as Project;
     new DbtPowerUserActionsCenter(context, store);
   });
 
@@ -51,7 +47,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
       {
         label: "project",
         description: "/project",
-        uri: project.root,
+        uri: project.projectRoot,
       },
     );
     expect(window.showInformationMessage).toHaveBeenCalledWith(

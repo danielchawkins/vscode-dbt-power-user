@@ -83,16 +83,16 @@ export class ProjectConfigCommands implements Disposable {
       return false;
     }
     try {
-      await writeStrictStaticAnalysis(project.root);
+      await writeStrictStaticAnalysis(project.projectRoot);
       return true;
     } catch (error) {
-      this.logFor(project.root).warn(
+      this.logFor(project.projectRoot).warn(
         "useStrictAnalysis",
         error instanceof Error ? error.message : String(error),
       );
       void notifyError(
         project,
-        `Could not set fusionPowerUser.staticAnalysis for the folder ${project.folder.name}`,
+        `Could not set fusionPowerUser.staticAnalysis for the folder ${project.declared.folder.name}`,
         error,
       );
       return false;
@@ -109,9 +109,9 @@ export class ProjectConfigCommands implements Disposable {
       return false;
     }
     return applyProjectConfigInsertion(
-      project,
+      project.declared,
       insertion,
-      this.logFor(project.root),
+      this.logFor(project.projectRoot),
     );
   }
 

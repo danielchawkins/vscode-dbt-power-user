@@ -79,12 +79,12 @@ export function composeProjects(context: ExtensionContext) {
     terminal,
   );
   const projectQuickPick = new ProjectQuickPick();
-  const currentProject = new CurrentProject(projectRegistry, projectQuickPick);
-  const queryManifestService = new QueryManifestService(
+  const currentProject = new CurrentProject(
+    projectRegistry,
     projects,
-    terminal,
-    currentProject,
+    projectQuickPick,
   );
+  const queryManifestService = new QueryManifestService(currentProject);
   return {
     extensionContextStore,
     outputChannels,

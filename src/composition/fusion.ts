@@ -33,22 +33,15 @@ export function composeFusion(graph: ProjectsGraph) {
   );
   graph.clients.pool = fusionClientPool;
   const dbtLineageService = new DbtLineageService({
-    queryManifestService: graph.queryManifestService,
+    currentProject,
     currentClient: () => {
       const project = currentProject.current;
-      return project ? fusionClientPool.get(project) : undefined;
+      return project ? fusionClientPool.get(project.declared) : undefined;
     },
-    currentError: () => {
-      const project = currentProject.current;
-      return project ? projects.get(project.root)?.errors.current : undefined;
-    },
-    currentLsp: () => {
-      const project = currentProject.current;
-      return project ? projects.get(project.root)?.lsp : undefined;
-    },
+    currentError: () => currentProject.current?.errors.current,
+    currentLsp: () => currentProject.current?.lsp,
     currentStrict: () => {
-      const root = currentProject.current?.root;
-      const optIns = root && projects.get(root)?.projectOptIns();
+      const optIns = currentProject.current?.projectOptIns();
       return {
         strict: optIns?.strict ?? false,
         folder: currentProject.folderScope(),
