@@ -1,96 +1,16 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type Drawing, type DrawnPath, measureDrawing } from "../metrics.js";
-import { order } from "../order/index.js";
-import { place } from "../place/index.js";
-import { rank } from "../rank/index.js";
 import type {
   LayoutEdge,
   LayoutGraph,
   LayoutNode,
   LayoutOptions,
+  Point,
   Rect,
-  Side,
 } from "../types.js";
-import { type Routing, route } from "./index.js";
-
-const KINDS = ["dependency", "column", "fk"] as const;
-const SIDES: readonly Side[] = ["north", "east", "south", "west"];
-
-const options: LayoutOptions = {
-  direction: "down",
-  edgeKinds: {
-    dependency: { ranks: true, weight: 1 },
-    column: { ranks: false, weight: 0.5 },
-    fk: { ranks: false, weight: 0.5, routed: false },
-  },
-};
-
-const portArb = fc.record({
-  side: fc.constantFrom(...SIDES),
-  offset: fc.integer({ min: 0, max: 20 }),
-});
-
-const nodeArb = fc.record({
-  width: fc.integer({ min: 20, max: 120 }),
-  height: fc.integer({ min: 20, max: 80 }),
-  ports: fc.tuple(portArb, portArb),
-});
-
-const portName = fc.option(fc.constantFrom("p0", "p1"), { nil: undefined });
-
-/** Nodes and edges with no self-loops, ports on some edges, and a kind that is not routed. */
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
-  .integer({ min: 2, max: 9 })
-  .chain((count) =>
-    fc.tuple(
-      fc.array(nodeArb, { minLength: count, maxLength: count }),
-      fc.array(
-        fc.tuple(
-          fc.nat(count - 1),
-          fc.nat(count - 1),
-          fc.nat(KINDS.length - 1),
-          portName,
-          portName,
-        ),
-        { maxLength: 18 },
-      ),
-    ),
-  )
-  .map(([nodes, specs]) => ({
-    nodes: nodes.map((n, i): LayoutNode => ({
-      id: `n${i}`,
-      width: n.width,
-      height: n.height,
-      ports: n.ports.map((p, k) => ({ id: `p${k}`, ...p })),
-    })),
-    edges: specs.map(([a, b, k, sp, tp], i): LayoutEdge => {
-      const target = a === b ? (a + 1) % nodes.length : b;
-      return {
-        id: `e${i}`,
-        source: `n${a}`,
-        target: `n${target}`,
-        kind: KINDS[k] ?? "dependency",
-        ...(sp === undefined ? {} : { sourcePort: sp }),
-        ...(tp === undefined ? {} : { targetPort: tp }),
-      };
-    }),
-  }));
-
-const caseArb = fc.record({
-  graph: graphArb,
-  direction: fc.constantFrom("down" as const, "right" as const),
-  effort: fc.constantFrom("fast" as const, "balanced" as const),
-});
-
-/** Runs the layout phases up to routing. */
-function routeGraph(graph: LayoutGraph, opts: LayoutOptions): Routing {
-  const ordering = order(graph, opts, rank(graph, opts));
-  return route(graph, opts, {
-    ordering,
-    placement: place(graph, opts, ordering),
-  });
-}
+import { type Routing } from "./index.js";
+import { caseArb, options, routeGraph } from "./testGraphs.js";
 
 /** The drawing measureDrawing reads: node boxes, routed polylines, and the source port as each edge's trunk. */
 function drawingOf(graph: LayoutGraph, routing: Routing): Drawing {
@@ -163,6 +83,37 @@ describe("route", () => {
     );
   });
 
+  it("never lays two polylines with no end node in common along one line, unless they touch both ways", () => {
+    fc.assert(
+      fc.property(caseArb, ({ graph, direction, effort }) => {
+        const routing = routeGraph(graph, { ...options, direction, effort });
+        const across: Axis = direction === "down" ? "x" : "y";
+        const ends = new Map<string, readonly string[]>(
+          graph.edges.map((e) => [e.id, [e.source, e.target]] as const),
+        );
+        const runs = Array.from(routing.edges, ([id, points]) => ({
+          id,
+          points,
+          ends: ends.get(id) ?? [],
+        }));
+        const overlaps: string[] = [];
+        for (const [i, p] of runs.entries()) {
+          for (const q of runs.slice(i + 1)) {
+            const shared = p.ends.some((n) => q.ends.includes(n));
+            if (
+              !shared &&
+              !touchesBothWays(p.points, q.points, across) &&
+              longestOverlap(p.points, q.points) > EPS
+            ) {
+              overlaps.push(`${p.id} ${q.id}`);
+            }
+          }
+        }
+        expect(overlaps).toEqual([]);
+      }),
+    );
+  });
+
   it("routes a 300-node graph with no overlaps and the crossings measured", () => {
     const graph = seededGraph(300, 900);
     const routing = routeGraph(graph, { ...options, effort: "fast" });
@@ -203,4 +154,94 @@ function serialise(routing: Routing): string {
     edges: [...routing.edges],
     work: routing.work,
   });
+}
+
+/** Lengths below this are floating-point noise, not an overlap. */
+const EPS = 1e-6;
+
+type Axis = "x" | "y";
+
+interface Segment {
+  from: Point;
+  to: Point;
+}
+
+function segmentsOf(points: readonly Point[]): Segment[] {
+  return points.slice(1).flatMap((to, i) => {
+    const from = points[i];
+    return from ? [{ from, to }] : [];
+  });
+}
+
+/** The axis a segment runs along, or undefined when it is a point. */
+function axisOf(s: Segment): Axis | undefined {
+  if (s.from.y === s.to.y && s.from.x !== s.to.x) {
+    return "x";
+  }
+  if (s.from.x === s.to.x && s.from.y !== s.to.y) {
+    return "y";
+  }
+  return undefined;
+}
+
+/** The length two segments share on one line; zero unless both run along the same axis on the same coordinate. */
+function alongOverlap(a: Segment, b: Segment): number {
+  const axis = axisOf(a);
+  if (axis === undefined || axis !== axisOf(b)) {
+    return 0;
+  }
+  const across: Axis = axis === "x" ? "y" : "x";
+  if (a.from[across] !== b.from[across]) {
+    return 0;
+  }
+  const lo = Math.max(
+    Math.min(a.from[axis], a.to[axis]),
+    Math.min(b.from[axis], b.to[axis]),
+  );
+  const hi = Math.min(
+    Math.max(a.from[axis], a.to[axis]),
+    Math.max(b.from[axis], b.to[axis]),
+  );
+  return hi - lo;
+}
+
+/** The longest stretch along which a segment of one polyline lies on a segment of the other. */
+function longestOverlap(p: readonly Point[], q: readonly Point[]): number {
+  let best = 0;
+  for (const a of segmentsOf(p)) {
+    for (const b of segmentsOf(q)) {
+      best = Math.max(best, alongOverlap(a, b));
+    }
+  }
+  return best;
+}
+
+/**
+ * Whether two runs touch in both orders: their ends sit at the same two positions across the rank axis, so each run's
+ * end meets the other's whichever run is drawn above. No track order avoids that touch. Routing cannot separate such
+ * pairs until a run can leave a node off its centre or bend, so the property excludes them.
+ */
+function touchesBothWays(
+  p: readonly Point[],
+  q: readonly Point[],
+  across: Axis,
+): boolean {
+  const pe = endsAcross(p, across);
+  const qe = endsAcross(q, across);
+  if (!pe || !qe) {
+    return false;
+  }
+  const [a, b] = pe;
+  const [c, d] = qe;
+  return a !== b && ((a === c && b === d) || (a === d && b === c));
+}
+
+/** The across-coordinates of a polyline's two ends, in either order. */
+function endsAcross(
+  points: readonly Point[],
+  across: Axis,
+): [number, number] | undefined {
+  const first = points[0];
+  const last = points.at(-1);
+  return first && last ? [first[across], last[across]] : undefined;
 }

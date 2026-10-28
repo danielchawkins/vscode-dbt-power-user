@@ -61,7 +61,8 @@ export function straightCrossings(
 /**
  * Shared points when `upper` runs above `lower`: an upper's lower end at the same x as a lower's upper end, where the
  * two verticals would lie one on the other. Not a crossing, so `measureDrawing` does not count it, but it is charged
- * in the preference so that the order without the overlap wins.
+ * in the preference so that the order without the overlap wins. A straight run has one node at each end, and its
+ * vertical shares an end node with any run it lies on, so it never touches.
  */
 export function touchesAbove(
   pieces: readonly ChannelPiece[],
@@ -71,10 +72,14 @@ export function touchesAbove(
   let count = 0;
   for (const m of upper.members) {
     const p = pieces[m];
-    if (p && !p.flat) {
+    if (p && !p.flat && p.from !== p.to) {
       for (const n of lower.members) {
         const q = pieces[n];
-        if (q && (q.from === p.to || (q.flat && q.to === p.to))) {
+        if (
+          q &&
+          q.from !== q.to &&
+          (q.from === p.to || (q.flat && q.to === p.to))
+        ) {
           count++;
         }
       }
