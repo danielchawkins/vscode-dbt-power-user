@@ -15,7 +15,7 @@ import { removeProtocol } from "../../core/text";
 import { isColumnNameEqual } from "../../projects/project/columnNames";
 import type { CurrentProject } from "../../projects/project/currentProject";
 
-export class DbtTestService {
+export class ModelTestService {
   private currentProject: CurrentProject;
 
   public constructor(currentProject: CurrentProject) {

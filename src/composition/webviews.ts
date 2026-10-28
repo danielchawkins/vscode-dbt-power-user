@@ -1,6 +1,6 @@
 import type { ColumnProposalRequests } from "../features/docs/columnProposals";
 import { ColumnProposalService } from "../features/docs/columnProposals";
-import { DbtTestService } from "../features/docs/dbtTestService";
+import { ModelTestService } from "../features/docs/dbtTestService";
 import { DocGenService } from "../features/docs/docGenService";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
 import { LineagePanel } from "../features/lineage/lineagePanel";
@@ -51,7 +51,7 @@ export function composeWebviews(
       extensionContext: extensionContextStore,
       services: {
         docGenService: new DocGenService(projects, graph.currentProject),
-        dbtTestService: new DbtTestService(graph.currentProject),
+        dbtTestService: new ModelTestService(graph.currentProject),
         queryManifestService,
         sharedState,
         columnProposals: new ColumnProposalService({
