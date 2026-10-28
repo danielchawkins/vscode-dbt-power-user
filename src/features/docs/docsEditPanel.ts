@@ -52,7 +52,11 @@ type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
-export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
+export class DocsEditViewPanel extends PanelHost<
+  HostMessage,
+  PanelMessage,
+  documentationEditor.ResponseBodies
+> {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
   public override viewType = DocsEditViewPanel.viewType;
   protected readonly entry = "documentationEditor";

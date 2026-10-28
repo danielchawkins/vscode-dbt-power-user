@@ -1,4 +1,7 @@
-import type { WebviewReady } from "@fusion-power-user/webview-contract";
+import type {
+  Response,
+  WebviewReady,
+} from "@fusion-power-user/webview-contract";
 import type {
   CancellationToken,
   Disposable,
@@ -21,7 +24,7 @@ import type {
   SharedStateService,
 } from "../projects/project/sharedStateService";
 import type { Handlers } from "./messageRouter";
-import { dispatchMessage } from "./messageRouter";
+import { dispatchMessage, reply, replyError } from "./messageRouter";
 import { PageReadiness } from "./pageReadiness";
 import type { PanelCsp, PanelEntry } from "./panelHtml";
 import { panelHtml, panelWebviewOptions } from "./panelHtml";
@@ -128,10 +131,24 @@ export interface DemandFollow {
   follow(isVisible: () => boolean, onDidChange: Event<unknown>): Disposable;
 }
 
-/** Renders a panel's Vite entry, subscribes to its messages and tracks each page's readiness; each panel subclasses it. */
+/** Answers the requests of one page; `R` is the panel's `ResponseBodies`, so each body is checked against its command. */
+export interface Responder<R> {
+  respond<C extends keyof R & string>(
+    command: C,
+    syncRequestId: string | undefined,
+    body: R[C],
+  ): unknown;
+  respondError(syncRequestId: string | undefined, error: string): unknown;
+}
+
+/**
+ * Renders a panel's Vite entry, subscribes to its messages and tracks each page's readiness; each panel subclasses
+ * it. `H` is the panel's `HostMessage`, `I` its `PanelMessage` and `R` its `ResponseBodies`.
+ */
 export abstract class PanelHost<
   H extends { command: string },
   I extends { command: string },
+  R,
 > implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
   /** The panel's file in `webview_panels/src/entries`. */
@@ -215,6 +232,40 @@ export abstract class PanelHost<
   ): Thenable<boolean> | undefined {
     this.replay.record(this.pageOf(panel), message);
     return postToWebview(panel, message, this.dbtTerminal);
+  }
+
+  /** Answers the requests of `page`, the page they came from; a missing page gets no answer. */
+  protected respondOn(
+    page: WebviewView | WebviewPanel | undefined,
+  ): Responder<R> {
+    // A reply records no replay slot, so it goes straight out rather than through `postTo`.
+    const sink = {
+      reply: (response: Response) =>
+        postToWebview(page, response, this.dbtTerminal),
+    };
+    return {
+      respond: (_command, syncRequestId, body) =>
+        reply(sink, syncRequestId, body),
+      respondError: (syncRequestId, error) =>
+        replyError(sink, syncRequestId, error),
+    };
+  }
+
+  /** Answers a request from the current page; `body` is checked against the panel's `ResponseBodies[command]`. */
+  protected respond<C extends keyof R & string>(
+    command: C,
+    syncRequestId: string | undefined,
+    body: R[C],
+  ): unknown {
+    return this.respondOn(this._panel).respond(command, syncRequestId, body);
+  }
+
+  /** Answers a request from the current page with `error`, which the page's request executor rejects with. */
+  protected respondError(
+    syncRequestId: string | undefined,
+    error: string,
+  ): unknown {
+    return this.respondOn(this._panel).respondError(syncRequestId, error);
   }
 
   /** A panel that replays state to rebuilt pages overrides this. */

@@ -22,7 +22,6 @@ import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigi
 import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
-import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
@@ -65,7 +64,7 @@ interface LineagePanelView extends WebviewViewProvider {
 }
 
 export class LineagePanel
-  extends PanelHost<HostMessage, PanelMessage>
+  extends PanelHost<HostMessage, PanelMessage, lineage.ResponseBodies>
   implements LineagePanelView
 {
   public override viewType = LINEAGE_VIEW_TYPE;
@@ -245,22 +244,6 @@ export class LineagePanel
         publication: publicationId(this.queryManifestService.manifestFor()),
       },
     });
-  }
-
-  /**
-   * Answers a panel request with `body`. `_command` names the request, so `body` is held to its `ResponseBodies`
-   * entry; it is not sent.
-   */
-  private respond<C extends keyof lineage.ResponseBodies>(
-    _command: C,
-    syncRequestId: string | undefined,
-    body: lineage.ResponseBodies[C],
-  ): void {
-    void reply(
-      { reply: (response) => this.post(response) },
-      syncRequestId,
-      body,
-    );
   }
 
   /** The handlers that answer a lineage query; each body is typed by the command it answers. */

@@ -1,0 +1,46 @@
+id: ts-panel-reply-through-host
+snapshots:
+  'await reply(sink, syncRequestId, { saved: true } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);':
+    labels:
+    - source: 'reply(sink, syncRequestId, { saved: true } satisfies documentationEditor.ResponseBodies["saveDocumentation"])'
+      style: primary
+      start: 6
+      end: 115
+    - source: reply
+      style: secondary
+      start: 6
+      end: 11
+  'const sink = { reply: (response) => this.host.post(response) };':
+    labels:
+    - source: 'reply: (response) => this.host.post(response)'
+      style: primary
+      start: 15
+      end: 60
+    - source: reply
+      style: secondary
+      start: 15
+      end: 20
+    - source: (response) => this.host.post(response)
+      style: secondary
+      start: 22
+      end: 60
+  return replyError(sink, syncRequestId, error);:
+    labels:
+    - source: replyError(sink, syncRequestId, error)
+      style: primary
+      start: 7
+      end: 45
+    - source: replyError
+      style: secondary
+      start: 7
+      end: 17
+  'void reply({ reply: (response) => this.post(response) }, syncRequestId, body);':
+    labels:
+    - source: 'reply({ reply: (response) => this.post(response) }, syncRequestId, body)'
+      style: primary
+      start: 5
+      end: 77
+    - source: reply
+      style: secondary
+      start: 5
+      end: 10
