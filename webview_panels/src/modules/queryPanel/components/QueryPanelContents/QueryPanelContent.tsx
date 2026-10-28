@@ -1,3 +1,4 @@
+import useAppContext from "@modules/app/useAppContext";
 import PreTag from "@modules/markdown/PreTag";
 import QueryPanelDefaultView from "@modules/queryPanel/QueryPanelDefaultView";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
@@ -16,6 +17,9 @@ const QueryPanelContent = ({
 }): React.JSX.Element | null => {
   const { loading, hasError, queryResults, compiledCodeMarkup } =
     useQueryPanelState();
+  const {
+    state: { theme },
+  } = useAppContext();
 
   if (QueryPanelTitleTabState.QueryHistory === tabState) {
     return <QueryPanelHistory />;
@@ -25,7 +29,12 @@ const QueryPanelContent = ({
     return (
       <div style={{ width: "fit-content" }}>
         <PreTag text={compiledCodeMarkup}>
-          <CodeBlock code={compiledCodeMarkup} language="sql" showLineNumbers />
+          <CodeBlock
+            code={compiledCodeMarkup}
+            language="sql"
+            showLineNumbers
+            theme={theme}
+          />
         </PreTag>
       </div>
     );
