@@ -592,7 +592,7 @@ Remaining Phase 3 work for 3.10:
 - Done: `fusionClientPool.test.ts` (734 → 652) has `startPool`/`expectRestarted` helpers.
 - `src/test/integration/lspEditorFeatures.test.ts` and `nativeEditorFeatures.test.ts` do not import `lspFixture`.
 - Done: `runResults.test.ts` (323 → 315) and `queryResultPanel.test.ts` (300 → 294) use `silentLog`.
-- Per-cluster `wc -l` is recorded on the items above: the twelve suite files went from 4,312 to 3,764 lines (−548). The jscpd test clone count is not recorded; run `just check`'s jscpd report to add it. Still open: composition fixture (`dbtPowerUserExtension`), `lineagePanel` `it.each`, integration helpers and `lspFixture`, and the `common.ts`/`mock/vscode.ts` helper.
+- Per-cluster `wc -l` is recorded on the items above: the twelve suite files went from 4,312 to 3,764 lines (−548). The jscpd test clone count is not recorded; run `just check`'s jscpd report to add it. Still open: composition fixture (`fusionPowerUserExtension`), `lineagePanel` `it.each`, integration helpers and `lspFixture`, and the `common.ts`/`mock/vscode.ts` helper.
 - Characterization tests are coupled to structure. `src/test/suite/queryResultPanel.test.ts` sets private state (`_panel`, `_bottomPanel`, `isWebviewReady`) and reads `panel.history.all()`; drive it through `handleCommand` and the posted messages instead. `src/test/suite/panelHost.test.ts` wraps `resolveWebviewView` in a `try` that ignores every error; stub `panelHtml` and assert the HTML it returns.
 - Raise the coverage floors in `scripts/quality/ceilings.json` for `panelHost.ts`, `commands.ts` and `queryResultPanel.ts` in the revision of each suite; one revision raised all six at once.
 - 3.7 clones: `src/core/manifest/graphParser.ts` keeps the `parents` (`PARSE_GRAPH_TYPES`) and `constraintOnlyParents` loops as clones, and its three builders use `as never` to satisfy `NodeGraphMap`; type `NodeGraphMap` entries as `{ nodes: NodeData[] }` and share one loop helper. `src/features/docs/dbtTestService.ts` `getTestsForCurrentModel` and `getTestsForModel` share an unextracted preamble (event, project, `getEventByCurrentProject`).
@@ -620,7 +620,7 @@ Remaining Phase 3 work for 3.10:
 ### 3.11 Assert outcomes, not calls
 
 - Goal: the most mock-heavy suites assert values.
-- Files: `runModel.test.ts` and `projectSetupCommands.test.ts` assert the `CliCommand`/`QueuedCliCommand` built through `cliArgs`; the `projectSetupCommands.ts:55-70`/`:100-116` clone is extracted; `dbtPowerUserExtension.test.ts` and `projects.test.ts` replace call assertions where an outcome exists.
+- Files: `runModel.test.ts` and `projectSetupCommands.test.ts` assert the `CliCommand`/`QueuedCliCommand` built through `cliArgs`; the `projectSetupCommands.ts:55-70`/`:100-116` clone is extracted; `fusionPowerUserExtension.test.ts` and `projects.test.ts` replace call assertions where an outcome exists.
 - Resolves: Qual §3 (tests that mostly test mocks), §4 (`projectSetupCommands` clone).
 - Revisions: one per suite.
 - Verify: `just check`; the share of `toHaveBeenCalled` assertions in `src/test/suite` is recorded and lower.
