@@ -131,11 +131,11 @@ export class DbtTestService {
   ) {
     const { columnNameFromTestMetadata, uri } = options;
     const project = this.currentProject.forResource(uri);
-    const event = project?.manifest;
-    if (!project || !event) {
+    const manifest = project?.manifest;
+    if (!project || !manifest) {
       return;
     }
-    const { nodeMetaMap } = event;
+    const { nodeMetaMap } = manifest;
     const node = nodeMetaMap.lookupByBaseName(modelName);
     if (!node) {
       return;
@@ -238,13 +238,13 @@ export class DbtTestService {
 
   public async getTestsForModel(modelName: string) {
     const project = this.currentProject.current;
-    const event = project?.manifest;
-    if (!project || !event) {
+    const manifest = project?.manifest;
+    if (!project || !manifest) {
       return undefined;
     }
     const projectName = project.getProjectName();
 
-    const { nodeMetaMap, graphMetaMap, testMetaMap, macroMetaMap } = event;
+    const { nodeMetaMap, graphMetaMap, testMetaMap, macroMetaMap } = manifest;
 
     project.log.debug(
       "dbtTests",
@@ -314,12 +314,12 @@ export class DbtTestService {
   private getUnitTestsForModel(
     modelName: string,
   ): { name: string; path?: string | undefined }[] {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return [];
     }
 
-    const { unitTestMetaMap } = event;
+    const { unitTestMetaMap } = manifest;
     if (!unitTestMetaMap) {
       return [];
     }

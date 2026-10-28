@@ -43,21 +43,21 @@ const ORDERS = "model.shop.orders";
 
 describe("lineage table hidden flag", () => {
   it("is set from meta.lineage.hidden on a model", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       nodes: {
         [ORDERS]: model({ meta: { lineage: { hidden: true } } }),
       },
     });
-    expect(lineageTable(event, ORDERS)?.hidden).toBe(true);
+    expect(lineageTable(manifest, ORDERS)?.hidden).toBe(true);
   });
 
   it("is set from config.meta.lineage.hidden, where Fusion may put meta", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       nodes: {
         [ORDERS]: model({ config: { meta: { lineage: { hidden: true } } } }),
       },
     });
-    expect(lineageTable(event, ORDERS)?.hidden).toBe(true);
+    expect(lineageTable(manifest, ORDERS)?.hidden).toBe(true);
   });
 
   it("is absent when the flag is false, not a boolean, or not set", () => {
@@ -76,7 +76,7 @@ describe("lineage table hidden flag", () => {
   });
 
   it("is set from a source table's own meta", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       sources: {
         raw: {
           name: "raw",
@@ -96,14 +96,14 @@ describe("lineage table hidden flag", () => {
         },
       },
     });
-    expect(lineageTable(event, "source.shop.raw.events")?.hidden).toBe(true);
-    expect(lineageTable(event, "source.shop.raw.users")?.hidden).toBe(
+    expect(lineageTable(manifest, "source.shop.raw.events")?.hidden).toBe(true);
+    expect(lineageTable(manifest, "source.shop.raw.users")?.hidden).toBe(
       undefined,
     );
   });
 
   it("is set from a function's and an exposure's meta", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       functions: {
         score: {
           config: { type: "scalar" },
@@ -114,12 +114,12 @@ describe("lineage table hidden flag", () => {
         dash: { meta: { lineage: { hidden: true } } },
       },
     });
-    expect(lineageTable(event, "function.shop.score")?.hidden).toBe(true);
-    expect(lineageTable(event, "exposure.shop.dash")?.hidden).toBe(true);
+    expect(lineageTable(manifest, "function.shop.score")?.hidden).toBe(true);
+    expect(lineageTable(manifest, "exposure.shop.dash")?.hidden).toBe(true);
   });
 
   it("is set from a function's and an exposure's config.meta alone", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       functions: {
         score: {
           config: { type: "scalar", meta: { lineage: { hidden: true } } },
@@ -129,37 +129,37 @@ describe("lineage table hidden flag", () => {
         dash: { config: { meta: { lineage: { hidden: true } } } },
       },
     });
-    expect(lineageTable(event, "function.shop.score")?.hidden).toBe(true);
-    expect(lineageTable(event, "exposure.shop.dash")?.hidden).toBe(true);
+    expect(lineageTable(manifest, "function.shop.score")?.hidden).toBe(true);
+    expect(lineageTable(manifest, "exposure.shop.dash")?.hidden).toBe(true);
   });
 });
 
 describe("lineage table custom schema", () => {
   it("passes the configured schema through as customSchema", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       nodes: {
         [ORDERS]: model({ config: { schema: "commitment" } }),
       },
     });
-    const table = lineageTable(event, ORDERS);
+    const table = lineageTable(manifest, ORDERS);
     expect(table?.customSchema).toBe("commitment");
     expect(table?.schema).toBe("DEV_DANIEL_COMMITMENT");
   });
 
   it("leaves customSchema out when no schema is configured", () => {
-    const event = manifestWith({ nodes: { [ORDERS]: model() } });
-    expect(lineageTable(event, ORDERS)?.customSchema).toBeUndefined();
+    const manifest = manifestWith({ nodes: { [ORDERS]: model() } });
+    expect(lineageTable(manifest, ORDERS)?.customSchema).toBeUndefined();
   });
 });
 
 describe("lineage table file path", () => {
   it("passes the node's original file path through as path, for folder grouping", () => {
-    const event = manifestWith({
+    const manifest = manifestWith({
       nodes: {
         [ORDERS]: model({ original_file_path: "models/staging/a/orders.sql" }),
       },
     });
-    expect(lineageTable(event, ORDERS)?.path).toBe(
+    expect(lineageTable(manifest, ORDERS)?.path).toBe(
       "models/staging/a/orders.sql",
     );
   });
@@ -192,17 +192,17 @@ describe("lineage table identifier", () => {
   };
 
   it("is set on a source whose identifier differs from its name", () => {
-    const event = manifestWith({ sources });
-    const table = lineageTable(event, "source.shop.raw.events");
+    const manifest = manifestWith({ sources });
+    const table = lineageTable(manifest, "source.shop.raw.events");
     expect(table?.identifier).toBe("EVENTS_V2");
     expect(table?.refName).toBe("raw.events");
   });
 
   it("is absent on a source that keeps its name, and on a model", () => {
-    const event = manifestWith({ sources, nodes: { [ORDERS]: model() } });
-    expect(lineageTable(event, "source.shop.raw.users")).not.toHaveProperty(
+    const manifest = manifestWith({ sources, nodes: { [ORDERS]: model() } });
+    expect(lineageTable(manifest, "source.shop.raw.users")).not.toHaveProperty(
       "identifier",
     );
-    expect(lineageTable(event, ORDERS)).not.toHaveProperty("identifier");
+    expect(lineageTable(manifest, ORDERS)).not.toHaveProperty("identifier");
   });
 });

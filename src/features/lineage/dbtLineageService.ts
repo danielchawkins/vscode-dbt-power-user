@@ -250,12 +250,12 @@ export class DbtLineageService {
   getTableEdges({ tables }: { tables: readonly string[] }): {
     edges: [string, string][];
   } {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return { edges: [] };
     }
     const ids = new Set(tables);
-    const children = event.graphMetaMap.children;
+    const children = manifest.graphMetaMap.children;
     const edges: [string, string][] = [];
     for (const parent of ids) {
       for (const child of children.get(parent)?.nodes ?? []) {
@@ -271,11 +271,11 @@ export class DbtLineageService {
     key: keyof GraphMetaMap,
     table: string,
   ): Table[] | undefined {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return;
     }
-    const { graphMetaMap } = event;
+    const { graphMetaMap } = manifest;
     const dependencyNodes = graphMetaMap[key];
     const node = dependencyNodes.get(table);
     if (!node) {
@@ -289,7 +289,7 @@ export class DbtLineageService {
       // analysis; only this data-flow lineage view drops it.
       .filter((n) => n.edgeType !== "constraint")
       .forEach(({ url, key }) => {
-        const _node = this.createTable(event, url, key);
+        const _node = this.createTable(manifest, url, key);
         if (!_node) {
           return;
         }
@@ -302,11 +302,11 @@ export class DbtLineageService {
 
   /** The lineage table for the node `key`; see {@link lineageTable}. */
   createTable(
-    event: Manifest,
+    manifest: Manifest,
     tableUrl: string | undefined,
     key: string,
   ): Table | undefined {
-    return lineageTable(event, key, {
+    return lineageTable(manifest, key, {
       url: tableUrl,
       rootPackage: this.currentProject.current?.getProjectName(),
       layer: {
