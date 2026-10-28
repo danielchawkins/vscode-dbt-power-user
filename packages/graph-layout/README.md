@@ -115,7 +115,7 @@ Each phase is a module with its own tests; `layout` composes them.
 | Ordering | `order/` | Port-aware weighted median and barycenter sweeps, transpose, then sifting; clusters kept contiguous; seeded restarts at `thorough`; previous order as the start | Eades and Wormald, *Algorithmica* 11, 1994; Gansner et al. 1993; Matuszewski, Schönfeld and Molitor, GD 1999; Forster, GD 2002; North and Woodhull, GD 2001 |
 | Crossing count | `order/crossings.ts` | Accumulator tree, weighted | Barth, Jünger and Mutzel, *JGAA* 8(2), 2004 |
 | Placement | `place/` | Quadratic objective (weighted edge length with port offsets, long-edge straightening weights 1/2/8, hint anchors), ordered separation constraints per rank and cluster boxes, solved by scaled gradient projection with a Brandes–Köpf warm start | Dwyer, Koren and Marriott, *IEEE TVCG* 12(5), 2006; Dwyer, Marriott and Stuckey, GD 2005; Brandes and Köpf, GD 2001 |
-| Routing | `route/` | Channel routing between ranks: hyperedges per source port, a crossing-preference order with cycles broken greedily, left-edge track assignment, doglegs where a preference cycle would otherwise cost a crossing; rank gaps sized from track counts | Sander, GD 2003; Hashimoto and Stevens, DAC 1971; Yoshimura and Kuh, *IEEE TCAD* 1(1), 1982; Deutsch, DAC 1976 |
+| Routing | `route/` | Channel routing between ranks: hyperedges per source port, a crossing-preference order with cycles broken greedily, left-edge track assignment; rank gaps sized from track counts. Lateral ports and doglegs are not yet done | Sander, GD 2003; Hashimoto and Stevens, DAC 1971; Yoshimura and Kuh, *IEEE TCAD* 1(1), 1982; Deutsch, DAC 1976 |
 | Metrics | `metrics.ts` | Geometric crossings, bends, edge length, area, density, overlaps; displacement and order flips between two results | — |
 
 Rejected, with the reason:
@@ -134,7 +134,7 @@ Rejected, with the reason:
 3. Ranking: cycle removal, network simplex, partitions, rank hints: in place.
 4. Ordering with ports, then sifting: in place. Keeping clusters contiguous is step 7 of the engine plan and not yet done.
 5. Placement: in place. Node centres along each rank from the quadratic objective, with the Brandes and Köpf warm start and the effort caps. Cluster boxes are not yet placed: they are a later step.
-6. Channel routing, then lateral ports, then doglegs.
+6. Channel routing: in place. Runs from one source port form a hyperedge and share a track; each band takes its tracks by crossing preference with cycles broken greedily; ranks are re-stacked to the band widths, and each routed edge is an orthogonal polyline. Lateral ports, doglegs and self-loops are not yet done.
 7. `layout` composes the phases; the property tests run on it.
 
 ## References and benchmarks
