@@ -97,11 +97,11 @@ export function place(
   const inShift =
     anchor !== undefined
       ? -solved.x[anchor]!
-      : options.hints === undefined
-        ? -Math.min(
-            ...layered.nodes.map((node, i) => solved.x[i]! - node.breadth / 2),
-          )
-        : 0;
+      : (hintShift(layered.nodes, solved.x, options) ??
+        -layered.nodes.reduce(
+          (low, node, i) => Math.min(low, solved.x[i]! - node.breadth / 2),
+          Infinity,
+        ));
   const acrossShift =
     anchor === undefined ? 0 : -centres[layered.nodes[anchor]!.rank]!;
 
@@ -150,6 +150,29 @@ function gapsLeft(
     });
   }
   return gaps;
+}
+
+/**
+ * The translation that best fits the hinted nodes to their previous centres: the mean of (hint - x). Translation is
+ * free, so it applies whatever the effort or stability. `undefined` when no real node is hinted.
+ */
+function hintShift(
+  nodes: readonly { id: string | undefined; breadth: number }[],
+  x: readonly number[],
+  options: LayoutOptions,
+): number | undefined {
+  let sum = 0;
+  let count = 0;
+  nodes.forEach((node, i) => {
+    const hint =
+      node.id === undefined ? undefined : options.hints?.nodes.get(node.id);
+    if (hint !== undefined) {
+      const corner = options.direction === "down" ? hint.x : hint.y;
+      sum += corner + node.breadth / 2 - x[i]!;
+      count += 1;
+    }
+  });
+  return count === 0 ? undefined : sum / count;
 }
 
 /** The anchor's layered index, or `undefined` when no anchor is set or it is not in the layered graph. */
