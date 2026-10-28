@@ -43,7 +43,7 @@ export function routeChannel(
 ): ChannelRouting {
   const all = hyperedgesOf(pieces);
   const straight = all.filter((h) => h.hi === h.lo);
-  const { tracked, pairs, capped } = placeSplittingTouches(
+  const { tracked, pairs, capped, examined } = placeSplittingTouches(
     pieces,
     all.filter((h) => h.hi > h.lo),
     options,
@@ -77,7 +77,7 @@ export function routeChannel(
     track,
     trackCount: tracked.reduce((most, h) => Math.max(most, h.track + 1), 0),
     crossings,
-    pairs: pairs.length,
+    pairs: examined,
     capped,
   };
 }
@@ -87,6 +87,8 @@ interface Placement {
   tracked: Hyperedge[];
   pairs: [number, number][];
   capped: boolean;
+  /** Pairs examined over every placement round, which the budget bounds. */
+  examined: number;
 }
 
 /** Orders the hyperedges by span, finds their overlapping pairs and assigns tracks. */
@@ -99,13 +101,14 @@ function place(
   const { pairs, capped } = overlappingPairs(tracked, options.budget);
   const prefs = preferences(pieces, tracked, pairs);
   assignTracks(tracked, prefs, options.edge);
-  return { tracked, pairs, capped };
+  return { tracked, pairs, capped, examined: pairs.length };
 }
 
 /**
- * Places the hyperedges. Where a star touches another hyperedge in the order the placement chose, its runs are split
- * into hyperedges of their own and the band is placed again, until no star touches. Each round splits at least one
- * star, so the loop ends. A touch that both orders force, as for a swapped pair, remains.
+ * Places the hyperedges. Where a star touches another hyperedge in the order the placement chose, and the reverse
+ * order would not, its runs are split into hyperedges of their own and the band is placed again, until no avoidable
+ * touch is left or the budget is spent. Each round splits at least one star, so the loop ends. A touch that both
+ * orders force remains.
  */
 function placeSplittingTouches(
   pieces: readonly ChannelPiece[],
@@ -113,11 +116,16 @@ function placeSplittingTouches(
   options: ChannelOptions,
 ): Placement {
   let current = hypers;
+  let examined = 0;
   for (;;) {
-    const placed = place(pieces, current, options);
+    const placed = place(pieces, current, {
+      ...options,
+      budget: options.budget - examined,
+    });
+    examined += placed.examined;
     const touching = touchingStars(pieces, placed);
-    if (touching.size === 0) {
-      return placed;
+    if (touching.size === 0 || placed.capped) {
+      return { ...placed, examined };
     }
     current = current.flatMap((h) =>
       touching.has(h) ? runsOf(pieces, h) : [h],
@@ -125,7 +133,7 @@ function placeSplittingTouches(
   }
 }
 
-/** The hyperedges with more than one run that touch another hyperedge in the order the placement gives. */
+/** The stars that touch another hyperedge in the order the placement gives, where the reverse order would not. */
 function touchingStars(
   pieces: readonly ChannelPiece[],
   placed: Placement,
@@ -138,7 +146,8 @@ function touchingStars(
       continue;
     }
     const [upper, lower] = a.track < b.track ? [a, b] : [b, a];
-    if (touchesAbove(pieces, upper, lower) > 0) {
+    const here = touchesAbove(pieces, upper, lower);
+    if (here > 0 && touchesAbove(pieces, lower, upper) < here) {
       for (const h of [upper, lower]) {
         if (h.members.length > 1) {
           touching.add(h);
