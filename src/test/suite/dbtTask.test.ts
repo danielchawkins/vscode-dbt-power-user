@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { CustomExecution, TaskRevealKind, tasks } from "vscode";
-import { DBTCommand } from "../../core/dbtCommand";
+import { DbtCommand } from "../../core/dbtCommand";
 import type { CommandProcessResult } from "../../core/types";
 import {
   cliCommandOf,
@@ -17,8 +17,8 @@ function commandThat(
     signal?: AbortSignal,
     onOutput?: (chunk: string) => void,
   ) => Promise<Partial<CommandProcessResult>>,
-): DBTCommand {
-  const command = new DBTCommand("Running", ["run", "--select", "a"]);
+): DbtCommand {
+  const command = new DbtCommand("Running", ["run", "--select", "a"]);
   command.setExecutionStrategy({
     execute: (_c, signal, onOutput) =>
       execute(signal, onOutput) as Promise<CommandProcessResult>,

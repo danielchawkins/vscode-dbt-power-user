@@ -1,6 +1,6 @@
 import type { Disposable } from "vscode";
 import { EventEmitter, ProgressLocation, window } from "vscode";
-import type { DBTCommand } from "../../core/dbtCommand";
+import type { DbtCommand } from "../../core/dbtCommand";
 
 /** How a queued command is presented while it runs. */
 export interface QueuedCommandOptions {
@@ -16,7 +16,7 @@ export interface QueuedCommandFailure {
 }
 
 /** A command's display string without `--project-dir` and `--profiles-dir`. */
-export function formatCommandStatus(command: DBTCommand): string {
+export function formatCommandStatus(command: DbtCommand): string {
   return command
     .getCommandAsString()
     .replaceAll(/\s*--project-dir\s+\S+/g, "")

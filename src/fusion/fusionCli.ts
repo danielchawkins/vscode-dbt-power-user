@@ -22,7 +22,7 @@ import {
   toCliArgs,
   toCliEnvironment,
 } from "../core/cli";
-import { DBTCommand, QueryExecution } from "../core/dbtCommand";
+import { DbtCommand, QueryExecution } from "../core/dbtCommand";
 import type {
   DBTDiagnosticData,
   DBTDiagnosticResult,
@@ -369,8 +369,8 @@ export class FusionCli {
    * Its output streams to the log channel as well as to the caller's `onOutput`.
    * The argv is computed again when the command runs, so it can differ from the argv shown when it was queued.
    */
-  prepare(cli: QueuedCliCommand): DBTCommand {
-    const command = new DBTCommand(
+  prepare(cli: QueuedCliCommand): DbtCommand {
+    const command = new DbtCommand(
       queuedStatus(cli),
       toCliArgs(this.snapshot(), cli, diskProbe),
     );
