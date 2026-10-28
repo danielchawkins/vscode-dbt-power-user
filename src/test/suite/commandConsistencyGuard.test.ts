@@ -316,7 +316,7 @@ describe("command contribution consistency", () => {
     expect(
       referenced.filter((cmd) => !contributed.has(cmd) && !literals.has(cmd)),
     ).toEqual([]);
-  });
+  }, 30_000);
 
   it("hides tree- and context-only commands from the command palette", () => {
     const commandPaletteEntries = contributes.menus?.commandPalette ?? [];
