@@ -12,7 +12,7 @@ type ColumnLineage = lineage.ColumnLineage;
 export type Direction = "children" | "parents";
 
 /** A column as `[table unique ID, column name]`. */
-export type ColumnRef = [table: string, column: string];
+export type TableColumn = [table: string, column: string];
 
 /**
  * The lineage graph the panel draws. `known`, `neighbours` and `columns` cache host answers; the drawn graph is the
@@ -51,9 +51,9 @@ export interface GraphState {
   /** The buckets of each grouped expansion, by key; a grouped key has no `shown` entry. */
   groups: Record<string, NeighbourGroups>;
   selectedTable?: string | undefined;
-  selectedColumn?: ColumnRef | undefined;
+  selectedColumn?: TableColumn | undefined;
   /** The column trace in flight: its column and when it started, from which the pending badge counts seconds. */
-  tracing?: { column: ColumnRef; since: number } | undefined;
+  tracing?: { column: TableColumn; since: number } | undefined;
 }
 
 /** Reads and changes the latest graph; an async step reads after each answer, so it never applies a stale base. */
@@ -140,7 +140,7 @@ export const expansionClick = (
 /** What a click on `ref` does: the selected column, compared case-insensitively, clears the trace; any other traces. */
 export const columnClick = (
   state: GraphState,
-  ref: ColumnRef,
+  ref: TableColumn,
 ): "clear" | "trace" => {
   const selected = state.selectedColumn;
   return selected?.[0] === ref[0] &&

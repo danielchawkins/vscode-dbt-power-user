@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 
 // A shape that crosses the host/webview boundary is declared once, in packages/webview-contract, and both sides import
 // it. A same-named interface or type in the host or the webview (with or without a `DBT`/`Dbt` prefix) is a second
-// declaration of that shape: the two drift, and only the copy a message is typed with is checked. An alias of the
-// contract type (`type ModelTest = documentationEditor.ModelTest`) is an import, not a copy, and so is a view built
-// from it (`type ColumnLineage = Omit<lineage.ColumnLineage, "viewsType"> & {...}`), which cannot drift from it.
+// declaration of that shape: the two drift, and only the copy a message is typed with is checked. An exact alias of
+// the contract type (`type ModelTest = documentationEditor.ModelTest;`) is an import, not a copy. Any other
+// declaration with the same name is a copy, including an `Omit<…>`, `Pick<…>` or intersection that re-declares
+// fields, unless it is listed in ALLOWED_VIEWS with the reason it narrows the contract on purpose.
 // BASELINE lists the copies that exist today; the refactor that removes one deletes its entry, and the second test
 // fails until it does, so the list only shrinks.
 
@@ -15,9 +16,13 @@ const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const CONTRACT = "packages/webview-contract/src";
 const SCANNED = ["src", "webview_panels/src"];
 
-const BASELINE = new Set([
-  "webview_panels/src/modules/lineage/graph.ts ColumnRef",
+/** Views of a contract shape that are intended, as `"<file> <name>"`, each with the reason it stays a view. */
+const ALLOWED_VIEWS = new Set([
+  // Narrows only `viewsType`, to the core's own union; every other field is the contract's.
+  "src/core/lineage/columnLineage.ts ColumnLineage",
 ]);
+
+const BASELINE = new Set<string>([]);
 
 const isTest = (file: string) =>
   /\.test\.tsx?$/.test(file) || /(^|\/)test\//.test(file);
@@ -56,10 +61,9 @@ function copiesIn(
   for (const match of text.matchAll(declaration)) {
     const name = match[1];
     const line = match[0];
-    const derives = new RegExp(
-      `=\\s*(?:(?:Omit|Pick|Partial|Required|NonNullable)<\\s*)?(?:\\w+\\.)?${name}\\b`,
-    ).test(line);
-    if (names.has(name) && !derives) {
+    const alias = new RegExp(`=\\s*(?:\\w+\\.)?${name}\\s*;`).test(line);
+    const allowed = ALLOWED_VIEWS.has(`${file} ${name}`);
+    if (names.has(name) && !alias && !allowed) {
       found.push(`${file} ${name}`);
     }
   }
@@ -68,21 +72,40 @@ function copiesIn(
 
 describe("copiesIn", () => {
   const names = new Set(["Documentation", "ModelTest", "ColumnLineage"]);
-  it("finds a same-named or DBT-prefixed copy and skips an alias, a view or an import", () => {
+  it("finds a same-named or DBT-prefixed copy, and a view that re-declares fields", () => {
     const text = [
       "export interface DBTDocumentation {",
       "interface Documentation {",
-      "export type DBTModelTest = documentationEditor.ModelTest;",
-      "export type ModelTest = ModelTest;",
+      'export type Documentation = Omit<documentationEditor.Documentation, "description"> & {',
+      "  description: string;",
+      "};",
+      "type Documentation = Omit<Documentation, keyof Documentation> & { columns: string[] };",
       'export type ColumnLineage = Omit<lineage.ColumnLineage, "viewsType"> & {',
-      "interface DocumentationDraft {",
-      'import { type ModelTest, type Documentation } from "x";',
-      "  type Documentation,",
     ].join("\n");
     expect(copiesIn("a.ts", text, names)).toEqual([
       "a.ts Documentation",
       "a.ts Documentation",
+      "a.ts Documentation",
+      "a.ts Documentation",
+      "a.ts ColumnLineage",
     ]);
+  });
+  it("skips an exact alias, an import, and a listed view", () => {
+    const text = [
+      "export type DBTModelTest = documentationEditor.ModelTest;",
+      "export type ModelTest = ModelTest;",
+      'import { type ModelTest, type Documentation } from "x";',
+      "  type Documentation,",
+      "interface DocumentationDraft {",
+    ].join("\n");
+    expect(copiesIn("a.ts", text, names)).toEqual([]);
+    expect(
+      copiesIn(
+        "src/core/lineage/columnLineage.ts",
+        'export type ColumnLineage = Omit<lineage.ColumnLineage, "viewsType"> & {',
+        names,
+      ),
+    ).toEqual([]);
   });
 });
 
