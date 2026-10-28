@@ -1,0 +1,42 @@
+id: ts-no-dbt-caps-prefix
+snapshots:
+  export class DBTClientPool {}:
+    labels:
+    - source: class DBTClientPool {}
+      style: primary
+      start: 7
+      end: 29
+    - source: DBTClientPool
+      style: secondary
+      start: 13
+      end: 26
+  export enum DBTLayer { Staging }:
+    labels:
+    - source: enum DBTLayer { Staging }
+      style: primary
+      start: 7
+      end: 32
+    - source: DBTLayer
+      style: secondary
+      start: 12
+      end: 20
+  'export interface DBTColumnProposal { column: string }':
+    labels:
+    - source: 'interface DBTColumnProposal { column: string }'
+      style: primary
+      start: 7
+      end: 53
+    - source: DBTColumnProposal
+      style: secondary
+      start: 17
+      end: 34
+  'type DBTRunResult = { ok: boolean };':
+    labels:
+    - source: 'type DBTRunResult = { ok: boolean };'
+      style: primary
+      start: 0
+      end: 36
+    - source: DBTRunResult
+      style: secondary
+      start: 5
+      end: 17
