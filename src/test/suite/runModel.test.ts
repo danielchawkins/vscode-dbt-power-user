@@ -18,7 +18,7 @@ import type { NodeMetaData } from "../../core/manifest/types";
 import { RunModel } from "../../features/run/runModel";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
-import { previewUriFor } from "../../projects/registry/previewUri";
+import { activeModelUri, previewUriFor } from "../../projects/registry/previewUri";
 import { RecordingTasks } from "../recordingTasks";
 
 vi.mock("vscode", async (importOriginal) => ({
@@ -89,6 +89,16 @@ describe("RunModel SQL execution", () => {
     };
     context = {
       requireForCommand: vi.fn(),
+      activeEditor: () => {
+        const editor = window.activeTextEditor;
+        return (
+          editor && {
+            editor,
+            modelUri: activeModelUri(editor.document.uri),
+            project: undefined,
+          }
+        );
+      },
     } as unknown as Mocked<CurrentProject>;
     runModel = new RunModel(projects, context);
   });
