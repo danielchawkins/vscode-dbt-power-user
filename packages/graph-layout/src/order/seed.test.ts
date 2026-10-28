@@ -4,21 +4,9 @@ import { layer } from "../layering.js";
 import { seededRandom, shuffled } from "../random.js";
 import type { RankResult } from "../rank/index.js";
 import { rank } from "../rank/index.js";
-import type {
-  LayoutEdge,
-  LayoutGraph,
-  LayoutHints,
-  LayoutOptions,
-} from "../types.js";
+import { graphArb, options } from "../testing/graphs.js";
+import type { LayoutGraph, LayoutHints } from "../types.js";
 import { startingLayers } from "./seed.js";
-
-const options: LayoutOptions = {
-  direction: "down",
-  edgeKinds: {
-    dependency: { ranks: true, weight: 1 },
-    column: { ranks: false, weight: 0.5 },
-  },
-};
 
 const hint = (rank: number, order: number) => ({ rank, order, x: 0, y: 0 });
 
@@ -111,25 +99,3 @@ describe("startingLayers", () => {
     );
   });
 });
-
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
-  .integer({ min: 1, max: 9 })
-  .chain((count) =>
-    fc
-      .array(fc.tuple(fc.nat(count - 1), fc.nat(count - 1), fc.nat(1)), {
-        maxLength: 16,
-      })
-      .map((specs) => ({
-        nodes: Array.from({ length: count }, (_, i) => ({
-          id: `n${i}`,
-          width: 80,
-          height: 40,
-        })),
-        edges: specs.map(([a, b, k], i): LayoutEdge => ({
-          id: `e${i}`,
-          source: `n${a}`,
-          target: `n${b}`,
-          kind: k === 0 ? "dependency" : "column",
-        })),
-      })),
-  );

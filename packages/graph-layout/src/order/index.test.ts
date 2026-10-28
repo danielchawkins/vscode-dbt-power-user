@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { rank } from "../rank/index.js";
+import { options } from "../testing/graphs.js";
 import type {
   LayoutEdge,
   LayoutGraph,
@@ -9,15 +10,8 @@ import type {
 } from "../types.js";
 import { order, type OrderResult } from "./index.js";
 
-const options: LayoutOptions = {
-  direction: "down",
-  edgeKinds: {
-    dependency: { ranks: true, weight: 1 },
-    column: { ranks: false, weight: 0.5 },
-  },
-};
-
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
+/** Like the shared graphArb, with at least two nodes and up to eighteen edges. */
+const denseGraphArb: fc.Arbitrary<LayoutGraph> = fc
   .integer({ min: 2, max: 9 })
   .chain((count) =>
     fc
@@ -42,7 +36,7 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
 describe("order", () => {
   it("places every node and dummy of each rank exactly once, in that rank", () => {
     fc.assert(
-      fc.property(graphArb, (graph) => {
+      fc.property(denseGraphArb, (graph) => {
         const result = order(graph, options, rank(graph, options));
         const seen = result.layers.flat().sort((a, b) => a - b);
         expect(seen).toEqual(result.layered.nodes.map((_, i) => i));
@@ -58,7 +52,7 @@ describe("order", () => {
 
   it("is a pure function of the graph, options and seed", () => {
     fc.assert(
-      fc.property(graphArb, fc.integer(), (graph, seed) => {
+      fc.property(denseGraphArb, fc.integer(), (graph, seed) => {
         const thorough = { ...options, effort: "thorough" as const, seed };
         const ranking = rank(graph, thorough);
         expect(order(graph, thorough, ranking)).toEqual(
@@ -71,7 +65,7 @@ describe("order", () => {
 
   it("is no worse at thorough effort than at balanced", () => {
     fc.assert(
-      fc.property(graphArb, fc.integer(), (graph, seed) => {
+      fc.property(denseGraphArb, fc.integer(), (graph, seed) => {
         const balanced = { ...options, effort: "balanced" as const, seed };
         const thorough = { ...balanced, effort: "thorough" as const };
         const ranking = rank(graph, balanced);
@@ -87,7 +81,7 @@ describe("order", () => {
     // Hints are a preference: a rerun may move some nodes, but most stay where they were.
     const cases = fc.sample(
       fc.tuple(
-        graphArb,
+        denseGraphArb,
         fc.integer(),
         fc.constantFrom<NonNullable<LayoutOptions["effort"]>>(
           "fast",
