@@ -235,4 +235,36 @@ describe("place", () => {
     const placed = placeGraph(graph, { ...options, hints });
     expect(placed.nodes.get("a")?.x).toBeCloseTo(140, 6);
   });
+
+  it("keeps a hinted drawing near its hints when no pull reaches the solver", () => {
+    const graph: LayoutGraph = {
+      nodes: ["a", "b", "c"].map((id) => ({ id, width: 80, height: 40 })),
+      edges: [
+        { id: "ab", source: "a", target: "b", kind: "dependency" },
+        { id: "ac", source: "a", target: "c", kind: "dependency" },
+      ],
+    };
+    const hints = hintsFor(graph, [
+      [500, 0],
+      [400, 100],
+      [600, 100],
+    ]);
+    for (const extra of [{ effort: "fast" as const }, { stability: 0 }]) {
+      const placed = placeGraph(graph, { ...options, ...extra, hints });
+      expect(Math.abs((placed.nodes.get("a")?.x ?? 0) - 540)).toBeLessThan(60);
+    }
+  });
+
+  it("places a rank thousands of nodes wide", { timeout: 60_000 }, () => {
+    const graph: LayoutGraph = {
+      nodes: Array.from({ length: 8000 }, (_, i) => ({
+        id: `n${i}`,
+        width: 10,
+        height: 10,
+      })),
+      edges: [],
+    };
+    const placed = placeGraph(graph, { ...options, effort: "fast" });
+    expect(placed.nodes.size).toBe(8000);
+  });
 });
