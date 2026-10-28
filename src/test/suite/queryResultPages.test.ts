@@ -19,7 +19,7 @@ function realPanel(removed = new EventEmitter<Uri>()) {
   return new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as any,
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as any,
-    dbtTerminal: spyLog(),
+    log: spyLog(),
     queryManifestService: {} as any,
     currentProject: {} as any,
     onDidRemoveProject: removed.event,

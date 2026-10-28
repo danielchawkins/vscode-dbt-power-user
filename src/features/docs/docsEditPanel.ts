@@ -93,7 +93,7 @@ export class DocsEditViewPanel extends PanelHost<
     super({
       extensionContext,
       emitterService: services.emitterService,
-      dbtTerminal: terminal,
+      log: terminal,
       queryManifestService: services.queryManifestService,
     });
     this.projects = projects;
@@ -235,7 +235,7 @@ export class DocsEditViewPanel extends PanelHost<
 
   private get requests(): DocsEditRequests {
     return new DocsEditRequests({
-      terminal: this.dbtTerminal,
+      terminal: this.log,
       queryManifestService: this.queryManifestService,
       dbtTestService: this.dbtTestService,
       getProject: (uri) => this.projectOf(uri),
@@ -350,9 +350,9 @@ export class DocsEditViewPanel extends PanelHost<
       activeProject: project,
       deps: {
         projects: this.projects,
-        terminal: this.dbtTerminal,
+        terminal: this.log,
         testData: {
-          terminal: this.dbtTerminal,
+          terminal: this.log,
           dbtTestService: this.dbtTestService,
         },
       },
@@ -363,7 +363,7 @@ export class DocsEditViewPanel extends PanelHost<
           `Could not save documentation to ${patchPath}`,
           error,
         );
-        this.dbtTerminal.error(
+        this.log.error(
           "saveDocumentationError",
           `Could not save documentation to ${patchPath}`,
           error,

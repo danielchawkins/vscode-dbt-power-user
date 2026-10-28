@@ -151,7 +151,7 @@ export abstract class PanelHost<
   protected _disposables: Disposable[] = [];
   protected extensionContext: ExtensionContextStore;
   protected emitterService: SharedStateService;
-  protected dbtTerminal: Log;
+  protected log: Log;
   protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
   private readonly readiness = new PageReadiness<Page>();
@@ -166,17 +166,17 @@ export abstract class PanelHost<
   public constructor({
     extensionContext,
     emitterService,
-    dbtTerminal,
+    log,
     queryManifestService,
   }: {
     extensionContext: ExtensionContextStore;
     emitterService: SharedStateService;
-    dbtTerminal: Log;
+    log: Log;
     queryManifestService: QueryManifestService;
   }) {
     this.extensionContext = extensionContext;
     this.emitterService = emitterService;
-    this.dbtTerminal = dbtTerminal;
+    this.log = log;
     this.queryManifestService = queryManifestService;
     this._disposables.push(
       emitterService.eventEmitter.event((d) => this.onEvent(d)),
@@ -219,7 +219,7 @@ export abstract class PanelHost<
     message: H,
   ): Thenable<boolean> | undefined {
     this.replay.record(this.pageOf(panel), message);
-    return postToWebview(panel, message, this.dbtTerminal);
+    return postToWebview(panel, message, this.log);
   }
 
   /** Answers the requests of `page`, the page they came from; a missing page gets no answer. */
@@ -229,7 +229,7 @@ export abstract class PanelHost<
     // A reply records no replay slot, so it goes straight out rather than through `postTo`.
     const sink = {
       reply: (response: Response) =>
-        postToWebview(page, response, this.dbtTerminal),
+        postToWebview(page, response, this.log),
     };
     return {
       respond: (_command, syncRequestId, body) =>
@@ -318,10 +318,10 @@ export abstract class PanelHost<
           guard: this.guard,
           handlers: this.handlers(page),
           sink: {
-            log: this.dbtTerminal,
+            log: this.log,
             // A reply records no replay slot, so it goes straight out rather than through `postTo`.
             reply: (response) =>
-              postToWebview(page, response, this.dbtTerminal),
+              postToWebview(page, response, this.log),
           },
         }),
       ),

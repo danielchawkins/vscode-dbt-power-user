@@ -83,7 +83,7 @@ export class QueryResultPanel extends PanelHost<
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
   declare protected extensionContext: ExtensionContextStore;
-  declare protected dbtTerminal: Log;
+  declare protected log: Log;
   declare protected queryManifestService: QueryManifestService;
   private readonly currentProject: CurrentProject;
   private readonly history: QueryHistoryStore;
@@ -91,14 +91,14 @@ export class QueryResultPanel extends PanelHost<
   public constructor({
     extensionContext,
     eventEmitterService,
-    dbtTerminal,
+    log,
     queryManifestService,
     currentProject,
     onDidRemoveProject,
   }: {
     extensionContext: ExtensionContextStore;
     eventEmitterService: SharedStateService;
-    dbtTerminal: Log;
+    log: Log;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
     onDidRemoveProject: Event<Uri>;
@@ -106,11 +106,11 @@ export class QueryResultPanel extends PanelHost<
     super({
       extensionContext,
       emitterService: eventEmitterService,
-      dbtTerminal,
+      log,
       queryManifestService,
     });
     this.currentProject = currentProject;
-    this.history = new QueryHistoryStore(dbtTerminal);
+    this.history = new QueryHistoryStore(log);
     this._disposables.push(
       onDidRemoveProject(() => {
         this.replay.clear();
@@ -214,7 +214,7 @@ export class QueryResultPanel extends PanelHost<
       await runOnQueryPanel(project.queries, message);
     } catch (error) {
       void notifyErrorWithoutProject("Unable to execute query", error);
-      this.dbtTerminal.error(
+      this.log.error(
         "ExecuteSqlError",
         "Unable to execute query",
         error,
@@ -351,7 +351,7 @@ export class QueryResultPanel extends PanelHost<
       recordResult({
         history: this.history,
         currentProject: this.currentProject,
-        log: this.dbtTerminal,
+        log: this.log,
         run: {
           result,
           projectName,
@@ -385,7 +385,7 @@ export class QueryResultPanel extends PanelHost<
     const replay = this.replay.messagesFor(this.pageOf(panel));
     this.onWebviewReady(panel);
     for (const message of replay) {
-      void postToWebview(panel, message, this.dbtTerminal);
+      void postToWebview(panel, message, this.log);
     }
   }
 

@@ -41,7 +41,7 @@ export function composeWebviews(
     new QueryResultPanel({
       extensionContext: extensionContextStore,
       eventEmitterService: sharedState,
-      dbtTerminal: terminal,
+      log: terminal,
       queryManifestService,
       currentProject: graph.currentProject,
       onDidRemoveProject: projects.onDidRemoveProject,
