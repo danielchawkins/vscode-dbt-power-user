@@ -143,7 +143,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
     };
     const terminal = silentLog();
     const adapter = {
-      getProjectRoot: () => fixtureRoot,
+      root: { fsPath: fixtureRoot },
       getProjectName: () => "single_project",
       paths: () => ({
         packagesInstallPath: path.join(fixtureRoot, "dbt_packages"),

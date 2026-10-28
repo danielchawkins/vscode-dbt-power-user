@@ -21,7 +21,7 @@ const T = "source.p.s.t";
 
 const log = { debug: () => undefined } as unknown as Pick<Log, "debug">;
 const project = {
-  getProjectRoot: () => "/p",
+  root: { fsPath: "/p" },
   getProjectName: () => "p",
   paths: () => undefined,
 } as ManifestProject;

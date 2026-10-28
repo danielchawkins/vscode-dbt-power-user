@@ -222,7 +222,7 @@ describe("Project Test Suite", () => {
     });
 
     it("should get project root", () => {
-      expect(dbtProject.getProjectRoot()).toBe("/test/project");
+      expect(dbtProject.root.fsPath).toBe("/test/project");
     });
 
     it("should get DBT project file path", () => {

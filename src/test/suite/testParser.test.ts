@@ -42,7 +42,7 @@ describe("TestParser Test Suite", () => {
 
     testParser = new TestParser(mockTerminal);
     mockAdapter = {
-      getProjectRoot: () => "/mock/project/path",
+      root: { fsPath: "/mock/project/path" },
       getProjectName: () => "mock_project",
     } as unknown as ManifestProject;
   });
@@ -87,7 +87,7 @@ describe("TestParser Test Suite", () => {
     expect(testMeta?.unique_id).toBe("test.test_1");
     expect(testMeta?.raw_sql).toBe("SELECT * FROM table");
     expect(testMeta?.path).toBe(
-      path.join(mockAdapter.getProjectRoot(), "tests/test_1.sql"),
+      path.join(mockAdapter.root.fsPath, "tests/test_1.sql"),
     );
   });
 

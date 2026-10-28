@@ -13,7 +13,7 @@ export class MetricParser {
     metrics: ManifestResources<{ name: string }> | null | undefined,
     project: ManifestProject,
   ): Promise<MetricMetaMap> {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "MetricParser",

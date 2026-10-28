@@ -270,10 +270,6 @@ export class Project implements Disposable, ManifestProject {
     );
   }
 
-  getProjectRoot() {
-    return this.root.fsPath;
-  }
-
   getDBTProjectFilePath() {
     return dbtProjectFilePath(this.root.fsPath);
   }

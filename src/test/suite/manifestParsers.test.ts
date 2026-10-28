@@ -18,7 +18,7 @@ const logger = { debug: () => undefined } as unknown as Pick<Log, "debug">;
 
 function project(packagePath: string | undefined): ManifestProject {
   return {
-    getProjectRoot: () => "/p",
+    root: { fsPath: "/p" },
     getProjectName: () => "p",
     paths: () =>
       ({
@@ -60,7 +60,7 @@ describe("manifest parsers", () => {
         "{% docs d %}\nbody\n{% enddocs %}\n",
       );
       const rootProject: ManifestProject = {
-        getProjectRoot: () => root,
+        root: { fsPath: root },
         getProjectName: () => "p",
         paths: () => ({
           packagesInstallPath: join(root, "dbt_packages"),

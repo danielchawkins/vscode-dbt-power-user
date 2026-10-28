@@ -14,7 +14,7 @@ export interface ResourcePaths {
  */
 export function resourcePaths(project: ManifestProject): ResourcePaths {
   const projectName = project.getProjectName();
-  const projectRoot = project.getProjectRoot();
+  const projectRoot = project.root.fsPath;
   const packagePath = project.paths()?.packagesInstallPath;
   if (packagePath === undefined) {
     throw new Error(`packagePath is not defined in ${projectRoot}`);

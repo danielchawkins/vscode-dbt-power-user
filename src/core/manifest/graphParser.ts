@@ -207,7 +207,7 @@ export class GraphParser {
     testMetaMap,
     functionMetaMap,
   }: GraphInput): GraphMetaMap {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "GraphParser",
