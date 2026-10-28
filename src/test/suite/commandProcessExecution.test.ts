@@ -49,6 +49,8 @@ describe("CommandProcessExecution Tests", () => {
     expect(mockTerminal.debug).toHaveBeenCalled();
   });
 
+  // The fake nice is a freshly written script, and its first exec can take seconds on a loaded machine (in a probe,
+  // 5 of 300 fresh scripts took 0.5-2.6 s, none of 300 reused ones did), so the default 5 s limit is too tight here.
   it.skipIf(process.platform === "win32")(
     "runs a background command under nice, from the PATH it is given",
     async () => {
@@ -75,6 +77,7 @@ describe("CommandProcessExecution Tests", () => {
         ].join("\n"),
       );
     },
+    20_000,
   );
 
   it.skipIf(process.platform === "win32")(
