@@ -4,6 +4,7 @@ import { routeChannel } from "./channel.js";
 import type { ChannelPiece } from "./channelTypes.js";
 import { membersOf, type Phases, type Run } from "./pieces.js";
 import { framePoint, type Geometry, polylinesOf } from "./polylines.js";
+import { stubCrossings } from "./stubs.js";
 
 type Effort = NonNullable<LayoutOptions["effort"]>;
 
@@ -22,7 +23,7 @@ export interface RouteWork {
   pairs: number;
   /** Tracks used, over every band. */
   tracks: number;
-  /** Crossings the bands count among the polylines. */
+  /** Crossings among the polylines: those the bands count, and those lateral stubs make within their block. */
   crossings: number;
   /** The pair budget ran out, so `crossings` is a lower bound. */
   capped: boolean;
@@ -85,17 +86,28 @@ export function route(
     centres,
     halves,
     nodeHalves,
+    portAcross: layered.nodes.map((node) =>
+      node.port === undefined
+        ? undefined
+        : node.port.offset - (nodeHalves[node.port.owner] ?? 0),
+    ),
     ranks: layered.nodes.map((node) => node.rank),
   };
 
   const nodes = new Map<string, Point>();
-  layered.nodes.forEach((node, i) => {
+  const inRank = layered.nodes.map((_, i) => {
     const point = placement.points[i];
-    if (node.id !== undefined && point !== undefined) {
-      const inRank = down ? point.x : point.y;
-      nodes.set(node.id, framePoint(down, inRank, centres[node.rank] ?? 0));
+    return point === undefined ? 0 : down ? point.x : point.y;
+  });
+  layered.nodes.forEach((node, i) => {
+    if (node.id !== undefined && placement.points[i] !== undefined) {
+      nodes.set(
+        node.id,
+        framePoint(down, inRank[i] ?? 0, centres[node.rank] ?? 0),
+      );
     }
   });
+  work.crossings += stubCrossings(layered, inRank, geometry.portAcross);
   return { nodes, edges: polylinesOf(members, geometry), work };
 }
 

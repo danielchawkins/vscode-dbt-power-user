@@ -1,14 +1,36 @@
+import { groupBundles } from "./bundles.js";
+import { lateralPort } from "./lateral.js";
+import {
+  TOWARD_LOWER,
+  TOWARD_UPPER,
+  inRankExtent,
+  meanPortOffset,
+} from "./offsets.js";
 import type { RankResult } from "./rank/index.js";
-import type {
-  LayoutEdge,
-  LayoutGraph,
-  LayoutNode,
-  LayoutOptions,
-  Side,
-} from "./types.js";
+import type { LayoutEdge, LayoutGraph, LayoutOptions } from "./types.js";
 
 /** Space between two parallel edges, used when `LayoutOptions.spacing` leaves it out. */
 const DEFAULT_EDGE_SPACING = 4;
+
+/**
+ * The port a dummy stands for: a lateral port's dummy sits in its owner's rank, beside the owner, and the bundle's edge
+ * leaves the owner's side at the port's offset and runs to the dummy.
+ */
+export interface PortDummy {
+  /** Layered index of the owner, a real node in the same rank. */
+  owner: number;
+  /** Whether the dummy lies after the owner in the in-rank order (east, or south when ranks run right). */
+  after: boolean;
+  /**
+   * Whether the dummy's run leaves toward the band below its rank (the dummy is the upper end of its bundle, or the
+   * bundle is flat); false when the run arrives from the band above.
+   */
+  below: boolean;
+  /** The port's offset from the start of its side, as in `LayoutPort`. */
+  offset: number;
+  /** Member edges of the bundle that are routed, each with its own stub and run; zero for a kind that is not routed. */
+  runs: number;
+}
 
 /** A node of the layered graph: a real node, or a dummy that carries one bundle across an intermediate rank. */
 interface LayeredNode {
@@ -17,6 +39,8 @@ interface LayeredNode {
   rank: number;
   /** Extent along the in-rank axis: the node's size, or a dummy's member count times the edge spacing. */
   breadth: number;
+  /** Set on the dummy of a lateral port; absent for every other dummy and real node. */
+  port?: PortDummy;
 }
 
 /** The edges of one kind between one ordered pair of nodes, drawn as one chain of dummies. */
@@ -60,19 +84,14 @@ export interface LayeredGraph {
   nodes: LayeredNode[];
   bundles: Bundle[];
   segments: Segment[];
+  /**
+   * The block of each layered node: the index of its owner when it is a lateral port's dummy, otherwise its own index.
+   * A block is kept contiguous in every rank, so an owner and its port dummies are ordered as one unit.
+   */
+  block: number[];
   /** Number of ranks, from 0 up to the highest rank. */
   ranks: number;
 }
-
-/** The side of a node that faces the next rank, and the side that faces the previous one, for each direction. */
-const TOWARD_LOWER: Record<LayoutOptions["direction"], Side> = {
-  down: "south",
-  right: "east",
-};
-const TOWARD_UPPER: Record<LayoutOptions["direction"], Side> = {
-  down: "north",
-  right: "west",
-};
 
 /** The state a layering pass builds: the nodes, bundles and segments so far, and the ranks and indices they use. */
 interface Build {
@@ -90,8 +109,9 @@ interface Build {
 
 /**
  * Lays the graph out in ranks: one bundle per kind and ordered pair of nodes, with a dummy chain across each rank the
- * bundle spans. Self-loops take no part. A port counts towards its end's offset only when it sits on the side that
- * faces the adjacent rank, because only that side's offset runs along the in-rank axis.
+ * bundle spans. A lateral port's end starts or ends at its own port dummy in the owner's rank. Self-loops take no part.
+ * A port counts towards its end's offset only when it sits on the side that faces the adjacent rank, because only that
+ * side's offset runs along the in-rank axis.
  */
 export function layer(
   graph: LayoutGraph,
@@ -113,13 +133,14 @@ export function layer(
     segments: [],
     spacing: options.spacing?.edge ?? DEFAULT_EDGE_SPACING,
   };
-  for (const members of groupBundles(graph.edges)) {
+  for (const members of groupBundles(graph, options.direction)) {
     addBundle(build, members);
   }
   return {
     nodes: build.nodes,
     bundles: build.bundles,
     segments: build.segments,
+    block: build.nodes.map((node, x) => node.port?.owner ?? x),
     ranks: build.nodes.reduce((high, node) => Math.max(high, node.rank + 1), 0),
   };
 }
@@ -145,8 +166,24 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
       (options.edgeKinds[first.kind]?.weight ?? 1) * Math.sqrt(members.length),
   };
   build.bundles.push(bundle);
+  const runs =
+    options.edgeKinds[first.kind]?.routed === false ? 0 : members.length;
+  const top = endNode(build, {
+    node: upper,
+    port: reversed ? first.targetPort : first.sourcePort,
+    below: true,
+    count: members.length,
+    runs,
+  });
+  const bottom = endNode(build, {
+    node: lower,
+    port: reversed ? first.sourcePort : first.targetPort,
+    below: bundle.flat,
+    count: members.length,
+    runs,
+  });
   if (bundle.flat) {
-    bundle.chain = [source, target];
+    bundle.chain = [top, bottom];
     return;
   }
   const b = build.bundles.length - 1;
@@ -160,13 +197,13 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
     breadth: build.nodes[lower]!.breadth,
     side: TOWARD_UPPER[options.direction],
   });
-  const chain = [upper];
+  const chain = [top];
   const width = Math.max(1, members.length) * build.spacing;
   for (let r = rank[upper]! + 1; r < rank[lower]!; r++) {
     chain.push(build.nodes.length);
     build.nodes.push({ id: undefined, rank: r, breadth: width });
   }
-  chain.push(lower);
+  chain.push(bottom);
   bundle.chain = chain;
   for (let k = 0; k + 1 < chain.length; k++) {
     build.segments.push({
@@ -180,50 +217,40 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
   }
 }
 
-/** The non-self-loop edges, grouped by kind and ordered pair of nodes, in order of first appearance. */
-function groupBundles(edges: readonly LayoutEdge[]): LayoutEdge[][] {
-  const groups = new Map<string, LayoutEdge[]>();
-  for (const e of edges) {
-    if (e.source === e.target) {
-      continue;
-    }
-    const key = JSON.stringify([e.kind, e.source, e.target]);
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, [e]);
-    } else {
-      group.push(e);
-    }
-  }
-  return [...groups.values()];
-}
-
-/** The node's extent along the in-rank axis: its width when ranks run down, its height when they run right. */
-function inRankExtent(
-  node: LayoutNode,
-  direction: LayoutOptions["direction"],
-): number {
-  return direction === "down" ? node.width : node.height;
-}
-
 /**
- * The mean offset, from the node's centre, of the port that each member names at one end. A member that names no
- * port, or a port on another side, contributes zero.
+ * The node standing for one end of a bundle: a dummy in the end's rank when the port sits on a lateral side, else the
+ * end node itself. The dummy's breadth is the same as a chain dummy's for the bundle's members.
  */
-function meanPortOffset(
-  members: readonly LayoutEdge[],
-  end: "source" | "target",
-  at: { node: LayoutNode; breadth: number; side: Side },
+function endNode(
+  build: Build,
+  end: {
+    node: number;
+    port: string | undefined;
+    below: boolean;
+    count: number;
+    runs: number;
+  },
 ): number {
-  const total = members.reduce((sum, e) => {
-    const portId = end === "source" ? e.sourcePort : e.targetPort;
-    const port =
-      portId === undefined
-        ? undefined
-        : at.node.ports?.find((p) => p.id === portId);
-    return port === undefined || port.side !== at.side
-      ? sum
-      : sum + port.offset - at.breadth / 2;
-  }, 0);
-  return total / members.length;
+  const { node, below, count, runs } = end;
+  const lateral = lateralPort(
+    build.graph.nodes[node],
+    end.port,
+    build.options.direction,
+  );
+  if (lateral === undefined) {
+    return node;
+  }
+  build.nodes.push({
+    id: undefined,
+    rank: build.rank[node]!,
+    breadth: Math.max(1, count) * build.spacing,
+    port: {
+      owner: node,
+      after: lateral.after,
+      below,
+      offset: lateral.port.offset,
+      runs,
+    },
+  });
+  return build.nodes.length - 1;
 }

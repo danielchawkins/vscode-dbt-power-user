@@ -10,20 +10,34 @@ interface Placed {
 }
 
 /**
- * Where a routed end sits: on the box face toward the band below (`towardLower`) or above it, at the port's offset along
- * that face when the port is on it, else at the face's centre.
+ * Where a routed end sits. A port on a side lateral to the flow sits on that side, at its offset along it. Otherwise the
+ * end sits on the box face toward the band below (`towardLower`) or above it, at the port's offset along that face when
+ * the port is on it, else at the face's centre.
  */
 function endAt(
   end: { placed: Placed; port: string | undefined; towardLower: boolean },
   down: boolean,
 ): Point {
   const { node, centre } = end.placed;
+  const at = node.ports?.find((p) => p.id === end.port);
+  const lateral: Side[] = down ? ["east", "west"] : ["south", "north"];
+  if (at !== undefined && lateral.includes(at.side)) {
+    const beyond = at.side === lateral[0] ? 1 : -1;
+    return down
+      ? {
+          x: centre.x + (beyond * node.width) / 2,
+          y: centre.y - node.height / 2 + at.offset,
+        }
+      : {
+          x: centre.x - node.width / 2 + at.offset,
+          y: centre.y + (beyond * node.height) / 2,
+        };
+  }
   const sign = end.towardLower ? 1 : -1;
   const sides: { lower: Side; upper: Side } = down
     ? { lower: "south", upper: "north" }
     : { lower: "east", upper: "west" };
   const side: Side = end.towardLower ? sides.lower : sides.upper;
-  const at = node.ports?.find((p) => p.id === end.port);
   const breadth = down ? node.width : node.height;
   const mid = down ? centre.x : centre.y;
   const across = at?.side === side ? mid - breadth / 2 + at.offset : mid;

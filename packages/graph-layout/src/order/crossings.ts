@@ -58,11 +58,7 @@ export function totalCrossings(model: OrderModel): number {
  * links at the rank above and at the rank below are both counted. Swapping two neighbours changes the total by the
  * difference of the two orders' pair counts, so the transpose and sifting searches read their gains from here.
  */
-export function pairCrossings(
-  model: OrderModel,
-  left: number,
-  right: number,
-): number {
+function pairCrossings(model: OrderModel, left: number, right: number): number {
   const { segments } = model.graph;
   let total = 0;
   for (const si of model.down[left]!) {
@@ -84,6 +80,24 @@ export function pairCrossings(
       if (slot(model, a.top, a.topOffset) > slot(model, b.top, b.topOffset)) {
         total += a.weight * b.weight;
       }
+    }
+  }
+  return total;
+}
+
+/**
+ * The weighted crossings that two units make when `left` sits left of `right`: the sum over their member pairs, since
+ * every pair of segments is counted once whichever units they belong to.
+ */
+export function groupCrossings(
+  model: OrderModel,
+  left: readonly number[],
+  right: readonly number[],
+): number {
+  let total = 0;
+  for (const a of left) {
+    for (const b of right) {
+      total += pairCrossings(model, a, b);
     }
   }
   return total;

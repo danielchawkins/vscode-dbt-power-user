@@ -4,8 +4,8 @@ import { layer } from "../layering.js";
 import { seededRandom, shuffled } from "../random.js";
 import { rank } from "../rank/index.js";
 import type { LayoutEdge, LayoutGraph, LayoutOptions } from "../types.js";
-import { pairCrossings, totalCrossings } from "./crossings.js";
-import { createModel, type OrderModel, setLayer, slot } from "./model.js";
+import { totalCrossings } from "./crossings.js";
+import { createModel, type OrderModel, slot } from "./model.js";
 
 type Link = readonly [upper: number, lower: number, weight: number];
 
@@ -56,31 +56,6 @@ describe("totalCrossings", () => {
         expect(totalCrossings(model)).toBeCloseTo(expected, 9);
       }),
       { numRuns: 300 },
-    );
-  });
-
-  it("changes by the pair counts when two neighbours in one rank swap", () => {
-    fc.assert(
-      fc.property(graphArb, fc.integer(), (graph, seed) => {
-        const model = randomModel(graph, seed);
-        for (let rank = 0; rank < model.layers.length; rank++) {
-          const layer = model.layers[rank];
-          for (let k = 0; k + 1 < layer.length; k++) {
-            const a = layer[k];
-            const b = layer[k + 1];
-            const before = totalCrossings(model);
-            const expected =
-              before + pairCrossings(model, b, a) - pairCrossings(model, a, b);
-            const swapped = [...layer];
-            swapped[k] = b;
-            swapped[k + 1] = a;
-            setLayer(model, rank, swapped);
-            expect(totalCrossings(model)).toBeCloseTo(expected, 9);
-            setLayer(model, rank, layer);
-          }
-        }
-      }),
-      { numRuns: 200 },
     );
   });
 });

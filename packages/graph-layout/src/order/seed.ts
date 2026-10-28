@@ -20,8 +20,62 @@ export function startingLayers(
   const keys =
     hints === undefined ? depthFirstKeys(graph) : hintKeys(graph, hints);
   const layers: number[][] = Array.from({ length: graph.ranks }, () => []);
-  graph.nodes.forEach((node, x) => layers[node.rank]!.push(x));
-  return layers.map((layer) => layer.toSorted((a, b) => keys[a]! - keys[b]!));
+  graph.nodes.forEach((node, x) => {
+    if (graph.block[x] === x) {
+      layers[node.rank]!.push(x);
+    }
+  });
+  const blocks = blockMembers(graph);
+  return layers.map((layer) =>
+    layer
+      .toSorted((a, b) => keys[a]! - keys[b]!)
+      .flatMap((head) => blocks.get(head) ?? [head]),
+  );
+}
+
+/**
+ * Each owner with lateral port dummies, and its block in drawing order: the dummies before it, the owner, then the
+ * dummies after it, each side nearest the owner first.
+ */
+function blockMembers(graph: LayeredGraph): Map<number, number[]> {
+  const groups = new Map<number, number[]>();
+  graph.nodes.forEach((node, x) => {
+    if (node.port !== undefined) {
+      const group = groups.get(node.port.owner) ?? [];
+      group.push(x);
+      groups.set(node.port.owner, group);
+    }
+  });
+  return new Map(
+    Array.from(groups, ([owner, dummies]) => {
+      const before = nearestFirst(
+        graph,
+        dummies.filter((x) => graph.nodes[x]?.port?.after === false),
+      ).reverse();
+      const after = nearestFirst(
+        graph,
+        dummies.filter((x) => graph.nodes[x]?.port?.after === true),
+      );
+      return [owner, [...before, owner, ...after]] as const;
+    }),
+  );
+}
+
+/**
+ * One side's dummies, nearest the owner first. Working outward, a dummy whose run leaves toward the band below takes
+ * the largest offset still unplaced, and one whose run arrives from above takes the smallest, so its stub never lies
+ * across a nearer run. Where the order cannot avoid a crossing, the smallest offset goes next.
+ */
+function nearestFirst(graph: LayeredGraph, dummies: number[]): number[] {
+  const offsetOf = (x: number): number => graph.nodes[x]?.port?.offset ?? 0;
+  const left = dummies.toSorted((a, b) => offsetOf(a) - offsetOf(b));
+  const order: number[] = [];
+  while (left.length > 0) {
+    const last = left.length - 1;
+    const below = graph.nodes[left[last]!]?.port?.below === true;
+    order.push(...left.splice(below ? last : 0, 1));
+  }
+  return order;
 }
 
 /**

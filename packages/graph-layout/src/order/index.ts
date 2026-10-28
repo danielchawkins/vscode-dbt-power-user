@@ -2,7 +2,7 @@ import { type LayeredGraph, layer } from "../layering.js";
 import { seededRandom, shuffled } from "../random.js";
 import type { RankResult } from "../rank/index.js";
 import type { LayoutGraph, LayoutOptions } from "../types.js";
-import { createModel, type OrderModel } from "./model.js";
+import { createModel, type OrderModel, unitsOf } from "./model.js";
 import { startingLayers } from "./seed.js";
 import { sift } from "./sifting.js";
 import { found, type Found, search } from "./sweeps.js";
@@ -50,7 +50,9 @@ export function order(
   const start = startingLayers(layered, options.hints);
   let best = refine(layered, start, effort);
   for (let r = 0; r < RESTARTS[effort]; r++) {
-    const restart = start.map((layer) => shuffled(layer, random));
+    const restart = start.map((layer) =>
+      shuffled(unitsOf(layer, layered.block), random).flat(),
+    );
     const candidate = refine(layered, restart, effort);
     if (candidate.crossings < best.crossings) {
       best = candidate;

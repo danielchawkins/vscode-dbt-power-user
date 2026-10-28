@@ -12,6 +12,11 @@ export interface Geometry {
   halves: readonly number[];
   /** Half the across extent of each layered node; zero for a dummy. */
   nodeHalves: readonly number[];
+  /**
+   * For a lateral port's dummy, the across coordinate of its port relative to its rank's centre; undefined for any
+   * other node.
+   */
+  portAcross: readonly (number | undefined)[];
   /** The rank of each layered node. */
   ranks: readonly number[];
 }
@@ -42,8 +47,12 @@ export function framePoint(
 /** The across coordinate of a layered node's side that faces the band below it (`down`) or above it. */
 function acrossOf(geometry: Geometry, node: number, down: boolean): number {
   const rank = geometry.ranks[node] ?? 0;
-  const half = geometry.nodeHalves[node] ?? 0;
   const centre = geometry.centres[rank] ?? 0;
+  const port = geometry.portAcross[node];
+  if (port !== undefined) {
+    return centre + port;
+  }
+  const half = geometry.nodeHalves[node] ?? 0;
   return down ? centre + half : centre - half;
 }
 
@@ -52,6 +61,15 @@ function pathOf(member: Member, geometry: Geometry): Point[] {
   for (const run of member.runs) {
     const band = geometry.centres[run.rank] ?? 0;
     const bandTop = band + (geometry.halves[run.rank] ?? 0);
+    if (run.upperStub !== undefined) {
+      points.push(
+        framePoint(
+          geometry.down,
+          run.upperStub,
+          acrossOf(geometry, run.upper, true),
+        ),
+      );
+    }
     points.push(
       framePoint(geometry.down, run.from, acrossOf(geometry, run.upper, true)),
     );
@@ -69,6 +87,15 @@ function pathOf(member: Member, geometry: Geometry): Point[] {
         acrossOf(geometry, run.lower, run.flat),
       ),
     );
+    if (run.lowerStub !== undefined) {
+      points.push(
+        framePoint(
+          geometry.down,
+          run.lowerStub,
+          acrossOf(geometry, run.lower, run.flat),
+        ),
+      );
+    }
   }
   const simple = withoutBends(points);
   return member.reversed ? simple.reverse() : simple;

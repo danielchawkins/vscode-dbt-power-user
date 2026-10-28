@@ -24,6 +24,12 @@ export interface Run {
   track: number;
   /** The edge's source port as a key, shared by every edge from that port; undefined without one. */
   trunk: string | undefined;
+  /**
+   * The in-rank coordinate of the owner's side that the stub from a lateral port leaves, when the upper (lower) end is a
+   * port dummy; undefined at any other end. The stub runs from there to the dummy, at the port's offset.
+   */
+  upperStub: number | undefined;
+  lowerStub: number | undefined;
 }
 
 /** The phases routing reads: the ordering the layers come from, and the placement the in-rank coordinates come from. */
@@ -149,8 +155,25 @@ function flatRuns(site: Site, edge: LayoutEdge): Run[] {
       flat: true,
       track: -1,
       trunk: trunkOf(edge),
+      upperStub: stubOf(site, source),
+      lowerStub: stubOf(site, target),
     },
   ];
+}
+
+/**
+ * The in-rank coordinate where a lateral port's stub leaves its owner's side: the owner's centre moved by half its
+ * in-rank extent, on the side the port sits on. Undefined for a node that is not a port dummy.
+ */
+function stubOf(site: Site, node: number): number | undefined {
+  const { context } = site;
+  const port = context.layered.nodes[node]?.port;
+  if (port === undefined) {
+    return undefined;
+  }
+  const half = (context.layered.nodes[port.owner]?.breadth ?? 0) / 2;
+  const centre = context.inRank[port.owner] ?? 0;
+  return port.after ? centre + half : centre - half;
 }
 
 /** The runs of a chain of dummies, from the member's source end to its target end, against the edge when reversed. */
@@ -182,6 +205,8 @@ function chainRuns(site: Site, edge: LayoutEdge, reversed: boolean): Run[] {
       flat: false,
       track: -1,
       trunk: trunkOf(edge),
+      upperStub: k === 0 ? stubOf(site, upper) : undefined,
+      lowerStub: k + 2 === chain.length ? stubOf(site, lower) : undefined,
     });
   }
   return runs;
