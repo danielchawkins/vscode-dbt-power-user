@@ -1,4 +1,7 @@
-import type { PanelNotice } from "@fusion-power-user/webview-contract";
+import type {
+  documentationEditor,
+  PanelNotice,
+} from "@fusion-power-user/webview-contract";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
 import { Uri } from "vscode";
@@ -9,11 +12,9 @@ import { errorText, removeProtocol } from "../../core/text";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { Projects } from "../../projects/project/projects";
-import type { DBTDocumentation } from "./docGenTypes";
-import { Source } from "./docGenTypes";
 
 interface DBTDocumentationMessage {
-  documentation: DBTDocumentation | undefined;
+  documentation: documentationEditor.Documentation | undefined;
   message?: PanelNotice;
 }
 
@@ -58,7 +59,7 @@ export class DocGenService {
     currentNode: NodeMetaData | undefined,
     modelName: string,
     filePath: string,
-  ): DBTDocumentation | undefined {
+  ): documentationEditor.Documentation | undefined {
     if (!currentNode) {
       return;
     }
@@ -74,7 +75,7 @@ export class DocGenService {
         name: column.name,
         description: column.description,
         generated: false,
-        source: Source.YAML,
+        source: "YAML",
         type: column.data_type?.toLowerCase(),
       })),
     };
@@ -233,7 +234,7 @@ export class DocGenService {
       };
     }
 
-    const emptyDocumentation: DBTDocumentation = {
+    const emptyDocumentation: documentationEditor.Documentation = {
       name: modelName,
       description: "",
       uniqueId: node.unique_id,
@@ -291,10 +292,10 @@ export class DocGenService {
  * with no entry keeps `empty`.
  */
 function fromYamlModel(
-  empty: DBTDocumentation,
+  empty: documentationEditor.Documentation,
   patchPath: string,
   modelDef: DocumentationSchemaModel | undefined,
-): DBTDocumentation {
+): documentationEditor.Documentation {
   if (!modelDef) {
     return empty;
   }
@@ -306,7 +307,7 @@ function fromYamlModel(
       name: column.name,
       description: column.description ?? "",
       generated: false,
-      source: Source.YAML,
+      source: "YAML",
       type: column.data_type?.toLowerCase(),
     })),
   };
