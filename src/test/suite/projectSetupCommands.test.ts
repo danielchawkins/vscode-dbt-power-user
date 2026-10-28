@@ -3,19 +3,10 @@ import { Uri, window } from "vscode";
 import { resolveProjectSnapshot } from "../../core/snapshot";
 import { ProjectSetupCommands } from "../../features/projectSetup/projectSetupCommands";
 import { FusionCli } from "../../fusion/fusionCli";
-import type {
-  ProjectQuickPick,
-  ProjectQuickPickItem,
-} from "../../projects/project/projectQuickPick";
 import { noSettings } from "../arbitraries/projectSnapshot";
 import { RecordingTasks } from "../recordingTasks";
 
 const projectUri = Uri.file("/path/to/project");
-const pickedProject: ProjectQuickPickItem = {
-  label: "test_project",
-  description: projectUri.fsPath,
-  uri: projectUri,
-};
 
 const snapshot = resolveProjectSnapshot({
   root: projectUri.fsPath,
@@ -37,20 +28,16 @@ const debugRun = {
 const shownErrors = () =>
   vi.mocked(window.showErrorMessage).mock.calls.map(([message]) => message);
 
-describe("ProjectSetupCommands project resolution", () => {
+describe("ProjectSetupCommands", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   function createCommands(options: {
-    pickerResult?: ProjectQuickPickItem;
     debugOutput?: string;
     depsExitCode?: number;
   }) {
     const debugRuns: { command: string; args: string[]; cwd: string }[] = [];
-    const requested: Uri[] = [];
-    const picked: ProjectQuickPickItem[] = [];
-    const pickerOpened: boolean[] = [];
     const logged: unknown[][] = [];
     const logChannels: Uri[] = [];
     const tasks = new RecordingTasks({
@@ -95,30 +82,12 @@ describe("ProjectSetupCommands project resolution", () => {
         dispose: noop,
       },
     });
-    const mockProject = {
-      root: pickedProject.uri,
-      getProjectName: () => pickedProject.label,
+    const project = {
+      root: projectUri,
+      getProjectName: () => "test_project",
       commands: {
         debug: () => cli.run({ kind: "debug" }),
         installDeps: () => tasks.installDeps(),
-      },
-    };
-    const mockStore = {
-      setToWorkspaceState: (_key: string, value: ProjectQuickPickItem) => {
-        picked.push(value);
-      },
-    };
-    const mockProjects = {
-      all: () => [mockProject],
-      get: (uri: Uri) => {
-        requested.push(uri);
-        return mockProject;
-      },
-    };
-    const mockPicker = {
-      projectPicker: () => {
-        pickerOpened.push(true);
-        return Promise.resolve(options.pickerResult);
       },
     };
     const outputChannels = {
@@ -132,92 +101,61 @@ describe("ProjectSetupCommands project resolution", () => {
     };
 
     const commands = new ProjectSetupCommands({
-      projects: mockProjects,
-      extensionContext: mockStore as never,
-      projectQuickPick: mockPicker as unknown as ProjectQuickPick,
       outputChannels: outputChannels as never,
     });
 
     return {
       commands,
-      picked,
-      pickerOpened,
+      project,
       logged,
-      requested,
       logChannels,
       /** The `dbt debug` runs (built argv and cwd) and the queued task commands, each list in order. */
       ran: () => ({ debug: debugRuns, tasks: tasks.commands }),
     };
   }
 
-  it("validateProjects uses a provided project without opening the picker", async () => {
-    const { commands, ran, pickerOpened, requested } = createCommands({});
+  it("validateProjects runs dbt debug on the project it is given", async () => {
+    const { commands, project, ran } = createCommands({});
 
-    await commands.validateProjects(pickedProject, true);
+    await commands.validateProjects(project, true);
 
     expect(ran()).toEqual({ debug: [debugRun], tasks: [] });
-    expect(requested).toEqual([projectUri]);
-    expect(pickerOpened).toEqual([]);
     expect(shownErrors()).toEqual([]);
   });
 
-  it("validateProjects cancels silently when the picker is dismissed", async () => {
-    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
-    const { commands, ran, pickerOpened } = createCommands({
-      pickerResult: undefined,
-    });
+  it("validateProjects does nothing without a project", async () => {
+    const { commands, ran } = createCommands({});
 
     await commands.validateProjects(undefined, true);
 
-    expect(pickerOpened).toEqual([true]);
     expect(ran()).toEqual({ debug: [], tasks: [] });
     expect(shownErrors()).toEqual([]);
   });
 
-  it("validateProjects falls back to the picker and persists the selection", async () => {
-    const { commands, ran, picked, pickerOpened, requested } = createCommands({
-      pickerResult: pickedProject,
-    });
-
-    await commands.validateProjects(undefined, true);
-
-    expect(picked).toEqual([pickedProject]);
-    expect(pickerOpened).toEqual([true]);
-    expect(requested).toEqual([projectUri]);
-    expect(ran()).toEqual({ debug: [debugRun], tasks: [] });
-  });
-
-  it("installDeps cancels silently when the picker is dismissed", async () => {
-    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
-    const { commands, ran, pickerOpened } = createCommands({
-      pickerResult: undefined,
-    });
+  it("installDeps does nothing without a project", async () => {
+    const { commands, ran } = createCommands({});
 
     await commands.installDeps(undefined, true);
 
-    expect(pickerOpened).toEqual([true]);
     expect(ran()).toEqual({ debug: [], tasks: [] });
     expect(shownErrors()).toEqual([]);
   });
 
-  it("installDeps runs after picker selection", async () => {
-    const { commands, ran, pickerOpened } = createCommands({
-      pickerResult: pickedProject,
-    });
+  it("installDeps queues dbt deps for the project it is given", async () => {
+    const { commands, project, ran } = createCommands({});
 
-    await commands.installDeps(undefined, true);
+    await commands.installDeps(project, true);
 
-    expect(pickerOpened).toEqual([true]);
     expect(ran()).toEqual({ debug: [], tasks: [{ kind: "deps" }] });
   });
 
   it("validateProjects names the project's channel when dbt debug fails", async () => {
-    const { commands, logged, logChannels } = createCommands({
+    const { commands, project, logged, logChannels } = createCommands({
       debugOutput: "ERROR: no profile",
     });
 
     await expect(
-      commands.validateProjects(pickedProject, true),
+      commands.validateProjects(project as never, true),
     ).rejects.toThrow("no profile");
 
     expect(logChannels).toEqual([projectUri]);
@@ -237,9 +175,9 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("installDeps names the project's channel when dbt deps fails", async () => {
-    const { commands, logged } = createCommands({ depsExitCode: 1 });
+    const { commands, project, logged } = createCommands({ depsExitCode: 1 });
 
-    await expect(commands.installDeps(pickedProject, true)).rejects.toThrow(
+    await expect(commands.installDeps(project as never, true)).rejects.toThrow(
       "code 1",
     );
 

@@ -7,7 +7,6 @@ import { composeWebviews } from "./composition/webviews";
 import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { ColumnProposalRequests } from "./features/docs/columnProposals";
-import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
 import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { UnservedProjectsNotice } from "./features/projectSetup/unservedProjects";
@@ -65,7 +64,6 @@ export function compose(context: ExtensionContext): Composition {
     editor.codeLensProviders,
     commands.vscodeCommands,
     statusBars,
-    new DbtPowerUserActionsCenter(currentProject, graph.extensionContextStore),
     projectRegistry,
     currentProject,
     fusion.fusionClientPool,

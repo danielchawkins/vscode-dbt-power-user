@@ -15,7 +15,7 @@ export function composeCommands(
   startupGate: StartupGate,
   columnProposals: ColumnProposalRequests,
 ) {
-  const { projects, terminal, extensionContextStore } = graph;
+  const { projects, terminal } = graph;
   const cteProfilerService = new CteProfilerService(projects);
   const deferToProductionStatusBar = new DeferToProductionStatusBar(
     projects,
@@ -23,13 +23,10 @@ export function composeCommands(
   );
   const vscodeCommands = new VSCodeCommands({
     projects,
-    extensionContext: extensionContextStore,
+    currentProject: graph.currentProject,
     runModel: new RunModel(projects, graph.currentProject),
     runTest: new RunTest(projects, graph.queryManifestService),
     projectSetupCommands: new ProjectSetupCommands({
-      projects,
-      extensionContext: extensionContextStore,
-      projectQuickPick: graph.projectQuickPick,
       outputChannels: graph.outputChannels,
     }),
     log: terminal,

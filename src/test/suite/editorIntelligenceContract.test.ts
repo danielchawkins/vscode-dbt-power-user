@@ -6,7 +6,7 @@ import { esmDirname } from "../esmDirname";
 const srcRoot = path.resolve(esmDirname(import.meta.url), "../../");
 
 describe("editor intelligence project resolution", () => {
-  it("limits projectSelected references to explicit user-invoked paths", () => {
+  it("keeps the picked project in Current Project, not in a workspace-state key", () => {
     const callers = sourceFiles()
       .filter((file) =>
         readFileSync(file, "utf8").includes("fusionPowerUser.projectSelected"),
@@ -14,11 +14,7 @@ describe("editor intelligence project resolution", () => {
       .map((file) => path.relative(srcRoot, file))
       .sort();
 
-    expect(callers).toEqual([
-      "features/projectPicker/actionsCenter.ts",
-      "features/projectSetup/commands.ts",
-      "features/projectSetup/projectSetupCommands.ts",
-    ]);
+    expect(callers).toEqual([]);
   });
 
   it("routes SQL commands through Current Project", () => {
