@@ -1,5 +1,5 @@
 import { Disposable } from "vscode";
-import { DbtLineageService } from "../features/lineage/dbtLineageService";
+import { LineageService } from "../features/lineage/dbtLineageService";
 import { DefaultFusionClientFactory } from "../languageClient/defaultFusionClientFactory";
 import {
   type FusionLaunchSources,
@@ -32,7 +32,7 @@ export function composeFusion(graph: ProjectsGraph) {
     },
   );
   graph.clients.pool = fusionClientPool;
-  const dbtLineageService = new DbtLineageService({
+  const dbtLineageService = new LineageService({
     currentProject,
     currentClient: () => {
       const project = currentProject.current;

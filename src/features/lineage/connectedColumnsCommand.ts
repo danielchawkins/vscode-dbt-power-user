@@ -2,7 +2,7 @@ import { CancellationTokenSource, commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../../settings";
 import type {
   ConnectedColumnsRequest,
-  DbtLineageService,
+  LineageService,
 } from "./dbtLineageService";
 
 /**
@@ -26,7 +26,7 @@ export const PARENT_TABLES_COMMAND = "fusionPowerUser.test.getParentTables";
 
 /** Registers the connected-columns and parent-tables commands when the integration harness asks for them. */
 export function registerConnectedColumnsCommand(
-  service: DbtLineageService,
+  service: LineageService,
 ): Disposable | undefined {
   if (readHarnessSwitch("integrationCommands") !== "1") {
     return undefined;

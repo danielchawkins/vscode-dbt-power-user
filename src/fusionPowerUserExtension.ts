@@ -3,7 +3,7 @@ import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import type { Log } from "./core/log";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
-import type { DbtLineageService } from "./features/lineage/dbtLineageService";
+import type { LineageService } from "./features/lineage/dbtLineageService";
 import type { StatusBars } from "./features/statusBars";
 import { registerFusionClientDiagnostics } from "./projects/clients/fusionClientDiagnostics";
 import type { FusionClientPool } from "./projects/clients/fusionClientPool";
@@ -26,7 +26,7 @@ export interface ExtensionServices {
   fusionClientPool: FusionClientPool;
   fusionStatus: FusionStatus;
   startupGate: StartupGate;
-  dbtLineageService: DbtLineageService;
+  dbtLineageService: LineageService;
   projectEnvironments: ProjectEnvironments;
 }
 
@@ -40,7 +40,7 @@ export class FusionPowerUserExtension implements Disposable {
   private fusionClientPool: FusionClientPool;
   private fusionStatus: FusionStatus;
   private startupGate: StartupGate;
-  private dbtLineageService: DbtLineageService;
+  private dbtLineageService: LineageService;
   private projectEnvironments: ProjectEnvironments;
 
   /**
