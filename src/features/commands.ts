@@ -1,8 +1,8 @@
 import type { Disposable } from "vscode";
 import { gatedRegister } from "../commandRegistry";
 import type { Log } from "../core/log";
-import type { ExtensionContextStore } from "../extensionContext";
 import type { RunHistoryService } from "../projects/output/runHistoryService";
+import type { CurrentProject } from "../projects/project/currentProject";
 import type { Projects } from "../projects/project/projects";
 import type { StartupGate } from "../startupGate";
 import { registerCompiledSqlCommands } from "./compiledSql/commands";
@@ -16,6 +16,7 @@ import type { DiagnosticsOutputChannel } from "./diagnostics/diagnosticsOutputCh
 import type { ColumnProposalRequests } from "./docs/columnProposals";
 import { registerDocsCommands } from "./docs/commands";
 import { registerModelTreeCommands } from "./modelTree/commands";
+import { registerProjectPickerCommands } from "./projectPicker/commands";
 import { registerProjectSetupCommands } from "./projectSetup/commands";
 import type { ProjectSetupCommands } from "./projectSetup/projectSetupCommands";
 import { registerRunCommands } from "./run/commands";
@@ -26,7 +27,7 @@ import { registerRunHistoryCommands } from "./runHistory/commands";
 /** The collaborators the features' commands run against. */
 export interface CommandDeps {
   projects: Projects;
-  extensionContext: ExtensionContextStore;
+  currentProject: CurrentProject;
   runModel: RunModel;
   runTest: RunTest;
   projectSetupCommands: ProjectSetupCommands;
@@ -65,8 +66,9 @@ export class VSCodeCommands implements Disposable {
       ...registerCompiledSqlCommands(register),
       ...registerDocsCommands(register, deps.columnProposals),
       ...registerModelTreeCommands(register),
+      ...registerProjectPickerCommands(deps.currentProject, register),
       ...registerProjectSetupCommands(
-        deps.extensionContext,
+        deps.currentProject,
         deps.projectSetupCommands,
         register,
       ),

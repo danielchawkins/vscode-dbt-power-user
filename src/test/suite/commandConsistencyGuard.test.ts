@@ -198,7 +198,7 @@ describe("command contribution consistency", () => {
       "fusionPowerUser.yamlRunModel": "CodeLens-only; src/features/sqlActions",
       "fusionPowerUser.yamlTestModel": "CodeLens-only; src/features/sqlActions",
       "fusionPowerUser.pickProject":
-        "Declared Project picker; src/features/projectPicker/actionsCenter.ts",
+        "Declared Project picker; src/features/projectPicker/commands.ts",
       "fusionPowerUser.showFusionOutput":
         "Language status item command; src/projects/fusionStatus.ts",
     };

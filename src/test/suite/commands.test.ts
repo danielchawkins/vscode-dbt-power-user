@@ -38,8 +38,11 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     validateProjects: record("validateProjects"),
     installDeps: record("installDeps"),
   };
-  const extensionContext = {
-    getFromWorkspaceState: (key: string) => (calls.push([key]), "picked"),
+  const currentProject = {
+    requireForCommand: async () => (
+      calls.push(["requireForCommand"]),
+      "picked"
+    ),
   };
   const log = { error: record("error"), debug: record("debug") };
   const columnProposals = new ColumnProposalRequests();
@@ -48,7 +51,7 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
       get: () => undefined,
       all: () => [],
     }) as never,
-    extensionContext: extensionContext as never,
+    currentProject: currentProject as never,
     runModel: runModel as never,
     runTest: runTest as never,
     projectSetupCommands: projectSetupCommands as never,
@@ -208,14 +211,14 @@ describe("VSCodeCommands", () => {
     ]);
   });
 
-  it("validates and installs for the project picked in workspace state", async () => {
+  it("validates and installs for the project the Current Project picks", async () => {
     const { handler, calls } = build();
     await handler("fusionPowerUser.validateProject")();
     await handler("fusionPowerUser.installDeps")();
     expect(calls).toEqual([
-      ["fusionPowerUser.projectSelected"],
+      ["requireForCommand"],
       ["validateProjects", "picked"],
-      ["fusionPowerUser.projectSelected"],
+      ["requireForCommand"],
       ["installDeps", "picked"],
     ]);
   });
