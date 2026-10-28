@@ -115,15 +115,15 @@ describe("LineagePanel", () => {
     });
 
     it("runs the strict-analysis command for the current project's root", async () => {
-      const projectRoot = { fsPath: "/w/p" };
-      currentProject.current = { projectRoot };
+      const root = { fsPath: "/w/p" };
+      currentProject.current = { root };
       await send({
         command: "runNoticeAction",
         action: "useStrictAnalysis",
       });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.useStrictAnalysis",
-        projectRoot,
+        root,
       );
     });
 
@@ -232,7 +232,7 @@ describe("LineagePanel", () => {
     (panel as any).currentProject = {
       current: {
         manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
-        projectRoot: { fsPath: "/p" },
+        root: { fsPath: "/p" },
       },
     };
     const getInferredColumns = vi
@@ -277,7 +277,7 @@ describe("LineagePanel", () => {
     (panel as any).currentProject = {
       current: {
         manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
-        projectRoot: { fsPath: "/p" },
+        root: { fsPath: "/p" },
         queries: { getColumnsOfModel, mergeColumnsFromDB },
       },
     };
@@ -710,7 +710,7 @@ describe("LineagePanel — after a save", () => {
     const { panel, postMessage } = resolvedLineage();
     panel.dbtLineageService = { columnsNeedStrict: () => undefined };
     const current = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
       graphNotice: () => undefined,
       manifest: { publicationEpoch: 1 } as any,
@@ -744,7 +744,7 @@ describe("LineagePanel — after a save", () => {
       const { panel, postMessage } = resolvedLineage();
       panel.dbtLineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
-        projectRoot: { fsPath: root },
+        root: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
         graphNotice: () => undefined,
         manifest: { publicationEpoch } as any,

@@ -19,7 +19,7 @@ import type { Project } from "../../projects/project/project";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
 
 /** What the details read from the current project. */
-type DetailsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
+type DetailsProject = Pick<Project, "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
 };
 
@@ -172,7 +172,7 @@ export class LineageDetails {
     // `refresh` is ignored: the language server already supplies model columns and types.
     const inferred = node.path
       ? await this.dbtLineageService.getInferredColumns(
-          project.projectRoot.fsPath,
+          project.root.fsPath,
           node.path,
         )
       : undefined;

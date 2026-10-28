@@ -67,7 +67,7 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
     if (!this.parsed) {
       return;
     }
-    const root = this.dbtProject.projectRoot.fsPath;
+    const root = this.dbtProject.root.fsPath;
     const projectName = this.dbtProject.getProjectName();
     const server = this.server.current();
     const merged = mergeMetadata(server, this.parsed, {

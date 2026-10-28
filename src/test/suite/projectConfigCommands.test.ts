@@ -19,7 +19,7 @@ const strict = (name: string) => ({
 const asProject = (declared: DeclaredProject) =>
   ({
     declared,
-    projectRoot: declared.root,
+    root: declared.root,
     getProjectName: () => declared.name,
   }) as never;
 

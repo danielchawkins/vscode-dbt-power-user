@@ -17,7 +17,7 @@ describe("projectCodegen", () => {
       vi.mocked(workspace.applyEdit).mockClear();
       vi.mocked(workspace.applyEdit).mockResolvedValue(true);
       const columns = {
-        projectRoot: Uri.file(root),
+        root: Uri.file(root),
         getProjectName: () => "p",
         getColumnsOfModel: async () => [{ column: "id" }],
       };

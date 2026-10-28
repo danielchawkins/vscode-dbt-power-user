@@ -14,7 +14,7 @@ import type { ProjectLookup } from "../../projects/project/projects";
 /** What profiling reads from a file's project. */
 type ProfiledProject = Pick<
   Project,
-  "log" | "projectRoot" | "getProjectName"
+  "log" | "root" | "getProjectName"
 > & {
   queries: Pick<ProjectQueries, "immediatelyExecuteSQLWithLimit">;
 };

@@ -56,7 +56,7 @@ export function composeProjects(context: ExtensionContext) {
       cliFactory: cliFactoryFor(declared, projectEnvironments, log),
       parsers: createProjectParsers(log),
       declared,
-      projectRoot: declared.root,
+      root: declared.root,
       projectCount: () => projects.all().length,
       fusionClient: () => clients.pool?.get(declared),
       clientChanged: (listener) =>

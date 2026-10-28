@@ -97,7 +97,7 @@ describe("compiled preview project lookup", () => {
   });
 
   it("resolves a preview URI to its model's project", () => {
-    expect(projects.get(previewUriFor(soxModel))?.projectRoot.fsPath).toBe(
+    expect(projects.get(previewUriFor(soxModel))?.root.fsPath).toBe(
       soxRoot,
     );
   });
@@ -106,9 +106,9 @@ describe("compiled preview project lookup", () => {
     const preview = previewUriFor(soxModel);
     (window.activeTextEditor as unknown) = { document: { uri: preview } };
 
-    expect(currentProject.current?.projectRoot.fsPath).toBe(soxRoot);
+    expect(currentProject.current?.root.fsPath).toBe(soxRoot);
     expect(
-      (await currentProject.requireForCommand(preview))?.projectRoot.fsPath,
+      (await currentProject.requireForCommand(preview))?.root.fsPath,
     ).toBe(soxRoot);
     expect(picker.declaredProjectPicker).not.toHaveBeenCalled();
   });

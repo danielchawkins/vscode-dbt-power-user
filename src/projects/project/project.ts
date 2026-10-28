@@ -50,7 +50,7 @@ const LOG_SOURCE = "Project";
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
 export class Project implements Disposable, ManifestProject {
   readonly declared: DeclaredProject;
-  readonly projectRoot: Uri;
+  readonly root: Uri;
   private readonly terminal: Log;
   private readonly sharedState: SharedStateService;
   /** Compile, column and query operations. */
@@ -109,7 +109,7 @@ export class Project implements Disposable, ManifestProject {
 
   constructor(options: ProjectOptions) {
     this.declared = options.declared;
-    this.projectRoot = options.projectRoot;
+    this.root = options.root;
     this.terminal = options.terminal;
     this.sharedState = options.sharedState;
     this.runHistoryService = options.runHistoryService;
@@ -129,14 +129,14 @@ export class Project implements Disposable, ManifestProject {
     this.onDidParse = this.published.onDidParse;
     this.onDidCompile = this.published.onDidCompile;
     this.disposables.push(this.published);
-    const root = this.projectRoot.fsPath;
+    const root = this.root.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
     );
     this.errors = new ProjectErrors({
-      root: this.projectRoot,
+      root: this.root,
       projectName: () => this.getProjectName(),
-      snapshot: () => readProjectSnapshot(this.projectRoot),
+      snapshot: () => readProjectSnapshot(this.root),
       terminal: this.terminal,
     });
     this.commandDeps = this.createCommandDeps();
@@ -184,7 +184,7 @@ export class Project implements Disposable, ManifestProject {
     );
     this.terminal.debug(
       LOG_SOURCE,
-      `Created fusion dbt project ${this.getProjectName()} at ${this.projectRoot.toString()}`,
+      `Created fusion dbt project ${this.getProjectName()} at ${this.root.toString()}`,
     );
   }
 
@@ -192,7 +192,7 @@ export class Project implements Disposable, ManifestProject {
     return new ExecutableLifecycle({
       resolver: options.resolver,
       factory: options.cliFactory,
-      projectRoot: this.projectRoot.fsPath,
+      projectRoot: this.root.fsPath,
       terminal: this.terminal,
       hooks: {
         environment: options.environment,
@@ -206,7 +206,7 @@ export class Project implements Disposable, ManifestProject {
   private createScheduler(demand: MetadataDemand | undefined): ParseScheduler {
     return new ParseScheduler({
       log: this.terminal,
-      root: this.projectRoot.fsPath,
+      root: this.root.fsPath,
       rebuildOnce: () => this.manifestRebuild.rebuild(this.getFusionCli()),
       refreshConfig: () => this.refreshConfigWith(this.getFusionCli(), true),
       onSourceChanged: () => this._onSourceFileChanged.fire(),
@@ -219,7 +219,7 @@ export class Project implements Disposable, ManifestProject {
     return {
       commandQueue: this.commandQueue,
       cli: () => this.getFusionCli(),
-      snapshot: () => readProjectSnapshot(this.projectRoot),
+      snapshot: () => readProjectSnapshot(this.root),
       withRunResults: (run, launched) => this.withRunResults(run, launched),
       notifyFailed: (statusMessage, error) =>
         this.runHistoryService.notifyCommandFailed(statusMessage, error),
@@ -257,7 +257,7 @@ export class Project implements Disposable, ManifestProject {
     const integration = this.currentIntegration;
     if (!integration) {
       throw new Error(
-        `Fusion CLI integration is not initialized for ${this.projectRoot.fsPath}`,
+        `Fusion CLI integration is not initialized for ${this.root.fsPath}`,
       );
     }
     return integration;
@@ -266,16 +266,16 @@ export class Project implements Disposable, ManifestProject {
   getProjectName(): string {
     return (
       this.currentIntegration?.getProjectName() ??
-      projectNameAt(this.projectRoot.fsPath)
+      projectNameAt(this.root.fsPath)
     );
   }
 
   getProjectRoot() {
-    return this.projectRoot.fsPath;
+    return this.root.fsPath;
   }
 
   getDBTProjectFilePath() {
-    return dbtProjectFilePath(this.projectRoot.fsPath);
+    return dbtProjectFilePath(this.root.fsPath);
   }
 
   /** Version of the committed Fusion executable; undefined until one is committed. */
@@ -285,12 +285,12 @@ export class Project implements Disposable, ManifestProject {
 
   /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
   schemaOriginStatus(): SchemaOriginStatus {
-    return projectSchemaOrigin(this.projectRoot.fsPath, this.manifest);
+    return projectSchemaOrigin(this.root.fsPath, this.manifest);
   }
 
   /** The column-lineage opt-ins this project has made in its own project file; none when it is unreadable. */
   projectOptIns(): { strict: boolean; schemaOrigin: SchemaOriginStatus } {
-    return projectOptIns(this.projectRoot.fsPath, this.manifest);
+    return projectOptIns(this.root.fsPath, this.manifest);
   }
 
   /** The resource paths of the attached Fusion CLI; undefined until one is attached. */
@@ -317,13 +317,13 @@ export class Project implements Disposable, ManifestProject {
     } catch (error) {
       void notifyError(
         this,
-        `Unexpected error initializing the dbt project at ${this.projectRoot.fsPath}`,
+        `Unexpected error initializing the dbt project at ${this.root.fsPath}`,
         error,
       );
     }
     this.terminal.debug(
       LOG_SOURCE,
-      `Initialized dbt project ${this.getProjectName()} at ${this.projectRoot.toString()}`,
+      `Initialized dbt project ${this.getProjectName()} at ${this.root.toString()}`,
     );
   }
 
@@ -346,7 +346,7 @@ export class Project implements Disposable, ManifestProject {
     delegate: FusionCli,
     reportPaths: boolean,
   ): Promise<void> {
-    const label = `"${this.getProjectName()}" at ${this.projectRoot.fsPath}`;
+    const label = `"${this.getProjectName()}" at ${this.root.fsPath}`;
     const sourcePaths = reportPaths
       ? () => sourcePathsOf(this.paths())
       : undefined;
@@ -407,14 +407,14 @@ export class Project implements Disposable, ManifestProject {
 
   findPackageName(uri: Uri): string | undefined {
     return packageNameOf(
-      this.projectRoot.toString(),
+      this.root.toString(),
       this.paths()?.packagesInstallPath,
       uri,
     );
   }
 
   contains(uri: Uri) {
-    return isAtOrBelow(this.projectRoot.fsPath, uri.fsPath);
+    return isAtOrBelow(this.root.fsPath, uri.fsPath);
   }
 
   withRunResults<T>(
@@ -447,6 +447,6 @@ export class Project implements Disposable, ManifestProject {
 
   /** This project's defer settings, read from the same snapshot commands are built from. */
   getDeferConfig(): ResolvedDefer | undefined {
-    return readProjectSnapshot(this.projectRoot).invocation.defer;
+    return readProjectSnapshot(this.root).invocation.defer;
   }
 }

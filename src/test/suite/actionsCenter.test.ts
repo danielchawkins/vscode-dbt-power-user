@@ -47,7 +47,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
       {
         label: "project",
         description: "/project",
-        uri: project.projectRoot,
+        uri: project.root,
       },
     );
     expect(window.showInformationMessage).toHaveBeenCalledWith(

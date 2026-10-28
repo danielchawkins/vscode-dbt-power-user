@@ -28,7 +28,7 @@ function fakeProject(options: {
     options.getCurrentNode ?? (async () => undefined),
   );
   const project = {
-    projectRoot: { fsPath: "/p" },
+    root: { fsPath: "/p" },
     lsp: { state: options.state ?? "running", getCurrentNode },
     getFusionCli: () => ({
       describeModel,

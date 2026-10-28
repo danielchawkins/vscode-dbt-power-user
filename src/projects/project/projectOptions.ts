@@ -25,7 +25,7 @@ export interface ProjectOptions {
   parsers: ManifestParsers;
   /** The Declared Project this one is built for; `Projects` rebuilds the Project when that entry is replaced. */
   declared: DeclaredProject;
-  projectRoot: Uri;
+  root: Uri;
   /** The number of Declared Projects, which decides whether task names carry the project name. */
   projectCount?: () => number;
   /** The project's current Fusion Client; resolved per call so a restart leaves no stale reference. */

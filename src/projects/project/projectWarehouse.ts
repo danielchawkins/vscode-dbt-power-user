@@ -13,7 +13,7 @@ import { compileOrReport, logQuery, runSqlNow } from "./projectSql";
 
 /** What a project's warehouse and compile operations read from the project. */
 export interface WarehouseProject extends SqlProject {
-  readonly projectRoot: Uri;
+  readonly root: Uri;
   getProjectName(): string;
   readonly manifest: Manifest | undefined;
   readonly lsp: FusionCommands;
@@ -57,7 +57,7 @@ export async function columnsOfModel(
 ): Promise<DBColumn[]> {
   const path = project.manifest?.nodeMetaMap.lookupByBaseName(modelName)?.path;
   if (path) {
-    const relative = relativePath(project.projectRoot.fsPath, path)
+    const relative = relativePath(project.root.fsPath, path)
       .split(sep)
       .join("/");
     try {

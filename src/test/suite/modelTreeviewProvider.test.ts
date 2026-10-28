@@ -57,7 +57,7 @@ describe("model tree views", () => {
       onDidRemoveProject: removed.event,
       get: vi.fn((uri: Uri) =>
         [...byRoot.values()].find((p) =>
-          uri.fsPath.startsWith(`${p.projectRoot.fsPath}/`),
+          uri.fsPath.startsWith(`${p.root.fsPath}/`),
         ),
       ),
     };
@@ -77,7 +77,7 @@ describe("model tree views", () => {
 
     expect(await tree.getChildren()).toEqual([]);
 
-    const projectA = { projectRoot: rootA, manifest: manifest() };
+    const projectA = { root: rootA, manifest: manifest() };
     byRoot.set(rootA.fsPath, projectA);
     changed.fire(projectA);
 
@@ -96,7 +96,7 @@ describe("model tree views", () => {
     const m = manifest();
     m.graphMetaMap.parents = new Map();
     byRoot.set(rootA.fsPath, {
-      projectRoot: rootA,
+      root: rootA,
       manifest: m,
       graphNotice: () => "set fusionPowerUser.staticAnalysis to strict",
     });
@@ -107,7 +107,7 @@ describe("model tree views", () => {
   });
 
   it("returns no children without an active editor", async () => {
-    byRoot.set(rootA.fsPath, { projectRoot: rootA, manifest: manifest() });
+    byRoot.set(rootA.fsPath, { root: rootA, manifest: manifest() });
     (window.activeTextEditor as any) = undefined;
     const tree = new ParentModelTreeview(projects);
     expect(await tree.getChildren()).toEqual([]);
@@ -118,7 +118,7 @@ describe("model tree views", () => {
     const onRefresh = vi.fn();
     tree.onDidChangeTreeData(onRefresh);
 
-    const projectA = { projectRoot: rootA, manifest: manifest() };
+    const projectA = { root: rootA, manifest: manifest() };
     byRoot.set(rootA.fsPath, projectA);
     changed.fire(projectA);
     expect(onRefresh).toHaveBeenCalledTimes(1);

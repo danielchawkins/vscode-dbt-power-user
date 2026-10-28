@@ -30,7 +30,7 @@ type ModelProject = {
   /** The manifest the materialized preview reads a model's package and materialization from. */
   manifest?: Pick<Manifest, "nodeMetaMap"> | undefined;
   /** The root the manifest's `original_file_path`s are relative to, when the project has one. */
-  projectRoot?: Uri | undefined;
+  root?: Uri | undefined;
 };
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { canonicalPath } from "../../projects/registry/projectRegistry";
@@ -87,7 +87,7 @@ const isWholeModelFile = (
     path.basename(filePath, ".sql"),
     "model",
   );
-  return node !== undefined && isNodeFile(node, filePath, project?.projectRoot);
+  return node !== undefined && isNodeFile(node, filePath, project?.root);
 };
 
 const labelText = (label: NonNullable<TreeItem["label"]>): string =>

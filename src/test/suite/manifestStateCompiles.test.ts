@@ -18,7 +18,7 @@ describe("ManifestState compile wiring", () => {
     const reportErrors = vi.fn();
     const onCompile = vi.fn();
     const state = new ManifestState(
-      { projectRoot: { fsPath: "/p" } },
+      { root: { fsPath: "/p" } },
       () => current,
       {
         follow: (listener) =>

@@ -15,7 +15,7 @@ import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 /** What the handlers read from the active editor's project. */
-export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
+export type DocsProject = Pick<Project, "root" | "getProjectName"> & {
   queries: Pick<
     ProjectQueries,
     "getColumnValues" | "getColumnsOfSource" | "getColumnsOfModel"

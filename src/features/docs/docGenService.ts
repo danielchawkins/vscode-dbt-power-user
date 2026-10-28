@@ -161,7 +161,7 @@ export class DocGenService {
 
     const modelName = path.basename(filePath, ".sql");
     const project = this.projects.get(Uri.file(filePath));
-    if (!project?.projectRoot) {
+    if (!project?.root) {
       return {
         stop: {
           documentation: undefined,
@@ -249,7 +249,7 @@ export class DocGenService {
 
     try {
       const yamlPath = path.join(
-        project.projectRoot.fsPath,
+        project.root.fsPath,
         removeProtocol(node.patch_path),
       );
       const content = await readFile(yamlPath, "utf8");

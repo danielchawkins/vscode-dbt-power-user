@@ -10,7 +10,7 @@ import { taskName } from "../../projects/project/dbtTask";
 
 function project(root: string, name: string) {
   return {
-    projectRoot: Uri.file(root),
+    root: Uri.file(root),
     getProjectName: () => name,
     commands: {
       taskName: (_cli: QueuedCliCommand): string => name,
@@ -29,7 +29,7 @@ function providerOf(...all: ReturnType<typeof project>[]) {
   });
   const projects = {
     all: () => all,
-    get: (uri: Uri) => all.find((p) => p.projectRoot.fsPath === uri.fsPath),
+    get: (uri: Uri) => all.find((p) => p.root.fsPath === uri.fsPath),
   };
   return new DbtTaskProvider(projects);
 }

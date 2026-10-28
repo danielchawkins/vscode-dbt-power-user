@@ -96,7 +96,7 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     });
     const mockProject = {
-      projectRoot: pickedProject.uri,
+      root: pickedProject.uri,
       getProjectName: () => pickedProject.label,
       commands: {
         debug: () => cli.run({ kind: "debug" }),

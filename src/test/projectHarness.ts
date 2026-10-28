@@ -70,7 +70,7 @@ export function buildTestProject(
     cliFactory,
     parsers: {} as ManifestParsers,
     declared: declaredAt(root),
-    projectRoot: Uri.file(root),
+    root: Uri.file(root),
     ...overrides,
   });
 }

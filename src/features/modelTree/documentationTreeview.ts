@@ -65,7 +65,7 @@ export class DocumentationTreeview
       return [];
     }
     const url = node.patch_path
-      ? path.join(project.projectRoot.fsPath, removeProtocol(node.patch_path))
+      ? path.join(project.root.fsPath, removeProtocol(node.patch_path))
       : " ";
     const description = `[ ${(node.config.materialized ?? "").toUpperCase()} ]  -  schema : ${node.schema}`;
     const treeItem = new DocTreeItem(

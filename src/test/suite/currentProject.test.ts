@@ -39,7 +39,7 @@ function projectOf(declared: DeclaredProject): Project {
   if (!stub) {
     stub = {
       declared,
-      projectRoot: declared.root,
+      root: declared.root,
       getProjectName: () => declared.name,
     } as unknown as Project;
     projectStubs.set(declared.root.fsPath, stub);
