@@ -131,7 +131,7 @@ function testShapes(event: ParsedManifest) {
 describe("Metadata contract — shape and key set snapshot", () => {
   it("snapshots parser maps on Manifest", async () => {
     // parseManifest() passes records; published parser types incorrectly say arrays.
-    const manifest = loadManifestJson() as {
+    const manifestJson = loadManifestJson() as {
       nodes: any;
       macros: any;
       sources: any;
@@ -151,32 +151,32 @@ describe("Metadata contract — shape and key set snapshot", () => {
       }),
     } as unknown as ManifestProject;
     const nodeMetaMap = await new NodeParser(terminal).createNodeMetaMap(
-      manifest.nodes,
+      manifestJson.nodes,
       adapter,
     );
     const macroMetaMap = await new MacroParser(terminal).createMacroMetaMap(
-      manifest.macros,
+      manifestJson.macros,
       adapter,
     );
     const sourceMetaMap = await new SourceParser(terminal).createSourceMetaMap(
-      manifest.sources,
+      manifestJson.sources,
       adapter,
     );
     const testMetaMap = await new TestParser(terminal).createTestMetaMap(
-      manifest.nodes,
+      manifestJson.nodes,
       adapter,
     );
     const functionMetaMap = await new FunctionParser(
       terminal,
-    ).createFunctionMetaMap(manifest.functions, adapter);
+    ).createFunctionMetaMap(manifestJson.functions, adapter);
     const parentMaps =
       await new ChildrenParentParser().createChildrenParentMetaMap(
         {
-          ...manifest.nodes,
-          ...manifest.exposures,
-          ...manifest.functions,
+          ...manifestJson.nodes,
+          ...manifestJson.exposures,
+          ...manifestJson.functions,
         },
-        manifest.sources,
+        manifestJson.sources,
       );
     const graphMetaMap = new GraphParser(terminal).createGraphMetaMap({
       project: adapter,
@@ -200,28 +200,28 @@ describe("Metadata contract — shape and key set snapshot", () => {
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(
-        manifest.semantic_models,
+        manifestJson.semantic_models,
         adapter,
       ),
       sourceMetaMap,
       graphMetaMap,
       testMetaMap,
       unitTestMetaMap: await new UnitTestParser(terminal).createUnitTestMetaMap(
-        manifest.unit_tests ?? {},
+        manifestJson.unit_tests ?? {},
         adapter,
       ),
       docMetaMap: await new DocParser(terminal).createDocMetaMap(
-        manifest.docs,
+        manifestJson.docs,
         adapter,
       ),
       exposureMetaMap: await new ExposureParser(terminal).createExposureMetaMap(
-        manifest.exposures,
+        manifestJson.exposures,
         adapter,
       ),
       functionMetaMap,
       semanticModelMetaMap: await new SemanticModelParser(
         terminal,
-      ).createSemanticModelMetaMap(manifest.semantic_models, adapter),
+      ).createSemanticModelMetaMap(manifestJson.semantic_models, adapter),
       modelDepthMap,
     };
     const declaredProject = {
