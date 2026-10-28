@@ -217,7 +217,7 @@ export function lineagePanel(
     terminal,
     lineageService: (services.lineageService ?? {}) as never,
     currentProject: (services.currentProject ?? {}) as never,
-    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
+    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
   });
 }

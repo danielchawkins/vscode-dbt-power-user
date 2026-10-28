@@ -27,7 +27,7 @@ export function composeWebviews(
     extensionContext: extensionContextStore,
     terminal,
     lineageService,
-    eventEmitterService: sharedState,
+    sharedState,
     queryManifestService,
     currentProject: graph.currentProject,
     metadataDemand: graph.metadataDemand,
