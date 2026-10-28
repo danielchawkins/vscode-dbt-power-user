@@ -12,16 +12,16 @@ type PanelMessage = lineage.PanelMessage;
  * stopped answers `cancelled` with no columns.
  */
 export function columnTraceHandlers(deps: {
-  dbtLineageService: LineageService;
+  lineageService: LineageService;
   traces: ColumnTraceRequests;
   respond: Respond;
 }): Pick<Handlers<PanelMessage>, "getConnectedColumns" | "cancelColumnTrace"> {
-  const { dbtLineageService, traces, respond } = deps;
+  const { lineageService, traces, respond } = deps;
   return {
     getConnectedColumns: async ({ args, syncRequestId }) => {
       const { targets, upstreamExpansion, trace } = args.params;
       const token = traces.token(trace);
-      const result = await dbtLineageService.getConnectedColumns(
+      const result = await lineageService.getConnectedColumns(
         { targets, upstreamExpansion },
         token,
       );

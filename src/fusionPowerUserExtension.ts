@@ -26,7 +26,7 @@ export interface ExtensionServices {
   fusionClientPool: FusionClientPool;
   fusionStatus: FusionStatus;
   startupGate: StartupGate;
-  dbtLineageService: LineageService;
+  lineageService: LineageService;
   projectEnvironments: ProjectEnvironments;
 }
 
@@ -40,7 +40,7 @@ export class FusionPowerUserExtension implements Disposable {
   private fusionClientPool: FusionClientPool;
   private fusionStatus: FusionStatus;
   private startupGate: StartupGate;
-  private dbtLineageService: LineageService;
+  private lineageService: LineageService;
   private projectEnvironments: ProjectEnvironments;
 
   /**
@@ -55,7 +55,7 @@ export class FusionPowerUserExtension implements Disposable {
     this.fusionClientPool = services.fusionClientPool;
     this.fusionStatus = services.fusionStatus;
     this.startupGate = services.startupGate;
-    this.dbtLineageService = services.dbtLineageService;
+    this.lineageService = services.lineageService;
     this.projectEnvironments = services.projectEnvironments;
     this.disposables.push(...owned);
   }
@@ -96,7 +96,7 @@ export class FusionPowerUserExtension implements Disposable {
         status: this.fusionStatus,
       }),
     );
-    this.own(registerConnectedColumnsCommand(this.dbtLineageService));
+    this.own(registerConnectedColumnsCommand(this.lineageService));
     return this.start();
   }
 

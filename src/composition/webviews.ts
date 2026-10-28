@@ -13,7 +13,7 @@ import type { ProjectsGraph } from "./projects";
 
 export function composeWebviews(
   graph: ProjectsGraph,
-  dbtLineageService: LineageService,
+  lineageService: LineageService,
   columnProposalRequests: ColumnProposalRequests,
 ): WebviewViewProviders {
   const {
@@ -26,7 +26,7 @@ export function composeWebviews(
   const lineagePanel = new LineagePanel({
     extensionContext: extensionContextStore,
     terminal,
-    dbtLineageService,
+    lineageService,
     eventEmitterService: sharedState,
     queryManifestService,
     currentProject: graph.currentProject,
@@ -56,7 +56,7 @@ export function composeWebviews(
         sharedState,
         columnProposals: new ColumnProposalService({
           log: terminal,
-          columnsNeedStrict: () => dbtLineageService.columnsNeedStrict(),
+          columnsNeedStrict: () => lineageService.columnsNeedStrict(),
         }),
         columnProposalRequests,
       },

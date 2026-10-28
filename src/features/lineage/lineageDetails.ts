@@ -43,16 +43,16 @@ export interface ColumnsBody {
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
   private readonly currentProject: CurrentProject;
-  private readonly dbtLineageService: LineageService;
+  private readonly lineageService: LineageService;
   private readonly terminal: Log;
 
   constructor(
     currentProject: CurrentProject,
-    dbtLineageService: LineageService,
+    lineageService: LineageService,
     terminal: Log,
   ) {
     this.currentProject = currentProject;
-    this.dbtLineageService = dbtLineageService;
+    this.lineageService = lineageService;
     this.terminal = terminal;
   }
 
@@ -171,7 +171,7 @@ export class LineageDetails {
     }
     // `refresh` is ignored: the language server already supplies model columns and types.
     const inferred = node.path
-      ? await this.dbtLineageService.getInferredColumns(
+      ? await this.lineageService.getInferredColumns(
           project.root.fsPath,
           node.path,
         )

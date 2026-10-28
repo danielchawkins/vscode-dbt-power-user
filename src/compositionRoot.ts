@@ -47,7 +47,7 @@ export function compose(context: ExtensionContext): Composition {
     fusionClientPool: fusion.fusionClientPool,
     fusionStatus: fusion.fusionStatus,
     startupGate,
-    dbtLineageService: fusion.dbtLineageService,
+    lineageService: fusion.lineageService,
     projectEnvironments: graph.projectEnvironments,
   };
   // Disposed last one first, so shared state and run history outlive everything that reports into them.
@@ -59,7 +59,7 @@ export function compose(context: ExtensionContext): Composition {
     registerDbtTaskProvider(graph.projects),
     graph.projectEnvironments,
     columnProposalRequests,
-    composeWebviews(graph, fusion.dbtLineageService, columnProposalRequests),
+    composeWebviews(graph, fusion.lineageService, columnProposalRequests),
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,

@@ -85,7 +85,7 @@ describe("fusionNotificationPolicy", () => {
       statusBars: { initialize: vi.fn(() => Promise.resolve()) },
       log: { error: vi.fn() },
       startupGate: new StartupGate(),
-      dbtLineageService: {},
+      lineageService: {},
       projectEnvironments: {},
     };
     const extension = new FusionPowerUserExtension(
