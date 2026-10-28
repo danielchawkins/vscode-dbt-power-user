@@ -7,7 +7,7 @@ import { columnKey, traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
 import { showMore } from "./expansionCap";
 import { closeGroup, openGroup, showMoreInGroup } from "./expansionGroups";
-import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
+import type { TableColumn, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
   collapse,
@@ -35,7 +35,7 @@ const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);
 
 /** Traces `column` and then draws the tables its traced edges touch. */
-const traceSelected = (store: GraphStore, column: ColumnRef): void => {
+const traceSelected = (store: GraphStore, column: TableColumn): void => {
   traceColumn(store, column, fetchConnected)
     .then((touched) => showColumns(store, touched, fetchColumns))
     .catch(logError("column trace"));
@@ -132,7 +132,7 @@ const actionsFor = (
   },
   selectColumn: (table: string, column: string) => {
     const s = store();
-    const ref: ColumnRef = [table, column];
+    const ref: TableColumn = [table, column];
     if (columnClick(s.get(), ref) === "clear") {
       stopTrace(s);
       s.update(clearColumn);

@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type {
-  ColumnRef,
+  TableColumn,
   FetchConnected,
   GraphState,
   GraphStore,
@@ -16,7 +16,7 @@ const MAX_TRACE_HOPS = 10;
 export const columnKey = ([table, column]: readonly [string, string]): string =>
   `${table}\u0000${column.toLowerCase()}`;
 
-const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
+const sameColumn = (a?: TableColumn, b?: TableColumn) =>
   !!a && !!b && columnKey(a) === columnKey(b);
 
 /**
@@ -26,7 +26,7 @@ const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
  */
 export async function traceColumn(
   store: GraphStore,
-  column: ColumnRef,
+  column: TableColumn,
   fetch: FetchConnected,
 ): Promise<string[]> {
   const run: Trace = { column, since: Date.now() };
@@ -62,8 +62,8 @@ function nextFrontier(
   edges: ColumnLineage[],
   upstreamExpansion: boolean,
   seen: Set<string>,
-): ColumnRef[] {
-  const next: ColumnRef[] = [];
+): TableColumn[] {
+  const next: TableColumn[] = [];
   for (const edge of edges) {
     const end = upstreamExpansion ? edge.target : edge.source;
     if (!seen.has(columnKey(end))) {
@@ -86,7 +86,7 @@ async function traceDirection(
 ): Promise<boolean> {
   const { column } = run;
   const seen = new Set([columnKey(column)]);
-  let frontier: ColumnRef[] = [column];
+  let frontier: TableColumn[] = [column];
   for (let hop = 0; hop < MAX_TRACE_HOPS && frontier.length > 0; hop++) {
     const drawn = drawnIds(store.get());
     const body = await fetch({
