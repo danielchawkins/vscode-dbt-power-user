@@ -135,7 +135,14 @@ export type HostMessage =
   /** The Current Project's manifest changed; the panel redraws, then sends `init`. */
   | { command: "projectSaved" };
 
-/** The relationship sources the ERD overlay can show. */
+/**
+ * Source of a relationship ref.
+ * - `test`: derived from a dbt `relationships` data test
+ * - `contract`: derived from a `foreign_key` model contract constraint
+ * - `meta`: declared in `meta.relationships` on a node or source table
+ * - `semantic`: derived from paired semantic-layer primary/foreign entities
+ * - `inferred`: derived from naming-convention inference
+ */
 export type RefSource = "test" | "contract" | "meta" | "semantic" | "inferred";
 
 /**

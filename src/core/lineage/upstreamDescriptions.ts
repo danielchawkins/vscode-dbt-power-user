@@ -1,16 +1,14 @@
+import type {
+  ColumnRef,
+  DescriptionCandidate,
+} from "@fusion-power-user/webview-contract/columnProposals";
 import type { NodeMetaMap, SourceMetaMap } from "../manifest/types";
-import type { ColumnEdge, ColumnRef } from "./columnLineage";
+import type { ColumnEdge } from "./columnLineage";
 
 /** A described ancestor column, and the trimmed description it carries. */
 export interface DescriptionHit {
   description: string;
   source: ColumnRef;
-}
-
-/** Ancestors that share one description. Several candidates mean the upstream descriptions disagree. */
-export interface DescriptionCandidate {
-  description: string;
-  sources: ColumnRef[];
 }
 
 /**

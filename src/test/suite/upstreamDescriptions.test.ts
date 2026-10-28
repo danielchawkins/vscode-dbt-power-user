@@ -1,7 +1,8 @@
+import type { ColumnRef } from "@fusion-power-user/webview-contract/columnProposals";
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { type ColumnRef, columnEdges } from "../../core/lineage/columnLineage";
+import { columnEdges } from "../../core/lineage/columnLineage";
 import {
   declaredDescription,
   descriptionCandidates,
