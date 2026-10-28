@@ -14,8 +14,6 @@ files:
 ignores:
   - src/test/**
   - "**/*.test.ts"
-  - src/features/docs/docsEditHandlers.ts
-  - src/features/docs/docsEditPanel.ts
   - src/features/queryResults/queryResultPanel.ts
 rule:
   any:

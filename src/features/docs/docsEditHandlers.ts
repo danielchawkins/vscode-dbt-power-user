@@ -21,11 +21,9 @@ export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
     "getColumnValues" | "getColumnsOfSource" | "getColumnsOfModel"
   >;
 };
-import type { Handlers, MessageSink } from "../../webview/messageRouter";
-import { reply, replyError } from "../../webview/messageRouter";
+import type { Handlers } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
 
-type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 
 /** The panel commands that read the active project and answer with a `response`. */
@@ -50,19 +48,20 @@ export interface DocsEditHost {
   readonly dbtTestService: DbtTestService;
   /** The project that answers for the document at `uri`, if one does. */
   getProject(uri: Uri): DocsProject | undefined;
-  post(message: HostMessage): Thenable<boolean> | undefined;
+  /** Answers request `syncRequestId`; `body` is checked against the response body of `command`. */
+  respond<C extends RequestCommand>(
+    command: C,
+    syncRequestId: string | undefined,
+    body: documentationEditor.ResponseBodies[C],
+  ): unknown;
+  /** Answers request `syncRequestId` with `error`, which the page's request executor rejects with. */
+  respondError(syncRequestId: string | undefined, error: string): unknown;
 }
 
 /** The active editor's document and the project that answers for it, resolved once per request. */
 export interface ActiveModel {
   uri: Uri;
   project: DocsProject;
-}
-
-interface Reply {
-  syncRequestId?: string | undefined;
-  data?: unknown;
-  error?: string;
 }
 
 /** A unit test's YAML from `filePath`: the test named `testName`, or the whole file. */
@@ -93,16 +92,6 @@ export class DocsEditRequests {
     this.host = host;
   }
 
-  /** Answers a panel request: with `error` as a failure, otherwise with `data` as the body. */
-  sendResponse({ data, error, syncRequestId }: Reply): void {
-    const sink: Pick<MessageSink, "reply"> = {
-      reply: (response) => this.host.post(response),
-    };
-    void (error
-      ? replyError(sink, syncRequestId, error)
-      : reply(sink, syncRequestId, data));
-  }
-
   /**
    * Runs `callback` and answers `syncRequestId` with its result or its error. A failure also shows an error
    * notification for `notifyProject` when it is set.
@@ -121,7 +110,7 @@ export class DocsEditRequests {
     notifyProject?: DocsProject | undefined;
   }): Promise<void> {
     try {
-      this.sendResponse({ syncRequestId, data: await callback() });
+      this.host.respond(command, syncRequestId, await callback());
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (error instanceof UserInputError) {
@@ -132,7 +121,7 @@ export class DocsEditRequests {
       if (notifyProject) {
         void notifyError(notifyProject, message);
       }
-      this.sendResponse({ syncRequestId, error: message });
+      this.host.respondError(syncRequestId, message);
     }
   }
 
@@ -143,17 +132,17 @@ export class DocsEditRequests {
     return (message) => {
       const uri = window.activeTextEditor?.document.uri;
       if (!uri) {
-        return this.sendResponse({
-          syncRequestId: message.syncRequestId,
-          error: "No active editor",
-        });
+        return this.host.respondError(
+          message.syncRequestId,
+          "No active editor",
+        );
       }
       const project = this.host.getProject(uri);
       if (!project) {
-        return this.sendResponse({
-          syncRequestId: message.syncRequestId,
-          error: "No dbt project found for the active editor",
-        });
+        return this.host.respondError(
+          message.syncRequestId,
+          "No dbt project found for the active editor",
+        );
       }
       return handler(message, { uri, project });
     };
