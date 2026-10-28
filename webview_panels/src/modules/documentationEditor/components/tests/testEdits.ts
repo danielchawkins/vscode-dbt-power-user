@@ -1,8 +1,5 @@
-import type {
-  DBTModelTest,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
-} from "@modules/documentationEditor/state/types";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
 import type { SaveRequest } from "./types";
 
@@ -30,9 +27,7 @@ const updateTests = ({
   column,
 }: {
   testsData: DBTModelTest[];
-  data:
-    | Partial<TestMetadataAcceptedValuesKwArgs>
-    | Partial<TestMetadataRelationshipsKwArgs>;
+  data: Partial<documentationEditor.TestKwargs>;
   type: DbtGenericTests;
   column: string;
 }): DBTModelTest[] => {

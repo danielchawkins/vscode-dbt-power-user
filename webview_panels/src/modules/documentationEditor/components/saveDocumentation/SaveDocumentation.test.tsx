@@ -28,16 +28,15 @@ import {
   documentationReducer,
   initialState,
 } from "../../state/documentationReducer";
-import type { DBTDocumentation } from "../../state/types";
-import { Source } from "../../state/types";
+import type { EditorDocumentation } from "../../state/types";
 import SaveDocumentation from "./SaveDocumentation";
 
-const model = (over: Partial<DBTDocumentation> = {}): DBTDocumentation => ({
+const model = (
+  over: Partial<EditorDocumentation> = {},
+): EditorDocumentation => ({
   name: "orders",
   description: "saved",
-  columns: [
-    { name: "id", description: "", generated: false, source: Source.YAML },
-  ],
+  columns: [{ name: "id", description: "", generated: false, source: "YAML" }],
   generated: false,
   filePath: "/models/orders.sql",
   ...over,
@@ -53,8 +52,8 @@ const Harness = ({
   current,
   incoming,
 }: {
-  current: DBTDocumentation;
-  incoming: DBTDocumentation;
+  current: EditorDocumentation;
+  incoming: EditorDocumentation;
 }): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, {
     ...initialState,

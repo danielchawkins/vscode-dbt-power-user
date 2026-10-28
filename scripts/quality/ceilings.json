@@ -27,6 +27,6 @@
     "webview_panels/dist/assets/shared.css": 12200
   },
   "oxlintSuppressions.host": 59,
-  "oxlintSuppressions.webview": 26,
+  "oxlintSuppressions.webview": 25,
   "plannedTags": 0
 }

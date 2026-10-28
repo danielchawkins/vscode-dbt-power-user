@@ -2,7 +2,7 @@ import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import type { MessageOf } from "@modules/app/requestExecutor";
 import { isStateDirty } from "../utils";
 import type {
-  DBTDocumentation,
+  EditorDocumentation,
   DBTModelTest,
   DBTUnitTest,
   DocumentationStateProps,
@@ -14,11 +14,11 @@ export type RenderMessage = Omit<
   MessageOf<HostMessage, "renderDocumentation">,
   "docs" | "tests" | "unitTests" | "draft"
 > & {
-  docs?: DBTDocumentation | undefined;
+  docs?: EditorDocumentation | undefined;
   tests?: DBTModelTest[] | undefined;
   unitTests?: DBTUnitTest[] | undefined;
   draft?:
-    | { docs: DBTDocumentation; tests?: DBTModelTest[] | undefined }
+    | { docs: EditorDocumentation; tests?: DBTModelTest[] | undefined }
     | undefined;
 };
 

@@ -8,15 +8,13 @@ import {
   initialState,
   rendered,
 } from "./documentationReducer";
-import { Source } from "./types";
+import type { EditorDocumentation } from "./types";
 import useDocumentationViewState from "./useDocumentationViewState";
 
-const docs = {
+const docs: EditorDocumentation = {
   name: "orders",
   description: "",
-  columns: [
-    { name: "id", description: "", generated: false, source: Source.YAML },
-  ],
+  columns: [{ name: "id", description: "", generated: false, source: "YAML" }],
   generated: false,
   filePath: "/models/orders.sql",
   uniqueId: "model.p.orders",

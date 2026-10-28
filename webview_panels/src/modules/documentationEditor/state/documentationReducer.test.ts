@@ -11,10 +11,9 @@ import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
-import type { DBTDocumentation } from "./types";
-import { Source } from "./types";
+import type { EditorDocumentation } from "./types";
 
-const docs = (description: string, name = "orders"): DBTDocumentation => ({
+const docs = (description: string, name = "orders"): EditorDocumentation => ({
   name,
   description,
   columns: [
@@ -22,7 +21,7 @@ const docs = (description: string, name = "orders"): DBTDocumentation => ({
       name: "id",
       description: "key",
       generated: false,
-      source: Source.YAML,
+      source: "YAML",
     },
   ],
   generated: false,
@@ -172,7 +171,7 @@ describe("documentationReducer", () => {
 });
 
 describe("isStateDirty", () => {
-  const withCurrent = (current: DBTDocumentation) =>
+  const withCurrent = (current: EditorDocumentation) =>
     documentationReducer(loaded, updateCurrentDocsData(current));
 
   it("is true after a type change", () => {
@@ -191,7 +190,7 @@ describe("isStateDirty", () => {
       ...current,
       columns: [
         ...current.columns,
-        { name: "amount", generated: false, source: Source.DATABASE },
+        { name: "amount", generated: false, source: "DATABASE" },
       ],
     });
     expect(isStateDirty(next)).toBe(true);
@@ -246,7 +245,7 @@ describe("applyColumnProposals", () => {
         type: "integer",
         description: "key",
         generated: false,
-        source: Source.YAML,
+        source: "YAML",
         replaceType: undefined,
       },
     ]);
@@ -264,7 +263,7 @@ describe("applyColumnProposals", () => {
       name: "amount",
       type: "numeric",
       generated: false,
-      source: Source.DATABASE,
+      source: "DATABASE",
     });
   });
 

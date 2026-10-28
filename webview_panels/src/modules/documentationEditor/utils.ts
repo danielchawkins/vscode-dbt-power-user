@@ -1,30 +1,28 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import type {
-  DBTDocumentation,
-  DBTDocumentationColumn,
-  DBTModelTest,
   DocumentationStateProps,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
+  DBTModelTest,
+  EditorDocumentation,
+  EditorDocumentationColumn,
 } from "./state/types";
-import { DbtGenericTests, Source } from "./state/types";
+import { DbtGenericTests } from "./state/types";
 
 /** One of the host's columns as the editor keeps it, with absent and `null` fields filled in. */
 export const fromHostColumn = (
-  column: documentationEditor.Documentation["columns"][number],
-): DBTDocumentationColumn => ({
+  column: documentationEditor.DocumentationColumn,
+): EditorDocumentationColumn => ({
   name: column.name,
   type: column.type ?? undefined,
   description: column.description ?? undefined,
   generated: column.generated ?? false,
-  source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
+  source: column.source ?? "YAML",
   replaceType: column.replaceType,
 });
 
 /** The editor's copy of the host's documentation, with absent and `null` fields filled in. */
 export const fromHostDocumentation = (
   docs: documentationEditor.Documentation | undefined,
-): DBTDocumentation | undefined =>
+): EditorDocumentation | undefined =>
   docs && {
     name: docs.name,
     description: docs.description ?? "",
@@ -41,30 +39,18 @@ const isTestDirty = (
   incomingTest: DBTModelTest,
 ): boolean => {
   if (test.test_metadata?.name === DbtGenericTests.ACCEPTED_VALUES) {
-    const currentValues =
-      (
-        test.test_metadata?.kwargs as
-          | TestMetadataAcceptedValuesKwArgs
-          | undefined
-      )?.values ?? [];
-    const incomingValues =
-      (
-        incomingTest.test_metadata?.kwargs as
-          | TestMetadataAcceptedValuesKwArgs
-          | undefined
-      )?.values ?? [];
+    const currentValues = test.test_metadata?.kwargs.values ?? [];
+    const incomingValues = incomingTest.test_metadata?.kwargs.values ?? [];
     if (!isArrayEqual(currentValues, incomingValues)) {
       return true;
     }
   }
   if (test.test_metadata?.name === DbtGenericTests.RELATIONSHIPS) {
-    const currentArgs = test.test_metadata
-      ?.kwargs as TestMetadataRelationshipsKwArgs;
-    const incomingArgs = incomingTest.test_metadata
-      ?.kwargs as TestMetadataRelationshipsKwArgs;
+    const currentArgs = test.test_metadata?.kwargs;
+    const incomingArgs = incomingTest.test_metadata?.kwargs;
     return (
-      currentArgs.to !== incomingArgs.to ||
-      currentArgs.field !== incomingArgs.field
+      currentArgs?.to !== incomingArgs?.to ||
+      currentArgs?.field !== incomingArgs?.field
     );
   }
   return false;
@@ -110,6 +96,9 @@ export const isStateDirty = (state: DocumentationStateProps): boolean => {
   );
 };
 
-export const isArrayEqual = (a: string[], b: string[]): boolean => {
+export const isArrayEqual = (
+  a: readonly unknown[],
+  b: readonly unknown[],
+): boolean => {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 };
