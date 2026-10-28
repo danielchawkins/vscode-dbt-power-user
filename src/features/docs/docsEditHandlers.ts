@@ -45,7 +45,7 @@ export interface DocsEditHost {
     QueryManifestService,
     "getModelsInProject" | "getSourcesInProject"
   >;
-  readonly dbtTestService: ModelTestService;
+  readonly modelTests: ModelTestService;
   /** The project that answers for the document at `uri`, if one does. */
   getProject(uri: Uri): DocsProject | undefined;
   /** Answers request `syncRequestId`; `body` is checked against the response body of `command`. */
@@ -170,7 +170,7 @@ export class DocsEditRequests {
       sql: test.path?.endsWith(".sql")
         ? readFileSync(test.path, { encoding: "utf-8" })
         : undefined,
-      config: this.host.dbtTestService.getConfigByTest(test, modelName, {
+      config: this.host.modelTests.getConfigByTest(test, modelName, {
         columnNameFromTestMetadata: test.column_name,
         uri,
       }),

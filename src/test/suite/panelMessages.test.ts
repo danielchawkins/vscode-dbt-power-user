@@ -602,7 +602,7 @@ function docsHarness() {
       documentation: docs,
     })),
   };
-  const dbtTestService = {
+  const modelTests = {
     getTestsForCurrentModel: vi.fn(async () => []),
     getUnitTestsForCurrentModel: vi.fn(async () => []),
     getConfigByTest: vi.fn(() => ({ severity: "warn" })),
@@ -617,7 +617,7 @@ function docsHarness() {
     silentLog(),
     {
       docGenService,
-      dbtTestService,
+      modelTests,
       queryManifestService,
       sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposals,
@@ -640,7 +640,7 @@ function docsHarness() {
     payload,
     columnProposals,
     columnProposalRequests,
-    dbtTestService,
+    modelTests,
     docGenService,
     queryManifestService,
     send: page.send,
@@ -713,7 +713,7 @@ describe("documentation editor messages", () => {
       const h = docsHarness();
       const test = { key: "not_null_orders_id", column_name: "id" };
       // The editor moves on while the request runs; the test config still comes from the model the request resolved.
-      h.dbtTestService.getConfigByTest.mockImplementationOnce(() => {
+      h.modelTests.getConfigByTest.mockImplementationOnce(() => {
         window.activeTextEditor = {
           document: { uri: Uri.file("/p/models/customers.sql") },
         } as never;
@@ -725,7 +725,7 @@ describe("documentation editor messages", () => {
         model: "orders",
         syncRequestId: "g1",
       });
-      expect(h.dbtTestService.getConfigByTest).toHaveBeenCalledWith(
+      expect(h.modelTests.getConfigByTest).toHaveBeenCalledWith(
         test,
         "orders",
         {

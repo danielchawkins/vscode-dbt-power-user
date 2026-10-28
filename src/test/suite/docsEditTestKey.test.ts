@@ -20,10 +20,10 @@ import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 const deps = {
   terminal: { debug: vi.fn(), error: vi.fn() },
-  dbtTestService: Object.create(ModelTestService.prototype),
+  modelTests: Object.create(ModelTestService.prototype),
 } as never as {
   terminal: never;
-  dbtTestService: never;
+  modelTests: never;
 };
 
 const modelTest = {
@@ -41,7 +41,7 @@ function savePanel(root: string): SavePanel {
     getAdapterType: () => "duckdb",
   };
   return Object.assign(Object.create(DocsEditViewPanel.prototype), {
-    dbtTestService: deps.dbtTestService,
+    modelTests: deps.modelTests,
     log: deps.terminal,
     projects: { get: () => project },
     getProject: () => project,
