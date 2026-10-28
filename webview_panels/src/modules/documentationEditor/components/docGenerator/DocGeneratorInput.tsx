@@ -4,8 +4,8 @@ import {
 } from "@modules/documentationEditor/state/documentationReducer";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import type {
-  DBTDocumentation,
-  DBTDocumentationColumn,
+  EditorDocumentation,
+  EditorDocumentationColumn,
   DBTModelTest,
   DocumentationStateProps,
 } from "@modules/documentationEditor/state/types";
@@ -19,7 +19,7 @@ import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.css";
 
 interface Props {
-  entity: DBTDocumentationColumn | DBTDocumentation;
+  entity: EditorDocumentationColumn | EditorDocumentation;
   placeholder?: string | undefined;
   type: EntityType;
   title: string;
@@ -160,8 +160,8 @@ const DocGeneratorInput = ({
       <Stack className="align-items-center mb-2">
         <h4 className="mb-0">{title}</h4>
         {type === EntityType.COLUMN &&
-        (entity as DBTDocumentationColumn).type ? (
-          <Tag type="rounded">{(entity as DBTDocumentationColumn).type}</Tag>
+        (entity as EditorDocumentationColumn).type ? (
+          <Tag type="rounded">{(entity as EditorDocumentationColumn).type}</Tag>
         ) : null}
         {isDirty ? (
           <Tag color="orange" type="rounded">

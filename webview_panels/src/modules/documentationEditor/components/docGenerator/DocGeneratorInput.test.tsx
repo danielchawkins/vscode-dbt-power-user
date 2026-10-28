@@ -7,14 +7,13 @@ import {
   initialState,
 } from "../../state/documentationReducer";
 import { EntityType } from "../../state/entityType";
-import type { DBTDocumentation } from "../../state/types";
-import { Source } from "../../state/types";
+import type { EditorDocumentation } from "../../state/types";
 import DocGeneratorInput from "./DocGeneratorInput";
 
-const orders = (description: string): DBTDocumentation => ({
+const orders = (description: string): EditorDocumentation => ({
   name: "orders",
   description,
-  columns: [{ name: "id", description, generated: false, source: Source.YAML }],
+  columns: [{ name: "id", description, generated: false, source: "YAML" }],
   generated: false,
   filePath: "/models/orders.sql",
 });
@@ -22,7 +21,7 @@ const orders = (description: string): DBTDocumentation => ({
 const Harness = ({
   entity,
 }: {
-  entity: DBTDocumentation | DBTDocumentation["columns"][number];
+  entity: EditorDocumentation | EditorDocumentation["columns"][number];
 }): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   return (

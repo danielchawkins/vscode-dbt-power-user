@@ -1,41 +1,31 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
 
-export const Source = {
-  DATABASE: "DATABASE",
-  YAML: "YAML",
-} as const;
-export type Source = (typeof Source)[keyof typeof Source];
-
 export interface MetadataColumn {
   name: string;
   type?: string | undefined;
 }
 
-export interface DBTDocumentationColumn extends MetadataColumn {
+/** A column as the editor keeps it, with absent and `null` fields filled in. */
+export type EditorDocumentationColumn = Omit<
+  documentationEditor.DocumentationColumn,
+  "type" | "description" | "generated" | "source"
+> & {
+  type?: string | undefined;
   description?: string | undefined;
   generated: boolean;
-  source: Source;
-  /** An accepted type proposal that overwrites the YAML `data_type` on save. */
-  replaceType?: boolean | undefined;
-}
+  source: documentationEditor.Source;
+};
 
 /** The editor's copy of the host's `Documentation`, with absent and `null` fields filled in. */
-export interface DBTDocumentation {
-  name: string;
+export type EditorDocumentation = Omit<
+  documentationEditor.Documentation,
+  "description" | "generated" | "columns" | "patchPath"
+> & {
   description: string;
-  columns: DBTDocumentationColumn[];
   generated: boolean;
-  /** The model's SQL file, as the host sends it. */
-  filePath: string;
+  columns: EditorDocumentationColumn[];
   patchPath?: string | undefined;
-  uniqueId?: string | undefined;
-  resource_type?: string | undefined;
-}
-
-interface TestMetadataKwArgs {
-  column_name: string;
-  model: string;
-}
+};
 
 export const DbtTestTypes = {
   EXTERNAL_PACKAGE: "external",
@@ -55,17 +45,6 @@ export const DbtGenericTests = {
 export type DbtGenericTests =
   (typeof DbtGenericTests)[keyof typeof DbtGenericTests];
 
-// for accepted_values
-export interface TestMetadataAcceptedValuesKwArgs extends TestMetadataKwArgs {
-  values?: string[] | undefined;
-}
-
-// for relationship
-export interface TestMetadataRelationshipsKwArgs extends TestMetadataKwArgs {
-  field?: string | undefined;
-  to?: string | undefined;
-}
-
 export interface DocBlock {
   name: string;
   path: string;
@@ -76,12 +55,12 @@ export type DBTUnitTest = documentationEditor.UnitTest;
 export interface DocumentationStateProps {
   incomingDocsData?:
     | {
-        docs?: DBTDocumentation | undefined;
+        docs?: EditorDocumentation | undefined;
         tests?: DBTModelTest[] | undefined;
         unitTests?: DBTUnitTest[] | undefined;
       }
     | undefined;
-  currentDocsData?: DBTDocumentation | undefined;
+  currentDocsData?: EditorDocumentation | undefined;
   currentDocsTests?: DBTModelTest[] | undefined;
   currentUnitTests?: DBTUnitTest[] | undefined;
   project?: string | undefined;

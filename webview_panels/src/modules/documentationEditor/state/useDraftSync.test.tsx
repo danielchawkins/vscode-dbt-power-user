@@ -8,16 +8,13 @@ import {
   setIncomingDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
-import type { DBTDocumentation } from "./types";
-import { Source } from "./types";
+import type { EditorDocumentation } from "./types";
 import useDraftSync from "./useDraftSync";
 
-const orders: DBTDocumentation = {
+const orders: EditorDocumentation = {
   name: "orders",
   description: "saved",
-  columns: [
-    { name: "id", description: "", generated: false, source: Source.YAML },
-  ],
+  columns: [{ name: "id", description: "", generated: false, source: "YAML" }],
   generated: false,
   filePath: "/models/orders.sql",
 };

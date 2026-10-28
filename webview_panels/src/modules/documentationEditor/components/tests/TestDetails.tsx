@@ -1,8 +1,4 @@
-import type {
-  DBTModelTest,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
-} from "@modules/documentationEditor/state/types";
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import {
   DbtGenericTests,
   DbtTestTypes,
@@ -38,11 +34,10 @@ const TestDetails = ({ testType, test }: Props): React.JSX.Element => {
                     Values
                   </CardTitle>
                   <ListGroup className={classes.testListGroup}>
-                    {(
-                      test.test_metadata
-                        .kwargs as TestMetadataAcceptedValuesKwArgs
-                    ).values?.map((value) => (
-                      <ListGroupItem key={value}>{value}</ListGroupItem>
+                    {test.test_metadata.kwargs.values?.map((value) => (
+                      <ListGroupItem key={String(value)}>
+                        {String(value)}
+                      </ListGroupItem>
                     ))}
                   </ListGroup>
                 </CardBody>
@@ -64,12 +59,7 @@ const TestDetails = ({ testType, test }: Props): React.JSX.Element => {
                           background: "var(--vscode-textCodeBlock-background)",
                         }}
                       >
-                        {
-                          (
-                            test.test_metadata
-                              .kwargs as TestMetadataRelationshipsKwArgs
-                          ).to
-                        }
+                        {test.test_metadata.kwargs.to}
                       </div>
                     </div>
                     <div>
@@ -80,12 +70,7 @@ const TestDetails = ({ testType, test }: Props): React.JSX.Element => {
                           background: "var(--vscode-textCodeBlock-background)",
                         }}
                       >
-                        {
-                          (
-                            test.test_metadata
-                              .kwargs as TestMetadataRelationshipsKwArgs
-                          ).field
-                        }
+                        {test.test_metadata.kwargs.field}
                       </div>
                     </div>
                   </Stack>
