@@ -90,7 +90,11 @@ export function route(
       0,
     ),
   );
-  const centres = stackRanks(halves, widths, anchorRank(ordering, options));
+  // Each rank gap also holds the margins of the boxes it separates, as placement's does.
+  const gaps = widths.map((w, r) =>
+    Math.max(w, placement.boxes.plan.rankGap[r] ?? 0),
+  );
+  const centres = stackRanks(halves, gaps, anchorRank(ordering, options));
   const geometry: Geometry = {
     down,
     edge: spacing.edge,

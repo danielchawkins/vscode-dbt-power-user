@@ -49,10 +49,24 @@ export const clusteredGraphArb: fc.Arbitrary<LayoutGraph> = fc
     graphArb,
     fc.array(fc.nat(3), { minLength: 9, maxLength: 9 }),
     fc.array(fc.nat(3), { minLength: 3, maxLength: 3 }),
+    fc.array(fc.tuple(fc.nat(40), fc.nat(30)), { minLength: 3, maxLength: 3 }),
   )
-  .map(([graph, memberOf, parentOf]) =>
-    withClusters(graph, memberOf, parentOf),
+  .map(([graph, memberOf, parentOf, sizes]) =>
+    sized(withClusters(graph, memberOf, parentOf), sizes),
   );
+
+/** Gives cluster k the padding and label height `sizes[k]`, so that boxes are drawn with margins. */
+function sized(
+  graph: LayoutGraph,
+  sizes: readonly (readonly [number, number])[],
+): LayoutGraph {
+  const clusters = (graph.clusters ?? []).map((cluster, k) => ({
+    ...cluster,
+    padding: sizes[k][0],
+    labelHeight: sizes[k][1],
+  }));
+  return { ...graph, clusters };
+}
 
 /**
  * Adds three clusters to `graph`. Node i joins cluster `memberOf[i] % 3` unless that value is 3, which leaves it out.

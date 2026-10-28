@@ -1,5 +1,6 @@
 import type { LayeredGraph } from "../layering.js";
 import type { LayoutCluster } from "../types.js";
+import { rankGaps } from "./boxGaps.js";
 import { siblingOrder, siblings } from "./boxOrder.js";
 import type { Separation } from "./vpsc.js";
 
@@ -33,6 +34,8 @@ export interface BoxPlan {
   count: number;
   /** Rank chains, box edges around members and neighbours, nesting, and the order of siblings. */
   separations: Separation[];
+  /** The least gap between each pair of adjacent ranks that keeps the drawn boxes apart. See `rankGaps`. */
+  rankGap: number[];
 }
 
 /** What the box plan is built from: the layered graph, its ranks' order, and the sizes and gaps of its nodes. */
@@ -74,7 +77,12 @@ export function planBoxes(input: BoxInput): BoxPlan {
   );
   separations.push(...nesting(boxes, byCluster));
   separations.push(...siblings(order, byCluster, input.spacing));
-  return { boxes, count: 2 * boxes.length, separations };
+  return {
+    boxes,
+    count: 2 * boxes.length,
+    separations,
+    rankGap: rankGaps(boxes, input.layered.ranks),
+  };
 }
 
 /** One box per cluster with members, its edges numbered after the layered nodes. */
