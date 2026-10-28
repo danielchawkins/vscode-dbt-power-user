@@ -21,6 +21,7 @@ function realPanel(removed = new EventEmitter<Uri>()) {
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as any,
     dbtTerminal: spyLog(),
     queryManifestService: {} as any,
+    currentProject: {} as any,
     onDidRemoveProject: removed.event,
   });
 }

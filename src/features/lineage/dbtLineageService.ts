@@ -21,7 +21,7 @@ import type {
 } from "../../fusion/fusionClient";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type {
   NeedsStrict,
   StrictInputs,
@@ -85,7 +85,7 @@ export function describeNoLineage(reason: NoLineage): string {
 }
 
 export class DbtLineageService {
-  private queryManifestService: QueryManifestService;
+  private currentProject: CurrentProject;
   /** The Fusion Client of the Current Project. */
   private currentClient: () => FusionClient | undefined;
   /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
@@ -94,20 +94,20 @@ export class DbtLineageService {
   private currentStrict: () => StrictInputs;
 
   public constructor({
-    queryManifestService,
+    currentProject,
     currentClient = () => undefined,
     currentError = () => undefined,
     currentLsp,
     currentStrict = () => ({ strict: false }),
   }: {
-    queryManifestService: QueryManifestService;
+    currentProject: CurrentProject;
     currentClient?: () => FusionClient | undefined;
     currentError?: () => string | undefined;
     /** The Current Project's server commands, which schedule the lineage requests. */
     currentLsp: () => FusionCommands | undefined;
     currentStrict?: () => StrictInputs;
   }) {
-    this.queryManifestService = queryManifestService;
+    this.currentProject = currentProject;
     this.currentClient = currentClient;
     this.currentError = currentError;
     this.currentStrict = currentStrict;
@@ -250,7 +250,7 @@ export class DbtLineageService {
   getTableEdges({ tables }: { tables: readonly string[] }): {
     edges: [string, string][];
   } {
-    const event = this.queryManifestService.getEventByCurrentProject()?.event;
+    const event = this.currentProject.current?.manifest;
     if (!event) {
       return { edges: [] };
     }
@@ -271,11 +271,7 @@ export class DbtLineageService {
     key: keyof GraphMetaMap,
     table: string,
   ): Table[] | undefined {
-    const _event = this.queryManifestService.getEventByCurrentProject();
-    if (!_event) {
-      return;
-    }
-    const { event } = _event;
+    const event = this.currentProject.current?.manifest;
     if (!event) {
       return;
     }
@@ -312,7 +308,7 @@ export class DbtLineageService {
   ): Table | undefined {
     return lineageTable(event, key, {
       url: tableUrl,
-      rootPackage: this.queryManifestService.getProject()?.getProjectName(),
+      rootPackage: this.currentProject.current?.getProjectName(),
       layer: {
         tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
         fromPath: readSetting("lineage.layer.inferFromPath") ?? true,

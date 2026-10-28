@@ -592,7 +592,7 @@ describe("FusionLanguageClient lifecycle", () => {
     await waitForState(client, "running");
     const lsp = createFusionCommands(() => client);
     const service = new DbtLineageService({
-      queryManifestService: {} as any,
+      currentProject: {} as any,
       currentClient: () => client,
       currentLsp: () => lsp,
     });

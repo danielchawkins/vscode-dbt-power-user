@@ -15,6 +15,7 @@ import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
 import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
@@ -79,6 +80,7 @@ export class LineagePanel
   private dbtLineageService: DbtLineageService;
   private metadataDemand: MetadataDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
+  private readonly currentProject: CurrentProject;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
   // The current project and manifest epoch the panel last saw; a new epoch for the same root means a save.
@@ -94,6 +96,7 @@ export class LineagePanel
     dbtLineageService,
     eventEmitterService,
     queryManifestService,
+    currentProject,
     metadataDemand,
   }: {
     extensionContext: ExtensionContextStore;
@@ -101,6 +104,7 @@ export class LineagePanel
     dbtLineageService: DbtLineageService;
     eventEmitterService: SharedStateService;
     queryManifestService: QueryManifestService;
+    currentProject: CurrentProject;
     metadataDemand?: MetadataDemand;
   }) {
     super({
@@ -109,6 +113,7 @@ export class LineagePanel
       dbtTerminal: terminal,
       queryManifestService,
     });
+    this.currentProject = currentProject;
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
     this.metadataDemand = metadataDemand;
@@ -141,7 +146,7 @@ export class LineagePanel
 
   private get details(): LineageDetails {
     return new LineageDetails(
-      this.queryManifestService,
+      this.currentProject,
       this.dbtLineageService,
       this.dbtTerminal,
     );
@@ -176,11 +181,11 @@ export class LineagePanel
     if (!SOURCE_YAML_EXTENSIONS.includes(ext)) {
       return;
     }
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const event = this.currentProject.current?.manifest;
+    if (!event) {
       return;
     }
-    const resolved = resolveSourceStartingNode(event.event, editor);
+    const resolved = resolveSourceStartingNode(event, editor);
     const key = resolved?.key;
     if (key === this.lastRenderedSourceKey) {
       return;
@@ -191,7 +196,7 @@ export class LineagePanel
   }
 
   manifestChanged(_project: Project | undefined): void {
-    const current = this.queryManifestService.getProject();
+    const current = this.currentProject.current;
     const seen = this.seenPublication;
     const root = current?.projectRoot.fsPath;
     const epoch = this.queryManifestService.manifestFor()?.publicationEpoch;
@@ -302,7 +307,7 @@ export class LineagePanel
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
       runNoticeAction: () =>
-        useStrictAnalysis(this.queryManifestService.getProject()?.projectRoot),
+        useStrictAnalysis(this.currentProject.current?.projectRoot),
       openFile: ({ args }) =>
         commands.executeCommand("vscode.open", Uri.file(args.params.url), {
           preview: false,
@@ -343,9 +348,7 @@ export class LineagePanel
     const message =
       "A valid dbt file (model, seed etc.) needs to be open and active in the editor area above to view lineage";
     try {
-      this.queryManifestService
-        .getProject()
-        ?.throwDiagnosticsErrorIfAvailable();
+      this.currentProject.current?.throwDiagnosticsErrorIfAvailable();
     } catch (err) {
       this.dbtTerminal.error(
         "Lineage:getMissingLineageMessage",
@@ -355,7 +358,7 @@ export class LineagePanel
       return { message: (err as Error).message, type: "error" };
     }
 
-    const project = this.queryManifestService.getProject();
+    const project = this.currentProject.current;
     const graphNotice = project?.graphNotice();
     if (graphNotice) {
       return { message: graphNotice, type: "warning" };
@@ -366,14 +369,14 @@ export class LineagePanel
   private getStartingNode(
     resolvedSource?: ResolvedSourceTable,
   ): lineage.RenderArgs {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const event = this.currentProject.current?.manifest;
+    if (!event) {
       this.dbtTerminal.info("Lineage:getStartingNode", "No event found");
       return {
         missingLineageMessage: this.getMissingLineageMessage(),
       };
     }
-    const { nodeMetaMap, functionMetaMap } = event.event;
+    const { nodeMetaMap, functionMetaMap } = event;
     const editor = window.activeTextEditor;
     const tableName = this.getFilename();
     if (!editor || !tableName) {
@@ -390,7 +393,7 @@ export class LineagePanel
       const fn = functionMetaMap.get(tableName);
       if (fn) {
         const node = this.dbtLineageService.createTable(
-          event.event,
+          event,
           url,
           fn.unique_id,
         );
@@ -401,18 +404,14 @@ export class LineagePanel
     const _node = nodeMetaMap.lookupByBaseName(tableName);
     if (_node) {
       const key = _node.unique_id;
-      const node = this.dbtLineageService.createTable(event.event, url, key);
+      const node = this.dbtLineageService.createTable(event, url, key);
       return { node };
     }
 
     // Non-.py fallback: check if the active file is a dbt function.
     const fn = functionMetaMap.get(tableName);
     if (fn) {
-      const node = this.dbtLineageService.createTable(
-        event.event,
-        url,
-        fn.unique_id,
-      );
+      const node = this.dbtLineageService.createTable(event, url, fn.unique_id);
       return { node };
     }
 
@@ -421,14 +420,14 @@ export class LineagePanel
     // is on (or the file's only source table).
     if (SOURCE_YAML_EXTENSIONS.includes(ext)) {
       const resolved =
-        resolvedSource ?? resolveSourceStartingNode(event.event, editor);
+        resolvedSource ?? resolveSourceStartingNode(event, editor);
       if (resolved) {
         // Record the key before the createTable null-check: if the service
         // fails for this key, the selection guard must still short-circuit
         // instead of re-triggering a full render on every cursor move.
         this.lastRenderedSourceKey = resolved.key;
         const node = this.dbtLineageService.createTable(
-          event.event,
+          event,
           resolved.table.path ?? url,
           resolved.key,
         );

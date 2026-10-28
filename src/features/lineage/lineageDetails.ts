@@ -14,22 +14,15 @@ import {
 } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import { notifyError } from "../../projects/output/notifications";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 /** What the details read from the current project. */
 type DetailsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
 };
 
-/** The current project and its manifest, as the details read them. */
-type DetailsManifests = Pick<
-  QueryManifestService,
-  "getEventByCurrentProject"
-> & {
-  getProject(): DetailsProject | undefined;
-};
 import type { DbtLineageService } from "./dbtLineageService";
 
 /** What the lineage panel shows for one node's columns. */
@@ -49,16 +42,16 @@ export interface ColumnsBody {
 
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
-  private readonly queryManifestService: DetailsManifests;
+  private readonly currentProject: CurrentProject;
   private readonly dbtLineageService: DbtLineageService;
   private readonly terminal: Log;
 
   constructor(
-    queryManifestService: DetailsManifests,
+    currentProject: CurrentProject,
     dbtLineageService: DbtLineageService,
     terminal: Log,
   ) {
-    this.queryManifestService = queryManifestService;
+    this.currentProject = currentProject;
     this.dbtLineageService = dbtLineageService;
     this.terminal = terminal;
   }
@@ -74,12 +67,12 @@ export class LineageDetails {
   getRelationships(params?: { includeSources?: boolean | undefined }): {
     refs: Ref[];
   } {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const event = this.currentProject.current?.manifest;
+    if (!event) {
       return { refs: [] };
     }
     const { testMetaMap, nodeMetaMap, sourceMetaMap, semanticModelMetaMap } =
-      event.event;
+      event;
     const parser = new RelationshipParser(this.terminal);
 
     const fromTests = parser.fromTests(testMetaMap);
@@ -115,16 +108,13 @@ export class LineageDetails {
   }: {
     name: string;
   }): Promise<ExposureMetaData | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
-      return;
-    }
-    const project = this.queryManifestService.getProject();
-    if (!project) {
+    const project = this.currentProject.current;
+    const event = project?.manifest;
+    if (!project || !event) {
       return;
     }
 
-    const { exposureMetaMap } = event.event;
+    const { exposureMetaMap } = event;
 
     // Node IDs use unique_id format (exposure.project.name), but
     // exposureMetaMap is keyed by simple exposure name.
@@ -138,11 +128,11 @@ export class LineageDetails {
   }: {
     name: string;
   }): Promise<FunctionMetaData | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const event = this.currentProject.current?.manifest;
+    if (!event) {
       return;
     }
-    const { functionMetaMap } = event.event;
+    const { functionMetaMap } = event;
     // Node IDs use unique_id format (function.project.name), but
     // functionMetaMap is keyed by simple function name.
     const splits = name.split(".");
@@ -157,15 +147,15 @@ export class LineageDetails {
     table: string;
     refresh: boolean;
   }): Promise<ColumnsBody | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    const project = this.queryManifestService.getProject();
-    if (!event?.event || !project) {
+    const project = this.currentProject.current;
+    const event = project?.manifest;
+    if (!event || !project) {
       return;
     }
     const splits = table.split(".");
     if (splits[0] === RESOURCE_TYPE_SOURCE) {
       return this.sourceColumns({
-        event: event.event,
+        event,
         project,
         table,
         splits,
@@ -173,9 +163,9 @@ export class LineageDetails {
       });
     }
     if (splits[0] === RESOURCE_TYPE_FUNCTION) {
-      return this.functionColumns(event.event, table, splits[2] ?? "");
+      return this.functionColumns(event, table, splits[2] ?? "");
     }
-    const node = event.event.nodeMetaMap.lookupByUniqueId(table);
+    const node = event.nodeMetaMap.lookupByUniqueId(table);
     if (!node) {
       return;
     }

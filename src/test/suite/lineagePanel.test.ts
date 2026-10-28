@@ -23,6 +23,7 @@ describe("LineagePanel", () => {
   let panel: LineagePanel;
   let mockPostMessage: Mock;
   let queryManifestService: Record<string, Mock>;
+  let currentProject: { current?: unknown };
   let send: (message: unknown) => Promise<unknown>;
   let closePage: () => void;
 
@@ -38,10 +39,9 @@ describe("LineagePanel", () => {
     mockPostMessage = vi.fn();
 
     queryManifestService = {
-      getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-      getProject: vi.fn().mockReturnValue(undefined),
       manifestFor: vi.fn().mockReturnValue(undefined),
     };
+    currentProject = { current: undefined };
     const globalState = new Map<string, unknown>();
     const extensionContext = {
       extensionUri: Uri.file("/ext"),
@@ -55,6 +55,7 @@ describe("LineagePanel", () => {
         columnsNeedStrict: vi.fn().mockReturnValue(undefined),
       },
       queryManifestService,
+      currentProject,
     });
     const view = fakeView();
     const page = openPage(panel, view, false);
@@ -115,7 +116,7 @@ describe("LineagePanel", () => {
 
     it("runs the strict-analysis command for the current project's root", async () => {
       const projectRoot = { fsPath: "/w/p" };
-      (panel as any).queryManifestService.getProject = () => ({ projectRoot });
+      currentProject.current = { projectRoot };
       await send({
         command: "runNoticeAction",
         action: "useStrictAnalysis",
@@ -151,7 +152,10 @@ describe("LineagePanel", () => {
     });
 
     it("should not throw when panel is not visible", () => {
-      const unresolved = lineagePanel(silentLog(), { queryManifestService });
+      const unresolved = lineagePanel(silentLog(), {
+        queryManifestService,
+        currentProject,
+      });
 
       expect(() => unresolved.manifestChanged(undefined)).not.toThrow();
     });
@@ -225,11 +229,11 @@ describe("LineagePanel", () => {
       columns: { id: { name: "id", description: "Key", data_type: "" } },
       meta: {},
     };
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
-      }),
-      getProject: () => ({ projectRoot: { fsPath: "/p" } }),
+    (panel as any).currentProject = {
+      current: {
+        manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
+        projectRoot: { fsPath: "/p" },
+      },
     };
     const getInferredColumns = vi
       .fn<(...args: any[]) => Promise<any>>()
@@ -270,14 +274,12 @@ describe("LineagePanel", () => {
     };
     const getColumnsOfModel = vi.fn();
     const mergeColumnsFromDB = vi.fn();
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
-      }),
-      getProject: () => ({
+    (panel as any).currentProject = {
+      current: {
+        manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
         projectRoot: { fsPath: "/p" },
         queries: { getColumnsOfModel, mergeColumnsFromDB },
-      }),
+      },
     };
     (panel as any).dbtLineageService = {
       getInferredColumns: vi
@@ -317,15 +319,13 @@ describe("LineagePanel", () => {
       t.columns.id = { name: "id", data_type: "INTEGER", description: "" };
       return true;
     });
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: {
+    (panel as any).currentProject = {
+      current: {
+        manifest: {
           sourceMetaMap: new Map([["raw", { name: "raw", tables: [table] }]]),
         },
-      }),
-      getProject: () => ({
         queries: { getColumnsOfSource, mergeColumnsFromDB },
-      }),
+      },
     };
     (window.withProgress as Mock).mockImplementation(
       async (_opts: any, task: any) => task(),
@@ -716,10 +716,9 @@ describe("LineagePanel — after a save", () => {
       manifest: { publicationEpoch: 1 } as any,
     };
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
+    panel.currentProject = { current };
     panel.queryManifestService = {
-      getProject: () => current,
       manifestFor: () => current?.manifest,
-      getEventByCurrentProject: () => undefined,
     };
 
     panel.manifestChanged(current as any);
@@ -753,10 +752,13 @@ describe("LineagePanel — after a save", () => {
       const a = project("/a", epochA);
       const b = project("/b", epochB);
       let current: any = a;
+      panel.currentProject = {
+        get current() {
+          return current;
+        },
+      };
       panel.queryManifestService = {
-        getProject: () => current,
         manifestFor: () => current?.manifest,
-        getEventByCurrentProject: () => undefined,
       };
 
       panel.manifestChanged(a as any);
@@ -807,6 +809,11 @@ describe("LineagePanel — source YAML rooting", () => {
       functionMetaMap: new Map(),
     },
   });
+  const projectWith = (manifest: unknown) => ({
+    manifest,
+    graphNotice: () => undefined,
+    throwDiagnosticsErrorIfAvailable: () => undefined,
+  });
 
   beforeEach(() => {
     panel = lineagePanel(silentLog(), {
@@ -816,6 +823,10 @@ describe("LineagePanel — source YAML rooting", () => {
           table: key,
         })),
       },
+      queryManifestService: {
+        manifestFor: vi.fn().mockReturnValue(undefined),
+      },
+      currentProject: { current: undefined },
     });
     postMessage = openPage(panel, fakeView(), false).page.webview.postMessage;
     (window as any).activeTextEditor = undefined;
@@ -862,12 +873,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -900,12 +907,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -948,12 +951,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 4 → the "tracks" table.
     (window as any).activeTextEditor = makeEditor(filePath, body, 4);
@@ -985,12 +984,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 0 (the `sources:` line), above any table name.
     (window as any).activeTextEditor = makeEditor(filePath, body, 0);
@@ -1028,12 +1023,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(filePath, body, 2);
 
@@ -1071,12 +1062,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 6 → ga's "events", not seg's (a name-only lookup
     // would find seg's declaration line for both candidates).
@@ -1099,12 +1086,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (panel as any).dbtLineageService = {
       createTable: vi.fn().mockReturnValue(undefined),
@@ -1136,12 +1119,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     const editor = makeEditor(
       filePath,
@@ -1182,12 +1161,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,

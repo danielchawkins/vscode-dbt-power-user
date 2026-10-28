@@ -19,6 +19,7 @@ import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/output/notifications";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { QueryPanelPayload } from "../../projects/project/projectSql";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
@@ -84,6 +85,7 @@ export class QueryResultPanel extends PanelHost<
   declare protected extensionContext: ExtensionContextStore;
   declare protected dbtTerminal: Log;
   declare protected queryManifestService: QueryManifestService;
+  private readonly currentProject: CurrentProject;
   private readonly history: QueryHistoryStore;
 
   public constructor({
@@ -91,12 +93,14 @@ export class QueryResultPanel extends PanelHost<
     eventEmitterService,
     dbtTerminal,
     queryManifestService,
+    currentProject,
     onDidRemoveProject,
   }: {
     extensionContext: ExtensionContextStore;
     eventEmitterService: SharedStateService;
     dbtTerminal: Log;
     queryManifestService: QueryManifestService;
+    currentProject: CurrentProject;
     onDidRemoveProject: Event<Uri>;
   }) {
     super({
@@ -105,6 +109,7 @@ export class QueryResultPanel extends PanelHost<
       dbtTerminal,
       queryManifestService,
     });
+    this.currentProject = currentProject;
     this.history = new QueryHistoryStore(dbtTerminal);
     this._disposables.push(
       onDidRemoveProject(() => {
@@ -192,7 +197,7 @@ export class QueryResultPanel extends PanelHost<
   }
 
   private getProject(projectName?: string) {
-    return resolveQueryProject(this.queryManifestService, projectName);
+    return resolveQueryProject(this.currentProject, projectName);
   }
 
   private async executeIncomingQuery(
@@ -269,8 +274,7 @@ export class QueryResultPanel extends PanelHost<
         executeActiveEditorQuery(
           limit,
           async () =>
-            (await this.queryManifestService.getOrPickProjectFromWorkspace())
-              ?.queries,
+            (await this.currentProject.requireForActiveEditor())?.queries,
         ),
       executeQuery: (message) => this.executeIncomingQuery(message),
       switchPreview: (message) => switchModelPreview(message),
@@ -346,7 +350,7 @@ export class QueryResultPanel extends PanelHost<
       const result = await this.transmitDataWrapper(output, query, preview);
       recordResult({
         history: this.history,
-        queryManifestService: this.queryManifestService,
+        currentProject: this.currentProject,
         log: this.dbtTerminal,
         run: {
           result,
@@ -359,11 +363,7 @@ export class QueryResultPanel extends PanelHost<
       return result;
     } catch (exc: unknown) {
       if (exc instanceof ExecuteSQLError) {
-        void notifyError(
-          this.queryManifestService.getProject(),
-          "Query failed",
-          exc,
-        );
+        void notifyError(this.currentProject.current, "Query failed", exc);
       }
       const failure = failureOf(exc, query);
       await this.post({

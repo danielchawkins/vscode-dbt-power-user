@@ -78,7 +78,7 @@ export function onClientChange(
 export function onCurrentClientChange(
   pool: FusionClientPool,
   current: {
-    readonly current: DeclaredProject | undefined;
+    readonly current: { readonly declared: DeclaredProject } | undefined;
     readonly onDidChangeCurrent: Event<unknown>;
   },
 ): Event<void> {
@@ -87,7 +87,8 @@ export function onCurrentClientChange(
     const follow = () => {
       clientChange?.dispose();
       const project = current.current;
-      clientChange = project && onClientChange(pool, project)(listener);
+      clientChange =
+        project && onClientChange(pool, project.declared)(listener);
     };
     follow();
     const switched = current.onDidChangeCurrent(() => {

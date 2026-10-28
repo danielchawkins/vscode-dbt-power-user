@@ -29,6 +29,7 @@ export function composeWebviews(
     dbtLineageService,
     eventEmitterService: sharedState,
     queryManifestService,
+    currentProject: graph.currentProject,
     metadataDemand: graph.metadataDemand,
   });
   if (graph.clients.pool) {
@@ -42,14 +43,15 @@ export function composeWebviews(
       eventEmitterService: sharedState,
       dbtTerminal: terminal,
       queryManifestService,
+      currentProject: graph.currentProject,
       onDidRemoveProject: projects.onDidRemoveProject,
     }),
     new DocsEditViewPanel({
       projects,
       extensionContext: extensionContextStore,
       services: {
-        docGenService: new DocGenService(projects, queryManifestService),
-        dbtTestService: new DbtTestService(queryManifestService),
+        docGenService: new DocGenService(projects, graph.currentProject),
+        dbtTestService: new DbtTestService(graph.currentProject),
         queryManifestService,
         emitterService: sharedState,
         columnProposals: new ColumnProposalService({

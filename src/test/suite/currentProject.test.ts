@@ -1,13 +1,22 @@
 import * as path from "node:path";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { WorkspaceFolder } from "vscode";
+import type * as vscodeApi from "vscode";
 import { EventEmitter, Uri, window, workspace } from "vscode";
 import { CurrentProject } from "../../projects/project/currentProject";
+import type { Project } from "../../projects/project/project";
 import type { ProjectQuickPick } from "../../projects/project/projectQuickPick";
+import type { Projects } from "../../projects/project/projects";
+import { previewUriFor } from "../../projects/registry/previewUri";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/registry/projectRegistry";
+
+vi.mock("vscode", async (importOriginal) => ({
+  ...(await importOriginal<typeof vscodeApi>()),
+  Uri: (await import("vscode-uri")).URI,
+}));
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),
@@ -22,6 +31,21 @@ const otherFolder: WorkspaceFolder = {
 const general = project("/workspace/projects/general", "general", folder);
 const sox = project("/workspace/projects/sox", "sox", folder);
 const other = project("/other/project", "other", otherFolder);
+
+/** The Project the Projects service built for a Declared Project; one stub per root, so identity holds. */
+const projectStubs = new Map<string, Project>();
+function projectOf(declared: DeclaredProject): Project {
+  let stub = projectStubs.get(declared.root.fsPath);
+  if (!stub) {
+    stub = {
+      declared,
+      projectRoot: declared.root,
+      getProjectName: () => declared.name,
+    } as unknown as Project;
+    projectStubs.set(declared.root.fsPath, stub);
+  }
+  return stub;
+}
 
 describe("CurrentProject", () => {
   beforeEach(() => {
@@ -42,8 +66,11 @@ describe("CurrentProject", () => {
     setEditor("/workspace/projects/sox/models/model.sql");
     fireEditorChange();
 
-    expect(harness.context.current).toBe(sox);
-    expect(changed.mock.calls).toEqual([[general], [sox]]);
+    expect(harness.context.current).toBe(projectOf(sox));
+    expect(changed.mock.calls).toEqual([
+      [projectOf(general)],
+      [projectOf(sox)],
+    ]);
   });
 
   it("returns undefined for a non-project file in a multi-project folder", () => {
@@ -61,14 +88,16 @@ describe("CurrentProject", () => {
     setEditor("/workspace/pipelines/pipeline.sql");
     vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
 
-    expect(createHarness([general, other]).context.current).toBe(general);
+    expect(createHarness([general, other]).context.current).toBe(
+      projectOf(general),
+    );
     expect(
       createHarness([general, sox, other]).context.current,
     ).toBeUndefined();
   });
 
   it("uses the sole project when no resource or folder resolves", () => {
-    expect(createHarness([general]).context.current).toBe(general);
+    expect(createHarness([general]).context.current).toBe(projectOf(general));
     expect(createHarness([general, sox]).context.current).toBeUndefined();
     expect(createHarness([]).context.current).toBeUndefined();
   });
@@ -80,7 +109,7 @@ describe("CurrentProject", () => {
     );
     const outside = Uri.file("/workspace/pipelines/pipeline.sql");
 
-    expect(harness.context.forResource(copied)).toBe(general);
+    expect(harness.context.forResource(copied)).toBe(projectOf(general));
     expect(harness.context.forResource(outside)).toBeUndefined();
   });
 
@@ -92,8 +121,10 @@ describe("CurrentProject", () => {
       harness.context.requireForCommand(
         Uri.file("/workspace/projects/general/models/model.sql"),
       ),
-    ).resolves.toBe(general);
-    await expect(harness.context.requireForCommand()).resolves.toBe(sox);
+    ).resolves.toBe(projectOf(general));
+    await expect(harness.context.requireForCommand()).resolves.toBe(
+      projectOf(sox),
+    );
     expect(harness.picker.declaredProjectPicker).not.toHaveBeenCalled();
   });
 
@@ -101,8 +132,12 @@ describe("CurrentProject", () => {
     const harness = createHarness([general, sox]);
     harness.picker.declaredProjectPicker.mockResolvedValue(general);
 
-    await expect(harness.context.requireForCommand()).resolves.toBe(general);
-    await expect(harness.context.requireForCommand()).resolves.toBe(general);
+    await expect(harness.context.requireForCommand()).resolves.toBe(
+      projectOf(general),
+    );
+    await expect(harness.context.requireForCommand()).resolves.toBe(
+      projectOf(general),
+    );
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledWith([
       general,
       sox,
@@ -126,9 +161,11 @@ describe("CurrentProject", () => {
       path: "Untitled-1",
     } as Uri;
 
-    await expect(harness.context.pickForCommand()).resolves.toBe(sox);
+    await expect(harness.context.pickForCommand()).resolves.toBe(
+      projectOf(sox),
+    );
     await expect(harness.context.requireForCommand(untitled)).resolves.toBe(
-      sox,
+      projectOf(sox),
     );
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledTimes(1);
 
@@ -147,8 +184,10 @@ describe("CurrentProject", () => {
       harness.context.requireForCommand(
         Uri.file("/workspace/pipelines/pipeline.sql"),
       ),
-    ).resolves.toBe(general);
-    await expect(harness.context.requireForCommand()).resolves.toBe(sox);
+    ).resolves.toBe(projectOf(general));
+    await expect(harness.context.requireForCommand()).resolves.toBe(
+      projectOf(sox),
+    );
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledWith([
       general,
       sox,
@@ -169,11 +208,11 @@ describe("CurrentProject", () => {
     };
 
     await expect(one.context.requireForCommand(untitled)).resolves.toBe(
-      general,
+      projectOf(general),
     );
     await expect(
       one.context.requireForCommand(Uri.file("/workspace/pipelines/job.sql")),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(projectOf(general));
     await expect(none.context.requireForCommand()).resolves.toBeUndefined();
     expect(one.picker.declaredProjectPicker).not.toHaveBeenCalled();
     expect(none.picker.declaredProjectPicker).not.toHaveBeenCalled();
@@ -197,8 +236,32 @@ describe("CurrentProject", () => {
     harness.registryEmitter.fire();
 
     expect(changed).toHaveBeenCalledTimes(1);
-    expect(changed).toHaveBeenCalledWith(general);
+    expect(changed).toHaveBeenCalledWith(projectOf(general));
     expect(editorDispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves a compiled preview to its model's Project and model", () => {
+    const harness = createHarness([general, sox]);
+    const model = Uri.file("/workspace/projects/sox/models/model.sql");
+    (window.activeTextEditor as unknown) = {
+      document: { uri: previewUriFor(model) },
+    };
+
+    expect(harness.context.current).toBe(projectOf(sox));
+    expect(harness.context.activeEditor()?.modelUri.fsPath).toBe(model.fsPath);
+    expect(harness.context.activeEditor()?.project).toBe(projectOf(sox));
+  });
+
+  it("falls back to the folder's only Project for a compiled preview", () => {
+    const harness = createHarness([general, other]);
+    const model = Uri.file("/workspace/pipelines/pipeline.sql");
+    (window.activeTextEditor as unknown) = {
+      document: { uri: previewUriFor(model) },
+    };
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
+
+    expect(harness.context.current).toBe(projectOf(general));
+    expect(harness.context.activeEditor()?.modelUri.fsPath).toBe(model.fsPath);
   });
 
   it("is inert before the registry contains projects", () => {
@@ -226,6 +289,15 @@ function createHarness(initialProjects: DeclaredProject[]) {
       projects.find((candidate) => candidate.contains(uri)),
     ),
   } as unknown as ProjectRegistry;
+  const projectsService = {
+    get: (uri: Uri) => {
+      const declared = projects.find(
+        (candidate) => candidate.root.fsPath === uri.fsPath,
+      );
+      return declared && projectOf(declared);
+    },
+    onDidChangeProjects: new EventEmitter<void>().event,
+  } as unknown as Projects;
   const picker = {
     declaredProjectPicker:
       vi.fn<
@@ -237,6 +309,7 @@ function createHarness(initialProjects: DeclaredProject[]) {
   return {
     context: new CurrentProject(
       registry,
+      projectsService,
       picker as unknown as ProjectQuickPick,
     ),
     picker,

@@ -82,6 +82,7 @@ describe("compiled preview project lookup", () => {
     await projects.initialize();
     currentProject = new CurrentProject(
       registry,
+      projects,
       picker as unknown as ProjectQuickPick,
     );
   });
@@ -105,8 +106,10 @@ describe("compiled preview project lookup", () => {
     const preview = previewUriFor(soxModel);
     (window.activeTextEditor as unknown) = { document: { uri: preview } };
 
-    expect(currentProject.current?.root.fsPath).toBe(soxRoot);
-    expect((await currentProject.requireForCommand(preview))?.name).toBe("sox");
+    expect(currentProject.current?.projectRoot.fsPath).toBe(soxRoot);
+    expect(
+      (await currentProject.requireForCommand(preview))?.projectRoot.fsPath,
+    ).toBe(soxRoot);
     expect(picker.declaredProjectPicker).not.toHaveBeenCalled();
   });
 });

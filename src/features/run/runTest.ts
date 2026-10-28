@@ -43,7 +43,7 @@ export class RunTest {
    * handled correctly.
    */
   getSingularTestName(uri: Uri): string | undefined {
-    const event = this.queryManifestService.getEventByDocument(uri);
+    const event = this.queryManifestService.manifestFor(uri);
     if (!event) {
       return undefined;
     }

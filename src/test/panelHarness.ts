@@ -153,12 +153,14 @@ const extensionContext = { extensionUri: Uri.file("/ext") } as never;
 export function queryResultPanel(
   terminal: Log = spyLog(),
   queryManifestService: unknown = {},
+  currentProject: unknown = {},
 ): QueryResultPanel {
   return new QueryResultPanel({
     extensionContext,
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
     dbtTerminal: terminal,
     queryManifestService: queryManifestService as never,
+    currentProject: currentProject as never,
     onDidRemoveProject: new EventEmitter<Uri>().event,
   });
 }
@@ -207,12 +209,14 @@ export function lineagePanel(
     extensionContext?: unknown;
     dbtLineageService?: unknown;
     queryManifestService?: unknown;
+    currentProject?: unknown;
   } = {},
 ): LineagePanel {
   return new LineagePanel({
     extensionContext: (services.extensionContext ?? extensionContext) as never,
     terminal,
     dbtLineageService: (services.dbtLineageService ?? {}) as never,
+    currentProject: (services.currentProject ?? {}) as never,
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
   });

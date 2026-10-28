@@ -29,11 +29,11 @@ function makePanel(
   } = {},
   ready = true,
 ) {
-  const service = {
-    manifestFor: () => undefined,
-    getProject: () => manifest.project,
-    getProjectByName: () => manifest.project,
-    getOrPickProjectFromWorkspace: async () => manifest.picked,
+  const service = { manifestFor: () => undefined };
+  const currentProject = {
+    current: manifest.project,
+    byName: () => manifest.project,
+    requireForActiveEditor: async () => manifest.picked,
   };
   const panel = new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as never,
@@ -42,6 +42,7 @@ function makePanel(
     } as never,
     dbtTerminal: silentLog(),
     queryManifestService: service as never,
+    currentProject: currentProject as never,
     onDidRemoveProject: () => ({ dispose: vi.fn() }),
   });
   const view = fakeView();

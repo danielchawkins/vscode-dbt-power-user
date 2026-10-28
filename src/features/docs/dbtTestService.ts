@@ -13,13 +13,13 @@ import type {
 } from "../../core/manifest/types";
 import { removeProtocol } from "../../core/text";
 import { isColumnNameEqual } from "../../projects/project/columnNames";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 
 export class DbtTestService {
-  private queryManifestService: QueryManifestService;
+  private currentProject: CurrentProject;
 
-  public constructor(queryManifestService: QueryManifestService) {
-    this.queryManifestService = queryManifestService;
+  public constructor(currentProject: CurrentProject) {
+    this.currentProject = currentProject;
   }
 
   // Remove duplicate tests from tests array
@@ -130,21 +130,14 @@ export class DbtTestService {
     } = {},
   ) {
     const { columnNameFromTestMetadata, uri } = options;
-    const eventResult = uri
-      ? { event: this.queryManifestService.getEventByDocument(uri) }
-      : this.queryManifestService.getEventByCurrentProject();
-    if (!eventResult?.event) {
+    const project = this.currentProject.forResource(uri);
+    const event = project?.manifest;
+    if (!project || !event) {
       return;
     }
-    const {
-      event: { nodeMetaMap },
-    } = eventResult;
+    const { nodeMetaMap } = event;
     const node = nodeMetaMap.lookupByBaseName(modelName);
     if (!node) {
-      return;
-    }
-    const project = this.queryManifestService.getProject();
-    if (!project) {
       return;
     }
     const { log } = project;
@@ -234,36 +227,24 @@ export class DbtTestService {
   };
 
   public async getTestsForCurrentModel() {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
-    if (!eventResult?.event || !eventResult?.currentDocument) {
+    const active = this.currentProject.activeEditor();
+    if (!active?.project?.manifest) {
       return undefined;
     }
 
-    const project = this.queryManifestService.getProject();
-    if (!project) {
-      return undefined;
-    }
-
-    const { currentDocument } = eventResult;
-    const modelName = path.basename(currentDocument.uri.fsPath, ".sql");
+    const modelName = path.basename(active.modelUri.fsPath, ".sql");
     return this.getTestsForModel(modelName);
   }
 
   public async getTestsForModel(modelName: string) {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
-    if (!eventResult?.event || !eventResult?.currentDocument) {
-      return undefined;
-    }
-
-    const project = this.queryManifestService.getProject();
-    if (!project) {
+    const project = this.currentProject.current;
+    const event = project?.manifest;
+    if (!project || !event) {
       return undefined;
     }
     const projectName = project.getProjectName();
 
-    const {
-      event: { nodeMetaMap, graphMetaMap, testMetaMap, macroMetaMap },
-    } = eventResult;
+    const { nodeMetaMap, graphMetaMap, testMetaMap, macroMetaMap } = event;
 
     project.log.debug(
       "dbtTests",
@@ -321,27 +302,24 @@ export class DbtTestService {
   public async getUnitTestsForCurrentModel(): Promise<
     { name: string; path?: string | undefined }[] | undefined
   > {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
-    if (!eventResult?.currentDocument) {
+    const active = this.currentProject.activeEditor();
+    if (!active) {
       return undefined;
     }
 
-    const modelName = path.basename(
-      eventResult.currentDocument.uri.fsPath,
-      ".sql",
-    );
+    const modelName = path.basename(active.modelUri.fsPath, ".sql");
     return this.getUnitTestsForModel(modelName);
   }
 
   private getUnitTestsForModel(
     modelName: string,
   ): { name: string; path?: string | undefined }[] {
-    const eventResult = this.queryManifestService.getEventByCurrentProject();
-    if (!eventResult?.event) {
+    const event = this.currentProject.current?.manifest;
+    if (!event) {
       return [];
     }
 
-    const { unitTestMetaMap } = eventResult.event;
+    const { unitTestMetaMap } = event;
     if (!unitTestMetaMap) {
       return [];
     }
