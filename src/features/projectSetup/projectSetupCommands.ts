@@ -17,7 +17,7 @@ const PromptAnswer = {
 type PromptAnswer = (typeof PromptAnswer)[keyof typeof PromptAnswer];
 
 /** What project setup reads from each project. */
-type SetupProject = Pick<Project, "getProjectName" | "projectRoot"> & {
+type SetupProject = Pick<Project, "getProjectName" | "root"> & {
   commands: Pick<ProjectDbtCommands, "debug" | "installDeps">;
 };
 

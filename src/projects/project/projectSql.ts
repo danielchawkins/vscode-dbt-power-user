@@ -10,7 +10,7 @@ type SqlExecutor = Pick<FusionCli, "executeSQL">;
 
 /** The project state the query wrappers read. */
 export interface SqlProject {
-  readonly projectRoot: Uri;
+  readonly root: Uri;
   getFusionCli(): SqlExecutor;
   getProjectName(): string;
   getAdapterType(): string;

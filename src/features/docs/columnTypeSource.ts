@@ -15,7 +15,7 @@ import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 /** The project's parts the type attempts read. */
 export type TypeSourceProject = Pick<
   Project,
-  "projectRoot" | "lsp" | "getFusionCli"
+  "root" | "lsp" | "getFusionCli"
 >;
 
 /** The model whose column types are asked for: its name, and its file, which the language server looks up. */
@@ -132,7 +132,7 @@ async function inferredAttempt(
   deps.signal?.throwIfAborted();
   if (project.lsp.state === "running") {
     const relative = path
-      .relative(project.projectRoot.fsPath, model.filePath)
+      .relative(project.root.fsPath, model.filePath)
       .split(path.sep)
       .join("/");
     try {

@@ -263,7 +263,7 @@ export class DocsEditViewPanel extends PanelHost<
       runNoticeAction: () =>
         commands.executeCommand(
           USE_STRICT_ANALYSIS_COMMAND,
-          this.getProject()?.projectRoot,
+          this.getProject()?.root,
         ),
       saveDocumentation: requests.withProject((message, active) =>
         withProgress("Saving documentation", () =>

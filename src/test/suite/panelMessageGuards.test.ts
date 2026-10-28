@@ -298,7 +298,7 @@ describe("documentation editor handlers", () => {
   const docsPanel = async () => {
     const { panel, view } = await resolvedDocs();
     const project = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       getProjectName: () => "p",
       getColumnValues: vi.fn(),
     };

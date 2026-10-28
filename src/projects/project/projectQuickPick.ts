@@ -17,13 +17,13 @@ interface DeclaredProjectPickItem extends QuickPickItem {
 
 export class ProjectQuickPick {
   async projectPicker(
-    projects: Pick<Project, "getProjectName" | "projectRoot">[],
+    projects: Pick<Project, "getProjectName" | "root">[],
   ): Promise<ProjectQuickPickItem | undefined> {
     const options: ProjectQuickPickItem[] = projects.map((item) => {
       return {
         label: item.getProjectName(),
-        description: item.projectRoot.fsPath,
-        uri: item.projectRoot,
+        description: item.root.fsPath,
+        uri: item.root,
       };
     });
 

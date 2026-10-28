@@ -60,7 +60,7 @@ export class Projects implements Disposable {
     this._onDidChangeProjects,
     onDidChangeSettings(["target", "profilesDir", "perProject"], (change) => {
       for (const { project } of this.projectsByRoot.values()) {
-        if (change.affects(project.projectRoot)) {
+        if (change.affects(project.root)) {
           void project.rebuildManifest();
         }
       }
@@ -152,7 +152,7 @@ export class Projects implements Disposable {
     }
     for (const [rootPath, entry] of this.projectsByRoot) {
       this.projectsByRoot.delete(rootPath);
-      this._onDidRemoveProject.fire(entry.project.projectRoot);
+      this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
@@ -211,7 +211,7 @@ export class Projects implements Disposable {
     this._onDidChangeProjects.fire();
 
     for (const entry of removed) {
-      this._onDidRemoveProject.fire(entry.project.projectRoot);
+      this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();

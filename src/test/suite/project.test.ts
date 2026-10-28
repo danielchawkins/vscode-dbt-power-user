@@ -110,7 +110,7 @@ describe("Project Test Suite", () => {
       terminal: mockTerminal,
       sharedState: mockSharedStateService,
       runHistoryService: mockRunHistoryService,
-      projectRoot: projectUri,
+      root: projectUri,
     });
   }
 
@@ -896,7 +896,7 @@ describe("Project Test Suite", () => {
       const definition = {
         type: "dbt",
         command: "deps",
-        project: dbtProject.projectRoot.fsPath,
+        project: dbtProject.root.fsPath,
       } as const;
       await vscode.tasks.executeTask(
         dbtProject.commands.task(definition, "deps"),
@@ -937,7 +937,7 @@ describe("Project Test Suite", () => {
         {
           type: "dbt",
           command: "build",
-          project: dbtProject.projectRoot.fsPath,
+          project: dbtProject.root.fsPath,
         },
         "build",
       );

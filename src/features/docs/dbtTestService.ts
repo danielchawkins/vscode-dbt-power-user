@@ -143,7 +143,7 @@ export class DbtTestService {
     const { log } = project;
 
     const patchPath = node?.patch_path?.includes("://")
-      ? path.join(project.projectRoot.fsPath, removeProtocol(node.patch_path))
+      ? path.join(project.root.fsPath, removeProtocol(node.patch_path))
       : node.patch_path;
 
     if (!patchPath) {

@@ -83,10 +83,10 @@ export class ProjectConfigCommands implements Disposable {
       return false;
     }
     try {
-      await writeStrictStaticAnalysis(project.projectRoot);
+      await writeStrictStaticAnalysis(project.root);
       return true;
     } catch (error) {
-      this.logFor(project.projectRoot).warn(
+      this.logFor(project.root).warn(
         "useStrictAnalysis",
         error instanceof Error ? error.message : String(error),
       );
@@ -111,7 +111,7 @@ export class ProjectConfigCommands implements Disposable {
     return applyProjectConfigInsertion(
       project.declared,
       insertion,
-      this.logFor(project.projectRoot),
+      this.logFor(project.root),
     );
   }
 

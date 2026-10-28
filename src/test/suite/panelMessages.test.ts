@@ -116,12 +116,12 @@ describe("lineage panel messages", () => {
     },
     runNoticeAction: async () => {
       const h = lineageHarness();
-      const projectRoot = Uri.file("/p");
-      h.panel.currentProject.current = { projectRoot };
+      const root = Uri.file("/p");
+      h.panel.currentProject.current = { root };
       await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.useStrictAnalysis",
-        projectRoot,
+        root,
       );
     },
     init: async () => {
@@ -580,7 +580,7 @@ function docsHarness() {
     ),
   };
   const project = {
-    projectRoot: Uri.file("/p"),
+    root: Uri.file("/p"),
     getProjectName: () => "jaffle",
     getAdapterType: () => "duckdb",
     queries: {

@@ -14,7 +14,7 @@ describe("ManifestMetadataSource", () => {
     parsed = new EventEmitter<ParsedManifest>();
     rebuildManifest = vi.fn(async () => undefined);
     const project = {
-      projectRoot: Uri.file("/test/project"),
+      root: Uri.file("/test/project"),
       onDidParse: parsed.event,
       rebuildManifest,
     } as unknown as Project;

@@ -21,8 +21,8 @@ export class DbtPowerUserActionsCenter implements Disposable {
         if (project) {
           const pickedProject: ProjectQuickPickItem = {
             label: project.declared.name,
-            description: project.projectRoot.fsPath,
-            uri: project.projectRoot,
+            description: project.root.fsPath,
+            uri: project.root,
           };
           this.extensionContext.setToWorkspaceState(
             "fusionPowerUser.projectSelected",

@@ -60,7 +60,7 @@ describe("RunModel SQL execution", () => {
           ) as NodeMetaData | undefined,
       },
     },
-    projectRoot: Uri.file("/project"),
+    root: Uri.file("/project"),
   });
 
   beforeEach(() => {
@@ -82,11 +82,11 @@ describe("RunModel SQL execution", () => {
     } as unknown as Project;
     project = {
       queries: dbtProject.queries,
-      projectRoot: Uri.file("/project"),
+      root: Uri.file("/project"),
     } as unknown as Project;
     projects = {
       get: vi.fn((root: Uri) =>
-        root === project.projectRoot ? dbtProject : undefined,
+        root === project.root ? dbtProject : undefined,
       ),
       ensureFresh: vi.fn().mockResolvedValue(undefined),
     };

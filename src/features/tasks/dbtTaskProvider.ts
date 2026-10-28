@@ -12,7 +12,7 @@ import type { ProjectDbtCommands } from "../../projects/project/projectDbtComman
 import type { ProjectList } from "../../projects/project/projects";
 
 /** What the task provider reads from each project. */
-type TaskProject = Pick<Project, "projectRoot"> & {
+type TaskProject = Pick<Project, "root"> & {
   commands: Pick<ProjectDbtCommands, "task" | "taskName">;
 };
 
@@ -33,7 +33,7 @@ export class DbtTaskProvider implements TaskProvider {
         const definition: DbtTaskDefinition = {
           type: DBT_TASK_TYPE,
           command,
-          project: project.projectRoot.fsPath,
+          project: project.root.fsPath,
         };
         return project.commands.task(
           definition,

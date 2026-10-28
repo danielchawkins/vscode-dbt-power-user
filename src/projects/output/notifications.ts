@@ -6,7 +6,7 @@ import { SHOW_OUTPUT, SHOW_OUTPUT_COMMAND } from "./projectErrors";
 /** A Declared Project or a loaded `Project`; either names the project and locates its output channel. */
 export type NotifiableProject =
   | { readonly root: Uri; readonly name: string }
-  | { readonly projectRoot: Uri; getProjectName(): string };
+  | { readonly root: Uri; getProjectName(): string };
 
 let showExtensionOutput: (() => void) | undefined;
 
@@ -67,9 +67,9 @@ export async function notifyWarning(
 }
 
 const locate = (project: NotifiableProject): [Uri, string] =>
-  "root" in project
+  "name" in project
     ? [project.root, project.name]
-    : [project.projectRoot, project.getProjectName()];
+    : [project.root, project.getProjectName()];
 
 /** Shows an error notification for a failure before a project is resolved; **Show output** opens the extension log. */
 export async function notifyErrorWithoutProject(

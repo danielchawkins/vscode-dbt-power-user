@@ -56,7 +56,7 @@ describe("DeferToProductionStatusBar", () => {
 
   it("reflects a defer settings change without applyDeferConfig", () => {
     const project = Object.create(Project.prototype) as Project;
-    Object.assign(project, { projectRoot: root });
+    Object.assign(project, { root: root });
     const bar = new DeferToProductionStatusBar(
       { all: () => [project] } as never,
       { debug: vi.fn() } as never,

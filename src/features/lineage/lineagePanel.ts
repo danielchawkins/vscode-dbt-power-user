@@ -198,7 +198,7 @@ export class LineagePanel
   manifestChanged(_project: Project | undefined): void {
     const current = this.currentProject.current;
     const seen = this.seenPublication;
-    const root = current?.projectRoot.fsPath;
+    const root = current?.root.fsPath;
     const epoch = this.queryManifestService.manifestFor()?.publicationEpoch;
     const saved =
       seen !== undefined &&
@@ -307,7 +307,7 @@ export class LineagePanel
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
       runNoticeAction: () =>
-        useStrictAnalysis(this.currentProject.current?.projectRoot),
+        useStrictAnalysis(this.currentProject.current?.root),
       openFile: ({ args }) =>
         commands.executeCommand("vscode.open", Uri.file(args.params.url), {
           preview: false,
