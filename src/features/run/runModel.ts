@@ -107,57 +107,61 @@ export class RunModel {
     this.currentProject = currentProject;
   }
 
+  /** The model the active editor stands for; `undefined` when no editor is active. */
+  private activeModel(): Uri | undefined {
+    return this.currentProject.activeEditor()?.modelUri;
+  }
+
   runModelOnActiveWindow(type?: RunModelType) {
-    if (!window.activeTextEditor) {
+    const fullPath = this.activeModel();
+    if (!fullPath) {
       return;
     }
-    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.runDBTModel(fullPath, type);
   }
 
   buildModelOnActiveWindow(type?: RunModelType) {
-    if (!window.activeTextEditor) {
+    const fullPath = this.activeModel();
+    if (!fullPath) {
       return;
     }
-    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.buildDBTModel(fullPath, type);
   }
 
   runTestsOnActiveWindow() {
-    if (!window.activeTextEditor) {
+    const fullPath = this.activeModel();
+    if (!fullPath) {
       return;
     }
-    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.runDBTModelTest(fullPath);
   }
 
   compileModelOnActiveWindow() {
-    if (!window.activeTextEditor) {
+    const fullPath = this.activeModel();
+    if (!fullPath) {
       return;
     }
-    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.compileDBTModel(fullPath);
   }
 
   compileQueryOnActiveWindow() {
-    if (!window.activeTextEditor) {
+    const active = this.currentProject.activeEditor();
+    if (!active) {
       return;
     }
-    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
-    const query = window.activeTextEditor.document.getText();
+    const query = active.editor.document.getText();
     if (query !== undefined) {
-      this.compileDBTQuery(fullPath, query);
+      this.compileDBTQuery(active.modelUri, query);
     }
   }
 
   private getQuery() {
-    if (!window.activeTextEditor) {
+    const active = this.currentProject.activeEditor();
+    if (!active) {
       return;
     }
-    const cursor = window.activeTextEditor.selection;
-    return window.activeTextEditor.document.getText(
-      cursor.isEmpty ? undefined : cursor,
-    );
+    const cursor = active.editor.selection;
+    return active.editor.document.getText(cursor.isEmpty ? undefined : cursor);
   }
 
   async executeQueryOnActiveWindow(): Promise<void> {
@@ -165,12 +169,12 @@ export class RunModel {
     if (query === undefined) {
       return;
     }
-    const activeUri = window.activeTextEditor?.document.uri;
-    if (activeUri) {
-      const modelPath = activeModelUri(activeUri);
+    const active = this.currentProject.activeEditor();
+    if (active) {
+      const modelPath = active.modelUri;
       const modelName = path.basename(modelPath.fsPath, ".sql");
       const wholeModel = isWholeModelFile(
-        window.activeTextEditor,
+        active.editor,
         this.projects.get(modelPath),
       );
       await this.executeSQL(modelPath, query, {
@@ -198,13 +202,12 @@ export class RunModel {
 
   /** Previews what a model's relation holds now: the tree item's model, else the active editor's. */
   async previewMaterialized(model?: NodeTreeItem): Promise<void> {
-    const activeUri = model?.url
-      ? Uri.file(model.url)
-      : window.activeTextEditor?.document.uri;
-    if (!activeUri) {
+    const modelPath = model?.url
+      ? activeModelUri(Uri.file(model.url))
+      : this.activeModel();
+    if (!modelPath) {
       return;
     }
-    const modelPath = activeModelUri(activeUri);
     const project = this.projects.get(modelPath);
     if (!project) {
       return;
@@ -267,16 +270,14 @@ export class RunModel {
   }
 
   generateSchemaYMLOnActiveWindow() {
-    const activeUri = window.activeTextEditor?.document.uri;
-    if (activeUri !== undefined) {
-      const fullPath = activeModelUri(activeUri);
+    const fullPath = this.activeModel();
+    if (fullPath !== undefined) {
       void this.generateSchemaYML(fullPath);
     }
   }
   showRunSQLOnActiveWindow() {
-    const activeUri = window.activeTextEditor?.document.uri;
-    if (activeUri !== undefined) {
-      const fullPath = activeModelUri(activeUri);
+    const fullPath = this.activeModel();
+    if (fullPath !== undefined) {
       this.showRunSQL(fullPath);
     }
   }
