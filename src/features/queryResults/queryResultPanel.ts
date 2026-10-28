@@ -105,7 +105,7 @@ export class QueryResultPanel extends PanelHost<
   }) {
     super({
       extensionContext,
-      emitterService: eventEmitterService,
+      sharedState: eventEmitterService,
       log,
       queryManifestService,
     });

@@ -621,7 +621,7 @@ function docsHarness() {
       docGenService,
       dbtTestService,
       queryManifestService,
-      emitterService: { eventEmitter: { event: vi.fn() } },
+      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposals,
       columnProposalRequests,
     },

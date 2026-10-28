@@ -60,7 +60,7 @@ const make = () => {
     extensionContext: {
       extensionUri: { fsPath: "/ext", path: "/ext", scheme: "file" },
     } as never,
-    emitterService: {
+    sharedState: {
       eventEmitter: {
         event: (l: typeof listener) => {
           listener = l;
