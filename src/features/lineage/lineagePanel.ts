@@ -94,7 +94,7 @@ export class LineagePanel
     extensionContext,
     terminal,
     lineageService,
-    eventEmitterService,
+    sharedState,
     queryManifestService,
     currentProject,
     metadataDemand,
@@ -102,14 +102,14 @@ export class LineagePanel
     extensionContext: ExtensionContextStore;
     terminal: Log;
     lineageService: LineageService;
-    eventEmitterService: SharedStateService;
+    sharedState: SharedStateService;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
     metadataDemand?: MetadataDemand;
   }) {
     super({
       extensionContext,
-      sharedState: eventEmitterService,
+      sharedState,
       log: terminal,
       queryManifestService,
     });

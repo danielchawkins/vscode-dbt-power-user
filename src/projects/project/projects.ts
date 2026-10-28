@@ -75,7 +75,7 @@ export class Projects implements Disposable {
   private projectRegistry: ProjectRegistry;
   private projectFactory: (project: DeclaredProject) => Project;
   private metadataSourceFactory: MetadataSourceFactory;
-  private dbtTerminal: Log;
+  private log: Log;
 
   constructor(
     projectRegistry: ProjectRegistry,
@@ -83,12 +83,12 @@ export class Projects implements Disposable {
       project: (project: DeclaredProject) => Project;
       metadataSource: MetadataSourceFactory;
     },
-    dbtTerminal: Log,
+    log: Log,
   ) {
     this.projectRegistry = projectRegistry;
     this.projectFactory = factories.project;
     this.metadataSourceFactory = factories.metadataSource;
-    this.dbtTerminal = dbtTerminal;
+    this.log = log;
   }
 
   async initialize(): Promise<void> {
@@ -101,11 +101,7 @@ export class Projects implements Disposable {
     }
     this.registrySubscription = this.projectRegistry.onDidChangeProjects(() => {
       void this.enqueueSync().catch((error) => {
-        this.dbtTerminal.error(
-          "Projects",
-          "Project synchronization failed",
-          error,
-        );
+        this.log.error("Projects", "Project synchronization failed", error);
       });
     });
     this._onDidInitialize.fire();
