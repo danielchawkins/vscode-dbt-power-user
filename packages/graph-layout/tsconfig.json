@@ -22,5 +22,5 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.bench.ts", "src/**/testGraphs.ts"]
+  "exclude": ["src/**/*.test.ts", "src/**/*.bench.ts", "src/testing/**"]
 }

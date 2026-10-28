@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { caseArb, routeGraph, routeOptions } from "../testing/routeGraphs.js";
 import type { LayoutGraph, Point, Rect } from "../types.js";
-import { caseArb, options, routeGraph } from "./testGraphs.js";
 
 /** Whether an axis-parallel segment passes through the open interior of a box. A segment along an edge does not. */
 function entersBox(a: Point, b: Point, box: Rect): boolean {
@@ -39,7 +39,11 @@ describe("route lateral ports", () => {
   it("keeps every edge out of the interior of the nodes it starts and ends at, so a lateral stub never crosses its own node", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
-        const routing = routeGraph(graph, { ...options, direction, effort });
+        const routing = routeGraph(graph, {
+          ...routeOptions,
+          direction,
+          effort,
+        });
         const boxes = boxesOf(graph, routing.nodes);
         for (const edge of graph.edges) {
           const path = routing.edges.get(edge.id) ?? [];

@@ -2,6 +2,7 @@ import fc from "fast-check";
 import { order } from "../order/index.js";
 import { place } from "../place/index.js";
 import { rank } from "../rank/index.js";
+import { type Routing, route } from "../route/index.js";
 import type {
   LayoutEdge,
   LayoutGraph,
@@ -9,14 +10,13 @@ import type {
   LayoutOptions,
   Side,
 } from "../types.js";
-import { type Routing, route } from "./index.js";
 
 // Test-only: random graphs and the layout phases up to routing, shared by the route test files.
 
 const KINDS = ["dependency", "column", "fk"] as const;
 const SIDES: readonly Side[] = ["north", "east", "south", "west"];
 
-export const options: LayoutOptions = {
+export const routeOptions: LayoutOptions = {
   direction: "down",
   edgeKinds: {
     dependency: { ranks: true, weight: 1 },
@@ -39,7 +39,7 @@ const nodeArb = fc.record({
 const portName = fc.option(fc.constantFrom("p0", "p1"), { nil: undefined });
 
 /** Nodes and edges with no self-loops, ports on some edges, and a kind that is not routed. */
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
+const routeGraphArb: fc.Arbitrary<LayoutGraph> = fc
   .integer({ min: 2, max: 9 })
   .chain((count) =>
     fc.tuple(
@@ -77,7 +77,7 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
   }));
 
 export const caseArb = fc.record({
-  graph: graphArb,
+  graph: routeGraphArb,
   direction: fc.constantFrom("down" as const, "right" as const),
   effort: fc.constantFrom("fast" as const, "balanced" as const),
 });
