@@ -11,10 +11,36 @@ import { describe, expect, it } from "vitest";
 // stale entry, so the list shrinks.
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
-const NAMES_A_PACKAGE =
-  /--workspace @fusion-power-user\/|--prefix \.\.\/packages\/|\b(build|watch):(contract|graph-layout)\b|\bbuild-(contract|graph-layout)\b/;
+const PACKAGE_DIRS = readdirSync(join(ROOT, "packages"), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
+
+// The two scripts that name every package on purpose.
+const ALLOWED = new Set([
+  "package.json build:packages",
+  "package.json watch:packages",
+]);
 
 const BASELINE = new Set<string>();
+
+/**
+ * Whether a command names a workspace package in `dirs`: its `@fusion-power-user/` name, its `packages/<dir>` path,
+ * a `build` or `watch` script for it, or a `-w` / `--workspace` argument that names it.
+ */
+function namesAPackage(command: string, dirs: string[]): boolean {
+  const names = dirs.join("|");
+  const pattern = new RegExp(
+    [
+      "@fusion-power-user/",
+      `packages/(?:${names})\\b`,
+      `\\b(?:build|watch)[:-](?:${names})\\b`,
+      `(?:-w|--workspace)(?:=|\\s+)\\S*(?:${names})\\b`,
+    ].join("|"),
+  );
+  return pattern.test(command);
+}
 
 const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
 
@@ -44,19 +70,19 @@ function packageNamingSites(): string[] {
       JSON.parse(read(file)) as { scripts: Record<string, string> }
     ).scripts;
     for (const [name, command] of Object.entries(scripts)) {
-      if (NAMES_A_PACKAGE.test(command)) {
+      if (namesAPackage(command, PACKAGE_DIRS)) {
         sites.push(`${file} ${name}`);
       }
     }
   }
   for (const file of ["justfile", "webview_panels/justfile"]) {
     for (const [name, body] of recipes(read(file))) {
-      if (NAMES_A_PACKAGE.test(body)) {
+      if (namesAPackage(body, PACKAGE_DIRS)) {
         sites.push(`${file} ${name}`);
       }
     }
   }
-  return sites;
+  return sites.filter((site) => !ALLOWED.has(site));
 }
 
 describe("recipes", () => {
@@ -66,6 +92,35 @@ describe("recipes", () => {
       ["a", "one\ntwo\n"],
       ["b", "three\n"],
     ]);
+  });
+});
+
+describe("namesAPackage", () => {
+  const dirs = ["graph-layout", "webview-contract", "third"];
+
+  it.each([
+    "npm run build -w @fusion-power-user/graph-layout",
+    "npm run build --workspace=@fusion-power-user/graph-layout",
+    "npm run build --workspace packages/graph-layout",
+    "node node_modules/typescript-7/bin/tsc -b packages/graph-layout",
+    "npm run watch --prefix packages/webview-contract",
+    "npm run build:third",
+    "npm run build-third",
+    "npm run build --prefix ../packages/webview-contract",
+  ])("flags %s", (command) => {
+    expect(namesAPackage(command, dirs)).toBe(true);
+  });
+
+  it.each([
+    "npm run build:packages --prefix ..",
+    "npm run build:app --workspace webview_panels",
+    "npm run watch:extension:app",
+    "node node_modules/typescript-7/bin/tsc -p tsconfig.integration.json",
+    "eslint src scripts packages",
+    "depcruise src packages/*/src --config .dependency-cruiser.cjs",
+    "npm run watch --watch",
+  ])("passes %s", (command) => {
+    expect(namesAPackage(command, dirs)).toBe(false);
   });
 });
 
@@ -83,19 +138,21 @@ describe("build wiring", () => {
   const scripts = (
     JSON.parse(read("package.json")) as { scripts: Record<string, string> }
   ).scripts;
-  it.skipIf(scripts["build:packages"] === undefined)(
-    "builds every package in build:packages",
-    () => {
-      const packages = readdirSync(join(ROOT, "packages"), {
-        withFileTypes: true,
-      })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => entry.name);
+  it.each(["build:packages", "watch:packages"])(
+    "builds every package in %s",
+    (name) => {
+      expect(scripts[name]).toBeDefined();
       expect(
-        packages.filter(
-          (dir) => !scripts["build:packages"]?.includes(`packages/${dir}`),
+        PACKAGE_DIRS.filter(
+          (dir) => !scripts[name]?.includes(`packages/${dir}`),
         ),
       ).toEqual([]);
     },
   );
+
+  it("watches exactly what build:packages builds", () => {
+    expect(scripts["watch:packages"]).toBe(
+      `${scripts["build:packages"]} --watch --preserveWatchOutput`,
+    );
+  });
 });
