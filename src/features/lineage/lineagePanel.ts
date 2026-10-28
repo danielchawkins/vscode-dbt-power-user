@@ -109,7 +109,7 @@ export class LineagePanel
   }) {
     super({
       extensionContext,
-      emitterService: eventEmitterService,
+      sharedState: eventEmitterService,
       log: terminal,
       queryManifestService,
     });

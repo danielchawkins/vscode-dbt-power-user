@@ -192,7 +192,7 @@ export function docsEditPanel(
         getUnitTestsForCurrentModel: vi.fn(async () => []),
       },
       queryManifestService: { manifestFor: () => undefined },
-      emitterService: { eventEmitter: { event: vi.fn() } },
+      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposalRequests: new ColumnProposalRequests(),
       ...services,
     } as never,

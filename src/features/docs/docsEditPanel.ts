@@ -83,7 +83,7 @@ export class DocsEditViewPanel extends PanelHost<
       docGenService: DocGenService;
       dbtTestService: DbtTestService;
       queryManifestService: QueryManifestService;
-      emitterService: SharedStateService;
+      sharedState: SharedStateService;
       columnProposals: ColumnProposalService;
       columnProposalRequests: ColumnProposalRequests;
     };
@@ -92,7 +92,7 @@ export class DocsEditViewPanel extends PanelHost<
   }) {
     super({
       extensionContext,
-      emitterService: services.emitterService,
+      sharedState: services.sharedState,
       log: terminal,
       queryManifestService: services.queryManifestService,
     });

@@ -53,7 +53,7 @@ export function composeWebviews(
         docGenService: new DocGenService(projects, graph.currentProject),
         dbtTestService: new DbtTestService(graph.currentProject),
         queryManifestService,
-        emitterService: sharedState,
+        sharedState,
         columnProposals: new ColumnProposalService({
           log: terminal,
           columnsNeedStrict: () => dbtLineageService.columnsNeedStrict(),

@@ -150,7 +150,7 @@ export abstract class PanelHost<
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _disposables: Disposable[] = [];
   protected extensionContext: ExtensionContextStore;
-  protected emitterService: SharedStateService;
+  protected sharedState: SharedStateService;
   protected log: Log;
   protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
@@ -165,21 +165,21 @@ export abstract class PanelHost<
 
   public constructor({
     extensionContext,
-    emitterService,
+    sharedState,
     log,
     queryManifestService,
   }: {
     extensionContext: ExtensionContextStore;
-    emitterService: SharedStateService;
+    sharedState: SharedStateService;
     log: Log;
     queryManifestService: QueryManifestService;
   }) {
     this.extensionContext = extensionContext;
-    this.emitterService = emitterService;
+    this.sharedState = sharedState;
     this.log = log;
     this.queryManifestService = queryManifestService;
     this._disposables.push(
-      emitterService.eventEmitter.event((d) => this.onEvent(d)),
+      sharedState.eventEmitter.event((d) => this.onEvent(d)),
     );
   }
 
