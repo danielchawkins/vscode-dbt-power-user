@@ -1,3 +1,5 @@
+import type { Separation } from "./vpsc.js";
+
 /** A segment between adjacent ranks, pulling its two ends together. */
 export interface Link {
   /** The node at the upper end (the smaller rank). */
@@ -31,4 +33,15 @@ export interface Problem {
   dummy: readonly boolean[];
   links: readonly Link[];
   pulls: readonly Pull[];
+  /**
+   * Cluster boxes: variables after the nodes, and every separation among all variables. Absent when there are no
+   * clusters, and then the rank chains alone are the separations.
+   */
+  extra?: Extension;
+}
+
+/** Variables beyond the layered nodes, and the separations among all of them. */
+interface Extension {
+  count: number;
+  separations: Separation[];
 }

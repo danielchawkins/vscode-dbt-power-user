@@ -1,5 +1,6 @@
 import type { OrderResult } from "../order/index.js";
-import type { LayoutGraph, LayoutOptions, Point } from "../types.js";
+import { boxRects } from "../place/boxRects.js";
+import type { LayoutGraph, LayoutOptions, Point, Rect } from "../types.js";
 import { routeChannel } from "./channel.js";
 import type { ChannelPiece } from "./channelTypes.js";
 import { membersOf, type Phases, type Run } from "./pieces.js";
@@ -44,6 +45,8 @@ export interface Routing {
    * and self-loops (which layering leaves out of the bands), have no entry: self-loops are not drawn yet.
    */
   edges: ReadonlyMap<string, Point[]>;
+  /** The rectangle of each cluster box, recomputed for the re-stacked ranks. Empty when there are no clusters. */
+  clusters: ReadonlyMap<string, Rect>;
   work: RouteWork;
 }
 
@@ -116,7 +119,13 @@ export function route(
     }
   });
   work.crossings += stubCrossings(layered, inRank, geometry.portAcross);
-  return { nodes, edges: polylinesOf(members, geometry), work };
+  const clusters = boxRects(placement.boxes, centres, halves);
+  return {
+    nodes,
+    edges: polylinesOf(members, geometry),
+    clusters,
+    work,
+  };
 }
 
 /**

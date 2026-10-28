@@ -1,12 +1,8 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { rank } from "../rank/index.js";
-import {
-  clusteredGraphArb,
-  options,
-  randomModel,
-} from "../testing/graphs.js";
-import { arrange, gatherClusters, legalSlots } from "./clusters.js";
+import { clusteredGraphArb, options, randomModel } from "../testing/graphs.js";
+import { gatherClusters, legalSlots } from "./clusters.js";
 import { order } from "./index.js";
 import { sift } from "./sifting.js";
 import { search } from "./sweeps.js";
@@ -16,11 +12,14 @@ import { transpose } from "./transpose.js";
 const CLUSTERS = 3;
 
 /** Whether, in every rank, each cluster's layered nodes form one unbroken run. */
-function contiguous(layers: readonly number[][], paths: readonly number[][]): boolean {
+function contiguous(
+  layers: readonly number[][],
+  paths: readonly number[][],
+): boolean {
   return layers.every((layer) =>
     Array.from({ length: CLUSTERS }, (_, c) =>
-      layer.flatMap((x, k) => (paths[x]!.includes(c) ? [k] : [])),
-    ).every((at) => at.length === 0 || at[at.length - 1]! - at[0]! + 1 === at.length),
+      layer.flatMap((x, k) => (paths[x].includes(c) ? [k] : [])),
+    ).every((at) => at.length === 0 || at.at(-1)! - at[0] + 1 === at.length),
   );
 }
 
@@ -28,17 +27,21 @@ function contiguous(layers: readonly number[][], paths: readonly number[][]): bo
  * Whether two clusters with no node in common keep one order in every rank where both have members: the sibling
  * clusters of a drawing do not swap places from rank to rank.
  */
-function siblingsKeepOrder(layers: readonly number[][], paths: readonly number[][]): boolean {
+function siblingsKeepOrder(
+  layers: readonly number[][],
+  paths: readonly number[][],
+): boolean {
   for (let c = 0; c < CLUSTERS; c++) {
     for (let d = c + 1; d < CLUSTERS; d++) {
       if (paths.some((p) => p.includes(c) && p.includes(d))) {
         continue;
       }
       const sides = layers.flatMap((layer) => {
-        const at = (k: number) => layer.flatMap((x, i) => (paths[x]!.includes(k) ? [i] : []));
+        const at = (k: number) =>
+          layer.flatMap((x, i) => (paths[x].includes(k) ? [i] : []));
         const cs = at(c);
         const ds = at(d);
-        return cs.length > 0 && ds.length > 0 ? [cs[0]! < ds[0]!] : [];
+        return cs.length > 0 && ds.length > 0 ? [cs[0] < ds[0]] : [];
       });
       if (sides.some((s) => s !== sides[0])) {
         return false;
@@ -63,7 +66,9 @@ describe("order with clusters", () => {
     fc.assert(
       fc.property(clusteredGraphArb, (graph) => {
         const result = order(graph, options, rank(graph, options));
-        expect(siblingsKeepOrder(result.layers, result.layered.paths)).toBe(true);
+        expect(siblingsKeepOrder(result.layers, result.layered.paths)).toBe(
+          true,
+        );
       }),
       { numRuns: 200 },
     );
@@ -87,35 +92,22 @@ describe("order with clusters", () => {
   });
 });
 
-describe("arrange", () => {
-  it("places each cluster's block by its block key, and its members by key within it", () => {
-    const paths = [[0], [], [0], []];
-    expect(
-      arrange({ paths, blockKeys: [3.5] }, [[0], [1], [2], [3]], [5, 1, 2, 3]),
-    ).toEqual([[1], [3], [2], [0]]);
-  });
-
-  it("is a stable sort by key when no unit is in a cluster", () => {
-    fc.assert(
-      fc.property(fc.array(fc.integer({ min: 0, max: 4 }), { maxLength: 30 }), (keys) => {
-        const units = keys.map((_, i) => [i]);
-        const expected = units
-          .map((unit, i) => ({ unit, key: keys[i]!, i }))
-          .sort((a, b) => a.key - b.key || a.i - b.i)
-          .map((e) => e.unit);
-        const paths = units.map((): number[] => []);
-        expect(arrange({ paths, blockKeys: [] }, units, keys)).toEqual(expected);
-      }),
-    );
-  });
-});
-
 describe("legalSlots", () => {
   it("allows a unit only beside its cluster's members and never inside another cluster", () => {
     // Others: two members of cluster 0, then a unit outside every cluster.
-    expect(legalSlots([0], [[0], [0], []], 0)).toEqual([true, true, true, false]);
+    expect(legalSlots([0], [[0], [0], []], 0)).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
     // A unit outside clusters may not enter the span of cluster 0.
-    expect(legalSlots([], [[0], [0], []], 3)).toEqual([true, false, true, true]);
+    expect(legalSlots([], [[0], [0], []], 3)).toEqual([
+      true,
+      false,
+      true,
+      true,
+    ]);
   });
 
   it("does not let a unit pass a sibling cluster, even when its own cluster has no other members here", () => {

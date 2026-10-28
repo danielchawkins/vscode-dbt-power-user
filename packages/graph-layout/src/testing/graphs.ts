@@ -50,7 +50,9 @@ export const clusteredGraphArb: fc.Arbitrary<LayoutGraph> = fc
     fc.array(fc.nat(3), { minLength: 9, maxLength: 9 }),
     fc.array(fc.nat(3), { minLength: 3, maxLength: 3 }),
   )
-  .map(([graph, memberOf, parentOf]) => withClusters(graph, memberOf, parentOf));
+  .map(([graph, memberOf, parentOf]) =>
+    withClusters(graph, memberOf, parentOf),
+  );
 
 /**
  * Adds three clusters to `graph`. Node i joins cluster `memberOf[i] % 3` unless that value is 3, which leaves it out.

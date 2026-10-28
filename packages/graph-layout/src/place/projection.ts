@@ -1,4 +1,24 @@
 import type { Problem } from "./problem.js";
+import { solveSeparations } from "./vpsc.js";
+
+/**
+ * Projects `x` onto the problem's separations in the metric of `weight`. Without cluster boxes these are the rank chains,
+ * and the per-rank projection is exact; with boxes, every separation, boxes included, is solved as one problem.
+ */
+export function project(
+  problem: Problem,
+  x: number[],
+  weight: readonly number[],
+): void {
+  if (problem.extra === undefined) {
+    projectRanks(problem, x, weight);
+    return;
+  }
+  const solved = solveSeparations(x, [...weight], problem.extra.separations);
+  solved.forEach((value, i) => {
+    x[i] = value;
+  });
+}
 
 /** Floor on a node's projection weight, so a block's weighted mean is always defined. */
 const MIN_WEIGHT = 1e-12;
@@ -19,7 +39,7 @@ interface Block {
 export function projectRanks(
   ranks: Pick<Problem, "layers" | "gapLeft">,
   x: number[],
-  weight: ArrayLike<number>,
+  weight: readonly number[],
 ): void {
   for (const layer of ranks.layers) {
     const offsets: number[] = [];

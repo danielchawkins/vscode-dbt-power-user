@@ -30,7 +30,7 @@ interface Entry {
  * its block key, and a nested cluster's units are arranged the same way inside it (Forster, GD 2002). `keys[i]` is the
  * key of `units[i]`. With no clusters this is a stable sort by key.
  */
-export function arrange(
+function arrange(
   context: Arrangement,
   units: readonly number[][],
   keys: readonly number[],
@@ -83,7 +83,7 @@ function arrangeAt(
  * The block key of each cluster: the mean position of its members over the whole order, so a cluster sorts the same way
  * in every rank. A cluster with no members has key 0.
  */
-export function clusterKeys(model: OrderModel): number[] {
+function clusterKeys(model: OrderModel): number[] {
   const { paths } = model.graph;
   const total: number[] = [];
   const count: number[] = [];
@@ -105,7 +105,10 @@ export function clusterKeys(model: OrderModel): number[] {
 export function gatherClusters(model: OrderModel): void {
   const context = arrangement(model);
   model.layers.forEach((_, rank) =>
-    arrangeRank(model, rank, context, (unit) => model.index[unit[0]!]!),
+    arrangeRank(model, rank, {
+      context,
+      keyOf: (unit) => model.index[unit[0]!]!,
+    }),
   );
 }
 
@@ -113,13 +116,14 @@ export function gatherClusters(model: OrderModel): void {
 export function arrangeRank(
   model: OrderModel,
   rank: number,
-  context: Arrangement,
-  keyOf: (unit: readonly number[]) => number,
+  {
+    context,
+    keyOf,
+  }: { context: Arrangement; keyOf: (unit: readonly number[]) => number },
 ): void {
   const units = unitsOf(model.layers[rank]!, model.graph.block);
   setLayer(model, rank, arrange(context, units, units.map(keyOf)).flat());
 }
-
 
 /** The arrangement of `model`'s clusters, with their block keys as they stand. */
 export function arrangement(model: OrderModel): Arrangement {
@@ -149,7 +153,7 @@ export function legalSlots(
   for (let k = 0; k <= others.length; k++) {
     const left = k > 0 ? others[k - 1]! : [];
     const right = k < others.length ? others[k]! : [];
-    slots.push(reach[k]! && legalBetween(own, left, right, present));
+    slots.push(reach[k]! && legalBetween(own, [left, right], present));
   }
   return slots;
 }
@@ -178,11 +182,9 @@ function siblings(a: readonly number[], b: readonly number[]): boolean {
   return a.slice(0, depth).some((c, i) => c !== b[i]);
 }
 
-
 function legalBetween(
   own: readonly number[],
-  left: readonly number[],
-  right: readonly number[],
+  [left, right]: readonly [readonly number[], readonly number[]],
   present: ReadonlySet<number>,
 ): boolean {
   const beside = (c: number): boolean => left.includes(c) || right.includes(c);
