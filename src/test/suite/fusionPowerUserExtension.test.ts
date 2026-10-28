@@ -48,7 +48,7 @@ function extensionWith(
     fusionClientPool: inert,
     fusionStatus: inert,
     startupGate: new StartupGate(),
-    dbtLineageService: inert,
+    lineageService: inert,
     projectEnvironments: inert,
   };
   return new FusionPowerUserExtension(

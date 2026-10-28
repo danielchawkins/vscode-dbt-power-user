@@ -32,7 +32,7 @@ export function composeFusion(graph: ProjectsGraph) {
     },
   );
   graph.clients.pool = fusionClientPool;
-  const dbtLineageService = new LineageService({
+  const lineageService = new LineageService({
     currentProject,
     currentClient: () => {
       const project = currentProject.current;
@@ -65,7 +65,7 @@ export function composeFusion(graph: ProjectsGraph) {
   return {
     fusionClientPool,
     fusionOutputChannel,
-    dbtLineageService,
+    lineageService,
     fusionStatus,
   };
 }

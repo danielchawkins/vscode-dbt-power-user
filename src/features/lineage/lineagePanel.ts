@@ -77,7 +77,7 @@ export class LineagePanel
   // active file. Used to avoid redundant re-renders on every cursor move; the
   declare protected extensionContext: ExtensionContextStore;
   private terminal: Log;
-  private dbtLineageService: LineageService;
+  private lineageService: LineageService;
   private metadataDemand: MetadataDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
   private readonly currentProject: CurrentProject;
@@ -93,7 +93,7 @@ export class LineagePanel
   public constructor({
     extensionContext,
     terminal,
-    dbtLineageService,
+    lineageService,
     eventEmitterService,
     queryManifestService,
     currentProject,
@@ -101,7 +101,7 @@ export class LineagePanel
   }: {
     extensionContext: ExtensionContextStore;
     terminal: Log;
-    dbtLineageService: LineageService;
+    lineageService: LineageService;
     eventEmitterService: SharedStateService;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
@@ -115,7 +115,7 @@ export class LineagePanel
     });
     this.currentProject = currentProject;
     this.terminal = terminal;
-    this.dbtLineageService = dbtLineageService;
+    this.lineageService = lineageService;
     this.metadataDemand = metadataDemand;
     const columnsCommand = registerLineageColumnsCommand((params) =>
       this.getColumns(params),
@@ -147,7 +147,7 @@ export class LineagePanel
   private get details(): LineageDetails {
     return new LineageDetails(
       this.currentProject,
-      this.dbtLineageService,
+      this.lineageService,
       this.log,
     );
   }
@@ -235,7 +235,7 @@ export class LineagePanel
       return;
     }
     const start = this.getStartingNode(resolvedSource);
-    const needs = this.dbtLineageService.columnsNeedStrict();
+    const needs = this.lineageService.columnsNeedStrict();
     this.post({
       command: "render",
       args: {
@@ -265,19 +265,19 @@ export class LineagePanel
         this.respond(
           "childTables",
           syncRequestId,
-          this.dbtLineageService.getChildTables(args.params),
+          this.lineageService.getChildTables(args.params),
         ),
       parentTables: ({ args, syncRequestId }) =>
         this.respond(
           "parentTables",
           syncRequestId,
-          this.dbtLineageService.getParentTables(args.params),
+          this.lineageService.getParentTables(args.params),
         ),
       tableEdges: ({ args, syncRequestId }) =>
         this.respond(
           "tableEdges",
           syncRequestId,
-          this.dbtLineageService.getTableEdges(args.params),
+          this.lineageService.getTableEdges(args.params),
         ),
       getColumns: async ({ args, syncRequestId }) =>
         this.respond(
@@ -315,7 +315,7 @@ export class LineagePanel
         }),
       ...this.queryRequestHandlers(),
       ...columnTraceHandlers({
-        dbtLineageService: this.dbtLineageService,
+        lineageService: this.lineageService,
         traces: this.columnTraces,
         respond: (command, syncRequestId, body) =>
           this.respond(command, syncRequestId, body),
@@ -392,7 +392,7 @@ export class LineagePanel
     if (ext === ".py") {
       const fn = functionMetaMap.get(tableName);
       if (fn) {
-        const node = this.dbtLineageService.createTable(
+        const node = this.lineageService.createTable(
           manifest,
           url,
           fn.unique_id,
@@ -404,18 +404,14 @@ export class LineagePanel
     const _node = nodeMetaMap.lookupByBaseName(tableName);
     if (_node) {
       const key = _node.unique_id;
-      const node = this.dbtLineageService.createTable(manifest, url, key);
+      const node = this.lineageService.createTable(manifest, url, key);
       return { node };
     }
 
     // Non-.py fallback: check if the active file is a dbt function.
     const fn = functionMetaMap.get(tableName);
     if (fn) {
-      const node = this.dbtLineageService.createTable(
-        manifest,
-        url,
-        fn.unique_id,
-      );
+      const node = this.lineageService.createTable(manifest, url, fn.unique_id);
       return { node };
     }
 
@@ -430,7 +426,7 @@ export class LineagePanel
         // fails for this key, the selection guard must still short-circuit
         // instead of re-triggering a full render on every cursor move.
         this.lastRenderedSourceKey = resolved.key;
-        const node = this.dbtLineageService.createTable(
+        const node = this.lineageService.createTable(
           manifest,
           resolved.table.path ?? url,
           resolved.key,

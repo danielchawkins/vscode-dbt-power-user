@@ -51,7 +51,7 @@ describe("LineagePanel", () => {
     };
     panel = lineagePanel(silentLog(), {
       extensionContext,
-      dbtLineageService: {
+      lineageService: {
         columnsNeedStrict: vi.fn().mockReturnValue(undefined),
       },
       queryManifestService,
@@ -66,7 +66,7 @@ describe("LineagePanel", () => {
 
   describe("manifestChanged", () => {
     it("offers one action, naming an explicit setting that overrides the project", () => {
-      (panel as any).dbtLineageService.columnsNeedStrict = vi
+      (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "baseline" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
@@ -87,7 +87,7 @@ describe("LineagePanel", () => {
     });
 
     it("offers the same action, naming the project default under project mode", () => {
-      (panel as any).dbtLineageService.columnsNeedStrict = vi
+      (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "project" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
@@ -241,7 +241,7 @@ describe("LineagePanel", () => {
         { name: "id", datatype: "integer" },
         { name: "total", datatype: "bigint" },
       ]);
-    (panel as any).dbtLineageService = { getInferredColumns };
+    (panel as any).lineageService = { getInferredColumns };
 
     const body = await ask({
       command: "getColumns",
@@ -281,7 +281,7 @@ describe("LineagePanel", () => {
         queries: { getColumnsOfModel, mergeColumnsFromDB },
       },
     };
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getInferredColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue([{ name: "id", datatype: "integer" }]),
@@ -540,7 +540,7 @@ describe("LineagePanel", () => {
       "Could not read column lineage: boom",
     ],
   ])("explains %j on each target table", async (reason, expected) => {
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ kind: "noLineage", reason }),
@@ -565,7 +565,7 @@ describe("LineagePanel", () => {
   });
 
   it("keeps lineage and reports each failed column", async () => {
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({
@@ -614,7 +614,7 @@ describe("LineagePanel", () => {
 
     it("answers a trace that a new trace supersedes as cancelled, with no columns", async () => {
       let finish: (value: unknown) => void = () => undefined;
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi
           .fn<(...args: any[]) => Promise<any>>()
           .mockImplementationOnce(
@@ -641,7 +641,7 @@ describe("LineagePanel", () => {
     it("cancels only the trace that cancelColumnTrace names", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
       let finish: (value: unknown) => void = () => undefined;
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise((resolve) => {
@@ -666,7 +666,7 @@ describe("LineagePanel", () => {
 
     it("cancels the trace's requests when the panel is disposed", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise(() => undefined);
@@ -682,7 +682,7 @@ describe("LineagePanel", () => {
 
     it("cancels the trace's requests when its page closes", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise(() => undefined);
@@ -708,7 +708,7 @@ function resolvedLineage() {
 describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
     const { panel, postMessage } = resolvedLineage();
-    panel.dbtLineageService = { columnsNeedStrict: () => undefined };
+    panel.lineageService = { columnsNeedStrict: () => undefined };
     const current = {
       root: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
@@ -742,7 +742,7 @@ describe("LineagePanel — after a save", () => {
     "re-renders on a project switch with %s epochs",
     (_label, epochA, epochB) => {
       const { panel, postMessage } = resolvedLineage();
-      panel.dbtLineageService = { columnsNeedStrict: () => undefined };
+      panel.lineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
         root: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
@@ -817,7 +817,7 @@ describe("LineagePanel — source YAML rooting", () => {
 
   beforeEach(() => {
     panel = lineagePanel(silentLog(), {
-      dbtLineageService: {
+      lineageService: {
         columnsNeedStrict: () => undefined,
         createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
           table: key,
@@ -886,7 +886,7 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
     });
-    expect((panel as any).dbtLineageService.createTable).toHaveBeenCalledWith(
+    expect((panel as any).lineageService.createTable).toHaveBeenCalledWith(
       expect.anything(),
       filePath,
       "source.proj.segment_website_production.identifies",
@@ -920,7 +920,7 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
     });
-    expect((panel as any).dbtLineageService.createTable).toHaveBeenCalledWith(
+    expect((panel as any).lineageService.createTable).toHaveBeenCalledWith(
       expect.anything(),
       filePath,
       "source.proj.segment_website_production.identifies",
@@ -1089,7 +1089,7 @@ describe("LineagePanel — source YAML rooting", () => {
     (panel as any).currentProject = {
       current: projectWith(makeEvent(sourceMetaMap).event),
     };
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       createTable: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
@@ -1175,6 +1175,6 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.missingLineageMessage).toEqual(
       expect.objectContaining({ type: "warning" }),
     );
-    expect((panel as any).dbtLineageService.createTable).not.toHaveBeenCalled();
+    expect((panel as any).lineageService.createTable).not.toHaveBeenCalled();
   });
 });

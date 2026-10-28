@@ -50,7 +50,7 @@ afterEach(() => {
 
 /** A lineage panel built as the extension builds it, with stubbed services; `postMessage` collects what it posts. */
 function lineageHarness() {
-  const dbtLineageService = {
+  const lineageService = {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
     getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
@@ -74,7 +74,7 @@ function lineageHarness() {
   };
   const panel = lineagePanel(silentLog(), {
     extensionContext,
-    dbtLineageService,
+    lineageService,
     queryManifestService,
     currentProject,
   }) as any;
@@ -150,7 +150,7 @@ describe("lineage panel messages", () => {
         args: { params: { table: "model.p.a" } },
         syncRequestId: "c1",
       });
-      expect(h.panel.dbtLineageService.getChildTables).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getChildTables).toHaveBeenCalledWith({
         table: "model.p.a",
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe("lineage panel messages", () => {
         args: { params: { table: "model.p.a" } },
         syncRequestId: "p1",
       });
-      expect(h.panel.dbtLineageService.getParentTables).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getParentTables).toHaveBeenCalledWith({
         table: "model.p.a",
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -178,7 +178,7 @@ describe("lineage panel messages", () => {
         args: { params: { tables: ["model.p.a", "model.p.z"] } },
         syncRequestId: "e1",
       });
-      expect(h.panel.dbtLineageService.getTableEdges).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getTableEdges).toHaveBeenCalledWith({
         tables: ["model.p.a", "model.p.z"],
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -252,9 +252,7 @@ describe("lineage panel messages", () => {
         },
         syncRequestId: "k1",
       });
-      expect(
-        h.panel.dbtLineageService.getConnectedColumns,
-      ).toHaveBeenCalledWith(
+      expect(h.panel.lineageService.getConnectedColumns).toHaveBeenCalledWith(
         { targets, upstreamExpansion: true },
         expect.anything(),
       );
@@ -265,7 +263,7 @@ describe("lineage panel messages", () => {
     cancelColumnTrace: async () => {
       const h = lineageHarness();
       let finish: (value: unknown) => void = () => undefined;
-      h.panel.dbtLineageService.getConnectedColumns.mockImplementationOnce(
+      h.panel.lineageService.getConnectedColumns.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             finish = resolve;

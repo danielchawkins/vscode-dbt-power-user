@@ -207,7 +207,7 @@ export function lineagePanel(
   terminal: Log = spyLog(),
   services: {
     extensionContext?: unknown;
-    dbtLineageService?: unknown;
+    lineageService?: unknown;
     queryManifestService?: unknown;
     currentProject?: unknown;
   } = {},
@@ -215,7 +215,7 @@ export function lineagePanel(
   return new LineagePanel({
     extensionContext: (services.extensionContext ?? extensionContext) as never,
     terminal,
-    dbtLineageService: (services.dbtLineageService ?? {}) as never,
+    lineageService: (services.lineageService ?? {}) as never,
     currentProject: (services.currentProject ?? {}) as never,
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
