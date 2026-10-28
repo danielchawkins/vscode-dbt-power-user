@@ -14,17 +14,7 @@ const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const NAMES_A_PACKAGE =
   /--workspace @fusion-power-user\/|--prefix \.\.\/packages\/|\b(build|watch):(contract|graph-layout)\b|\bbuild-(contract|graph-layout)\b/;
 
-const BASELINE = new Set([
-  "justfile build-contract",
-  "justfile build",
-  "justfile build-dev",
-  "justfile watch",
-  "justfile watch-extension",
-  "webview_panels/justfile dev",
-  "webview_panels/justfile watch",
-  "webview_panels/justfile fmt",
-  "webview_panels/justfile lint",
-]);
+const BASELINE = new Set<string>();
 
 const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
 
