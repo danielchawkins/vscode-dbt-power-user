@@ -68,7 +68,7 @@ const make = () => {
         },
       },
     } as never,
-    dbtTerminal: { debug: vi.fn() } as never,
+    log: { debug: vi.fn() } as never,
     queryManifestService: {} as never,
   });
   return { panel, emit: (command: string) => listener?.({ command }) };

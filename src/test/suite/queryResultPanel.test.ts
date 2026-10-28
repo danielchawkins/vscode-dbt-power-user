@@ -40,7 +40,7 @@ function makePanel(
     eventEmitterService: {
       eventEmitter: { event: () => ({ dispose: vi.fn() }) },
     } as never,
-    dbtTerminal: silentLog(),
+    log: silentLog(),
     queryManifestService: service as never,
     currentProject: currentProject as never,
     onDidRemoveProject: () => ({ dispose: vi.fn() }),

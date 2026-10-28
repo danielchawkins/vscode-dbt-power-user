@@ -110,7 +110,7 @@ export class LineagePanel
     super({
       extensionContext,
       emitterService: eventEmitterService,
-      dbtTerminal: terminal,
+      log: terminal,
       queryManifestService,
     });
     this.currentProject = currentProject;
@@ -148,7 +148,7 @@ export class LineagePanel
     return new LineageDetails(
       this.currentProject,
       this.dbtLineageService,
-      this.dbtTerminal,
+      this.log,
     );
   }
 
@@ -350,7 +350,7 @@ export class LineagePanel
     try {
       this.currentProject.current?.throwDiagnosticsErrorIfAvailable();
     } catch (err) {
-      this.dbtTerminal.error(
+      this.log.error(
         "Lineage:getMissingLineageMessage",
         (err as Error).message,
         err,
@@ -371,7 +371,7 @@ export class LineagePanel
   ): lineage.RenderArgs {
     const event = this.currentProject.current?.manifest;
     if (!event) {
-      this.dbtTerminal.info("Lineage:getStartingNode", "No event found");
+      this.log.info("Lineage:getStartingNode", "No event found");
       return {
         missingLineageMessage: this.getMissingLineageMessage(),
       };
@@ -437,7 +437,7 @@ export class LineagePanel
       }
     }
 
-    this.dbtTerminal.info(
+    this.log.info(
       "Lineage:getStartingNode",
       `No node found for ${tableName}`,
     );

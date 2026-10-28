@@ -42,7 +42,7 @@ function savePanel(root: string): SavePanel {
   };
   return Object.assign(Object.create(DocsEditViewPanel.prototype), {
     dbtTestService: deps.dbtTestService,
-    dbtTerminal: deps.terminal,
+    log: deps.terminal,
     projects: { get: () => project },
     getProject: () => project,
   });

@@ -158,7 +158,7 @@ export function queryResultPanel(
   return new QueryResultPanel({
     extensionContext,
     eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
-    dbtTerminal: terminal,
+    log: terminal,
     queryManifestService: queryManifestService as never,
     currentProject: currentProject as never,
     onDidRemoveProject: new EventEmitter<Uri>().event,
