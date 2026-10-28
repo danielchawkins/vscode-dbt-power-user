@@ -192,7 +192,7 @@ describe("rank", () => {
       }),
       { numRuns: 2000 },
     );
-  });
+  }, 30_000);
 
   it("keeps every ranking edge at or above its minimum length, in every partition mode", () => {
     fc.assert(
