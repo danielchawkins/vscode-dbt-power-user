@@ -13,7 +13,7 @@ export type EditorDocumentationColumn = Omit<
   type?: string | undefined;
   description?: string | undefined;
   generated: boolean;
-  source: documentationEditor.Source;
+  source: documentationEditor.DocumentationSource;
 };
 
 /** The editor's copy of the host's `Documentation`, with absent and `null` fields filled in. */
