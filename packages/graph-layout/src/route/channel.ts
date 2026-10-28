@@ -5,7 +5,8 @@
  * share a track. A star that touches another hyperedge in the order chosen is split into single runs and placed again. Each
  * overlapping pair of hyperedges gets an above or below preference from the exact crossings each order would cost;
  * preference cycles are broken greedily; tracks are then assigned left edge first, below every overlapping hyperedge
- * preferred above it.
+ * preferred above it. A run that is alone in its hyperedge may then jog to a second track (`doglegs.ts`), where that lowers
+ * its crossings plus touches.
  */
 
 import {
@@ -13,19 +14,25 @@ import {
   straightCrossings,
   touchesAbove,
 } from "./channelCrossings.js";
+import { hyperedgesOf, runsOf } from "./channelStars.js";
 import { assignTracks, preferences } from "./channelTracks.js";
-import type { ChannelPiece, Hyperedge } from "./channelTypes.js";
+import type { ChannelPiece, Hyperedge, Jog } from "./channelTypes.js";
+import { addDoglegs } from "./doglegs.js";
 
 export interface ChannelOptions {
   /** Space between two tracks, and between two runs that share a track. */
   edge: number;
   /** Most overlapping pairs of hyperedges to examine. Past it the rest keep their left-edge tracks and `capped` is set. */
   budget: number;
+  /** Most piece pairs the doglegs may test in the band; past it the runs keep their tracks. */
+  doglegWork: number;
 }
 
 export interface ChannelRouting {
   /** Track of each piece, counted from the upper edge; -1 for a straight piece that needs none. */
   track: number[];
+  /** The dogleg of each piece, if it has one: its second track and the in-rank coordinate of its jog. */
+  jogs: (Jog | undefined)[];
   /** Tracks used, so the band needs `(trackCount + 1) * edge` of width. */
   trackCount: number;
   /** Proper crossings between runs of different trunks, as `measureDrawing` counts them within the band. */
@@ -68,15 +75,29 @@ export function routeChannel(
   }
 
   const track = pieces.map(() => -1);
+  const solo = pieces.map(() => false);
   for (const h of [...straight, ...tracked]) {
     for (const m of h.members) {
       track[m] = h.track;
+      solo[m] = h.members.length === 1;
     }
   }
+  const trackCount = tracked.reduce(
+    (most, h) => Math.max(most, h.track + 1),
+    0,
+  );
+  const doglegs = addDoglegs({
+    pieces,
+    tracks: track,
+    solo,
+    trackCount,
+    work: options.doglegWork,
+  });
   return {
     track,
-    trackCount: tracked.reduce((most, h) => Math.max(most, h.track + 1), 0),
-    crossings,
+    jogs: doglegs.jogs,
+    trackCount: doglegs.trackCount,
+    crossings: crossings + doglegs.crossings,
     pairs: examined,
     capped,
   };
@@ -156,77 +177,6 @@ function touchingStars(
     }
   }
   return touching;
-}
-
-/** Each run of a hyperedge as a hyperedge of its own. */
-function runsOf(pieces: readonly ChannelPiece[], h: Hyperedge): Hyperedge[] {
-  return h.members.flatMap((m) => {
-    const p = pieces[m];
-    return p
-      ? [
-          {
-            members: [m],
-            lo: Math.min(p.from, p.to),
-            hi: Math.max(p.from, p.to),
-            track: -1,
-          },
-        ]
-      : [];
-  });
-}
-
-/** A hyperedge being grown: its members, its span, and the points every member shares. */
-interface Star {
-  members: number[];
-  lo: number;
-  hi: number;
-  ups: number[];
-  lows: number[];
-}
-
-/** The upper points a piece leaves from and the lower points it enters. */
-function pointsOf(p: ChannelPiece): { ups: number[]; lows: number[] } {
-  return p.flat
-    ? { ups: [p.from, p.to], lows: [] }
-    : { ups: [p.from], lows: [p.to] };
-}
-
-/**
- * Groups pieces into hyperedges that are stars: every member leaves one upper point, or every member enters one lower
- * point. A piece joins the first star that still shares a point with all its members; a piece that would make the star
- * share none starts one of its own. So no hyperedge chains an upper point to a lower point.
- */
-function hyperedgesOf(pieces: readonly ChannelPiece[]): Hyperedge[] {
-  const stars: Star[] = [];
-  pieces.forEach((p, i) => {
-    if (!stars.some((s) => admit(s, i, p))) {
-      const { ups, lows } = pointsOf(p);
-      stars.push({
-        members: [i],
-        lo: Math.min(p.from, p.to),
-        hi: Math.max(p.from, p.to),
-        ups,
-        lows,
-      });
-    }
-  });
-  return stars.map(({ members, lo, hi }) => ({ members, lo, hi, track: -1 }));
-}
-
-/** Adds piece `i` to a star if they still share a point, keeping only the points they share; false if they share none. */
-function admit(star: Star, i: number, p: ChannelPiece): boolean {
-  const { ups, lows } = pointsOf(p);
-  const sharedUps = star.ups.filter((u) => ups.includes(u));
-  const sharedLows = star.lows.filter((l) => lows.includes(l));
-  if (sharedUps.length === 0 && sharedLows.length === 0) {
-    return false;
-  }
-  star.members.push(i);
-  star.lo = Math.min(star.lo, p.from, p.to);
-  star.hi = Math.max(star.hi, p.from, p.to);
-  star.ups = sharedUps;
-  star.lows = sharedLows;
-  return true;
 }
 
 /**

@@ -83,11 +83,10 @@ describe("route", () => {
     );
   });
 
-  it("never lays two polylines with no end node in common along one line, unless they touch both ways", () => {
+  it("never lays two polylines with no end node in common along one line", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
         const routing = routeGraph(graph, { ...options, direction, effort });
-        const across: Axis = direction === "down" ? "x" : "y";
         const ends = new Map<string, readonly string[]>(
           graph.edges.map((e) => [e.id, [e.source, e.target]] as const),
         );
@@ -100,11 +99,7 @@ describe("route", () => {
         for (const [i, p] of runs.entries()) {
           for (const q of runs.slice(i + 1)) {
             const shared = p.ends.some((n) => q.ends.includes(n));
-            if (
-              !shared &&
-              !touchesBothWays(p.points, q.points, across) &&
-              longestOverlap(p.points, q.points) > EPS
-            ) {
+            if (!shared && longestOverlap(p.points, q.points) > EPS) {
               overlaps.push(`${p.id} ${q.id}`);
             }
           }
@@ -214,34 +209,4 @@ function longestOverlap(p: readonly Point[], q: readonly Point[]): number {
     }
   }
   return best;
-}
-
-/**
- * Whether two runs touch in both orders: their ends sit at the same two positions across the rank axis, so each run's
- * end meets the other's whichever run is drawn above. No track order avoids that touch. Routing cannot separate such
- * pairs until a run can leave a node off its centre or bend, so the property excludes them.
- */
-function touchesBothWays(
-  p: readonly Point[],
-  q: readonly Point[],
-  across: Axis,
-): boolean {
-  const pe = endsAcross(p, across);
-  const qe = endsAcross(q, across);
-  if (!pe || !qe) {
-    return false;
-  }
-  const [a, b] = pe;
-  const [c, d] = qe;
-  return a !== b && ((a === c && b === d) || (a === d && b === c));
-}
-
-/** The across-coordinates of a polyline's two ends, in either order. */
-function endsAcross(
-  points: readonly Point[],
-  across: Axis,
-): [number, number] | undefined {
-  const first = points[0];
-  const last = points.at(-1);
-  return first && last ? [first[across], last[across]] : undefined;
 }

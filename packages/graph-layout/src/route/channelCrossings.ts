@@ -6,7 +6,7 @@ import type { ChannelPiece, Hyperedge } from "./channelTypes.js";
  */
 
 /** Whether a run may cross another: they must not leave from one source port. */
-function crossable(a: ChannelPiece, b: ChannelPiece): boolean {
+export function crossable(a: ChannelPiece, b: ChannelPiece): boolean {
   return a.trunk === undefined || a.trunk !== b.trunk;
 }
 

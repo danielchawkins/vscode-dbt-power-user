@@ -1,5 +1,5 @@
 import type { Point } from "../types.js";
-import type { Member } from "./pieces.js";
+import type { Member, Run } from "./pieces.js";
 
 /** The drawing's frame and the stacked ranks that polylines are built against. */
 export interface Geometry {
@@ -56,6 +56,23 @@ function acrossOf(geometry: Geometry, node: number, down: boolean): number {
   return down ? centre + half : centre - half;
 }
 
+/** The points of a run's track: across its track from its upper end's column, through its dogleg if it has one. */
+function trackPoints(run: Run, bandTop: number, geometry: Geometry): Point[] {
+  const at = (track: number): number => bandTop + (track + 1) * geometry.edge;
+  const y = at(run.track);
+  const down = geometry.down;
+  if (run.jog === undefined) {
+    return [framePoint(down, run.from, y), framePoint(down, run.to, y)];
+  }
+  const next = at(run.jog.track);
+  return [
+    framePoint(down, run.from, y),
+    framePoint(down, run.jog.at, y),
+    framePoint(down, run.jog.at, next),
+    framePoint(down, run.to, next),
+  ];
+}
+
 function pathOf(member: Member, geometry: Geometry): Point[] {
   const points: Point[] = [];
   for (const run of member.runs) {
@@ -74,11 +91,7 @@ function pathOf(member: Member, geometry: Geometry): Point[] {
       framePoint(geometry.down, run.from, acrossOf(geometry, run.upper, true)),
     );
     if (run.track >= 0) {
-      const y = bandTop + (run.track + 1) * geometry.edge;
-      points.push(
-        framePoint(geometry.down, run.from, y),
-        framePoint(geometry.down, run.to, y),
-      );
+      points.push(...trackPoints(run, bandTop, geometry));
     }
     points.push(
       framePoint(
