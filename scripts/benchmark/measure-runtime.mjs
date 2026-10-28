@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { createServer } from "node:net";
 import path from "node:path";
+import { findAvailablePort } from "../smoke/launchSupport.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const args = Object.fromEntries(
@@ -183,23 +183,4 @@ function readOutput(output, prefix) {
 function readOptionalOutput(output, prefix) {
   const match = output.match(new RegExp(`^${prefix}=(.+)$`, "m"));
   return match ? JSON.parse(match[1]) : undefined;
-}
-
-async function findAvailablePort(start) {
-  for (let port = start; port < 32_000; port += 1) {
-    if (await canBind(port)) {
-      return port;
-    }
-  }
-  throw new Error("No CDP port available below the ephemeral range");
-}
-
-function canBind(port) {
-  return new Promise((resolve) => {
-    const server = createServer();
-    server.once("error", () => resolve(false));
-    server.listen(port, "127.0.0.1", () => {
-      server.close(() => resolve(true));
-    });
-  });
 }
