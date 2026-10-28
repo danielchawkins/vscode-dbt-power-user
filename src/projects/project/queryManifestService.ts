@@ -22,12 +22,12 @@ export class QueryManifestService {
   }
 
   public getSourcesInProject(currentFilePath?: Uri) {
-    const event = currentFilePath && this.manifestFor(currentFilePath);
-    if (!event) {
+    const manifest = currentFilePath && this.manifestFor(currentFilePath);
+    if (!manifest) {
       return;
     }
 
-    const sources = event.sourceMetaMap.entries();
+    const sources = manifest.sourceMetaMap.entries();
     const items = Array.from(sources, ([key, source]) => ({
       name: key,
       tables: source.tables.map((t) => t.name),
@@ -37,13 +37,13 @@ export class QueryManifestService {
   }
 
   public getModelsInProject(currentFilePath?: Uri): string[] | undefined {
-    const event = currentFilePath && this.manifestFor(currentFilePath);
-    if (!event) {
+    const manifest = currentFilePath && this.manifestFor(currentFilePath);
+    if (!manifest) {
       return;
     }
 
     // TODO: fix for model versions
-    return Array.from(event.nodeMetaMap.nodes(), (node) => node.name);
+    return Array.from(manifest.nodeMetaMap.nodes(), (node) => node.name);
   }
 
   private projectFor(uri?: Uri) {

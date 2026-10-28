@@ -43,12 +43,12 @@ export class RunTest {
    * handled correctly.
    */
   getSingularTestName(uri: Uri): string | undefined {
-    const event = this.queryManifestService.manifestFor(uri);
-    if (!event) {
+    const manifest = this.queryManifestService.manifestFor(uri);
+    if (!manifest) {
       return undefined;
     }
     const filePath = uri.fsPath;
-    for (const [name, testData] of event.testMetaMap) {
+    for (const [name, testData] of manifest.testMetaMap) {
       if (testData.test_metadata === undefined && testData.path === filePath) {
         return name;
       }
