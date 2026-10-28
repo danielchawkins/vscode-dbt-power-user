@@ -164,7 +164,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 - Files: `packages/webview-contract/tsconfig.json` with both flags, every error fixed, and the `optional()`/`nullish()` audit; new `tsconfig.strict.json` (root) and `webview_panels/tsconfig.strict.json`, counted by `scripts/quality/strict-ts.mjs` over production files only, with `strictTs.host` and `strictTs.webview` ceilings at the measured counts. They run in `just lint-ratchet`, not pre-commit.
 - Resolves: Qual §6 (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, contract first); #210 seed (`optional()` rejects `null`).
 - Revisions: (1) contract flags and fixes; (2) nullish audit; (3) strict counter and ceilings.
-- Verify: `just check`; `npm run build:contract`; adding one unchecked index access in `src/` fails `just lint-ratchet`.
+- Verify: `just check`; `npm run build:packages`; adding one unchecked index access in `src/` fails `just lint-ratchet`.
 - Depends: 0.9. Sequential.
 - Result: the contract had one error under both flags (an unchecked index in `shapeOf`). Nullish audit: each `optional()` field is filled from a host value typed without `null` (settings, editor text, `publicationId`, database column types) or from a manifest field that Fusion 2.0.6 never emits as `null`: test `test_metadata`, `namespace` and `kwargs`, `path`, unit-test `path`, node `patch_path`, and column `data_type` and `description` were checked on the jaffle and finance manifests. The fields that do carry `null` already use `nullish()`, so no guard changed.
 
