@@ -3,8 +3,8 @@ import type {
   ConnectedColumnsResult,
   NoLineage,
   TargetFailure,
-} from "./dbtLineageService";
-import { describeNoLineage } from "./dbtLineageService";
+} from "./lineageService";
+import { describeNoLineage } from "./lineageService";
 
 /** The lineage component shows `errors[table]` as a tooltip on that table. */
 function noLineageErrors(

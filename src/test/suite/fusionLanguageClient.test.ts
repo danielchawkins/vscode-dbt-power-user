@@ -12,7 +12,7 @@ import type { LanguageClientOptions } from "vscode-languageclient/node";
 import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
 import { BOUNDS } from "../../core/timing";
-import { LineageService } from "../../features/lineage/dbtLineageService";
+import { LineageService } from "../../features/lineage/lineageService";
 import {
   FUSION_LSP_COMMANDS,
   MAX_UNEXPECTED_EXIT_RETRIES,

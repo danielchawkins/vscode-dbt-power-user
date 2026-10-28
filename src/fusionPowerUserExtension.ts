@@ -3,7 +3,7 @@ import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import type { Log } from "./core/log";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
-import type { LineageService } from "./features/lineage/dbtLineageService";
+import type { LineageService } from "./features/lineage/lineageService";
 import type { StatusBars } from "./features/statusBars";
 import { registerFusionClientDiagnostics } from "./projects/clients/fusionClientDiagnostics";
 import type { FusionClientPool } from "./projects/clients/fusionClientPool";

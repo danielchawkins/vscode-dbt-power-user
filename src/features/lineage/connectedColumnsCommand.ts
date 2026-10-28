@@ -1,9 +1,6 @@
 import { CancellationTokenSource, commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../../settings";
-import type {
-  ConnectedColumnsRequest,
-  LineageService,
-} from "./dbtLineageService";
+import type { ConnectedColumnsRequest, LineageService } from "./lineageService";
 
 /**
  * Test-only: answers the lineage panel's `getConnectedColumns` for the integration suites.
