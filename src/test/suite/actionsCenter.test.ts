@@ -31,7 +31,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
         root: Uri.file("/project"),
         name: "project",
       },
-      projectRoot: Uri.file("/project"),
+      root: Uri.file("/project"),
       getProjectName: () => "project",
     } as unknown as Project;
     new DbtPowerUserActionsCenter(context, store);

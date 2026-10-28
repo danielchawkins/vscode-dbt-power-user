@@ -60,7 +60,10 @@ export class DocumentationTreeview
     if (!editor || !project || !manifest) {
       return [];
     }
-    const node = lookupModelByEditorContent(manifest.nodeMetaMap, editor.document);
+    const node = lookupModelByEditorContent(
+      manifest.nodeMetaMap,
+      editor.document,
+    );
     if (!node || Object.keys(node.columns).length === 0) {
       return [];
     }

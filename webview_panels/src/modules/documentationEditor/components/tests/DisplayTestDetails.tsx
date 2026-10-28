@@ -1,5 +1,5 @@
-import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { DeleteIcon, EditIcon } from "@assets/icons";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import {
   DbtGenericTests,

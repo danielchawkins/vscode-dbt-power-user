@@ -50,7 +50,6 @@ export interface DocBlock {
   path: string;
 }
 
-
 export interface DocumentationStateProps {
   incomingDocsData?:
     | {
@@ -71,4 +70,3 @@ export interface DocumentationStateProps {
   /** The manifest publication the host read the current documentation from. */
   publication?: string | undefined;
 }
-

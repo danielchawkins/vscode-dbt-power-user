@@ -191,7 +191,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
     const modelDepthMap = new Map<string, number>();
     const manifestEvents = new EventEmitter<ParsedManifest>();
     const project = {
-      projectRoot: Uri.file(fixtureRoot),
+      root: Uri.file(fixtureRoot),
       getProjectName: () => "single_project",
       onDidParse: manifestEvents.event,
       rebuildManifest: async () => {},

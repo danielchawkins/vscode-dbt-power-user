@@ -18,14 +18,14 @@ import {
 } from "vitest";
 import { commands, extensions, Uri, window, workspace } from "vscode";
 import {
-  FusionPowerUserExtension,
-  type ExtensionServices,
-} from "../../dbtPowerUserExtension";
-import {
   CONNECTED_COLUMNS_COMMAND,
   PARENT_TABLES_COMMAND,
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
+import {
+  FusionPowerUserExtension,
+  type ExtensionServices,
+} from "../../fusionPowerUserExtension";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { StartupGate } from "../../startupGate";

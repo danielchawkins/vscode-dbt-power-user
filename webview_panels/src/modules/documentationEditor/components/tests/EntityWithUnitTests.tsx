@@ -1,5 +1,5 @@
-import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { InfoCircleIcon } from "@assets/icons";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import type { DrawerRef } from "@uicore";
@@ -23,7 +23,8 @@ const EntityWithUnitTests = ({
     state: { currentDocsData },
   } = useDocumentationContext();
   const [showAllTests, setShowAllTests] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<documentationEditor.UnitTest | null>(null);
+  const [selectedTest, setSelectedTest] =
+    useState<documentationEditor.UnitTest | null>(null);
   const drawerRef = useRef<DrawerRef | null>(null);
 
   const handleClose = () => {

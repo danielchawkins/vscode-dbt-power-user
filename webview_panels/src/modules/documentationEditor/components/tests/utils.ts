@@ -11,7 +11,9 @@ import {
  * - sql query in tests directory
  * - macros defined in external packages like dbt_expectations
  */
-export const findDbtTestType = (test: documentationEditor.ModelTest): DbtTestTypes => {
+export const findDbtTestType = (
+  test: documentationEditor.ModelTest,
+): DbtTestTypes => {
   if (!test.test_metadata?.name) {
     if (test.path?.endsWith(".sql")) {
       return DbtTestTypes.SINGULAR;

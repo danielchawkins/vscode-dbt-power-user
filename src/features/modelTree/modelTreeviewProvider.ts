@@ -172,7 +172,10 @@ abstract class ModelTreeviewProvider
     return new ModelTreeItem(node);
   }
 
-  private getTreeItems(elementName: string, manifest: Manifest): NodeTreeItem[] {
+  private getTreeItems(
+    elementName: string,
+    manifest: Manifest,
+  ): NodeTreeItem[] {
     const { graphMetaMap } = manifest;
     const parentModels = graphMetaMap[this.treeType].get(elementName);
     if (parentModels === undefined) {

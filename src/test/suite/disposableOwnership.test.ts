@@ -13,7 +13,6 @@ import {
   registerRuntimeTimings,
   RUNTIME_TIMINGS_COMMAND,
 } from "../../benchmark/runtimeTimings";
-import { FusionPowerUserExtension } from "../../dbtPowerUserExtension";
 import { activate, deactivate } from "../../extension";
 import {
   CONNECTED_COLUMNS_COMMAND,
@@ -21,6 +20,7 @@ import {
   registerConnectedColumnsCommand,
 } from "../../features/lineage/connectedColumnsCommand";
 import type { DbtLineageService } from "../../features/lineage/dbtLineageService";
+import { FusionPowerUserExtension } from "../../fusionPowerUserExtension";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,

@@ -12,10 +12,7 @@ import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { ProjectLookup } from "../../projects/project/projects";
 
 /** What profiling reads from a file's project. */
-type ProfiledProject = Pick<
-  Project,
-  "log" | "root" | "getProjectName"
-> & {
+type ProfiledProject = Pick<Project, "log" | "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "immediatelyExecuteSQLWithLimit">;
 };
 import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";

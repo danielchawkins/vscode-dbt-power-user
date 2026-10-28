@@ -23,10 +23,7 @@ import {
   toCliEnvironment,
 } from "../core/cli";
 import { DbtCommand, QueryExecution } from "../core/dbtCommand";
-import type {
-  DiagnosticData,
-  DiagnosticResult,
-} from "../core/diagnostics";
+import type { DiagnosticData, DiagnosticResult } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import type { ProjectPaths, ProjectSnapshot } from "../core/snapshot";
 import { dbtProjectFilePath, deferSettingsKey } from "../core/snapshot";
