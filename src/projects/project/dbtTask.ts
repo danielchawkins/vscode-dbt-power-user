@@ -13,7 +13,7 @@ import {
   Uri,
   workspace,
 } from "vscode";
-import type { DBTCommand } from "../../core/dbtCommand";
+import type { DbtCommand } from "../../core/dbtCommand";
 import type { CommandProcessResult } from "../../core/types";
 import type { QueuedCliCommand } from "../../fusion/fusionCli";
 
@@ -200,7 +200,7 @@ export class DbtTaskTerminal implements Pseudoterminal {
 
   /** Writes `> dbt <args>`, streams the output with CRLF line endings, and closes with the exit code. */
   async run(
-    command: DBTCommand,
+    command: DbtCommand,
     signal?: AbortSignal,
   ): Promise<CommandProcessResult> {
     this.write(`> ${command.getCommandAsString()}\n`);

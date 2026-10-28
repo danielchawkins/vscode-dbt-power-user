@@ -13,7 +13,7 @@ import {
 } from "vitest";
 import * as vscode from "vscode";
 import { MANIFEST_FILE, type ParsedManifest } from "../../core/dbt/domain";
-import type { DBTCommand } from "../../core/dbtCommand";
+import type { DbtCommand } from "../../core/dbtCommand";
 import { QueryExecution } from "../../core/dbtCommand";
 import type { DBTDiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
@@ -62,7 +62,7 @@ const commandDeps = (project: Project) =>
   (project as unknown as { commandDeps: ProjectCommandDeps }).commandDeps;
 const enqueueCommand = (
   deps: ProjectCommandDeps,
-  command: DBTCommand,
+  command: DbtCommand,
   terminal: DbtTaskTerminal,
 ) =>
   queueCli(
@@ -576,7 +576,7 @@ describe("Project Test Suite", () => {
 
       enqueueCommand(
         commandDeps(dbtProject),
-        mockCommand as unknown as DBTCommand,
+        mockCommand as unknown as DbtCommand,
         new DbtTaskTerminal(() => undefined),
       ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));
@@ -690,7 +690,7 @@ describe("Project Test Suite", () => {
 
       enqueueCommand(
         commandDeps(dbtProject),
-        mockCommand as unknown as DBTCommand,
+        mockCommand as unknown as DbtCommand,
         new DbtTaskTerminal(() => undefined),
       ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));

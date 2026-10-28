@@ -4,7 +4,7 @@ import type { Uri } from "vscode";
 import { commandParamsFor, fullRefreshArgs } from "../../core/cli/index";
 import type { RunModelParams } from "../../core/dbt/domain";
 import { RunModelType } from "../../core/dbt/domain";
-import type { DBTCommand } from "../../core/dbtCommand";
+import type { DbtCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import type { ProjectSnapshot } from "../../core/snapshot/index";
 import { errorText } from "../../core/text";
@@ -125,7 +125,7 @@ export async function queueCli(
   cli: QueuedCliCommand,
   terminal: DbtTaskTerminal,
 ): Promise<CommandProcessResult | undefined> {
-  let command: DBTCommand;
+  let command: DbtCommand;
   try {
     command = deps.cli().prepare(cli);
   } catch (error) {
@@ -151,7 +151,7 @@ export async function queueCli(
  */
 function enqueueCommand(
   deps: ProjectCommandDeps,
-  command: DBTCommand,
+  command: DbtCommand,
   terminal: DbtTaskTerminal,
 ): Promise<CommandProcessResult | undefined> {
   if (deps.commandQueue.busy) {

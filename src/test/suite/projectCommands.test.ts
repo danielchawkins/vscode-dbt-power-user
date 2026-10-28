@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { RunModelType } from "../../core/dbt/domain";
-import { DBTCommand } from "../../core/dbtCommand";
+import { DbtCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
@@ -133,7 +133,7 @@ describe("queueCli", () => {
 describe("queueCli with a prepared command", () => {
   function enqueueCommand(
     deps: ProjectCommandDeps,
-    command: DBTCommand,
+    command: DbtCommand,
     terminal: DbtTaskTerminal,
   ) {
     const cli = () => ({ prepare: () => command }) as unknown as FusionCli;
@@ -153,10 +153,10 @@ describe("queueCli with a prepared command", () => {
   }
 
   function command(stdout = "", exitCode = 0) {
-    const command = new DBTCommand("Running", ["run", "--select", "a"]);
+    const command = new DbtCommand("Running", ["run", "--select", "a"]);
     const execute = vi.fn(
       async (
-        _c: DBTCommand,
+        _c: DbtCommand,
         _signal?: AbortSignal,
         onOutput?: (chunk: string) => void,
       ) => {

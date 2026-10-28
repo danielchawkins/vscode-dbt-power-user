@@ -1,17 +1,17 @@
 import type { CommandProcessResult } from "./types";
 
-export interface DBTCommandExecutionStrategy {
+export interface DbtCommandExecutionStrategy {
   execute(
-    command: DBTCommand,
+    command: DbtCommand,
     signal?: AbortSignal,
     onOutput?: (chunk: string) => void,
   ): Promise<CommandProcessResult>;
 }
 
-export class DBTCommand {
+export class DbtCommand {
   public statusMessage: string;
   public args: string[];
-  public executionStrategy: DBTCommandExecutionStrategy | undefined;
+  public executionStrategy: DbtCommandExecutionStrategy | undefined;
 
   constructor(statusMessage: string, args: string[]) {
     this.statusMessage = statusMessage;
@@ -22,7 +22,7 @@ export class DBTCommand {
     return "dbt " + this.args.join(" ");
   }
 
-  setExecutionStrategy(executionStrategy: DBTCommandExecutionStrategy) {
+  setExecutionStrategy(executionStrategy: DbtCommandExecutionStrategy) {
     this.executionStrategy = executionStrategy;
   }
 

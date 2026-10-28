@@ -1,6 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import * as vscode from "vscode";
-import { DBTCommand } from "../../core/dbtCommand";
+import { DbtCommand } from "../../core/dbtCommand";
 import type { QueuedCommandFailure } from "../../projects/project/commandQueue";
 import {
   CommandQueue,
@@ -11,7 +11,7 @@ const settle = () => new Promise((resolve) => setImmediate(resolve));
 
 describe("formatCommandStatus", () => {
   it("drops --project-dir and --profiles-dir and collapses whitespace", () => {
-    const command = new DBTCommand("", [
+    const command = new DbtCommand("", [
       "run",
       "--select",
       "my_model",
