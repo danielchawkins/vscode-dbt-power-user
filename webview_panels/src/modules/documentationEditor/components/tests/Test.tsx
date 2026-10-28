@@ -1,10 +1,10 @@
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { Tag, Tooltip } from "@uicore";
 
 interface Props {
-  test: DBTModelTest;
-  onSelect: (test: DBTModelTest) => void;
-  selectedTest: DBTModelTest | null;
+  test: documentationEditor.ModelTest;
+  onSelect: (test: documentationEditor.ModelTest) => void;
+  selectedTest: documentationEditor.ModelTest | null;
   className?: string | undefined;
 }
 

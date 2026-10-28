@@ -50,19 +50,18 @@ export interface DocBlock {
   path: string;
 }
 
-export type DBTUnitTest = documentationEditor.UnitTest;
 
 export interface DocumentationStateProps {
   incomingDocsData?:
     | {
         docs?: EditorDocumentation | undefined;
-        tests?: DBTModelTest[] | undefined;
-        unitTests?: DBTUnitTest[] | undefined;
+        tests?: documentationEditor.ModelTest[] | undefined;
+        unitTests?: documentationEditor.UnitTest[] | undefined;
       }
     | undefined;
   currentDocsData?: EditorDocumentation | undefined;
-  currentDocsTests?: DBTModelTest[] | undefined;
-  currentUnitTests?: DBTUnitTest[] | undefined;
+  currentDocsTests?: documentationEditor.ModelTest[] | undefined;
+  currentUnitTests?: documentationEditor.UnitTest[] | undefined;
   project?: string | undefined;
   missingDocumentationMessage?:
     | { message: string; type: "warning" | "error" }
@@ -73,4 +72,3 @@ export interface DocumentationStateProps {
   publication?: string | undefined;
 }
 
-export type DBTModelTest = documentationEditor.ModelTest;

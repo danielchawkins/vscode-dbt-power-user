@@ -1,11 +1,11 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
-import type { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock, Stack } from "@uicore";
 import { useEffect, useState } from "react";
 
 interface Props {
-  test: DBTUnitTest;
+  test: documentationEditor.UnitTest;
   modelName: string;
 }
 

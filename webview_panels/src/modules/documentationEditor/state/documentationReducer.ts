@@ -1,3 +1,4 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import * as columnProposals from "@fusion-power-user/webview-contract/columnProposals";
 import { typedReducer } from "@modules/app/typedReducer";
 import type { ProposalChoices } from "../proposals/proposalsReducer";
@@ -5,8 +6,6 @@ import { fromHostColumn, isStateDirty } from "../utils";
 import type { RenderMessage } from "./incomingDocs";
 import type {
   EditorDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
   DocumentationStateProps,
   MetadataColumn,
 } from "./types";
@@ -35,8 +34,8 @@ const takeIncomingDocs = (
   payload:
     | {
         docs?: EditorDocumentation | undefined;
-        tests?: DBTModelTest[] | undefined;
-        unitTests?: DBTUnitTest[] | undefined;
+        tests?: documentationEditor.ModelTest[] | undefined;
+        unitTests?: documentationEditor.UnitTest[] | undefined;
       }
     | undefined,
 ): S => {

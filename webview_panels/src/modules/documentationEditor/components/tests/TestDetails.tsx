@@ -1,4 +1,4 @@
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import {
   DbtGenericTests,
   DbtTestTypes,
@@ -18,7 +18,7 @@ import DbtTestCode from "./DbtTestCode";
 
 interface Props {
   testType: DbtTestTypes;
-  test: DBTModelTest;
+  test: documentationEditor.ModelTest;
 }
 
 const TestDetails = ({ testType, test }: Props): React.JSX.Element => {

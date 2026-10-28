@@ -1,7 +1,6 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import type {
   DocumentationStateProps,
-  DBTModelTest,
   EditorDocumentation,
   EditorDocumentationColumn,
 } from "./state/types";
@@ -35,8 +34,8 @@ export const fromHostDocumentation = (
   };
 
 const isTestDirty = (
-  test: DBTModelTest,
-  incomingTest: DBTModelTest,
+  test: documentationEditor.ModelTest,
+  incomingTest: documentationEditor.ModelTest,
 ): boolean => {
   if (test.test_metadata?.name === DbtGenericTests.ACCEPTED_VALUES) {
     const currentValues = test.test_metadata?.kwargs.values ?? [];
