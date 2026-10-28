@@ -28,7 +28,7 @@ export function segmentsOf(
   track: number,
   jog: Jog | undefined,
 ): Segment[] {
-  if (track < 0) {
+  if (track < 0 || (!p.flat && p.from === p.to && jog === undefined)) {
     return [vertical(p.from, TOP, BOTTOM)];
   }
   const far = p.flat ? TOP : BOTTOM;

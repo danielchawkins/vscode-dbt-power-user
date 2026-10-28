@@ -8,6 +8,7 @@ import type {
   LayoutOptions,
   Point,
   Rect,
+  Side,
 } from "../types.js";
 import { type Routing } from "./index.js";
 import { caseArb, options, routeGraph } from "./testGraphs.js";
@@ -111,6 +112,56 @@ describe("route", () => {
         }
         expect(overlaps).toEqual([]);
       }),
+    );
+  });
+
+  it("counts the crossing of a jog over a straight run that shares a star", () => {
+    // n3's p1 feeds n0 twice and e1 runs straight down from n0: e3's jog crosses e1, which shares e0's star.
+    const ports = (a: Side, b: Side) => [
+      { id: "p0", side: a, offset: 0 },
+      { id: "p1", side: b, offset: 0 },
+    ];
+    const graph: LayoutGraph = {
+      nodes: [
+        { id: "n0", width: 20, height: 20, ports: ports("north", "east") },
+        { id: "n1", width: 20, height: 20, ports: ports("west", "north") },
+        { id: "n2", width: 20, height: 20, ports: ports("north", "east") },
+        { id: "n3", width: 20, height: 20, ports: ports("east", "north") },
+      ],
+      edges: [
+        {
+          id: "e0",
+          source: "n3",
+          target: "n0",
+          kind: "column",
+          sourcePort: "p1",
+        },
+        { id: "e1", source: "n0", target: "n1", kind: "dependency" },
+        {
+          id: "e2",
+          source: "n3",
+          target: "n1",
+          kind: "dependency",
+          sourcePort: "p0",
+          targetPort: "p0",
+        },
+        {
+          id: "e3",
+          source: "n3",
+          target: "n0",
+          kind: "column",
+          sourcePort: "p1",
+          targetPort: "p1",
+        },
+      ],
+    };
+    const routing = routeGraph(graph, {
+      ...options,
+      direction: "down",
+      effort: "fast",
+    });
+    expect(routing.work.crossings).toBe(
+      measureDrawing(drawingOf(graph, routing)).crossings,
     );
   });
 
