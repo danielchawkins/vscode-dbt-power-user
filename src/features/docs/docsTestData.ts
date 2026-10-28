@@ -15,7 +15,7 @@ import type { ModelTestService } from "./modelTestService";
 
 export interface TestDataDeps {
   terminal: Pick<Log, "debug">;
-  dbtTestService: Pick<ModelTestService, "removeDuplicateTests">;
+  modelTests: Pick<ModelTestService, "removeDuplicateTests">;
 }
 
 /** A YAML `tests` or `data_tests` key. */
@@ -98,7 +98,7 @@ export function getTestDataByModel({
       );
     })
     .filter((t) => Boolean(t));
-  const filteredTests = deps.dbtTestService.removeDuplicateTests(finalTests);
+  const filteredTests = deps.modelTests.removeDuplicateTests(finalTests);
   if (!filteredTests.length) {
     return undefined;
   }
@@ -168,10 +168,8 @@ export function getTestDataByColumn({
     data,
     columnNameFromWebview,
   );
-  const dataWithoutDupes = deps.dbtTestService.removeDuplicateTests(
-    data as Parameters<
-      TestDataDeps["dbtTestService"]["removeDuplicateTests"]
-    >[0],
+  const dataWithoutDupes = deps.modelTests.removeDuplicateTests(
+    data as Parameters<TestDataDeps["modelTests"]["removeDuplicateTests"]>[0],
   );
   return existingColumn?.name === columnNameFromWebview &&
     existingColumn?.tests === undefined

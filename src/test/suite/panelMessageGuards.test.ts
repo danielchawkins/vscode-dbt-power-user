@@ -305,7 +305,7 @@ describe("documentation editor handlers", () => {
     const reloadDocumentationFromManifest = vi.fn();
     Object.assign(panel, {
       projects: { get: () => project },
-      dbtTestService: {
+      modelTests: {
         getTestsForCurrentModel: vi.fn(),
         getUnitTestsForCurrentModel: vi.fn(),
       },

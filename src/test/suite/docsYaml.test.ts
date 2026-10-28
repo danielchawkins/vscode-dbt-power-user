@@ -6,7 +6,7 @@ import { withDocumentation } from "../../features/docs/docsYaml";
 
 const deps = {
   terminal: { debug: vi.fn() },
-  dbtTestService: {},
+  modelTests: {},
 } as never as TestDataDeps;
 
 const schema = `version: 2

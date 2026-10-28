@@ -187,7 +187,7 @@ export function docsEditPanel(
           documentation: undefined,
         })),
       },
-      dbtTestService: {
+      modelTests: {
         getTestsForCurrentModel: vi.fn(async () => []),
         getUnitTestsForCurrentModel: vi.fn(async () => []),
       },

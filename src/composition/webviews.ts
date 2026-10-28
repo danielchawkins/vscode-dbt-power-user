@@ -51,7 +51,7 @@ export function composeWebviews(
       extensionContext: extensionContextStore,
       services: {
         docGenService: new DocGenService(projects, graph.currentProject),
-        dbtTestService: new ModelTestService(graph.currentProject),
+        modelTests: new ModelTestService(graph.currentProject),
         queryManifestService,
         sharedState,
         columnProposals: new ColumnProposalService({

@@ -32,7 +32,7 @@ export interface DocsHarnessDeps {
     DocGenService,
     "getUncompiledDocumentationForCurrentActiveFile"
   >;
-  dbtTestService: Pick<ModelTestService, "getTestsForCurrentModel">;
+  modelTests: Pick<ModelTestService, "getTestsForCurrentModel">;
   drafts: DocsDrafts;
   proposalTarget(): Promise<ProposalTarget | undefined>;
   save(message: SaveMessage): Promise<void>;
@@ -70,7 +70,7 @@ async function acceptAllProposals(
         ? columnProposals.applyProposals(columns, payload.proposals)
         : columnProposals.applyDescriptionProposals(columns, payload.proposals),
     updatedTests:
-      draft?.tests ?? (await deps.dbtTestService.getTestsForCurrentModel()),
+      draft?.tests ?? (await deps.modelTests.getTestsForCurrentModel()),
   });
   return "saved";
 }

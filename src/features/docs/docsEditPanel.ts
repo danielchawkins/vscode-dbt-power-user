@@ -64,7 +64,7 @@ export class DocsEditViewPanel extends PanelHost<
   private documentation: documentationEditor.Documentation | undefined;
   private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
-  private readonly dbtTestService: ModelTestService;
+  private readonly modelTests: ModelTestService;
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private projects: PanelProjects;
@@ -81,7 +81,7 @@ export class DocsEditViewPanel extends PanelHost<
     extensionContext: ExtensionContextStore;
     services: {
       docGenService: DocGenService;
-      dbtTestService: ModelTestService;
+      modelTests: ModelTestService;
       queryManifestService: QueryManifestService;
       sharedState: SharedStateService;
       columnProposals: ColumnProposalService;
@@ -99,12 +99,12 @@ export class DocsEditViewPanel extends PanelHost<
     this.projects = projects;
     this.metadataDemand = metadataDemand;
     this.docGenService = services.docGenService;
-    this.dbtTestService = services.dbtTestService;
+    this.modelTests = services.modelTests;
     this.columnProposals = services.columnProposals;
     const harness = registerDocsHarnessCommands({
       columnProposals: this.columnProposals,
       docGenService: this.docGenService,
-      dbtTestService: this.dbtTestService,
+      modelTests: this.modelTests,
       drafts: this.drafts,
       proposalTarget: () => this.proposalTarget(),
       save: async (message) => {
@@ -192,8 +192,8 @@ export class DocsEditViewPanel extends PanelHost<
         command: "renderDocumentation",
         docs: this.documentation,
         missingDocumentationMessage: message,
-        tests: await this.dbtTestService.getTestsForCurrentModel(),
-        unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
+        tests: await this.modelTests.getTestsForCurrentModel(),
+        unitTests: await this.modelTests.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
         docBlocks: this.getDocBlocksForCurrentProject(),
         publication: publicationId(this.queryManifestService.manifestFor()),
@@ -237,7 +237,7 @@ export class DocsEditViewPanel extends PanelHost<
     return new DocsEditRequests({
       terminal: this.log,
       queryManifestService: this.queryManifestService,
-      dbtTestService: this.dbtTestService,
+      modelTests: this.modelTests,
       getProject: (uri) => this.projectOf(uri),
       respond: (command, syncRequestId, body) =>
         this.respond(command, syncRequestId, body),
@@ -353,7 +353,7 @@ export class DocsEditViewPanel extends PanelHost<
         terminal: this.log,
         testData: {
           terminal: this.log,
-          dbtTestService: this.dbtTestService,
+          modelTests: this.modelTests,
         },
       },
       onFailure: (error, patchPath) => {
