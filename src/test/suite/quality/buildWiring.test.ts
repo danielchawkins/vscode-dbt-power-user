@@ -15,15 +15,6 @@ const NAMES_A_PACKAGE =
   /--workspace @fusion-power-user\/|--prefix \.\.\/packages\/|\b(build|watch):(contract|graph-layout)\b|\bbuild-(contract|graph-layout)\b/;
 
 const BASELINE = new Set([
-  "package.json vscode:prepublish",
-  "package.json build:contract",
-  "package.json build:graph-layout",
-  "package.json watch:contract",
-  "package.json build",
-  "package.json build:dev",
-  "package.json compile:integration",
-  "webview_panels/package.json build:contract",
-  "webview_panels/package.json build",
   "justfile build-contract",
   "justfile build",
   "justfile build-dev",
