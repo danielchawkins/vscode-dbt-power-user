@@ -58,18 +58,18 @@ verify-setup:
 ####################
 
 [group("development")]
-build-contract:
-    npm run build:contract
+build-packages:
+    npm run build:packages
 
 [group("development")]
 build:
-    just build-contract
+    just build-packages
     npm run build:app --workspace webview_panels
     npm run build:app
 
 [group("development")]
 build-dev:
-    just build-contract
+    just build-packages
     npm run build:app --workspace webview_panels
     npm run build:dev:app
 
@@ -77,9 +77,9 @@ build-dev:
 watch:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-contract
+    just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
-    npm run watch:contract &
+    npm run watch:packages &
     npm run watch:app --workspace webview_panels &
     npm run watch:extension:app &
     wait
@@ -88,9 +88,9 @@ watch:
 watch-extension:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-contract
+    just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
-    npm run watch:contract &
+    npm run watch:packages &
     npm run watch:extension:app &
     wait
 
