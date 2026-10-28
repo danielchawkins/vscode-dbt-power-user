@@ -2,7 +2,12 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { order } from "../order/index.js";
 import { rank } from "../rank/index.js";
-import type { LayoutGraph, LayoutOptions, Point } from "../types.js";
+import type {
+  LayoutGraph,
+  LayoutHints,
+  LayoutOptions,
+  Point,
+} from "../types.js";
 import { place } from "./index.js";
 
 const options: LayoutOptions = {
@@ -44,6 +49,26 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
       })),
   );
 
+const caseArb = fc.record({
+  graph: graphArb,
+  direction: fc.constantFrom("down" as const, "right" as const),
+  effort: fc.constantFrom(
+    "fast" as const,
+    "balanced" as const,
+    "thorough" as const,
+  ),
+  corners: fc.option(
+    fc.array(
+      fc.tuple(
+        fc.integer({ min: 0, max: 300 }),
+        fc.integer({ min: 0, max: 300 }),
+      ),
+      { minLength: 9, maxLength: 9 },
+    ),
+    { nil: undefined },
+  ),
+});
+
 interface Box {
   x0: number;
   x1: number;
@@ -78,6 +103,34 @@ function boxesOf(
   });
 }
 
+/** Asserts that no two real boxes overlap with positive area. */
+function expectNoOverlap(
+  graph: LayoutGraph,
+  centres: ReadonlyMap<string, Point>,
+): void {
+  const boxes = boxesOf(graph, centres);
+  boxes.forEach((a, i) => {
+    boxes.slice(i + 1).forEach((b) => {
+      expect(overlaps(a, b)).toBe(false);
+    });
+  });
+}
+
+/** Hints for each node of a graph, at the given top-left corners: a previous layout the graph may have grown from. */
+function hintsFor(
+  graph: LayoutGraph,
+  corners: readonly (readonly [number, number])[],
+): LayoutHints {
+  return {
+    nodes: new Map(
+      graph.nodes.map((node, i) => {
+        const [x, y] = corners[i] ?? [0, 0];
+        return [node.id, { rank: 0, order: 0, x, y }] as const;
+      }),
+    ),
+  };
+}
+
 /** Whether two boxes overlap with positive area. */
 function overlaps(a: Box, b: Box): boolean {
   const eps = 1e-6;
@@ -90,22 +143,47 @@ function overlaps(a: Box, b: Box): boolean {
 }
 
 describe("place", () => {
-  it.each(["down", "right"] as const)(
-    "keeps every pair of real boxes apart (%s)",
-    (direction) => {
-      const opts = { ...options, direction };
-      fc.assert(
-        fc.property(graphArb, (graph) => {
-          const boxes = boxesOf(graph, placeGraph(graph, opts).nodes);
-          boxes.forEach((a, i) => {
-            boxes.slice(i + 1).forEach((b) => {
-              expect(overlaps(a, b)).toBe(false);
-            });
-          });
-        }),
-      );
-    },
-  );
+  it("keeps every pair of real boxes apart at every effort, direction and hint set", () => {
+    fc.assert(
+      fc.property(caseArb, ({ graph, direction, effort, corners }) => {
+        const opts: LayoutOptions = {
+          ...options,
+          direction,
+          effort,
+          ...(corners === undefined ? {} : { hints: hintsFor(graph, corners) }),
+        };
+        expectNoOverlap(graph, placeGraph(graph, opts).nodes);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  it("keeps the boxes apart in the fast counterexample with hints", () => {
+    const graph: LayoutGraph = {
+      nodes: ["n0", "n1", "n2", "n3", "n4", "n5", "n6"].map((id) => ({
+        id,
+        width: 40,
+        height: 20,
+      })),
+      edges: [
+        { id: "e1", source: "n1", target: "n6", kind: "column" },
+        { id: "e2", source: "n1", target: "n3", kind: "column" },
+      ],
+    };
+    const hints: LayoutHints = {
+      nodes: new Map([
+        ["n0", { rank: 2, order: 0, x: 0, y: 100 }],
+        ["n1", { rank: 0, order: 3, x: 150, y: 0 }],
+        ["n2", { rank: 0, order: 0, x: 0, y: 0 }],
+        ["n3", { rank: 2, order: 0, x: 0, y: 100 }],
+        ["n4", { rank: 3, order: 0, x: 0, y: 150 }],
+        ["n5", { rank: 1, order: 0, x: 0, y: 50 }],
+        ["n6", { rank: 1, order: 0, x: 0, y: 50 }],
+      ]),
+    };
+    const placed = placeGraph(graph, { ...options, effort: "fast", hints });
+    expectNoOverlap(graph, placed.nodes);
+  });
 
   it("holds an anchor exactly at the origin", () => {
     fc.assert(

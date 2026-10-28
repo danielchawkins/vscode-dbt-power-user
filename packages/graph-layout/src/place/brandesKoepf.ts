@@ -7,6 +7,7 @@ import {
   typeOneConflicts,
 } from "./bkAlignment.js";
 import type { Problem } from "./problem.js";
+import { projectRanks } from "./projection.js";
 
 /** One horizontal pass: its coordinates in the drawing's orientation, and whether it ran mirrored. */
 interface Run {
@@ -18,7 +19,8 @@ interface Run {
  * Brandes and Köpf's linear-time horizontal coordinate assignment (GD 2001). Four alignments (down or up, left or
  * right) are compacted; each is moved to the width of the narrowest, and every node takes the average of the two
  * middle positions of its four. Port offsets are not part of the alignment: the quadratic phase applies them. The
- * result keeps every rank's gaps. Coordinates are centres along the in-rank axis.
+ * compaction can leave a gap short (its class shifts do not chain), so the balanced result is projected back onto the
+ * gaps, which keeps the order. Coordinates are centres along the in-rank axis.
  */
 export function brandesKoepf(problem: Problem): number[] {
   const n = problem.dummy.length;
@@ -40,7 +42,13 @@ export function brandesKoepf(problem: Problem): number[] {
       runs.push({ x, mirror });
     }
   }
-  return balance(runs, n);
+  const x = balance(runs, n);
+  projectRanks(
+    problem,
+    x,
+    Array.from({ length: n }, () => 1),
+  );
+  return x;
 }
 
 /**

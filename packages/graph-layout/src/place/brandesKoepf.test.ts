@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { brandesKoepf } from "./brandesKoepf.js";
 import type { Problem } from "./problem.js";
 
-/** Ranks of 1 to 4 nodes, with random links between adjacent ranks and random gaps, dummies and port offsets. */
+/** Ranks of 1 to 7 nodes, up to five ranks, with sparse random links between adjacent ranks and random gaps, dummies and port offsets. */
 const problemArb: fc.Arbitrary<Problem> = fc
-  .array(fc.integer({ min: 1, max: 4 }), { minLength: 2, maxLength: 4 })
+  .array(fc.integer({ min: 1, max: 7 }), { minLength: 2, maxLength: 5 })
   .chain((sizes) => {
     const layers: number[][] = [];
     let next = 0;
@@ -30,7 +30,7 @@ const problemArb: fc.Arbitrary<Problem> = fc
             topOffset: real,
             bottomOffset: real,
           }),
-          { maxLength: 14 },
+          { maxLength: 24 },
         ),
       })
       .map(({ dummy, gapLeft, links }) => ({
@@ -76,6 +76,33 @@ describe("brandesKoepf", () => {
         expect(brandesKoepf(problem)).toHaveLength(problem.dummy.length);
       }),
     );
+  });
+
+  it("keeps every gap in the class-shift counterexample", () => {
+    const span = (from: number, to: number) =>
+      Array.from({ length: to - from }, (_, i) => from + i);
+    const link = (top: number, bottom: number) => ({
+      top,
+      bottom,
+      weight: 1,
+      topOffset: 0,
+      bottomOffset: 0,
+    });
+    const problem: Problem = {
+      layers: [span(0, 7), span(7, 14), [14, 15], span(16, 21), span(21, 25)],
+      gapLeft: span(0, 25).map(() => 1),
+      dummy: span(0, 25).map(() => false),
+      links: [link(16, 21), link(14, 17)],
+      pulls: [],
+    };
+    const x = brandesKoepf(problem);
+    for (const layer of problem.layers) {
+      for (let k = 1; k < layer.length; k++) {
+        const a = layer[k - 1];
+        const b = layer[k];
+        expect(x[b] - x[a]).toBeGreaterThanOrEqual(1 - 1e-9);
+      }
+    }
   });
 
   it("keeps a chain of dummies on one straight line", () => {
