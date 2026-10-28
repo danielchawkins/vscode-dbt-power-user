@@ -1,6 +1,6 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { InfoCircleIcon, TestsIcon } from "@assets/icons";
 import type { EntityType } from "@modules/documentationEditor/state/entityType";
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import type { DrawerRef } from "@uicore";
 import { Button, Drawer, Stack, Tooltip } from "@uicore";
@@ -12,7 +12,7 @@ import Test from "./Test";
 
 interface Props {
   title: string;
-  tests?: DBTModelTest[] | undefined;
+  tests?: documentationEditor.ModelTest[] | undefined;
   type: EntityType;
 }
 
@@ -26,7 +26,7 @@ const EntityWithTests = ({
   const {
     state: { incomingDocsData },
   } = useDocumentationContext();
-  const [selectedTest, setSelectedTest] = useState<DBTModelTest | null>(null);
+  const [selectedTest, setSelectedTest] = useState<documentationEditor.ModelTest | null>(null);
   const [showAllTests, setShowAllTests] = useState(false);
   const drawerRef = useRef<DrawerRef | null>(null);
   const handleClose = () => {
@@ -36,7 +36,7 @@ const EntityWithTests = ({
 
   const handleShowAllTests = () => setShowAllTests(true);
 
-  const onSelect = (test: DBTModelTest) => {
+  const onSelect = (test: documentationEditor.ModelTest) => {
     setSelectedTest(test);
     drawerRef.current?.open();
   };

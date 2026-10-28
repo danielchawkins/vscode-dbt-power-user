@@ -3,8 +3,6 @@ import type { MessageOf } from "@modules/app/requestExecutor";
 import { isStateDirty } from "../utils";
 import type {
   EditorDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
   DocumentationStateProps,
 } from "./types";
 
@@ -15,10 +13,10 @@ export type RenderMessage = Omit<
   "docs" | "tests" | "unitTests" | "draft"
 > & {
   docs?: EditorDocumentation | undefined;
-  tests?: DBTModelTest[] | undefined;
-  unitTests?: DBTUnitTest[] | undefined;
+  tests?: documentationEditor.ModelTest[] | undefined;
+  unitTests?: documentationEditor.UnitTest[] | undefined;
   draft?:
-    | { docs: EditorDocumentation; tests?: DBTModelTest[] | undefined }
+    | { docs: EditorDocumentation; tests?: documentationEditor.ModelTest[] | undefined }
     | undefined;
 };
 

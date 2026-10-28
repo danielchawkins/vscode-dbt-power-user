@@ -1,6 +1,6 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { DeleteIcon, EditIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import {
   DbtGenericTests,
   DbtTestTypes,
@@ -30,7 +30,7 @@ import { findDbtTestType } from "./utils";
 
 interface Props {
   onClose: () => void;
-  test: DBTModelTest;
+  test: documentationEditor.ModelTest;
   column: string;
   type: EntityType;
 }

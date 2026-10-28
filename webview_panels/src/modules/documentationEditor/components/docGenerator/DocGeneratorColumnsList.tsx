@@ -1,4 +1,4 @@
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Stack } from "@uicore";
 import { useMemo } from "react";
@@ -16,7 +16,7 @@ const DocGeneratorColumnsList = (): React.JSX.Element => {
   const testsPerColumns = useMemo(() => {
     return (
       currentDocsTests?.reduce(
-        (acc: Record<string, DBTModelTest[]>, columnTest) => {
+        (acc: Record<string, documentationEditor.ModelTest[]>, columnTest) => {
           if (!columnTest.column_name) {
             return acc;
           }

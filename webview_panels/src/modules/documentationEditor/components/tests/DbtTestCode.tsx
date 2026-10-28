@@ -1,5 +1,5 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock } from "@uicore";
@@ -12,7 +12,7 @@ interface GetTestCodeResponse {
 const DbtTestCode = ({
   test,
 }: {
-  test: DBTModelTest;
+  test: documentationEditor.ModelTest;
 }): React.JSX.Element | null => {
   const {
     state: { currentDocsData },

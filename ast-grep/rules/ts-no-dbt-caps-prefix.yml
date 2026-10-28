@@ -1,7 +1,6 @@
 # `dbt` is written in lower case; an all-caps `DBT`/`Dbt…` prefix on a type is a namespace left from the upstream
 # extension, not the dbt concept (rearchitecture-plan.md, "Naming and code conventions"). Name the type for what it is:
-# `DBTCommand` is a `DbtCommand` only if it is dbt's command; `DBTDocumentation` is the contract's `Documentation`.
-# The `not` list is the baseline: the names still to rename. Remove each as the rename lands; a new name never joins it.
+# dbt's command is `DbtCommand`; the contract's documentation type is `Documentation`.
 id: ts-no-dbt-caps-prefix
 language: typescript
 severity: error
@@ -24,8 +23,3 @@ rule:
     - has:
         field: name
         regex: '^DBT[A-Z]'
-    - not:
-        has:
-          field: name
-          regex: >-
-            ^(DBTDocumentation|DBTDocumentationColumn|DBTDocumentationMessage|DBTUnitTest|DBTModelTest)$

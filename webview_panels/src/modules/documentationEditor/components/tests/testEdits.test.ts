@@ -1,13 +1,13 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import {
   DbtGenericTests,
-  type DBTModelTest,
 } from "@modules/documentationEditor/state/types";
 import { describe, expect, it } from "vitest";
 import { editTests, TestOperation } from "./testEdits";
 
 const MODEL = "orders";
 
-const acceptedValues = (column: string, values: string[]): DBTModelTest => ({
+const acceptedValues = (column: string, values: string[]): documentationEditor.ModelTest => ({
   key: `av-${column}`,
   column_name: column,
   test_metadata: {
@@ -20,7 +20,7 @@ const relationships = (
   column: string,
   to: string,
   field: string,
-): DBTModelTest => ({
+): documentationEditor.ModelTest => ({
   key: `rel-${column}`,
   column_name: column,
   test_metadata: {

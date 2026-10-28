@@ -1,3 +1,4 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
@@ -6,7 +7,6 @@ import { EntityType } from "@modules/documentationEditor/state/entityType";
 import type {
   EditorDocumentation,
   EditorDocumentationColumn,
-  DBTModelTest,
   DocumentationStateProps,
 } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
@@ -23,7 +23,7 @@ interface Props {
   placeholder?: string | undefined;
   type: EntityType;
   title: string;
-  tests?: DBTModelTest[] | undefined;
+  tests?: documentationEditor.ModelTest[] | undefined;
 }
 /** Whether an entity's description or tests differ from what the host last sent. */
 const dirtiness = (

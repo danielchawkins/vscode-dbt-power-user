@@ -1,7 +1,6 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import {
   DbtTestTypes,
-  type DBTModelTest,
 } from "@modules/documentationEditor/state/types";
 import { describe, expect, it } from "vitest";
 import { findDbtTestType } from "./utils";
@@ -9,7 +8,7 @@ import { findDbtTestType } from "./utils";
 const modelTest = (
   testMetadata?: documentationEditor.ModelTest["test_metadata"],
   path?: string,
-): DBTModelTest => ({ key: "test", path, test_metadata: testMetadata });
+): documentationEditor.ModelTest => ({ key: "test", path, test_metadata: testMetadata });
 
 const metadata = (
   name: string,
