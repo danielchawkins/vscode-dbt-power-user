@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DiagnosticCollection } from "vscode";
 import { DiagnosticSeverity, languages, Uri } from "vscode";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 
 const data = (
   message: string,
-  severity: DBTDiagnosticData["severity"],
-): DBTDiagnosticData => ({
+  severity: DiagnosticData["severity"],
+): DiagnosticData => ({
   filePath: "/p/dbt_project.yml",
   message,
   severity,
