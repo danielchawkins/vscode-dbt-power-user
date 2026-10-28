@@ -1,14 +1,17 @@
 import type { LayeredGraph } from "../layering.js";
 import type { Spacing } from "../types.js";
 
-/** Each rank's centre across the drawing: ranks are stacked from the origin, with `gap` between their extents. */
-export function rankCentres(half: readonly number[], gap: number): number[] {
+/** Each rank's centre across the drawing: ranks are stacked from the origin, with `gaps[r]` between rank r and the next. */
+export function rankCentres(
+  half: readonly number[],
+  gaps: readonly number[],
+): number[] {
   const centres: number[] = [];
   let edge = 0;
-  for (const h of half) {
+  half.forEach((h, r) => {
     centres.push(edge + h);
-    edge += 2 * h + gap;
-  }
+    edge += 2 * h + (gaps[r] ?? 0);
+  });
   return centres;
 }
 

@@ -32,17 +32,17 @@ const ITERATION_CAP: Record<Effort, number> = {
   thorough: 500,
 };
 
-/** Each rank's half-thickness across the drawing, and its centre, with ranks stacked `gap` apart from the origin. */
+/** Each rank's half-thickness across the drawing, and its centre, with `gaps[r]` between rank r and the next. */
 function acrossLayout({
   graph,
   layered,
   down,
-  gap,
+  gaps,
 }: {
   graph: LayoutGraph;
   layered: LayeredGraph;
   down: boolean;
-  gap: number;
+  gaps: readonly number[];
 }): { rankHalf: number[]; centres: number[] } {
   const sizes = new Map(graph.nodes.map((node) => [node.id, node] as const));
   const acrossOf = (id: string | undefined): number => {
@@ -61,7 +61,7 @@ function acrossLayout({
       ),
     ),
   );
-  return { rankHalf, centres: rankCentres(rankHalf, gap) };
+  return { rankHalf, centres: rankCentres(rankHalf, gaps) };
 }
 
 /** Where each node sits: real nodes by id, every layered node by index, and the work the solver did. */
@@ -93,13 +93,6 @@ export function place(
   const spacing = { ...DEFAULT_SPACING, ...options.spacing };
   const effort: Effort = options.effort ?? "balanced";
   const down = options.direction === "down";
-  const { rankHalf, centres } = acrossLayout({
-    graph,
-    layered,
-    down,
-    gap: spacing.rank,
-  });
-
   const problem = problemOf(ordering, options, spacing);
 
   const inRankHalf = layered.nodes.map((node) => node.breadth / 2);
@@ -110,6 +103,13 @@ export function place(
     gapLeft: problem.gapLeft,
     half: inRankHalf,
     spacing: spacing.cluster,
+  });
+  // A rank gap is never below the spacing, and grows to hold the margins of the boxes it separates.
+  const { rankHalf, centres } = acrossLayout({
+    graph,
+    layered,
+    down,
+    gaps: plan.rankGap.map((gap) => Math.max(spacing.rank, gap)),
   });
   const boxed: Problem =
     plan.count === 0
