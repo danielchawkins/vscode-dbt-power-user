@@ -1,9 +1,13 @@
+import useAppContext from "@modules/app/useAppContext";
 import PreTag from "@modules/markdown/PreTag";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { CodeBlock } from "@uicore";
 
 const QueryPanelError = (): React.JSX.Element => {
   const { queryResultsError } = useQueryPanelState();
+  const {
+    state: { theme },
+  } = useAppContext();
 
   return (
     <div>
@@ -20,6 +24,7 @@ const QueryPanelError = (): React.JSX.Element => {
             <CodeBlock
               code={JSON.stringify(queryResultsError, null, 2)}
               language="javascript"
+              theme={theme}
             />
           </PreTag>
         </div>

@@ -1,5 +1,3 @@
-import { Themes } from "@modules/app/types";
-import useAppContext from "@modules/app/useAppContext";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { Card, CardBody, CardTitle } from "../primitives";
@@ -7,9 +5,13 @@ import classes from "./codeblock.module.css";
 import type { CodeBlockLanguage } from "./prism";
 import { highlightLines } from "./prism";
 
+/** The VS Code colour theme the block is styled for; the caller passes its app theme. */
+type CodeBlockTheme = "dark" | "light";
+
 interface Props {
   code: string;
   language: CodeBlockLanguage;
+  theme: CodeBlockTheme;
   fileName?: string | undefined;
   showLineNumbers?: boolean | undefined;
   titleActions?: ReactNode | undefined;
@@ -19,15 +21,13 @@ interface Props {
 const CodeBlockComponent = ({
   code,
   language,
+  theme,
   fileName,
   showLineNumbers,
   titleActions,
   classname,
 }: Props): React.JSX.Element => {
-  const {
-    state: { theme },
-  } = useAppContext();
-  const isDark = theme === Themes.Dark;
+  const isDark = theme === "dark";
   const lines = useMemo(() => highlightLines(code, language), [code, language]);
 
   return (
