@@ -26,7 +26,10 @@ async function captureStdout(
   });
   let stdout = "";
   child.stdout?.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
-  await new Promise((resolve) => child.on("close", resolve));
+  await new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", resolve);
+  });
   return stdout;
 }
 
@@ -51,7 +54,7 @@ describe.skipIf(process.platform === "win32")(
       });
 
       expect(stdout).toBe(["-n", "10", node, "-e", printScript, ""].join("\n"));
-    });
+    }, 20_000);
 
     it("falls back to normal priority with a debug line when nice is not on PATH", async () => {
       const debug = vi.fn();

@@ -21,12 +21,17 @@
     "packages/graph-layout": {
       "entry": [
         "src/**/*.test.ts",
+        "src/**/testGraphs.ts",
         "src/rank/index.ts!",
         "src/order/index.ts!",
         "src/place/index.ts!",
         "src/route/index.ts!"
       ],
-      "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
+      "project": [
+        "src/**/*.ts!",
+        "!src/**/*.test.ts!",
+        "!src/**/testGraphs.ts!"
+      ]
     },
     "webview_panels": {
       "entry": ["src/entries/*.tsx!", "src/**/*.test.{ts,tsx}"],

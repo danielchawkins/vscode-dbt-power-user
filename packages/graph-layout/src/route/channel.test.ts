@@ -43,6 +43,15 @@ describe("routeChannel", () => {
     expect(result.crossings).toBe(0);
   });
 
+  it("puts the run that starts at another's end above it, rather than tie a touch to a crossing", () => {
+    // a ends at 10 where b starts; b crossing a costs one, a crossing b one touch, so b must run above a.
+    const result = routeChannel([down(0, 10), down(10, 5)], {
+      edge: EDGE,
+      budget,
+    });
+    expect(result.track).toEqual([1, 0]);
+  });
+
   it("counts a crossing between runs from one trunk as none, as measureDrawing does", () => {
     // a runs 0 to 30 and b runs 10 to 5: their order is forced, so they cross unless they share a trunk.
     const crossing = routeChannel([down(0, 30), down(10, 5)], {
@@ -69,12 +78,16 @@ describe("routeChannel", () => {
     expect(result.trackCount).toBe(1);
   });
 
-  it("merges runs that enter the same point, transitively", () => {
-    const result = routeChannel([down(0, 10), down(5, 10), down(5, 30)], {
-      edge: EDGE,
-      budget,
-    });
-    expect(new Set(result.track).size).toBe(1);
+  it("keeps a run that would chain two stars out of both", () => {
+    // a and b share the lower point 10, c and d share the lower point 30, and b and c share the upper point 5.
+    // Joining on both would chain a to c, so the two stars stay apart.
+    const result = routeChannel(
+      [down(0, 10), down(5, 10), down(5, 30), down(20, 30)],
+      { edge: EDGE, budget },
+    );
+    expect(result.track[0]).toBe(result.track[1]);
+    expect(result.track[2]).toBe(result.track[3]);
+    expect(result.track[0]).not.toBe(result.track[2]);
   });
 
   it("gives a straight run no track, and counts it crossing the runs it passes", () => {
