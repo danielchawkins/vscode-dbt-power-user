@@ -1,5 +1,5 @@
 # A panel answers a webview request through `PanelHost.respond(command, syncRequestId, body)`, which types `body` by
-# the panel's `ResponseBodies[command]` and posts to the page the request came from. Calling the router's untyped
+# the panel's `ResponseBodies[command]` and posts to the current page (`respondOn(page)` answers a given one). Calling the router's untyped
 # `reply`/`replyError` from a feature skips that check: each panel then picks its own idiom (`satisfies`, an `as`
 # cast, a private helper, or nothing) and rebuilds the `{ reply: (response) => this.post(response) }` sink.
 # The ignores are the test files only: a panel answers a request through `respond`, never `reply`.
