@@ -44,16 +44,13 @@ describe("query results replay", () => {
     expect(replay.messagesFor("bottom")).toEqual([]);
   });
 
-  it("keeps each page's result and tab data apart and forgets closed pages", () => {
+  it("keeps each page's result apart and forgets closed pages", () => {
     const replay = new PanelReplay<string>();
     replay.record("tab", result);
-    replay.setTabData("tab", { queryResults: {} });
 
     expect(replay.messagesFor("bottom")).toEqual([]);
-    expect(replay.tabDataFor("tab")).toEqual({ queryResults: {} });
 
     replay.delete("tab");
     expect(replay.messagesFor("tab")).toEqual([]);
-    expect(replay.tabDataFor("tab")).toBeUndefined();
   });
 });

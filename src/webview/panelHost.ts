@@ -67,10 +67,7 @@ export type Page = "bottom" | WebviewPanel;
  * after hiding it shows what it showed before. Rows stay in host memory, never in webview state.
  */
 export class PanelReplay<K, H extends { command: string }> {
-  private readonly pages = new Map<
-    K,
-    { slots: Map<string, H>; tabData?: unknown }
-  >();
+  private readonly pages = new Map<K, { slots: Map<string, H> }>();
   private readonly rules: ReplayRules<H>;
 
   public constructor(rules: ReplayRules<H>) {
@@ -106,21 +103,12 @@ export class PanelReplay<K, H extends { command: string }> {
       : [];
   }
 
-  /** Binds the data a results tab renders to its page, which asks for it again after each rebuild. */
-  setTabData(key: K, data: unknown): void {
-    this.page(key).tabData = data;
-  }
-
-  tabDataFor(key: K): unknown {
-    return this.pages.get(key)?.tabData;
-  }
-
   /** Forgets a closed page. */
   delete(key: K): void {
     this.pages.delete(key);
   }
 
-  /** Forgets every page's state and tab data. */
+  /** Forgets every page's state. */
   clear(): void {
     this.pages.clear();
   }
