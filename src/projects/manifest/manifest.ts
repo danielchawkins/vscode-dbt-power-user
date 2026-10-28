@@ -115,7 +115,7 @@ export async function buildManifest({
   terminal: Log;
   readFailures: ManifestReadFailures;
 }): Promise<BuiltManifest | undefined> {
-  const projectRoot = project.getProjectRoot();
+  const projectRoot = project.root.fsPath;
   terminal.debug(
     "Manifest",
     `Going to parse manifest for project at ${projectRoot}`,

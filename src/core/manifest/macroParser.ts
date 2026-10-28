@@ -17,7 +17,7 @@ export class MacroParser {
     macros: ManifestResources<MacroResource> | null | undefined,
     project: ManifestProject,
   ): Promise<MacroMetaMap> {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "MacroParser",

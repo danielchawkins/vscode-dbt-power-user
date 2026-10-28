@@ -24,7 +24,7 @@ const root = path.resolve(
   "../fixtures/single-project",
 );
 const project: ManifestProject = {
-  getProjectRoot: () => root,
+  root: { fsPath: root },
   getProjectName: () => "p",
   paths: () => ({
     packagesInstallPath: path.join(root, "dbt_packages"),

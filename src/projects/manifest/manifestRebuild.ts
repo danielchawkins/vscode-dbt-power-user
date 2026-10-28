@@ -106,7 +106,7 @@ export class ManifestRebuild {
       }
       this.terminal.debug(
         "Project",
-        `Finished rebuilding the manifest for project at ${this.project.getProjectRoot()}`,
+        `Finished rebuilding the manifest for project at ${this.project.root.fsPath}`,
       );
       await afterRebuild();
     } catch (error) {
@@ -128,7 +128,7 @@ export class ManifestRebuild {
       this.terminal.debug(
         "Project",
         "targetPath should be defined at this stage for project " +
-          this.project.getProjectRoot(),
+          this.project.root.fsPath,
       );
       return;
     }
