@@ -1,6 +1,6 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter, Uri } from "vscode";
-import { type DBTDiagnosticData } from "../core/diagnostics";
+import { type DiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import { dbtProjectFilePath } from "../core/snapshot";
 import type { SettingsChange } from "../settings";
@@ -49,20 +49,20 @@ export interface ExecutableLifecycleHooks {
 export class ExecutableLifecycle {
   private committed: FusionCli | undefined;
   private committedVersion?: FusionVersion;
-  private failure: DBTDiagnosticData | undefined;
+  private failure: DiagnosticData | undefined;
   private configurationSubscription: Disposable | undefined;
   private refreshChain: Promise<void> = Promise.resolve();
   private refreshGeneration = 0;
   private disposed = false;
   private readonly commitEmitter = new EventEmitter<void>();
   private readonly failureEmitter = new EventEmitter<
-    DBTDiagnosticData | undefined
+    DiagnosticData | undefined
   >();
 
   /** Fires after a candidate is committed and the previous CLI is disposed. */
   readonly onDidCommit: Event<void> = this.commitEmitter.event;
   /** Fires with the diagnostic when resolution fails, and with `undefined` when a later resolution clears it. */
-  readonly onDidFailResolution: Event<DBTDiagnosticData | undefined> =
+  readonly onDidFailResolution: Event<DiagnosticData | undefined> =
     this.failureEmitter.event;
   private readonly resolver: FusionExecutableResolver;
   private readonly factory: FusionCommandIntegrationFactory;

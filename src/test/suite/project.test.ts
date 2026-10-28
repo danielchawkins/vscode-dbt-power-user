@@ -15,7 +15,7 @@ import * as vscode from "vscode";
 import { MANIFEST_FILE, type ParsedManifest } from "../../core/dbt/domain";
 import type { DbtCommand } from "../../core/dbtCommand";
 import { QueryExecution } from "../../core/dbtCommand";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
@@ -244,7 +244,7 @@ describe("Project Test Suite", () => {
     });
 
     it("should get all diagnostics", () => {
-      const mockDiagnosticData: DBTDiagnosticData = {
+      const mockDiagnosticData: DiagnosticData = {
         message: "Test diagnostic",
         severity: "error",
         filePath: "/test/file.sql",
@@ -279,7 +279,7 @@ describe("Project Test Suite", () => {
     });
 
     it("publishes every kind in one collection under dbt_project.yml", async () => {
-      const data = (message: string, source: string): DBTDiagnosticData => ({
+      const data = (message: string, source: string): DiagnosticData => ({
         message,
         severity: "warning",
         filePath: "/test/file.sql",

@@ -24,8 +24,8 @@ import {
 } from "../core/cli";
 import { DbtCommand, QueryExecution } from "../core/dbtCommand";
 import type {
-  DBTDiagnosticData,
-  DBTDiagnosticResult,
+  DiagnosticData,
+  DiagnosticResult,
 } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import type { ProjectPaths, ProjectSnapshot } from "../core/snapshot";
@@ -104,7 +104,7 @@ const REBUILD_RANGE = {
 export class FusionCli {
   private readonly warnedDeferPaths = new Set<string>();
   private config: ProjectSnapshot | undefined;
-  private rebuildManifestDiagnostics: DBTDiagnosticData[] = [];
+  private rebuildManifestDiagnostics: DiagnosticData[] = [];
   private rebuildAbort: AbortController | undefined;
   private readonly executable: FusionCliExecutable;
   private readonly snapshot: () => ProjectSnapshot;
@@ -227,7 +227,7 @@ export class FusionCli {
     return this.projectConfig().name;
   }
 
-  getDiagnostics(): DBTDiagnosticResult {
+  getDiagnostics(): DiagnosticResult {
     return {
       rebuildManifestDiagnostics: this.rebuildManifestDiagnostics,
       projectConfigDiagnostics: [],
@@ -418,7 +418,7 @@ function locate(
   root: string,
   fallback: string,
   message: string,
-): Pick<DBTDiagnosticData, "filePath" | "range"> {
+): Pick<DiagnosticData, "filePath" | "range"> {
   const location = logLocation(message);
   if (!location) {
     return { filePath: fallback, range: REBUILD_RANGE };

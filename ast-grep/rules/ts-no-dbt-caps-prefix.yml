@@ -28,4 +28,4 @@ rule:
         has:
           field: name
           regex: >-
-            ^(DBTDiagnosticData|DBTDiagnosticResult|DBTGraphType|DBTDocumentation|DBTDocumentationColumn|DBTDocumentationMessage|DBTUnitTest|DBTModelTest)$
+            ^(DBTGraphType|DBTDocumentation|DBTDocumentationColumn|DBTDocumentationMessage|DBTUnitTest|DBTModelTest)$
