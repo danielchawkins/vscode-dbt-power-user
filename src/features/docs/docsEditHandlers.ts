@@ -22,7 +22,7 @@ export type DocsProject = Pick<Project, "root" | "getProjectName"> & {
   >;
 };
 import type { Handlers } from "../../webview/messageRouter";
-import type { ModelTestService } from "./dbtTestService";
+import type { ModelTestService } from "./modelTestService";
 
 type PanelMessage = documentationEditor.PanelMessage;
 

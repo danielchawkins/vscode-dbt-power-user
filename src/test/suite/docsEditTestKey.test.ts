@@ -10,12 +10,12 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { parse } from "yaml";
-import { ModelTestService } from "../../features/docs/dbtTestService";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import {
   getTestDataByColumn,
   getTestDataByModel,
 } from "../../features/docs/docsTestData";
+import { ModelTestService } from "../../features/docs/modelTestService";
 import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 const deps = {

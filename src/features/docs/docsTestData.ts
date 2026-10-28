@@ -11,7 +11,7 @@ import type {
   TestMetadataRelationships,
 } from "../../core/manifest/types";
 import { isColumnNameEqual } from "../../projects/project/columnNames";
-import type { ModelTestService } from "./dbtTestService";
+import type { ModelTestService } from "./modelTestService";
 
 export interface TestDataDeps {
   terminal: Pick<Log, "debug">;

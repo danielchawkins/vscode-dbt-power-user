@@ -9,9 +9,9 @@ import type {
   ProposalKind,
   ProposalTarget,
 } from "./columnProposals";
-import type { ModelTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DocsDrafts } from "./docsDrafts";
+import type { ModelTestService } from "./modelTestService";
 
 /** Test-only: answers with the column proposals for the active documentation after opening `file`. */
 const DOCS_COLUMN_PROPOSALS_COMMAND = "fusionPowerUser.test.columnProposals";
