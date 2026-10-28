@@ -116,8 +116,7 @@ function objective(inst: Instance, x: readonly number[]): number {
 /** The largest violation among the separations; zero or positive when all hold. */
 function worstSlack(seps: readonly Separation[], x: readonly number[]): number {
   return seps.reduce(
-    (worst, s) =>
-      Math.min(worst, (x[s.to] ?? 0) - (x[s.from] ?? 0) - s.gap),
+    (worst, s) => Math.min(worst, (x[s.to] ?? 0) - (x[s.from] ?? 0) - s.gap),
     Number.POSITIVE_INFINITY,
   );
 }
@@ -129,15 +128,16 @@ function webcola(inst: Instance): {
   converged: boolean;
 } {
   const vs = inst.x0.map((x0, i) => new Variable(x0, inst.weight[i]));
-  const cs = inst.seps.map(
-    (s) => new Constraint(vs[s.from]!, vs[s.to]!, s.gap),
-  );
+  const cs = inst.seps.map((s) => new Constraint(vs[s.from], vs[s.to], s.gap));
   const solver = new Solver(vs, cs);
   let previous = Number.NaN;
   let stable = 0;
   for (let pass = 0; pass < MAX_PASSES && stable < STABLE_PASSES; pass++) {
     solver.satisfy();
-    const cost = objective(inst, vs.map((v) => v.position()));
+    const cost = objective(
+      inst,
+      vs.map((v) => v.position()),
+    );
     stable =
       Math.abs(cost - previous) <= 1e-12 * Math.max(1, Math.abs(cost))
         ? stable + 1

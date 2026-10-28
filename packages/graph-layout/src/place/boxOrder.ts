@@ -1,10 +1,15 @@
 import type { Separation } from "./vpsc.js";
 
-/** The parts of a cluster box that sibling ordering reads: its parent, and its left and right edge variables. */
+/**
+ * The parts of a cluster box that sibling ordering reads: its parent, its left and right edge variables, and the first
+ * and last rank it spans.
+ */
 interface BoxSpan {
   parent: number | undefined;
   left: number;
   right: number;
+  top: number;
+  bottom: number;
 }
 
 /**
@@ -59,13 +64,16 @@ function topological(
   return order;
 }
 
-/** Each box lies left of the next sibling box in `order`, a spacing apart; siblings share their parent's key. */
+/**
+ * Each box lies left of every later sibling box in `order` whose rank span overlaps its own, a spacing apart. Siblings
+ * that share no rank are not separated, so they may share x; siblings share their parent's key.
+ */
 export function siblings(
   order: readonly number[],
   byCluster: ReadonlyMap<number, BoxSpan>,
   spacing: number,
 ): Separation[] {
-  const last = new Map<number, BoxSpan>();
+  const placed = new Map<number, BoxSpan[]>();
   const out: Separation[] = [];
   for (const c of order) {
     const box = byCluster.get(c);
@@ -73,11 +81,13 @@ export function siblings(
       continue;
     }
     const key = box.parent ?? -1;
-    const prev = last.get(key);
-    if (prev !== undefined) {
-      out.push({ from: prev.right, to: box.left, gap: spacing });
+    const earlier = placed.get(key) ?? [];
+    for (const prev of earlier) {
+      if (prev.top <= box.bottom && box.top <= prev.bottom) {
+        out.push({ from: prev.right, to: box.left, gap: spacing });
+      }
     }
-    last.set(key, box);
+    placed.set(key, [...earlier, box]);
   }
   return out;
 }
