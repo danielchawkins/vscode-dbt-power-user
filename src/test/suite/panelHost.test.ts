@@ -12,7 +12,11 @@ const isReadyMessage = (message: unknown): message is Ready =>
   message !== null &&
   (message as { command?: unknown }).command === "webview:ready";
 
-class TestPanel extends PanelHost<lineage.HostMessage, Ready> {
+class TestPanel extends PanelHost<
+  lineage.HostMessage,
+  Ready,
+  lineage.ResponseBodies
+> {
   protected readonly entry = "lineage" as never;
   protected readonly csp = {} as never;
   protected readonly guard = isReadyMessage;

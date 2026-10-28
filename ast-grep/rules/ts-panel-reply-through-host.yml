@@ -1,0 +1,35 @@
+# A panel answers a webview request through `PanelHost.respond(command, syncRequestId, body)`, which types `body` by
+# the panel's `ResponseBodies[command]` and posts to the page the request came from. Calling the router's untyped
+# `reply`/`replyError` from a feature skips that check: each panel then picks its own idiom (`satisfies`, an `as`
+# cast, a private helper, or nothing) and rebuilds the `{ reply: (response) => this.post(response) }` sink.
+# The ignores are the baseline: the files that still call `reply` directly. Remove each as it moves to `respond`.
+id: ts-panel-reply-through-host
+language: typescript
+severity: error
+message: >-
+  Answer a webview request with `this.respond(command, syncRequestId, body)` from PanelHost (src/webview/panelHost.ts),
+  so the body is checked against the panel's ResponseBodies; do not call the router's `reply`/`replyError` here.
+files:
+  - src/features/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+  - src/features/docs/docsEditHandlers.ts
+  - src/features/docs/docsEditPanel.ts
+  - src/features/queryResults/queryResultPanel.ts
+rule:
+  any:
+    # reply(sink, syncRequestId, body) / replyError(sink, syncRequestId, error)
+    - kind: call_expression
+      has:
+        field: function
+        regex: '^(reply|replyError)$'
+    # { reply: (response) => this.post(response) }: a hand-built sink for those calls
+    - kind: pair
+      all:
+        - has:
+            field: key
+            regex: '^reply$'
+        - has:
+            field: value
+            kind: arrow_function

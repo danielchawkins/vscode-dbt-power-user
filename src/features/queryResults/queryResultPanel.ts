@@ -57,7 +57,11 @@ const QueryPanelViewType = {
 type QueryPanelViewType =
   (typeof QueryPanelViewType)[keyof typeof QueryPanelViewType];
 
-export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
+export class QueryResultPanel extends PanelHost<
+  HostMessage,
+  PanelMessage,
+  queryResults.ResponseBodies
+> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
   public override viewType = QueryResultPanel.viewType;
   protected readonly entry = "queryResults";

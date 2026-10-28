@@ -1,0 +1,11 @@
+id: ts-panel-reply-through-host
+valid:
+  - 'this.respond("getQueryTabData", syncRequestId, body);'
+  - 'void this.respond("saveDocumentation", syncRequestId, { saved: true });'
+  - 'const sink = { log: this.log, reply: this.replyTo(page) };'
+  - 'this.replyCount += 1;'
+invalid:
+  - 'void reply({ reply: (response) => this.post(response) }, syncRequestId, body);'
+  - 'return replyError(sink, syncRequestId, error);'
+  - 'await reply(sink, syncRequestId, { saved: true } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);'
+  - 'const sink = { reply: (response) => this.host.post(response) };'
