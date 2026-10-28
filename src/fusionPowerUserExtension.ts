@@ -35,7 +35,7 @@ export class FusionPowerUserExtension implements Disposable {
   private disposed = false;
   private projects: Projects;
   private statusBars: StatusBars;
-  private dbtTerminal: Log;
+  private log: Log;
   private projectRegistry: ProjectRegistry;
   private fusionClientPool: FusionClientPool;
   private fusionStatus: FusionStatus;
@@ -50,7 +50,7 @@ export class FusionPowerUserExtension implements Disposable {
   constructor(services: ExtensionServices, owned: readonly Disposable[]) {
     this.projects = services.projects;
     this.statusBars = services.statusBars;
-    this.dbtTerminal = services.log;
+    this.log = services.log;
     this.projectRegistry = services.projectRegistry;
     this.fusionClientPool = services.fusionClientPool;
     this.fusionStatus = services.fusionStatus;
@@ -134,7 +134,7 @@ export class FusionPowerUserExtension implements Disposable {
       }
       await this.startServices();
     } catch (error) {
-      this.dbtTerminal.error(
+      this.log.error(
         "extensionActivationError",
         "Unable to activate Fusion Power User",
         error,
@@ -183,7 +183,7 @@ export class FusionPowerUserExtension implements Disposable {
       }
       subscription.dispose();
       this.startServices().catch((error) =>
-        this.dbtTerminal.error(
+        this.log.error(
           "extensionActivationError",
           "Unable to activate Fusion Power User",
           error,
