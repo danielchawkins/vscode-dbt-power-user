@@ -77,6 +77,46 @@ describe("query results pages", () => {
     expect(tab.messageSubscription.dispose).toHaveBeenCalledOnce();
   });
 
+  it("answers a tab's tab-data request on the tab, and again with the same data", async () => {
+    const panel = realPanel();
+    const bottom = fakeView();
+    const tab = fakeTab();
+    await panel.resolveWebviewView(bottom.page, {} as never, token());
+    listenTo(panel, tab.page);
+    const data = { n: 1 };
+    (panel as any)._queryTabData = data;
+
+    await tab.send({ command: "getQueryTabData", syncRequestId: "t1" });
+    await tab.send({ command: "getQueryTabData", syncRequestId: "t2" });
+
+    expect(tab.posted()).toEqual([
+      {
+        command: "response",
+        args: { syncRequestId: "t1", body: data, status: true },
+      },
+      {
+        command: "response",
+        args: { syncRequestId: "t2", body: data, status: true },
+      },
+    ]);
+    expect(bottom.posted()).toEqual([]);
+    panel.dispose();
+  });
+
+  it("forgets every tab's data when a project is removed", async () => {
+    const removed = new EventEmitter<Uri>();
+    const panel = realPanel(removed);
+    const tab = fakeTab();
+    listenTo(panel, tab.page);
+    (panel as any)._queryTabData = { n: 1 };
+    await tab.send({ command: "getQueryTabData", syncRequestId: "t1" });
+    expect((panel as any).tabDataByPage.size).toBe(1);
+
+    removed.fire(Uri.file("/p"));
+    expect((panel as any).tabDataByPage.size).toBe(0);
+    panel.dispose();
+  });
+
   it("forgets every page's last result when a project is removed", () => {
     const removed = new EventEmitter<Uri>();
     const panel = realPanel(removed);

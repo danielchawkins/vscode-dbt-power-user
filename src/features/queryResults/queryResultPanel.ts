@@ -27,8 +27,7 @@ import type {
 } from "../../projects/project/sharedStateService";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { reply } from "../../webview/messageRouter";
-import { PanelHost, postToWebview } from "../../webview/panelHost";
+import { type Page, PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";
 import { QueryHistoryStore } from "./queryHistory";
@@ -70,6 +69,8 @@ export class QueryResultPanel extends PanelHost<
   protected override panelDescription = "Preview dbt SQL Results";
   private _queryTabData: queryResults.QueryTabData | undefined;
   private _bottomPanel: WebviewView | undefined;
+  /** The tab data each results tab is bound to; the tab asks for it again after each rebuild. */
+  private readonly tabDataByPage = new Map<Page, queryResults.QueryTabData>();
 
   private queryExecution: QueryExecution | undefined;
   /** Loading messages queued while the page is not ready; flushed when it reports ready. */
@@ -106,7 +107,10 @@ export class QueryResultPanel extends PanelHost<
     });
     this.history = new QueryHistoryStore(dbtTerminal);
     this._disposables.push(
-      onDidRemoveProject(() => this.replay.clear()),
+      onDidRemoveProject(() => {
+        this.replay.clear();
+        this.tabDataByPage.clear();
+      }),
       // Resets the limit on editor change.
       window.onDidChangeActiveTextEditor(() =>
         this.sendUpdatedContextToWebview(),
@@ -140,6 +144,7 @@ export class QueryResultPanel extends PanelHost<
     const subscription = webviewPanel.onDidDispose(() => {
       subscription.dispose();
       this.replay.delete(webviewPanel);
+      this.tabDataByPage.delete(webviewPanel);
     });
     this.renderWebviewView(webviewPanel.webview);
     this.listen(webviewPanel);
@@ -230,18 +235,10 @@ export class QueryResultPanel extends PanelHost<
   ) {
     const page = this.pageOf(panel);
     if (this._queryTabData && page !== "bottom") {
-      this.replay.setTabData(page, this._queryTabData);
+      this.tabDataByPage.set(page, this._queryTabData);
     }
-    const body =
-      this._queryTabData ??
-      (this.replay.tabDataFor(
-        page,
-      ) as queryResults.ResponseBodies["getQueryTabData"]);
-    void reply(
-      { reply: (response) => this.postTo(panel, response) },
-      syncRequestId,
-      body satisfies queryResults.ResponseBodies["getQueryTabData"],
-    );
+    const body = this._queryTabData ?? this.tabDataByPage.get(page);
+    void this.respondOn(panel).respond("getQueryTabData", syncRequestId, body);
     // A tab opened through "Open in Tab" reads its data once; later messages target the bottom panel.
     if (this._queryTabData) {
       this._panel = this._bottomPanel;
@@ -259,10 +256,10 @@ export class QueryResultPanel extends PanelHost<
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
         this.history.clear();
-        return reply(
-          { reply: (response) => this.post(response) },
+        return this.respondOn(panel).respond(
+          "clearQueryHistory",
           syncRequestId,
-          {} satisfies queryResults.ResponseBodies["clearQueryHistory"],
+          {},
         );
       },
       openCodeInEditor: ({ code }) => openSqlInEditor(code),

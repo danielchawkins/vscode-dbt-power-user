@@ -2,7 +2,7 @@
 # the panel's `ResponseBodies[command]` and posts to the page the request came from. Calling the router's untyped
 # `reply`/`replyError` from a feature skips that check: each panel then picks its own idiom (`satisfies`, an `as`
 # cast, a private helper, or nothing) and rebuilds the `{ reply: (response) => this.post(response) }` sink.
-# The ignores are the baseline: the files that still call `reply` directly. Remove each as it moves to `respond`.
+# The ignores are the test files only: a panel answers a request through `respond`, never `reply`.
 id: ts-panel-reply-through-host
 language: typescript
 severity: error
@@ -14,7 +14,6 @@ files:
 ignores:
   - src/test/**
   - "**/*.test.ts"
-  - src/features/queryResults/queryResultPanel.ts
 rule:
   any:
     # reply(sink, syncRequestId, body) / replyError(sink, syncRequestId, error)
