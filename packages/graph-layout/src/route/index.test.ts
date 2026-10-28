@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type Drawing, type DrawnPath, measureDrawing } from "../metrics.js";
+import { caseArb, routeGraph, routeOptions } from "../testing/routeGraphs.js";
 import type {
   LayoutEdge,
   LayoutGraph,
@@ -11,7 +12,6 @@ import type {
   Side,
 } from "../types.js";
 import { type Routing } from "./index.js";
-import { caseArb, options, routeGraph } from "./testGraphs.js";
 
 /** The drawing measureDrawing reads: node boxes, routed polylines, and the source port as each edge's trunk. */
 function drawingOf(graph: LayoutGraph, routing: Routing): Drawing {
@@ -48,7 +48,11 @@ describe("route", () => {
   it("leaves node boxes apart, and no polyline through a node it does not end at", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
-        const routing = routeGraph(graph, { ...options, direction, effort });
+        const routing = routeGraph(graph, {
+          ...routeOptions,
+          direction,
+          effort,
+        });
         expect(measureDrawing(drawingOf(graph, routing)).overlaps).toBe(0);
       }),
     );
@@ -57,7 +61,11 @@ describe("route", () => {
   it("counts the same crossings in its bands as measureDrawing counts over the drawing", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
-        const routing = routeGraph(graph, { ...options, direction, effort });
+        const routing = routeGraph(graph, {
+          ...routeOptions,
+          direction,
+          effort,
+        });
         const metrics = measureDrawing(drawingOf(graph, routing));
         expect(routing.work.capped).toBe(false);
         expect(routing.work.crossings).toBe(metrics.crossings);
@@ -70,7 +78,7 @@ describe("route", () => {
       fc.property(caseArb, ({ graph, direction, effort }) => {
         const anchor = graph.nodes[0]?.id;
         const opts: LayoutOptions = {
-          ...options,
+          ...routeOptions,
           direction,
           effort,
           ...(anchor === undefined ? {} : { anchor }),
@@ -87,7 +95,11 @@ describe("route", () => {
   it("never lays two polylines with no end node in common along one line, unless they swap ends", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
-        const routing = routeGraph(graph, { ...options, direction, effort });
+        const routing = routeGraph(graph, {
+          ...routeOptions,
+          direction,
+          effort,
+        });
         const across: Axis = direction === "down" ? "x" : "y";
         const ends = new Map<string, readonly string[]>(
           graph.edges.map((e) => [e.id, [e.source, e.target]] as const),
@@ -156,7 +168,7 @@ describe("route", () => {
       ],
     };
     const routing = routeGraph(graph, {
-      ...options,
+      ...routeOptions,
       direction: "down",
       effort: "fast",
     });
@@ -167,7 +179,7 @@ describe("route", () => {
 
   it("routes a 300-node graph with no overlaps and the crossings measured", () => {
     const graph = seededGraph(300, 900);
-    const routing = routeGraph(graph, { ...options, effort: "fast" });
+    const routing = routeGraph(graph, { ...routeOptions, effort: "fast" });
     const metrics = measureDrawing(drawingOf(graph, routing));
     expect(metrics.overlaps).toBe(0);
     expect(routing.work.crossings).toBe(metrics.crossings);

@@ -247,7 +247,13 @@ module.exports = {
   options: {
     tsConfig: { fileName: "tsconfig.json" },
     doNotFollow: { path: "node_modules" },
-    exclude: { path: ["^src/test", "\\.test\\.ts$", "testGraphs\\.ts$"] },
+    exclude: {
+      path: [
+        "^src/test",
+        "\\.test\\.ts$",
+        "^packages/graph-layout/src/testing/",
+      ],
+    },
     tsPreCompilationDeps: true,
   },
 };
