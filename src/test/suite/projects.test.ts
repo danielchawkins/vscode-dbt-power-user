@@ -209,6 +209,17 @@ describe("Projects", () => {
       expect(lifecycle).toHaveLength(2);
     });
 
+    it("fires onDidChangeProjects once the projects follow a registry change", async () => {
+      await projects.initialize();
+      const changed = vi.fn();
+      projects.onDidChangeProjects(changed);
+
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(changed).toHaveBeenCalledTimes(1);
+    });
+
     it("re-parses only the projects whose target or profilesDir changed", async () => {
       await projects.initialize();
       const calls = vi.mocked(workspace.onDidChangeConfiguration).mock.calls;

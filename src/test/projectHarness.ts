@@ -24,8 +24,8 @@ import type {
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import type { ManifestParsers } from "../projects/manifest/manifest";
 import type { RunHistoryService } from "../projects/output/runHistoryService";
-import type { ProjectOptions } from "../projects/project/project";
 import { Project } from "../projects/project/project";
+import type { ProjectOptions } from "../projects/project/projectOptions";
 import type { SharedStateService } from "../projects/project/sharedStateService";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { CONFIGURATION_SECTION } from "../settings";
@@ -69,9 +69,23 @@ export function buildTestProject(
     resolver: stubResolver(),
     cliFactory,
     parsers: {} as ManifestParsers,
+    declared: declaredAt(root),
     projectRoot: Uri.file(root),
     ...overrides,
   });
+}
+
+/** The Declared Project a test Project is built for: a root that is its own folder and contains its files. */
+function declaredAt(root: string): DeclaredProject {
+  const rootUri = Uri.file(root);
+  return {
+    root: rootUri,
+    name: path.basename(root),
+    folder: { uri: rootUri, name: path.basename(root), index: 0 },
+    origin: "explicit",
+    contains: (uri) => uri.fsPath.startsWith(root),
+    dispose: () => undefined,
+  };
 }
 
 /** A Declared Project named `name` at `rootPath` in `folder`, which contains no file. */
