@@ -30,7 +30,7 @@ export interface ExtensionServices {
   projectEnvironments: ProjectEnvironments;
 }
 
-export class DBTPowerUserExtension implements Disposable {
+export class FusionPowerUserExtension implements Disposable {
   private disposables: Disposable[] = [];
   private disposed = false;
   private projects: Projects;

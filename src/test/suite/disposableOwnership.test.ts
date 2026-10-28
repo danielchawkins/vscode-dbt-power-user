@@ -13,7 +13,7 @@ import {
   registerRuntimeTimings,
   RUNTIME_TIMINGS_COMMAND,
 } from "../../benchmark/runtimeTimings";
-import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import { FusionPowerUserExtension } from "../../dbtPowerUserExtension";
 import { activate, deactivate } from "../../extension";
 import {
   CONNECTED_COLUMNS_COMMAND,
@@ -164,7 +164,7 @@ describe("disposable ownership", () => {
     await ready;
 
     expect(context.subscriptions).toHaveLength(1);
-    expect(context.subscriptions[0]).toBeInstanceOf(DBTPowerUserExtension);
+    expect(context.subscriptions[0]).toBeInstanceOf(FusionPowerUserExtension);
     for (const command of HARNESS_COMMANDS) {
       expect(registrations.get(command)?.dispose).not.toHaveBeenCalled();
     }
