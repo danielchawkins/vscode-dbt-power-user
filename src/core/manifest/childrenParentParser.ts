@@ -1,4 +1,4 @@
-import type { DBTGraphType } from "./graphParser";
+import type { DependencyGraph } from "./graphParser";
 import {
   containsRefCall,
   containsSourceCall,
@@ -43,16 +43,16 @@ interface LineageIndex {
 
 export interface ChildrenParentMetaMap {
   /** Full `depends_on.nodes` parent graph — nothing removed. */
-  parentMetaMap: DBTGraphType;
+  parentMetaMap: DependencyGraph;
   /** Reverse of `parentMetaMap`. */
-  childMetaMap: DBTGraphType;
+  childMetaMap: DependencyGraph;
   /**
    * Subset of `parentMetaMap`: for each child, the parent edges that exist ONLY
    * because of a declared foreign-key constraint (`to: ref(...)` / `to: source(...)`)
    * whose target relation is not referenced by the model's SQL. The lineage panel
    * hides or styles them; they remain in `parentMetaMap`/`childMetaMap`.
    */
-  constraintOnlyParents: DBTGraphType;
+  constraintOnlyParents: DependencyGraph;
 }
 
 export class ChildrenParentParser {
@@ -60,9 +60,9 @@ export class ChildrenParentParser {
     nodesMap: ManifestResources,
     sourcesMap?: ManifestResources,
   ): Promise<ChildrenParentMetaMap> {
-    const parentMetaMap: DBTGraphType = {};
-    const childMetaMap: DBTGraphType = {};
-    const constraintOnlyParents: DBTGraphType = {};
+    const parentMetaMap: DependencyGraph = {};
+    const childMetaMap: DependencyGraph = {};
+    const constraintOnlyParents: DependencyGraph = {};
 
     const index: LineageIndex = {
       refs: buildRefIndex(nodesMap),

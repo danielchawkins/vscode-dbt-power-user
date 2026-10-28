@@ -1,6 +1,6 @@
 import type { ParsedManifest } from "../dbt/domain";
 import type { Log } from "../log";
-import { type DBTGraphType, nodeResolver } from "../manifest";
+import { type DependencyGraph, nodeResolver } from "../manifest";
 import type {
   GraphMetaMap,
   NodeData,
@@ -213,8 +213,8 @@ function mergedParentIds(
   parse: GraphMetaMap,
   removed: ReadonlySet<string>,
   serverNodes: ReadonlyMap<string, ServerNode>,
-): DBTGraphType {
-  const parents: DBTGraphType = {};
+): DependencyGraph {
+  const parents: DependencyGraph = {};
   for (const [id, entry] of parse.parents) {
     if (!removed.has(id) && !serverNodes.has(id)) {
       parents[id] = entry.nodes.map((n) => n.key);
@@ -232,8 +232,8 @@ function mergedParentIds(
   return parents;
 }
 
-function invert(parents: DBTGraphType): DBTGraphType {
-  const children: DBTGraphType = {};
+function invert(parents: DependencyGraph): DependencyGraph {
+  const children: DependencyGraph = {};
   for (const [child, ids] of Object.entries(parents)) {
     for (const parent of ids) {
       (children[parent] ??= []).push(child);
@@ -252,8 +252,8 @@ function graphFrom({
   base: ParsedManifest;
   nodeMetaMap: NodeMetaMap;
   serverNodes: ReadonlyMap<string, ServerNode>;
-  parentIds: DBTGraphType;
-  childIds: DBTGraphType;
+  parentIds: DependencyGraph;
+  childIds: DependencyGraph;
 }): Pick<GraphMetaMap, "parents" | "children"> {
   const resolve = nodeResolver(
     {
@@ -325,8 +325,8 @@ function constraintEdgeKeys(graph: GraphMetaMap): Set<string> {
 
 function depths(
   nodeMetaMap: NodeMetaMap,
-  parents: DBTGraphType,
-  children: DBTGraphType,
+  parents: DependencyGraph,
+  children: DependencyGraph,
 ): Map<string, number> {
   const models: Record<string, { resource_type: string; name: string }> = {};
   for (const node of nodeMetaMap.nodes()) {
