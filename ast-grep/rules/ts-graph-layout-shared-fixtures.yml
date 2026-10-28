@@ -14,12 +14,6 @@ files:
   - packages/graph-layout/src/**/*.test.ts
 ignores:
   - packages/graph-layout/src/layering.test.ts
-  - packages/graph-layout/src/order/crossings.test.ts
-  - packages/graph-layout/src/order/index.test.ts
-  - packages/graph-layout/src/order/seed.test.ts
-  - packages/graph-layout/src/order/sifting.test.ts
-  - packages/graph-layout/src/order/sweeps.test.ts
-  - packages/graph-layout/src/order/transpose.test.ts
   - packages/graph-layout/src/place/index.test.ts
   - packages/graph-layout/src/place/ports.test.ts
 rule:
