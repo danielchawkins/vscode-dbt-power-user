@@ -3,7 +3,7 @@ import { lineageTable } from "../../features/lineage/lineageTables";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 
 /** A manifest holding the given nodes, sources, functions and exposures; every other map is empty. */
-function manifest(parts: {
+function manifestWith(parts: {
   nodes?: Record<string, object>;
   sources?: Record<string, object>;
   functions?: Record<string, object>;
@@ -43,7 +43,7 @@ const ORDERS = "model.shop.orders";
 
 describe("lineage table hidden flag", () => {
   it("is set from meta.lineage.hidden on a model", () => {
-    const event = manifest({
+    const event = manifestWith({
       nodes: {
         [ORDERS]: model({ meta: { lineage: { hidden: true } } }),
       },
@@ -52,7 +52,7 @@ describe("lineage table hidden flag", () => {
   });
 
   it("is set from config.meta.lineage.hidden, where Fusion may put meta", () => {
-    const event = manifest({
+    const event = manifestWith({
       nodes: {
         [ORDERS]: model({ config: { meta: { lineage: { hidden: true } } } }),
       },
@@ -63,7 +63,7 @@ describe("lineage table hidden flag", () => {
   it("is absent when the flag is false, not a boolean, or not set", () => {
     const flagged = (meta: unknown, config: object = {}) =>
       lineageTable(
-        manifest({ nodes: { [ORDERS]: model({ meta, config }) } }),
+        manifestWith({ nodes: { [ORDERS]: model({ meta, config }) } }),
         ORDERS,
       )?.hidden;
     expect(flagged({ lineage: { hidden: false } })).toBeUndefined();
@@ -76,7 +76,7 @@ describe("lineage table hidden flag", () => {
   });
 
   it("is set from a source table's own meta", () => {
-    const event = manifest({
+    const event = manifestWith({
       sources: {
         raw: {
           name: "raw",
@@ -103,7 +103,7 @@ describe("lineage table hidden flag", () => {
   });
 
   it("is set from a function's and an exposure's meta", () => {
-    const event = manifest({
+    const event = manifestWith({
       functions: {
         score: {
           config: { type: "scalar" },
@@ -119,7 +119,7 @@ describe("lineage table hidden flag", () => {
   });
 
   it("is set from a function's and an exposure's config.meta alone", () => {
-    const event = manifest({
+    const event = manifestWith({
       functions: {
         score: {
           config: { type: "scalar", meta: { lineage: { hidden: true } } },
@@ -136,7 +136,7 @@ describe("lineage table hidden flag", () => {
 
 describe("lineage table custom schema", () => {
   it("passes the configured schema through as customSchema", () => {
-    const event = manifest({
+    const event = manifestWith({
       nodes: {
         [ORDERS]: model({ config: { schema: "commitment" } }),
       },
@@ -147,14 +147,14 @@ describe("lineage table custom schema", () => {
   });
 
   it("leaves customSchema out when no schema is configured", () => {
-    const event = manifest({ nodes: { [ORDERS]: model() } });
+    const event = manifestWith({ nodes: { [ORDERS]: model() } });
     expect(lineageTable(event, ORDERS)?.customSchema).toBeUndefined();
   });
 });
 
 describe("lineage table file path", () => {
   it("passes the node's original file path through as path, for folder grouping", () => {
-    const event = manifest({
+    const event = manifestWith({
       nodes: {
         [ORDERS]: model({ original_file_path: "models/staging/a/orders.sql" }),
       },
@@ -192,14 +192,14 @@ describe("lineage table identifier", () => {
   };
 
   it("is set on a source whose identifier differs from its name", () => {
-    const event = manifest({ sources });
+    const event = manifestWith({ sources });
     const table = lineageTable(event, "source.shop.raw.events");
     expect(table?.identifier).toBe("EVENTS_V2");
     expect(table?.refName).toBe("raw.events");
   });
 
   it("is absent on a source that keeps its name, and on a model", () => {
-    const event = manifest({ sources, nodes: { [ORDERS]: model() } });
+    const event = manifestWith({ sources, nodes: { [ORDERS]: model() } });
     expect(lineageTable(event, "source.shop.raw.users")).not.toHaveProperty(
       "identifier",
     );
