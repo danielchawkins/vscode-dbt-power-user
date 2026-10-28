@@ -2,96 +2,25 @@ import { groupBundles } from "./bundles.js";
 import { clusterChains } from "./clusters.js";
 import { lateralPort } from "./lateral.js";
 import {
+  type Bundle,
+  type LayeredGraph,
+  type LayeredNode,
+  type Segment,
+} from "./layeredGraph.js";
+import {
   TOWARD_LOWER,
   TOWARD_UPPER,
   inRankExtent,
   meanPortOffset,
 } from "./offsets.js";
 import type { RankResult } from "./rank/index.js";
+import { addSpineDummies, spinesOf } from "./spines.js";
 import type { LayoutEdge, LayoutGraph, LayoutOptions } from "./types.js";
+
+export type { LayeredGraph, PortDummy } from "./layeredGraph.js";
 
 /** Space between two parallel edges, used when `LayoutOptions.spacing` leaves it out. */
 const DEFAULT_EDGE_SPACING = 4;
-
-/**
- * The port a dummy stands for: it sits in its owner's rank, beside the owner, and the bundle's edge leaves the owner's
- * side at the port's offset and runs to the dummy.
- */
-export interface PortDummy {
-  /** Layered index of the owner, a real node in the same rank. */
-  owner: number;
-  /** Whether the dummy lies after the owner in the in-rank order (east, or south when ranks run right). */
-  after: boolean;
-  /** Whether the run goes toward the band below the rank (an upper end, or a flat bundle), else from above. */
-  below: boolean;
-  /** The port's offset from the start of its side, as in `LayoutPort`. */
-  offset: number;
-  /** Routed member edges, each with its own stub and run; zero for a kind that is not routed. */
-  runs: number;
-}
-
-/** A node of the layered graph: a real node, or a dummy that carries one bundle across an intermediate rank. */
-interface LayeredNode {
-  /** The node's id, or `undefined` for a dummy. */
-  id: string | undefined;
-  rank: number;
-  /** Extent along the in-rank axis: the node's size, or a dummy's member count times the edge spacing. */
-  breadth: number;
-  /** Set on the dummy of a lateral port; absent for every other dummy and real node. */
-  port?: PortDummy;
-}
-
-/** The edges of one kind between one ordered pair of nodes, drawn as one chain of dummies. */
-interface Bundle {
-  kind: string;
-  source: string;
-  target: string;
-  /** Ids of the member edges, in input order. */
-  edges: string[];
-  /** Layered indices from the upper rank to the lower one, dummies included; a flat bundle holds its two ends. */
-  chain: number[];
-  /** The ranks run against the edge: the target sits in the upper rank. */
-  reversed: boolean;
-  /** Both ends share a rank. A flat bundle has no dummies and is routed in the channel beside its rank. */
-  flat: boolean;
-  /** The kind's weight times the square root of the member count. */
-  weight: number;
-}
-
-/** One link of a bundle's chain, between two adjacent ranks. */
-interface Segment {
-  /** Index into `LayeredGraph.bundles`. */
-  bundle: number;
-  /** Layered node indices of the link's upper and lower ends. */
-  top: number;
-  bottom: number;
-  weight: number;
-  /**
-   * Port offset of each end, from the node's centre along the in-rank axis; zero at a dummy or where no port faces the
-   * adjacent rank.
-   */
-  topOffset: number;
-  bottomOffset: number;
-}
-
-export interface LayeredGraph {
-  /** Real nodes first, in input order, then dummies. */
-  nodes: LayeredNode[];
-  bundles: Bundle[];
-  segments: Segment[];
-  /**
-   * The block of each layered node: the index of its owner when it is a lateral port's dummy, otherwise its own index.
-   * A block is kept contiguous in every rank, so an owner and its port dummies are ordered as one unit.
-   */
-  block: number[];
-  /**
-   * The cluster chain of each layered node's block, outermost cluster first, as indices into `graph.clusters`. A dummy
-   * outside every cluster, and a node in none, has an empty chain.
-   */
-  paths: number[][];
-  /** Number of ranks, from 0 up to the highest rank. */
-  ranks: number;
-}
 
 /** The state a layering pass builds: the nodes, bundles and segments so far, and the ranks and indices they use. */
 interface Build {
@@ -136,15 +65,25 @@ export function layer(
     addBundle(build, members);
   }
   const block = build.nodes.map((node, x) => node.port?.owner ?? x);
+  const paths = clusterChains(
+    graph,
+    block.map((owner) => build.nodes[owner]!.id),
+  );
+  const spines = addSpineDummies(
+    build.nodes,
+    spinesOf(
+      graph,
+      build.nodes.map((node) => node.rank),
+      paths,
+    ),
+  );
   return {
     nodes: build.nodes,
     bundles: build.bundles,
     segments: build.segments,
-    block,
-    paths: clusterChains(
-      graph,
-      block.map((owner) => build.nodes[owner]!.id),
-    ),
+    block: build.nodes.map((node, x) => node.port?.owner ?? x),
+    paths: [...paths, ...spines.paths],
+    spines: spines.spines,
     ranks: build.nodes.reduce((high, node) => Math.max(high, node.rank + 1), 0),
   };
 }

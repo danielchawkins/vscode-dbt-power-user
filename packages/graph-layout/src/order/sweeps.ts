@@ -1,6 +1,6 @@
 import { arrangeRank, arrangement } from "./clusters.js";
 import { totalCrossings } from "./crossings.js";
-import { type OrderModel, setLayer, slot, unitsOf } from "./model.js";
+import { type OrderModel, setLayer, slot } from "./model.js";
 import { transpose } from "./transpose.js";
 
 /** An order of the layered nodes with its weighted crossings. */
@@ -40,13 +40,18 @@ function sweep(model: OrderModel, downward: boolean, median: boolean): void {
   const visit = downward ? ranks.slice(1) : ranks.slice(0, -1).reverse();
   const context = arrangement(model);
   for (const rank of ranks.filter((r) => !visit.includes(r))) {
-    arrangeRank(model, rank, context, (unit) => model.index[unit[0]!]!);
+    arrangeRank(model, rank, {
+      context,
+      keyOf: (unit) => model.index[unit[0]!]!,
+    });
   }
   for (const rank of visit) {
-    arrangeRank(model, rank, context, (unit) =>
-      target(model, unit, { fromAbove: downward, median }) ??
-      model.index[unit[0]!]!,
-    );
+    arrangeRank(model, rank, {
+      context,
+      keyOf: (unit) =>
+        target(model, unit, { fromAbove: downward, median }) ??
+        model.index[unit[0]!]!,
+    });
   }
 }
 
