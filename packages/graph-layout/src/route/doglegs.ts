@@ -43,11 +43,12 @@ export interface DoglegRouting {
   crossings: number;
 }
 
-/** The search's state: tracks the band has, and the work spent against its limit. */
+/** The search's state: tracks the band has, the work spent against its limit, and the band's in-rank columns. */
 interface Search {
   trackCount: number;
   work: number;
   limit: number;
+  columns: readonly number[];
 }
 
 /** A jog that lowers a run's crossings plus touches, with the change it makes to the band's crossings. */
@@ -69,11 +70,12 @@ export function addDoglegs(options: DoglegOptions): DoglegRouting {
     trackCount: options.trackCount,
     work: 0,
     limit: options.work,
+    columns: columnsOf(pieces),
   };
   let crossings = 0;
   pieces.forEach((_, i) => {
     const track = tracks[i] ?? -1;
-    if (track < 0 || !solo[i]) {
+    if (track < 0 || !solo[i] || search.work > search.limit) {
       return;
     }
     const found = bestJog(drawing, { index: i, track }, search);
@@ -103,11 +105,12 @@ function bestJog(
   if (p === undefined) {
     return undefined;
   }
+  search.work += drawing.pieces.length;
   const here = costAt(drawing, run.index, drawing.segments[run.index] ?? []);
   let bestScore = here.crossings + here.touches;
   let best: Found | undefined;
-  for (const jog of jogsFor(drawing, run, search.trackCount)) {
-    if (search.work > search.limit) {
+  for (const jog of jogsFor(p, run.track, search)) {
+    if (search.work > search.limit || bestScore === 0) {
       break;
     }
     search.work += drawing.pieces.length;
@@ -130,35 +133,35 @@ function bestJog(
   return best;
 }
 
-/** The jogs worth trying for a run: each in-rank column strictly inside its span, on each other track. */
-function jogsFor(
-  drawing: Drawing,
-  run: { index: number; track: number },
-  trackCount: number,
-): Jog[] {
-  const { index, track } = run;
-  const p = drawing.pieces[index];
-  if (p === undefined) {
-    return [];
-  }
-  const lo = Math.min(p.from, p.to);
-  const hi = Math.max(p.from, p.to);
-  const coordinates = [
-    ...new Set(drawing.pieces.flatMap((q) => [q.from, q.to])),
-  ].sort((a, b) => a - b);
-  const columns = coordinates.flatMap((x, k) => {
+/** The in-rank columns of a band, sorted: every run end, and the midpoint between each neighbouring pair. */
+function columnsOf(pieces: readonly ChannelPiece[]): number[] {
+  const coordinates = [...new Set(pieces.flatMap((q) => [q.from, q.to]))].sort(
+    (a, b) => a - b,
+  );
+  return coordinates.flatMap((x, k) => {
     const next = coordinates[k + 1];
     return next === undefined ? [x] : [x, (x + next) / 2];
   });
-  const jogs: Jog[] = [];
-  for (const at of columns.filter((x) => lo < x && x < hi)) {
-    for (let t = 0; t <= trackCount; t++) {
+}
+
+/** The jogs worth trying for a run, lazily: each column strictly inside its span, on each other track. */
+function* jogsFor(
+  p: ChannelPiece,
+  track: number,
+  search: Search,
+): Generator<Jog> {
+  const lo = Math.min(p.from, p.to);
+  const hi = Math.max(p.from, p.to);
+  for (const at of search.columns) {
+    if (at <= lo || at >= hi) {
+      continue;
+    }
+    for (let t = 0; t <= search.trackCount; t++) {
       if (t !== track) {
-        jogs.push({ at, track: t });
+        yield { at, track: t };
       }
     }
   }
-  return jogs;
 }
 
 /** The crossings and touches of piece `i`, drawn with `mine`, against every other piece's drawn segments. */

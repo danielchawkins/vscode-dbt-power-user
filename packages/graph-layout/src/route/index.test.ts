@@ -83,10 +83,11 @@ describe("route", () => {
     );
   });
 
-  it("never lays two polylines with no end node in common along one line", () => {
+  it("never lays two polylines with no end node in common along one line, unless they swap ends", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
         const routing = routeGraph(graph, { ...options, direction, effort });
+        const across: Axis = direction === "down" ? "x" : "y";
         const ends = new Map<string, readonly string[]>(
           graph.edges.map((e) => [e.id, [e.source, e.target]] as const),
         );
@@ -99,7 +100,11 @@ describe("route", () => {
         for (const [i, p] of runs.entries()) {
           for (const q of runs.slice(i + 1)) {
             const shared = p.ends.some((n) => q.ends.includes(n));
-            if (!shared && longestOverlap(p.points, q.points) > EPS) {
+            if (
+              !shared &&
+              !swapsEnds(p.points, q.points, across) &&
+              longestOverlap(p.points, q.points) > EPS
+            ) {
               overlaps.push(`${p.id} ${q.id}`);
             }
           }
@@ -209,4 +214,33 @@ function longestOverlap(p: readonly Point[], q: readonly Point[]): number {
     }
   }
   return best;
+}
+
+/**
+ * Whether two polylines end at the same two across-positions in swapped order. No track order or jog separates such a
+ * pair without trading the overlap for a crossing, so the overlap property excuses it.
+ */
+function swapsEnds(
+  p: readonly Point[],
+  q: readonly Point[],
+  across: Axis,
+): boolean {
+  const pe = endsAcross(p, across);
+  const qe = endsAcross(q, across);
+  if (!pe || !qe) {
+    return false;
+  }
+  const [a, b] = pe;
+  const [c, d] = qe;
+  return a !== b && ((a === c && b === d) || (a === d && b === c));
+}
+
+/** The across-coordinates of a polyline's two ends. */
+function endsAcross(
+  points: readonly Point[],
+  across: Axis,
+): [number, number] | undefined {
+  const first = points[0];
+  const last = points.at(-1);
+  return first && last ? [first[across], last[across]] : undefined;
 }
