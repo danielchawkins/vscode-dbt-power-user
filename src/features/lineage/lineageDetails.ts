@@ -67,12 +67,12 @@ export class LineageDetails {
   getRelationships(params?: { includeSources?: boolean | undefined }): {
     refs: Ref[];
   } {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return { refs: [] };
     }
     const { testMetaMap, nodeMetaMap, sourceMetaMap, semanticModelMetaMap } =
-      event;
+      manifest;
     const parser = new RelationshipParser(this.terminal);
 
     const fromTests = parser.fromTests(testMetaMap);
@@ -109,12 +109,12 @@ export class LineageDetails {
     name: string;
   }): Promise<ExposureMetaData | undefined> {
     const project = this.currentProject.current;
-    const event = project?.manifest;
-    if (!project || !event) {
+    const manifest = project?.manifest;
+    if (!project || !manifest) {
       return;
     }
 
-    const { exposureMetaMap } = event;
+    const { exposureMetaMap } = manifest;
 
     // Node IDs use unique_id format (exposure.project.name), but
     // exposureMetaMap is keyed by simple exposure name.
@@ -128,11 +128,11 @@ export class LineageDetails {
   }: {
     name: string;
   }): Promise<FunctionMetaData | undefined> {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return;
     }
-    const { functionMetaMap } = event;
+    const { functionMetaMap } = manifest;
     // Node IDs use unique_id format (function.project.name), but
     // functionMetaMap is keyed by simple function name.
     const splits = name.split(".");
@@ -148,14 +148,14 @@ export class LineageDetails {
     refresh: boolean;
   }): Promise<ColumnsBody | undefined> {
     const project = this.currentProject.current;
-    const event = project?.manifest;
-    if (!event || !project) {
+    const manifest = project?.manifest;
+    if (!manifest || !project) {
       return;
     }
     const splits = table.split(".");
     if (splits[0] === RESOURCE_TYPE_SOURCE) {
       return this.sourceColumns({
-        event,
+        manifest,
         project,
         table,
         splits,
@@ -163,9 +163,9 @@ export class LineageDetails {
       });
     }
     if (splits[0] === RESOURCE_TYPE_FUNCTION) {
-      return this.functionColumns(event, table, splits[2] ?? "");
+      return this.functionColumns(manifest, table, splits[2] ?? "");
     }
-    const node = event.nodeMetaMap.lookupByUniqueId(table);
+    const node = manifest.nodeMetaMap.lookupByUniqueId(table);
     if (!node) {
       return;
     }
@@ -185,19 +185,19 @@ export class LineageDetails {
   }
 
   private async sourceColumns({
-    event,
+    manifest,
     project,
     table,
     splits,
     refresh,
   }: {
-    event: Manifest;
+    manifest: Manifest;
     project: DetailsProject;
     table: string;
     splits: string[];
     refresh: boolean;
   }): Promise<ColumnsBody | undefined> {
-    const node = event.sourceMetaMap.get(splits[2] ?? "");
+    const node = manifest.sourceMetaMap.get(splits[2] ?? "");
     const sourceTable = node?.tables.find((t) => t.name === splits[3]);
     if (!node || !sourceTable) {
       return;
@@ -243,11 +243,11 @@ export class LineageDetails {
   }
 
   private functionColumns(
-    event: Manifest,
+    manifest: Manifest,
     table: string,
     functionName: string,
   ): ColumnsBody | undefined {
-    const fn = event.functionMetaMap.get(functionName);
+    const fn = manifest.functionMetaMap.get(functionName);
     if (!fn) {
       return;
     }

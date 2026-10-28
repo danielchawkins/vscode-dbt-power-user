@@ -181,11 +181,11 @@ export class LineagePanel
     if (!SOURCE_YAML_EXTENSIONS.includes(ext)) {
       return;
     }
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return;
     }
-    const resolved = resolveSourceStartingNode(event, editor);
+    const resolved = resolveSourceStartingNode(manifest, editor);
     const key = resolved?.key;
     if (key === this.lastRenderedSourceKey) {
       return;
@@ -369,14 +369,14 @@ export class LineagePanel
   private getStartingNode(
     resolvedSource?: ResolvedSourceTable,
   ): lineage.RenderArgs {
-    const event = this.currentProject.current?.manifest;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       this.log.info("Lineage:getStartingNode", "No event found");
       return {
         missingLineageMessage: this.getMissingLineageMessage(),
       };
     }
-    const { nodeMetaMap, functionMetaMap } = event;
+    const { nodeMetaMap, functionMetaMap } = manifest;
     const editor = window.activeTextEditor;
     const tableName = this.getFilename();
     if (!editor || !tableName) {
@@ -393,7 +393,7 @@ export class LineagePanel
       const fn = functionMetaMap.get(tableName);
       if (fn) {
         const node = this.dbtLineageService.createTable(
-          event,
+          manifest,
           url,
           fn.unique_id,
         );
@@ -404,14 +404,18 @@ export class LineagePanel
     const _node = nodeMetaMap.lookupByBaseName(tableName);
     if (_node) {
       const key = _node.unique_id;
-      const node = this.dbtLineageService.createTable(event, url, key);
+      const node = this.dbtLineageService.createTable(manifest, url, key);
       return { node };
     }
 
     // Non-.py fallback: check if the active file is a dbt function.
     const fn = functionMetaMap.get(tableName);
     if (fn) {
-      const node = this.dbtLineageService.createTable(event, url, fn.unique_id);
+      const node = this.dbtLineageService.createTable(
+        manifest,
+        url,
+        fn.unique_id,
+      );
       return { node };
     }
 
@@ -420,14 +424,14 @@ export class LineagePanel
     // is on (or the file's only source table).
     if (SOURCE_YAML_EXTENSIONS.includes(ext)) {
       const resolved =
-        resolvedSource ?? resolveSourceStartingNode(event, editor);
+        resolvedSource ?? resolveSourceStartingNode(manifest, editor);
       if (resolved) {
         // Record the key before the createTable null-check: if the service
         // fails for this key, the selection guard must still short-circuit
         // instead of re-triggering a full render on every cursor move.
         this.lastRenderedSourceKey = resolved.key;
         const node = this.dbtLineageService.createTable(
-          event,
+          manifest,
           resolved.table.path ?? url,
           resolved.key,
         );

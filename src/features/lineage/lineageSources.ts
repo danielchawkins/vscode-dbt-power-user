@@ -85,11 +85,11 @@ function pickSourceTableByCursor(
  * table, else the first declared table for determinism.
  */
 export function resolveSourceStartingNode(
-  event: Manifest,
+  manifest: Manifest,
   editor: TextEditor,
 ): ResolvedSourceTable | undefined {
   const matches = getSourceTablesForFile(
-    event.sourceMetaMap,
+    manifest.sourceMetaMap,
     editor.document.uri.fsPath,
   );
   if (matches.length <= 1) {
