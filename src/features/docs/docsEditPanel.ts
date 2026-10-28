@@ -21,7 +21,6 @@ import type { SharedStateService } from "../../projects/project/sharedStateServi
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
   ColumnProposalRequests,
@@ -241,7 +240,10 @@ export class DocsEditViewPanel extends PanelHost<
       queryManifestService: this.queryManifestService,
       dbtTestService: this.dbtTestService,
       getProject: (uri) => this.projectOf(uri),
-      post: (message) => this.post(message),
+      respond: (command, syncRequestId, body) =>
+        this.respond(command, syncRequestId, body),
+      respondError: (syncRequestId, error) =>
+        this.respondError(syncRequestId, error),
     });
   }
 
@@ -283,13 +285,9 @@ export class DocsEditViewPanel extends PanelHost<
     if (!saved) {
       // The panel keeps its edits dirty until a save is confirmed.
       if (syncRequestId) {
-        await reply(
-          { reply: (response) => this.post(response) },
-          syncRequestId,
-          {
-            saved: false,
-          } satisfies documentationEditor.ResponseBodies["saveDocumentation"],
-        );
+        await this.respond("saveDocumentation", syncRequestId, {
+          saved: false,
+        });
       }
       return;
     }
@@ -298,9 +296,7 @@ export class DocsEditViewPanel extends PanelHost<
     if (!syncRequestId) {
       return;
     }
-    await reply({ reply: (response) => this.post(response) }, syncRequestId, {
-      saved: true,
-    } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);
+    await this.respond("saveDocumentation", syncRequestId, { saved: true });
   }
 
   /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
