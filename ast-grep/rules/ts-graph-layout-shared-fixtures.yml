@@ -3,7 +3,6 @@
 # files declared the same `options` byte for byte, four the same `graphArb` and three the same `sortedRanks`, so a
 # change to the graph generator (a new edge kind, ports, clusters) had to be made in each copy. Declare a fixture once
 # in src/testing/ and import it.
-# The ignores are the baseline: the test files that still declare their own. Remove each as it imports the shared one.
 id: ts-graph-layout-shared-fixtures
 language: typescript
 severity: error
@@ -12,10 +11,6 @@ message: >-
   own fixture only when it differs, under a name that says how.
 files:
   - packages/graph-layout/src/**/*.test.ts
-ignores:
-  - packages/graph-layout/src/layering.test.ts
-  - packages/graph-layout/src/place/index.test.ts
-  - packages/graph-layout/src/place/ports.test.ts
 rule:
   any:
     # const options: LayoutOptions = { ... };  const graphArb: fc.Arbitrary<LayoutGraph> = fc...;
