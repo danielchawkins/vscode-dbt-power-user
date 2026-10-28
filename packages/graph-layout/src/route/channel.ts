@@ -6,18 +6,9 @@
  * tracks are then assigned left edge first, below every overlapping hyperedge preferred above it.
  */
 
-/** One member edge's run through a band, with in-rank coordinates at its ends. */
-export interface ChannelPiece {
-  /** In-rank coordinate of the upper end. */
-  from: number;
-  /** In-rank coordinate of the other end. */
-  to: number;
-  /**
-   * Both ends sit on the upper edge of the band, as for a flat edge routed beneath its rank. Otherwise the lower end
-   * sits on the band's lower edge.
-   */
-  flat: boolean;
-}
+import { crossingsAbove, straightCrossings } from "./channelCrossings.js";
+import { assignTracks, preferences } from "./channelTracks.js";
+import type { ChannelPiece, Hyperedge } from "./channelTypes.js";
 
 export interface ChannelOptions {
   /** Space between two tracks, and between two runs that share a track. */
@@ -31,20 +22,12 @@ export interface ChannelRouting {
   track: number[];
   /** Tracks used, so the band needs `(trackCount + 1) * edge` of width. */
   trackCount: number;
-  /** Proper crossings between the pieces of different hyperedges, and of straight pieces with tracked runs. */
+  /** Proper crossings between runs of different trunks, as `measureDrawing` counts them within the band. */
   crossings: number;
   /** Overlapping pairs of hyperedges examined: the work count. */
   pairs: number;
   /** Set when `budget` ran out, so `crossings` misses the pairs that were not examined. */
   capped: boolean;
-}
-
-/** Pieces that leave or enter one point, and the span of the track they need. */
-interface Hyperedge {
-  members: number[];
-  lo: number;
-  hi: number;
-  track: number;
 }
 
 /** Routes the pieces of one band onto tracks, minimising the crossings the preferences can see. */
@@ -73,9 +56,10 @@ export function routeChannel(
     }
   }
   for (const s of straight) {
-    for (const h of tracked) {
-      crossings += s.members.length * insideCount(pieces, h, s.lo);
-    }
+    crossings += straightCrossings(pieces, s.members, tracked);
+  }
+  for (const h of tracked) {
+    crossings += straightCrossings(pieces, h.members, [h]);
   }
 
   const track = pieces.map(() => -1);
@@ -138,48 +122,6 @@ function hyperedgesOf(pieces: readonly ChannelPiece[]): Hyperedge[] {
   return [...byRoot.values()];
 }
 
-/** The number of member runs of a hyperedge that pass strictly through `x`. */
-function insideCount(
-  pieces: readonly ChannelPiece[],
-  h: Hyperedge,
-  x: number,
-): number {
-  let count = 0;
-  for (const m of h.members) {
-    const p = pieces[m];
-    if (p && Math.min(p.from, p.to) < x && x < Math.max(p.from, p.to)) {
-      count++;
-    }
-  }
-  return count;
-}
-
-/**
- * Crossings when `upper` runs above `lower`: the lower's upper ends that rise through the upper's runs, and the
- * upper's lower ends that fall through the lower's runs.
- */
-function crossingsAbove(
-  pieces: readonly ChannelPiece[],
-  upper: Hyperedge,
-  lower: Hyperedge,
-): number {
-  let count = 0;
-  for (const m of lower.members) {
-    const p = pieces[m];
-    if (p) {
-      count += insideCount(pieces, upper, p.from);
-      count += p.flat ? insideCount(pieces, upper, p.to) : 0;
-    }
-  }
-  for (const m of upper.members) {
-    const p = pieces[m];
-    if (p && !p.flat) {
-      count += insideCount(pieces, lower, p.to);
-    }
-  }
-  return count;
-}
-
 /**
  * Every pair of tracked hyperedges whose spans overlap, found by a sweep over their starts. Stops at the budget.
  * `hypers` is sorted by start, so each hyperedge is compared only with those that start before it ends.
@@ -194,7 +136,7 @@ function overlappingPairs(
     const a = hypers[i];
     for (let j = i + 1; a && j < hypers.length && !capped; j++) {
       const b = hypers[j];
-      if (!b || b.lo >= a.hi) {
+      if (!b || b.lo > a.hi) {
         break;
       }
       if (pairs.length >= budget) {
@@ -205,120 +147,4 @@ function overlappingPairs(
     }
   }
   return { pairs, capped };
-}
-
-/**
- * The preference graph: an edge from i to j where i should run above j. A pair with equal costs either way has no
- * preference. Cycles are broken where they occur: the node with fewest unmet predecessors goes next.
- */
-function preferences(
-  pieces: readonly ChannelPiece[],
-  tracked: readonly Hyperedge[],
-  pairs: readonly [number, number][],
-): number[][] {
-  const succ: number[][] = tracked.map(() => []);
-  for (const [i, j] of pairs) {
-    const a = tracked[i];
-    const b = tracked[j];
-    if (!a || !b) {
-      continue;
-    }
-    const ij = crossingsAbove(pieces, a, b);
-    const ji = crossingsAbove(pieces, b, a);
-    if (ij < ji) {
-      succ[i]?.push(j);
-    } else if (ji < ij) {
-      succ[j]?.push(i);
-    }
-  }
-  return succ;
-}
-
-/** Nodes in an order that respects every preference that is not part of a cycle; ties go to the lower index. */
-function preferredOrder(succ: readonly (readonly number[])[]): number[] {
-  const count = succ.length;
-  const unmet = new Array<number>(count).fill(0);
-  for (const list of succ) {
-    for (const j of list) {
-      unmet[j] = (unmet[j] ?? 0) + 1;
-    }
-  }
-  const queue: number[] = [];
-  for (let i = 0; i < count; i++) {
-    if (unmet[i] === 0) {
-      queue.push(i);
-    }
-  }
-  const done = new Array<boolean>(count).fill(false);
-  const order: number[] = [];
-  for (let head = 0; order.length < count; head++) {
-    if (head >= queue.length) {
-      queue.push(fewestUnmet(unmet, done));
-    }
-    const v = queue[head] ?? -1;
-    if (done[v]) {
-      continue;
-    }
-    done[v] = true;
-    order.push(v);
-    for (const j of succ[v] ?? []) {
-      unmet[j] = (unmet[j] ?? 0) - 1;
-      if (!done[j] && unmet[j] === 0) {
-        queue.push(j);
-      }
-    }
-  }
-  return order;
-}
-
-/** The undone node with fewest unmet predecessors, the lowest index on a tie: where a preference cycle is cut. */
-function fewestUnmet(unmet: readonly number[], done: readonly boolean[]): number {
-  let best = -1;
-  unmet.forEach((u, i) => {
-    if (!done[i] && (best < 0 || u < (unmet[best] ?? 0))) {
-      best = i;
-    }
-  });
-  return best;
-}
-
-/**
- * Left-edge assignment in preference order: each hyperedge takes the lowest track that is below every overlapping
- * hyperedge preferred above it and clears every hyperedge already on that track by `edge`.
- */
-function assignTracks(
-  tracked: Hyperedge[],
-  succ: readonly (readonly number[])[],
-  edge: number,
-): void {
-  const preds: number[][] = tracked.map(() => []);
-  succ.forEach((list, i) => {
-    for (const j of list) {
-      preds[j]?.push(i);
-    }
-  });
-  const occupants: Hyperedge[][] = [];
-  for (const v of preferredOrder(succ)) {
-    const h = tracked[v];
-    if (!h) {
-      continue;
-    }
-    let t = 0;
-    for (const p of preds[v] ?? []) {
-      const above = tracked[p]?.track ?? -1;
-      if (above >= 0) {
-        t = Math.max(t, above + 1);
-      }
-    }
-    while (occupants[t]?.some((o) => tooClose(o, h, edge))) {
-      t++;
-    }
-    (occupants[t] ??= []).push(h);
-    h.track = t;
-  }
-}
-
-/** Whether two hyperedges on one track come closer than `edge`, end to end. */
-function tooClose(a: Hyperedge, b: Hyperedge, edge: number): boolean {
-  return a.lo < b.hi + edge && b.lo < a.hi + edge;
 }

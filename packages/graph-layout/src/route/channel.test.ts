@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type ChannelPiece, routeChannel } from "./channel.js";
+import { routeChannel } from "./channel.js";
+import type { ChannelPiece } from "./channelTypes.js";
 
 const EDGE = 4;
 const budget = 1_000_000;
@@ -34,6 +35,31 @@ describe("routeChannel", () => {
     expect(result.crossings).toBe(0);
   });
 
+  it("puts a run whose upper end meets another's lower end above it, with no overlap", () => {
+    const pieces = [down(0, 10), down(10, 20)];
+    const result = routeChannel(pieces, { edge: EDGE, budget });
+    expect(result.pairs).toBe(1);
+    expect(result.track[1]).toBeLessThan(result.track[0] ?? 0);
+    expect(result.crossings).toBe(0);
+  });
+
+  it("counts a crossing between runs from one trunk as none, as measureDrawing does", () => {
+    // a runs 0 to 30 and b runs 10 to 5: their order is forced, so they cross unless they share a trunk.
+    const crossing = routeChannel([down(0, 30), down(10, 5)], {
+      edge: EDGE,
+      budget,
+    });
+    expect(crossing.crossings).toBe(1);
+    const trunked = routeChannel(
+      [
+        { ...down(0, 30), trunk: "p" },
+        { ...down(10, 5), trunk: "p" },
+      ],
+      { edge: EDGE, budget },
+    );
+    expect(trunked.crossings).toBe(0);
+  });
+
   it("merges runs that leave the same point onto one track", () => {
     const result = routeChannel([down(5, 10), down(5, 20)], {
       edge: EDGE,
@@ -44,10 +70,10 @@ describe("routeChannel", () => {
   });
 
   it("merges runs that enter the same point, transitively", () => {
-    const result = routeChannel(
-      [down(0, 10), down(5, 10), down(5, 30)],
-      { edge: EDGE, budget },
-    );
+    const result = routeChannel([down(0, 10), down(5, 10), down(5, 30)], {
+      edge: EDGE,
+      budget,
+    });
     expect(new Set(result.track).size).toBe(1);
   });
 
@@ -62,10 +88,10 @@ describe("routeChannel", () => {
   });
 
   it("counts a straight run crossing the track of a flat run beneath its rank", () => {
-    const result = routeChannel(
-      [{ from: 0, to: 10, flat: true }, down(4, 4)],
-      { edge: EDGE, budget },
-    );
+    const result = routeChannel([{ from: 0, to: 10, flat: true }, down(4, 4)], {
+      edge: EDGE,
+      budget,
+    });
     expect(result.track[0]).toBe(0);
     expect(result.crossings).toBe(1);
   });
@@ -98,7 +124,11 @@ describe("routeChannel", () => {
           pieces.forEach((a, i) => {
             pieces.slice(i + 1).forEach((b, k) => {
               const ta = result.track[i];
-              if (ta !== undefined && ta >= 0 && ta === result.track[i + k + 1]) {
+              if (
+                ta !== undefined &&
+                ta >= 0 &&
+                ta === result.track[i + k + 1]
+              ) {
                 const gap = Math.max(
                   Math.min(a.from, a.to) - Math.max(b.from, b.to),
                   Math.min(b.from, b.to) - Math.max(a.from, a.to),
