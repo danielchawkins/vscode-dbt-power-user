@@ -10,7 +10,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { parse } from "yaml";
-import { DbtTestService } from "../../features/docs/dbtTestService";
+import { ModelTestService } from "../../features/docs/dbtTestService";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import {
   getTestDataByColumn,
@@ -20,7 +20,7 @@ import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 const deps = {
   terminal: { debug: vi.fn(), error: vi.fn() },
-  dbtTestService: Object.create(DbtTestService.prototype),
+  dbtTestService: Object.create(ModelTestService.prototype),
 } as never as {
   terminal: never;
   dbtTestService: never;

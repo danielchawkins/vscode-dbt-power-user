@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { DbtTestService } from "../../features/docs/dbtTestService";
+import { ModelTestService } from "../../features/docs/dbtTestService";
 
 const SCHEMA = [
   "models:",
@@ -82,11 +82,11 @@ const setup = (over: { event?: unknown; document?: string } = {}) => {
       project,
     }),
   };
-  const service = new DbtTestService(currentProject as never);
+  const service = new ModelTestService(currentProject as never);
   return { service };
 };
 
-describe("DbtTestService", () => {
+describe("ModelTestService", () => {
   it("removes duplicate tests by value", () => {
     const { service } = setup();
     expect(

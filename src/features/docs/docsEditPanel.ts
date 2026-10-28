@@ -30,7 +30,7 @@ import type {
 } from "./columnProposals";
 import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
-import type { DbtTestService } from "./dbtTestService";
+import type { ModelTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import { DocsDrafts } from "./docsDrafts";
 import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
@@ -64,7 +64,7 @@ export class DocsEditViewPanel extends PanelHost<
   private documentation: documentationEditor.Documentation | undefined;
   private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
-  private readonly dbtTestService: DbtTestService;
+  private readonly dbtTestService: ModelTestService;
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private projects: PanelProjects;
@@ -81,7 +81,7 @@ export class DocsEditViewPanel extends PanelHost<
     extensionContext: ExtensionContextStore;
     services: {
       docGenService: DocGenService;
-      dbtTestService: DbtTestService;
+      dbtTestService: ModelTestService;
       queryManifestService: QueryManifestService;
       sharedState: SharedStateService;
       columnProposals: ColumnProposalService;

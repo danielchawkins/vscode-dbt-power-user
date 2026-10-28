@@ -22,7 +22,7 @@ export type DocsProject = Pick<Project, "root" | "getProjectName"> & {
   >;
 };
 import type { Handlers } from "../../webview/messageRouter";
-import type { DbtTestService } from "./dbtTestService";
+import type { ModelTestService } from "./dbtTestService";
 
 type PanelMessage = documentationEditor.PanelMessage;
 
@@ -45,7 +45,7 @@ export interface DocsEditHost {
     QueryManifestService,
     "getModelsInProject" | "getSourcesInProject"
   >;
-  readonly dbtTestService: DbtTestService;
+  readonly dbtTestService: ModelTestService;
   /** The project that answers for the document at `uri`, if one does. */
   getProject(uri: Uri): DocsProject | undefined;
   /** Answers request `syncRequestId`; `body` is checked against the response body of `command`. */

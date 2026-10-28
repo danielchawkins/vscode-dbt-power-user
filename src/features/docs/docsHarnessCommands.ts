@@ -9,7 +9,7 @@ import type {
   ProposalKind,
   ProposalTarget,
 } from "./columnProposals";
-import type { DbtTestService } from "./dbtTestService";
+import type { ModelTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DocsDrafts } from "./docsDrafts";
 
@@ -32,7 +32,7 @@ export interface DocsHarnessDeps {
     DocGenService,
     "getUncompiledDocumentationForCurrentActiveFile"
   >;
-  dbtTestService: Pick<DbtTestService, "getTestsForCurrentModel">;
+  dbtTestService: Pick<ModelTestService, "getTestsForCurrentModel">;
   drafts: DocsDrafts;
   proposalTarget(): Promise<ProposalTarget | undefined>;
   save(message: SaveMessage): Promise<void>;

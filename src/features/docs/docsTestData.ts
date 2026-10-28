@@ -11,11 +11,11 @@ import type {
   TestMetadataRelationships,
 } from "../../core/manifest/types";
 import { isColumnNameEqual } from "../../projects/project/columnNames";
-import type { DbtTestService } from "./dbtTestService";
+import type { ModelTestService } from "./dbtTestService";
 
 export interface TestDataDeps {
   terminal: Pick<Log, "debug">;
-  dbtTestService: Pick<DbtTestService, "removeDuplicateTests">;
+  dbtTestService: Pick<ModelTestService, "removeDuplicateTests">;
 }
 
 /** A YAML `tests` or `data_tests` key. */
