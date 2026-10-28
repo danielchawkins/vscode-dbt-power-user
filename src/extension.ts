@@ -14,13 +14,13 @@ let activeExtension: FusionPowerUserExtension | undefined;
 
 export function activate(context: ExtensionContext): FusionPowerUserApi {
   const start = performance.now();
-  const { extension: dbtPowerUserExtension } = compose(context);
+  const { extension } = compose(context);
 
-  context.subscriptions.push(dbtPowerUserExtension);
-  activeExtension = dbtPowerUserExtension;
+  context.subscriptions.push(extension);
+  activeExtension = extension;
 
   let readyMs: number | undefined;
-  const ready = dbtPowerUserExtension.activate().then(() => {
+  const ready = extension.activate().then(() => {
     readyMs = performance.now() - start;
   });
   return {
