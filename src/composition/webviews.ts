@@ -40,7 +40,7 @@ export function composeWebviews(
   return new WebviewViewProviders(
     new QueryResultPanel({
       extensionContext: extensionContextStore,
-      eventEmitterService: sharedState,
+      sharedState,
       log: terminal,
       queryManifestService,
       currentProject: graph.currentProject,
