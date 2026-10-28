@@ -1,0 +1,144 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`lineage-layers fixture, edge geometry > draws the same path strings for both connections 1`] = `
+[
+  [
+    "r:meta:model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel.region->seed.lineage_layers.country_codes.code",
+    "M1116,105 L1116,153.8 Q1116,160.8 1123,160.8 L1385,160.8 Q1392,160.8 1392,167.8 L1392,474.5 Q1392,481.5 1385,481.5 L1123,481.5 Q1116,481.5 1116,488.5 L1116,519",
+  ],
+  [
+    "r:meta:model.lineage_layers.fct_orders.customer_id->model.lineage_layers.dim_customers.customer_id",
+    "M772,584 L772,598.3333333333334 Q772,605.3333333333334 772,612.3333333333334 L772,642",
+  ],
+  [
+    "r:meta:model.lineage_layers.int_orders__enriched.customer_id->model.lineage_layers.dim_customers.customer_id",
+    "M790,439 L790,453.5 Q790,460.5 783,460.5 L779,460.5 Q772,460.5 772,467.5 L772,519",
+  ],
+  [
+    "r:meta:model.lineage_layers.stg_backend__accounts.user_id->model.lineage_layers.stg_backend__users.user_id",
+    "M464,250 L464,288 Q464,295 471,295 L872.5,295 A13.5,6 0 0 1 899.5,295 L1109,295 Q1116,295 1116,288 L1116,250",
+  ],
+  [
+    "r:meta:source.lineage_layers.shop.orders.customer_id->model.lineage_layers.stg_backend__users.user_id",
+    "M772,105 L772,145.4 Q772,152.4 779,152.4 L869.5,152.4 A4.5,4.5 0 0 1 878.5,152.4 L1033.5,152.4 A12.5,6 0 0 1 1058.5,152.4 L1109,152.4 Q1116,152.4 1116,159.4 L1116,185",
+  ],
+  [
+    "t:model.lineage_layers.dim_customers->model.lineage_layers.fct_orders",
+    "M874,584 L874,613.6666666666666 Q874,618.6666666666666 869,618.6666666666666 L869,618.6666666666666 Q864,618.6666666666666 864,623.6666666666666 L864,642",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.dim_customers",
+    "M871,439 L871,473 Q871,474.5 872.5,474.5 L872.5,474.5 Q874,474.5 874,476 L874,519",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel",
+    "M907,439 L907,481.5 Q907,488.5 914,488.5 L1041.5,488.5 A4.5,4.5 0 0 1 1050.5,488.5 L1111.5,488.5 A4.5,4.5 0 0 1 1120.5,488.5 L1201,488.5 Q1208,488.5 1208,495.5 L1208,519",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.fct_orders",
+    "M913,439 L913,460.5 Q913,467.5 920,467.5 L1039,467.5 Q1046,467.5 1046,474.5 L1046,605 Q1046,612 1039,612 L891,612 Q884,612 884,619 L884,642",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__accounts->model.lineage_layers.int_orders__enriched",
+    "M566,250 L566,276 Q566,283 573,283 L870,283 Q877,283 877,290 L877,330",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__users->model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel",
+    "M1228,250 L1228,300 Q1228,307 1235,307 L1397,307 Q1404,307 1404,314 L1404,488.5 Q1404,495.5 1397,495.5 L1235,495.5 Q1228,495.5 1228,502.5 L1228,519",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__users->model.lineage_layers.int_orders__enriched",
+    "M1208,250 L1208,294 Q1208,301 1201,301 L908,301 Q901,301 901,308 L901,330",
+  ],
+  [
+    "t:model.lineage_layers.stg_shop__orders->model.lineage_layers.int_orders__enriched",
+    "M874,250 L874,266.5 Q874,271 878.5,271 L878.5,271 Q883,271 883,275.5 L883,330",
+  ],
+  [
+    "t:seed.lineage_layers.country_codes->model.lineage_layers.int_orders__enriched",
+    "M1218,105 L1218,128.6 Q1218,135.6 1211,135.6 L1120.5,135.6 A4.5,4.5 0 0 0 1111.5,135.6 L1045,135.6 Q1038,135.6 1038,142.6 L1038,270 Q1038,277 1031,277 L896,277 Q889,277 889,284 L889,330",
+  ],
+  [
+    "t:source.lineage_layers.shop.orders->model.lineage_layers.int_orders__enriched",
+    "M884,105 L884,137 Q884,144 891,144 L1033.5,144 A4.5,4.5 0 0 1 1042.5,144 L1047,144 Q1054,144 1054,151 L1054,282 Q1054,289 1047,289 L902,289 Q895,289 895,296 L895,330",
+  ],
+  [
+    "t:source.lineage_layers.shop.orders->model.lineage_layers.stg_shop__orders",
+    "M864,105 L864,122.2 Q864,127.2 869,127.2 L869,127.2 Q874,127.2 874,132.2 L874,185",
+  ],
+]
+`;
+
+exports[`lineage-layers fixture, edge geometry > draws the same path strings for dbt connections 1`] = `
+[
+  [
+    "t:model.lineage_layers.dim_customers->model.lineage_layers.fct_orders",
+    "M874,584 L874,612 Q874,617 869,617 L869,617 Q864,617 864,622 L864,642",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.dim_customers",
+    "M871,439 L871,471.25 Q871,472.75 872.5,472.75 L872.5,472.75 Q874,472.75 874,474.25 L874,519",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel",
+    "M907,439 L907,476.25 Q907,483.25 914,483.25 L1041.5,483.25 A4.5,4.5 0 0 1 1050.5,483.25 L1201,483.25 Q1208,483.25 1208,490.25 L1208,519",
+  ],
+  [
+    "t:model.lineage_layers.int_orders__enriched->model.lineage_layers.fct_orders",
+    "M913,439 L913,455.25 Q913,462.25 920,462.25 L1039,462.25 Q1046,462.25 1046,469.25 L1046,600 Q1046,607 1039,607 L891,607 Q884,607 884,614 L884,642",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__accounts->model.lineage_layers.int_orders__enriched",
+    "M566,250 L566,278.5 Q566,285.5 573,285.5 L870,285.5 Q877,285.5 877,292.5 L877,330",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__users->model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel",
+    "M1228,250 L1228,299.5 Q1228,306.5 1235,306.5 L1391,306.5 Q1398,306.5 1398,313.5 L1398,486.75 Q1398,493.75 1391,493.75 L1235,493.75 Q1228,493.75 1228,500.75 L1228,519",
+  ],
+  [
+    "t:model.lineage_layers.stg_backend__users->model.lineage_layers.int_orders__enriched",
+    "M1208,250 L1208,285.5 Q1208,292.5 1201,292.5 L1058.5,292.5 A4.5,4.5 0 0 0 1049.5,292.5 L902,292.5 Q895,292.5 895,299.5 L895,330",
+  ],
+  [
+    "t:model.lineage_layers.stg_shop__orders->model.lineage_layers.int_orders__enriched",
+    "M874,250 L874,267 Q874,271.5 878.5,271.5 L878.5,271.5 Q883,271.5 883,276 L883,330",
+  ],
+  [
+    "t:seed.lineage_layers.country_codes->model.lineage_layers.int_orders__enriched",
+    "M1218,105 L1218,137 Q1218,144 1211,144 L1045,144 Q1038,144 1038,151 L1038,271.5 Q1038,278.5 1031,278.5 L896,278.5 Q889,278.5 889,285.5 L889,330",
+  ],
+  [
+    "t:source.lineage_layers.shop.orders->model.lineage_layers.int_orders__enriched",
+    "M884,105 L884,151 Q884,158 891,158 L1033.5,158 A4.5,4.5 0 0 1 1042.5,158 L1047,158 Q1054,158 1054,165 L1054,292.5 Q1054,299.5 1047,299.5 L908,299.5 Q901,299.5 901,306.5 L901,330",
+  ],
+  [
+    "t:source.lineage_layers.shop.orders->model.lineage_layers.stg_shop__orders",
+    "M864,105 L864,125 Q864,130 869,130 L869,130 Q874,130 874,135 L874,185",
+  ],
+]
+`;
+
+exports[`lineage-layers fixture, edge geometry > draws the same path strings for declared connections 1`] = `
+[
+  [
+    "r:meta:model.lineage_layers.fct_finance__daily_revenue_by_region_and_channel.region->seed.lineage_layers.country_codes.code",
+    "M464,439 L464,471 Q464,478 471,478 L747,478 Q754,478 754,485 L754,631.75 Q754,638.75 761,638.75 L801,638.75 Q808,638.75 808,645.75 L808,664",
+  ],
+  [
+    "r:meta:model.lineage_layers.fct_orders.customer_id->model.lineage_layers.dim_customers.customer_id",
+    "M451,105 L451,126.5 Q451,133.5 444,133.5 L393,133.5 Q386,133.5 386,140.5 L386,621.25 Q386,628.25 393,628.25 L457,628.25 Q464,628.25 464,635.25 L464,664",
+  ],
+  [
+    "r:meta:model.lineage_layers.int_orders__enriched.customer_id->model.lineage_layers.dim_customers.customer_id",
+    "M477,105 L477,147.5 Q477,154.5 484,154.5 L629,154.5 Q636,154.5 636,161.5 L636,185",
+  ],
+  [
+    "r:meta:model.lineage_layers.stg_backend__accounts.user_id->model.lineage_layers.stg_backend__users.user_id",
+    "M451,584 L451,610.75 Q451,617.75 458,617.75 L715,617.75 Q722,617.75 722,624.75 L722,906 Q722,913 715,913 L471,913 Q464,913 464,920 L464,954",
+  ],
+  [
+    "r:meta:source.lineage_layers.shop.orders.customer_id->model.lineage_layers.stg_backend__users.user_id",
+    "M477,584 L477,600.25 Q477,607.25 484,607.25 L731,607.25 Q738,607.25 738,614.25 L738,761 Q738,768 745,768 L801,768 Q808,768 808,775 L808,809",
+  ],
+]
+`;

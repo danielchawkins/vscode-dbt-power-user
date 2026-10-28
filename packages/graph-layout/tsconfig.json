@@ -1,0 +1,26 @@
+{
+  "//": "lib ES2024 and types [] leave out the DOM and Node globals, so code that needs either fails to compile: the engine runs unchanged in a browser, a worker and Node.",
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2024",
+    "lib": ["ES2024"],
+    "types": [],
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.bench.ts", "src/**/testGraphs.ts"]
+}

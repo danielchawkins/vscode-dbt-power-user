@@ -17,6 +17,7 @@ const root = path.resolve(import.meta.dirname, "../..");
 const PROJECTS = [
   "src/test/tsconfig.json",
   "packages/webview-contract/tsconfig.json",
+  "packages/graph-layout/tsconfig.json",
   "webview_panels/tsconfig.test.json",
 ];
 

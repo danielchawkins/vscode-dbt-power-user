@@ -179,6 +179,25 @@ module.exports = {
       to: { pathNot: "^packages/webview-contract/src/" },
     },
     {
+      name: "graph-layout-is-standalone",
+      severity: "error",
+      comment:
+        "The layout engine package imports only itself: no npm package, no Node built-in, no extension, webview or contract code, so it builds and runs outside this repository, in a browser and in Node.",
+      from: { path: "^packages/graph-layout/src/" },
+      to: { pathNot: "^packages/graph-layout/src/" },
+    },
+    {
+      name: "nothing-reaches-into-graph-layout",
+      severity: "error",
+      comment:
+        "Other code uses the layout engine through its package entry (packages/graph-layout/src/index.ts), never a module inside it.",
+      from: { pathNot: "^packages/graph-layout/" },
+      to: {
+        path: "^packages/graph-layout/src/",
+        pathNot: "^packages/graph-layout/src/index\\.ts$",
+      },
+    },
+    {
       name: "no-orphans",
       severity: "error",
       comment:
@@ -189,6 +208,7 @@ module.exports = {
           "\\.d\\.ts$",
           "^src/extension\\.ts$",
           "^packages/webview-contract/src/index\\.ts$",
+          "^packages/graph-layout/src/index\\.ts$",
         ],
       },
       to: {},
@@ -227,7 +247,7 @@ module.exports = {
   options: {
     tsConfig: { fileName: "tsconfig.json" },
     doNotFollow: { path: "node_modules" },
-    exclude: { path: ["^src/test", "\\.test\\.ts$"] },
+    exclude: { path: ["^src/test", "\\.test\\.ts$", "testGraphs\\.ts$"] },
     tsPreCompilationDeps: true,
   },
 };

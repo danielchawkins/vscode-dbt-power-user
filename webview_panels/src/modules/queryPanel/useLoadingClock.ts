@@ -1,11 +1,11 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryPanelDispatch } from "./context/queryPanelContext";
 import { setQueryExecutionInfo } from "./context/queryPanelReducer";
 
 /**
  * Times a query run for the panel's elapsed time: `start` ticks it while the run is open, and
  * `stop(true)` ends it with a final time, which an early result has not had; `stop(false)` ends it
- * without one, as a reset does.
+ * without one, as a reset does. Unmounting stops it.
  */
 const useLoadingClock = (): {
   start: () => void;
@@ -16,6 +16,14 @@ const useLoadingClock = (): {
     undefined,
   );
   const startRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      globalThis.clearInterval(timerRef.current);
+      timerRef.current = undefined;
+    },
+    [],
+  );
 
   const start = useCallback(() => {
     startRef.current = Date.now();

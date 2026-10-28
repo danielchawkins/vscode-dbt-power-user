@@ -1,4 +1,4 @@
-import type { Point } from "./layeredMetrics";
+import type { Point } from "./engine/layoutEngine";
 import {
   type Geometry,
   crossingsBetween,

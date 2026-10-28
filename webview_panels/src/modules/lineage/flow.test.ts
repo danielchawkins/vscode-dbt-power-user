@@ -1,13 +1,13 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
+import type { FlowInput } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
 import { drawnEdges, toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
-import type { FlowInput } from "./layeredInput";
 import { geometry, tableHeight } from "./layout";
 import type { RoutedRelationshipData } from "./relationshipRoute";
 
