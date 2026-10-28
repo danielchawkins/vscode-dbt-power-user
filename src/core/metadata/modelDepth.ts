@@ -1,4 +1,4 @@
-import type { DBTGraphType } from "../manifest";
+import type { DependencyGraph } from "../manifest";
 
 /**
  * Longest model-only path from a source to each model, keyed by both name and unique id. A model with no model
@@ -6,8 +6,8 @@ import type { DBTGraphType } from "../manifest";
  */
 export function createModelDepthsMap(
   nodeMap: Record<string, { resource_type: string; name: string }>,
-  parentMetaMap: DBTGraphType,
-  childMetaMap: DBTGraphType,
+  parentMetaMap: DependencyGraph,
+  childMetaMap: DependencyGraph,
 ): Map<string, number> {
   const models = Object.entries(nodeMap)
     .filter(([, node]) => node.resource_type === "model")
