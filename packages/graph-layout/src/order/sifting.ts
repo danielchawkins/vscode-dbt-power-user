@@ -1,3 +1,4 @@
+import { legalSlots } from "./clusters.js";
 import { groupCrossings } from "./crossings.js";
 import { type OrderModel, setLayer, unitsOf } from "./model.js";
 
@@ -46,6 +47,7 @@ function siftRank(
     original.map((b, j) => (i === j ? 0 : groupCrossings(model, a, b))),
   );
   let order = original.map((_, i) => i);
+  const chains = original.map((unit) => model.graph.paths[unit[0]!]!);
   for (let v = 0; v < n; v++) {
     if (!movable(model.graph.block[original[v]![0]!]!)) {
       continue;
@@ -53,9 +55,14 @@ function siftRank(
     const others = order.filter((i) => i !== v);
     const costs = siftCosts(cost, v, others);
     const here = order.indexOf(v);
+    const legal = legalSlots(
+      chains[v]!,
+      others.map((i) => chains[i]!),
+      here,
+    );
     let best = here;
     costs.forEach((c, k) => {
-      if (c < costs[best]! - EPSILON) {
+      if (legal[k] && c < costs[best]! - EPSILON) {
         best = k;
       }
     });
