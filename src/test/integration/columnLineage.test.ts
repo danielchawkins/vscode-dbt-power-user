@@ -12,6 +12,7 @@ import type {
   ConnectedColumnsResult,
 } from "../../features/lineage/lineageService";
 import { pollUntil } from "../async";
+import { showLineageView } from "./helpers/workspaceHelper";
 
 /**
  * Pins column lineage from the language server against the pinned dbt: the extension's service sends
@@ -33,11 +34,12 @@ suite("Column lineage from the language server", function () {
   this.timeout(5 * 60_000);
   let projectDir = "";
 
-  suiteSetup(function () {
+  suiteSetup(async function () {
     if (MODE !== "strict") {
       this.skip();
       return;
     }
+    await showLineageView();
     projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
   });
 
