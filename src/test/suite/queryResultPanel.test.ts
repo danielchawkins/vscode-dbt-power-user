@@ -99,7 +99,7 @@ describe("QueryResultPanel", () => {
   describe("query requests", () => {
     const payload = {
       query: "select 1",
-      fn: Promise.resolve({} as never),
+      fn: () => Promise.resolve({} as never),
       projectName: "jaffle",
     };
 
@@ -131,7 +131,8 @@ describe("QueryResultPanel", () => {
       const { panel, posted } = makePanel({ project: project() });
       const result = await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output(2) } as never),
+        fn: () =>
+          Promise.resolve({ executeQuery: async () => output(2) } as never),
         projectName: "jaffle",
       });
       expect(commands.executeCommand).toHaveBeenCalledWith(
@@ -164,13 +165,14 @@ describe("QueryResultPanel", () => {
       };
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() } as never),
+        fn: () =>
+          Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "jaffle",
         preview,
       });
       await panel.executeQuery({
         query: "select nope",
-        fn: Promise.reject(new Error("boom")),
+        fn: () => Promise.reject(new Error("boom")),
         projectName: "jaffle",
         preview,
       });
@@ -195,7 +197,8 @@ describe("QueryResultPanel", () => {
       for (let i = 0; i < 12; i++) {
         await panel.executeQuery({
           query: `select ${i}`,
-          fn: Promise.resolve({ executeQuery: async () => output() } as never),
+          fn: () =>
+            Promise.resolve({ executeQuery: async () => output() } as never),
           projectName: "jaffle",
         });
       }
@@ -207,7 +210,8 @@ describe("QueryResultPanel", () => {
       const { panel } = makePanel();
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() } as never),
+        fn: () =>
+          Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "",
       });
       expect((panel as any).history.all()).toEqual([]);
@@ -217,11 +221,12 @@ describe("QueryResultPanel", () => {
       const { panel, posted } = makePanel({ project: project() });
       await panel.executeQuery({
         query: "select nope",
-        fn: Promise.resolve({
-          executeQuery: async () => {
-            throw new ExecuteSQLError("bad column", "select compiled nope");
-          },
-        } as never),
+        fn: () =>
+          Promise.resolve({
+            executeQuery: async () => {
+              throw new ExecuteSQLError("bad column", "select compiled nope");
+            },
+          } as never),
         projectName: "jaffle",
       });
       expect(window.showErrorMessage).toHaveBeenCalledWith(
@@ -242,7 +247,7 @@ describe("QueryResultPanel", () => {
       const { panel, posted } = makePanel();
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.reject(new Error("boom")),
+        fn: () => Promise.reject(new Error("boom")),
         projectName: "",
       });
       expect(window.showErrorMessage).not.toHaveBeenCalled();
@@ -254,6 +259,24 @@ describe("QueryResultPanel", () => {
         error: { message: "boom" },
       });
     });
+
+    it("renders a query that cannot start, such as a project with no CLI yet, as an error", async () => {
+      const { panel, posted } = makePanel();
+      await panel.executeQuery({
+        query: "select 1",
+        fn: () => {
+          throw new Error("Fusion CLI integration is not initialized");
+        },
+        projectName: "",
+      });
+      expect(
+        posted().find(
+          (m) => (m as { command: string }).command === "renderError",
+        ),
+      ).toMatchObject({
+        error: { message: "Fusion CLI integration is not initialized" },
+      });
+    });
   });
 
   describe("messages", () => {
@@ -261,7 +284,8 @@ describe("QueryResultPanel", () => {
       const { panel, posted, send } = makePanel({ project: project() });
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() } as never),
+        fn: () =>
+          Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "jaffle",
       });
       await send({ command: "getQueryHistory" });
@@ -366,7 +390,7 @@ describe("QueryResultPanel", () => {
       const { panel, posted, view, send } = makePanel({}, false);
       void panel.executeQuery({
         query: "select 1",
-        fn: new Promise(() => undefined),
+        fn: () => new Promise(() => undefined),
         projectName: "",
       });
       await flushAsync();
@@ -384,12 +408,12 @@ describe("QueryResultPanel", () => {
       const shift = vi.spyOn(queue, "shift");
       void panel.executeQuery({
         query: "select 1",
-        fn: new Promise(() => undefined),
+        fn: () => new Promise(() => undefined),
         projectName: "",
       });
       void panel.executeQuery({
         query: "select 2",
-        fn: new Promise(() => undefined),
+        fn: () => new Promise(() => undefined),
         projectName: "",
       });
       await flushAsync();
