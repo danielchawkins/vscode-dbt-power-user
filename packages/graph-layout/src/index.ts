@@ -1,11 +1,12 @@
 /**
- * @fusion-power-user/graph-layout. The first phases ship the types, presets, `validateGraph` and the drawing metrics;
- * `layout` lands with the later phases (README.md, "Build order").
+ * @fusion-power-user/graph-layout: the types, presets, `validateGraph`, `layout` and the drawing metrics. README.md
+ * describes the pipeline (its "Build order") and the guarantees.
  */
 export type * from "./types.js";
 export type { LayoutPreset, LayoutPresetName } from "./presets.js";
 export { layoutPresets } from "./presets.js";
 export { validateGraph } from "./validate.js";
+export { LayoutInputError, layout } from "./layout.js";
 export type {
   CompareOptions,
   Drawing,
