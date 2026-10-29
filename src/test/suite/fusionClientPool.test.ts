@@ -29,7 +29,7 @@ import { onCurrentClientChange } from "../../projects/clients/clientChange";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
 import {
   createFusionClientPool,
-  type FusionClientPoolImpl,
+  type FusionClientPool,
 } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
@@ -120,7 +120,7 @@ describe("FusionClientPool", () => {
   let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
   let settings: Record<string, unknown>;
   let channels: Map<string, LogOutputChannel>;
-  let pools: FusionClientPoolImpl[];
+  let pools: FusionClientPool[];
   let environments: ReturnType<typeof fakeProjectEnvironments>;
   /** Whether a root still holds its project file; tests remove a root to model a deleted checkout. */
   let rootExists: (root: Uri) => boolean;
@@ -186,7 +186,7 @@ describe("FusionClientPool", () => {
     vi.mocked(workspace.getConfiguration).mockRestore();
   });
 
-  function createPool(): FusionClientPoolImpl {
+  function createPool(): FusionClientPool {
     const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,

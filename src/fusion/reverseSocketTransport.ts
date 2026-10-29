@@ -31,7 +31,7 @@ export interface ExitingProcess {
 
 type AcceptState = "idle" | "pending" | "accepted" | "settled";
 
-class ReverseSocketServerImpl implements ReverseSocketServer {
+class TcpReverseSocketServer implements ReverseSocketServer {
   private socket: net.Socket | null = null;
   private disposed = false;
   private acceptState: AcceptState = "idle";
@@ -180,7 +180,7 @@ export function listenForServer(): Promise<ReverseSocketServer> {
         reject(new Error("Failed to bind reverse socket listener"));
         return;
       }
-      resolve(new ReverseSocketServerImpl(server, address.port));
+      resolve(new TcpReverseSocketServer(server, address.port));
     });
   });
 }
