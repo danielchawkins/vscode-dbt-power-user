@@ -1,5 +1,6 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
+import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import { FusionCommandError } from "../core/lsp";
 import { serverMetadataFrom, type ServerMetadata } from "../core/metadata";
@@ -221,7 +222,7 @@ export class ServerMetadataSource implements Disposable {
   dispose(): void {
     this.disposed = true;
     this.wakeIdleWaiters();
-    this.subscriptions.forEach((subscription) => subscription.dispose());
+    disposeAll(this.subscriptions);
     this.emitter.dispose();
   }
 }

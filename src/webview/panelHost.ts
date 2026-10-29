@@ -16,6 +16,7 @@ import {
   completeWebviewReady,
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
+import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import type { ExtensionContextStore } from "../extensionContext";
 import type { QueryManifestService } from "../projects/project/queryManifestService";
@@ -358,9 +359,7 @@ export abstract class PanelHost<
 
   /** Ends a page's subscription and demand, and forgets its readiness. A subclass ends its own state here too. */
   protected endPage(page: WebviewView | WebviewPanel) {
-    for (const end of this.listening.get(page) ?? []) {
-      end.dispose();
-    }
+    disposeAll(this.listening.get(page) ?? []);
     this.listening.delete(page);
     this.demands.get(page)?.dispose();
     this.demands.delete(page);
@@ -395,11 +394,6 @@ export abstract class PanelHost<
     for (const page of this.demands.keys()) {
       this.endPage(page);
     }
-    while (this._disposables.length) {
-      const x = this._disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this._disposables);
   }
 }

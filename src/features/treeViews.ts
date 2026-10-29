@@ -1,5 +1,6 @@
 import type { Disposable, TreeDataProvider } from "vscode";
 import { window } from "vscode";
+import { disposeAll } from "../core/disposables";
 import type { MetadataDemand } from "../projects/manifest/metadataDemand";
 import type { DocumentationTreeview } from "./modelTree/documentationTreeview";
 import type {
@@ -83,11 +84,6 @@ export class TreeviewProviders implements Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 }

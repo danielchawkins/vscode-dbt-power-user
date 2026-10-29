@@ -1,4 +1,5 @@
 import type { Disposable } from "vscode";
+import { disposeAll } from "../core/disposables";
 import type { DeferToProductionStatusBar } from "./defer/deferToProductionStatusBar";
 
 export class StatusBars implements Disposable {
@@ -15,11 +16,6 @@ export class StatusBars implements Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 }

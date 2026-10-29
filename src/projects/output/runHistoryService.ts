@@ -1,6 +1,7 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { RunResultsEventData } from "../../core/dbt/domain";
+import { disposeAll } from "../../core/disposables";
 
 export interface CommandFailedEvent {
   command: string;
@@ -67,6 +68,6 @@ export class RunHistoryService implements Disposable {
   }
 
   dispose(): void {
-    this.disposables.forEach((d) => d.dispose());
+    disposeAll(this.disposables);
   }
 }

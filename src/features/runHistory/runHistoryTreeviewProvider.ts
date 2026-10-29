@@ -1,5 +1,6 @@
 import type { Disposable, Event, TreeDataProvider, TreeItem } from "vscode";
 import { EventEmitter } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import type { RunHistoryTreeItem } from "./runHistoryTreeItems";
 import { ResultTreeItem, RunTreeItem } from "./runHistoryTreeItems";
@@ -47,6 +48,6 @@ export class RunHistoryTreeviewProvider
   }
 
   dispose(): void {
-    this.disposables.forEach((d) => d.dispose());
+    disposeAll(this.disposables);
   }
 }

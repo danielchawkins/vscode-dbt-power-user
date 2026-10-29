@@ -12,6 +12,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import { removeProtocol } from "../../core/text";
 import type { Projects } from "../../projects/project/projects";
 import {
@@ -86,9 +87,7 @@ export class DocumentationTreeview
   }
 
   dispose(): void {
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
+    disposeAll(this.disposables);
   }
 }
 

@@ -1,6 +1,7 @@
 import type { Disposable } from "vscode";
 import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
+import { disposeAll } from "./core/disposables";
 import type { Log } from "./core/log";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
 import type { LineageService } from "./features/lineage/lineageService";
@@ -63,12 +64,7 @@ export class FusionPowerUserExtension implements Disposable {
   dispose() {
     this.disposed = true;
     this.startupGate.settle();
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   private own(disposable: Disposable | undefined): void {

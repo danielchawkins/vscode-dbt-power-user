@@ -1,6 +1,7 @@
 import type { Diagnostic, Event } from "vscode";
 import { Disposable, EventEmitter, Uri } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { type ManifestProject } from "../../core/manifest/index";
 import { isAtOrBelow } from "../../core/paths";
@@ -431,9 +432,7 @@ export class Project implements Disposable, ManifestProject {
     }
     this.disposed = true;
     this.trigger.dispose();
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
+    disposeAll(this.disposables);
     await this.lifecycle.dispose();
   }
 

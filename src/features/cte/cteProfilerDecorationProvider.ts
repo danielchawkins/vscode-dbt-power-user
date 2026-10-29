@@ -5,6 +5,7 @@ import type {
   TextEditorDecorationType,
 } from "vscode";
 import { OverviewRulerLane, Range, ThemeColor, Uri, window } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { extensionRoot } from "../../extensionRoot";
 import type { CteProfilerService } from "./cteProfilerService";
@@ -74,12 +75,7 @@ export class CteProfilerDecorationProvider implements Disposable {
     this.hotDecorationType.dispose();
     this.warmDecorationType.dispose();
     this.coolDecorationType.dispose();
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   toggle(): void {

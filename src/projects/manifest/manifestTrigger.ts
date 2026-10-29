@@ -2,13 +2,14 @@ import { join, resolve } from "node:path/posix";
 import {
   type Disposable,
   type FileSystemWatcher,
-  workspace,
   RelativePattern,
   type Uri,
+  workspace,
 } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { isStrictlyBelow } from "../../core/paths";
-import { isDbtProjectFilePath, DBT_PROJECT_FILE } from "../../core/snapshot";
+import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../../core/snapshot";
 import { BOUNDS } from "../../core/timing";
 
 /** Files at the project root whose change always calls for a config refresh and a parse. */
@@ -85,10 +86,7 @@ export class ManifestTrigger implements Disposable {
     this.quietTimer = undefined;
     this.pendingKind = undefined;
     this.pendingPaths.clear();
-    for (const subscription of this.subscriptions) {
-      subscription.dispose();
-    }
-    this.subscriptions = [];
+    disposeAll(this.subscriptions);
     this.watcher?.dispose();
     this.watcher = undefined;
   }

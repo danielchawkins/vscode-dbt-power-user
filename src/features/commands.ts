@@ -1,5 +1,6 @@
 import type { Disposable } from "vscode";
 import { gatedRegister } from "../commandRegistry";
+import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import type { RunHistoryService } from "../projects/output/runHistoryService";
 import type { CurrentProject } from "../projects/project/currentProject";
@@ -82,8 +83,6 @@ export class VSCodeCommands implements Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
+    disposeAll(this.disposables);
   }
 }
