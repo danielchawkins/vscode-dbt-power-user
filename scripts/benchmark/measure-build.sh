@@ -20,7 +20,7 @@ PY
 }
 
 measure_webview_build() {
-  elapsed_ms npm run build --prefix "$root/webview_panels"
+  elapsed_ms npm run build --prefix "$root/webviews"
 }
 
 measure_host_build() {

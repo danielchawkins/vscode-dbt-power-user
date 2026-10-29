@@ -7,10 +7,10 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const root = path.resolve(import.meta.dirname, "../..");
-const PATH_ROOTS = ["src/", "webview_panels/", "packages/", "scripts/"];
+const PATH_ROOTS = ["src/", "webviews/", "packages/", "scripts/"];
 const SOURCE_DIRS = [
   "src",
-  "webview_panels/src",
+  "webviews/src",
   ...fs
     .readdirSync(path.join(root, "packages"))
     .map((name) => `packages/${name}/src`),

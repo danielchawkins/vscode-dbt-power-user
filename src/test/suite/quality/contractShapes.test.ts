@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const CONTRACT = "packages/webview-contract/src";
-const SCANNED = ["src", "webview_panels/src"];
+const SCANNED = ["src", "webviews/src"];
 
 /**
  * Views of a contract shape that are intended: `"<file> <name>"` to the text its declaration must start with after the

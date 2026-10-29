@@ -5,7 +5,7 @@ message: >-
   An ast-grep suppression must name its rule ids and a reason: `// ast-grep-ignore: <id>[, <id>] -- <why>`.
   A bare `ast-grep-ignore` silences every rule.
 files:
-  - webview_panels/src/**
+  - webviews/src/**
 rule:
   kind: comment
   all:

@@ -13,7 +13,7 @@ Each top-level directory has one consumer:
 | Path                               | Holds                                                                         | Consumer                                               |
 | ---------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------ |
 | `src/`                             | The extension host and its tests                                              | The extension bundle (rsbuild) and Vitest              |
-| `webview_panels/`                  | The React webview app                                                         | Vite, which emits into `dist/webview/`                 |
+| `webviews/`                        | The React webview app                                                         | Vite, which emits into `dist/webview/`                 |
 | `packages/`                        | Host-side TypeScript libraries                                                | `tsc -b`                                               |
 | `media/`, `syntaxes/`, `snippets/` | Assets that `package.json` contributes                                        | VS Code, at runtime                                    |
 | `dist/`                            | Build output, not tracked                                                     | The VSIX                                               |

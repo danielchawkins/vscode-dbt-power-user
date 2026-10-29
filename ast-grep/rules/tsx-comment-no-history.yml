@@ -8,7 +8,7 @@ message: >-
   PR bind the history (AGENTS.md, Comments and prose). For an exception, put
   `ast-grep-ignore: tsx-comment-no-history -- <why>` in a comment above the line and say why in review.
 files:
-  - webview_panels/src/**
+  - webviews/src/**
 rule:
   kind: comment
   any:

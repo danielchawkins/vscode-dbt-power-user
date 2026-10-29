@@ -28,7 +28,7 @@
   "exclude": [
     "node_modules",
     ".vscode-test",
-    "webview_panels",
+    "webviews",
     "dist",
     "out",
     "src/test",

@@ -1,4 +1,4 @@
-// Oxlint config for the webview workspace; `just webviews::lint` runs it over webview_panels.
+// Oxlint config for the webview workspace; `just webviews::lint` runs it over webviews.
 // Plain data: nothing is exported as a function, so the fixture harness can serialise it.
 // Only this workspace's tsconfigs see the sources, so this file is ignored by its ESLint config.
 import { vscodeApiPaths, vscodeApiPatterns } from "./lint/boundaries.mjs";

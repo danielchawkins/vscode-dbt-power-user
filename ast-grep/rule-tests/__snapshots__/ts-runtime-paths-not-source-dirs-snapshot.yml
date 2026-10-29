@@ -1,11 +1,11 @@
 id: ts-runtime-paths-not-source-dirs
 snapshots:
-  Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");:
+  Uri.joinPath(extensionUri, "webviews", "dist", "assets");:
     labels:
-    - source: webview_panels
+    - source: webviews
       style: primary
       start: 28
-      end: 42
+      end: 36
   path.join(extensionPath, "packages/graph-layout/dist/index.js");:
     labels:
     - source: packages/graph-layout/dist/index.js

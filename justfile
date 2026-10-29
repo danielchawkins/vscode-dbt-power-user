@@ -6,7 +6,7 @@ export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
 
 scripts_dir := source_directory() / "scripts/workspace"
 
-mod webviews "webview_panels"
+mod webviews
 
 ####################
 # Setup
@@ -64,13 +64,13 @@ build-packages:
 [group("development")]
 build:
     just build-packages
-    npm run build:app --workspace webview_panels
+    npm run build:app --workspace webviews
     npm run build:app
 
 [group("development")]
 build-dev:
     just build-packages
-    npm run build:app --workspace webview_panels
+    npm run build:app --workspace webviews
     npm run build:dev:app
 
 [group("development")]
@@ -80,7 +80,7 @@ watch:
     just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
     npm run watch:packages &
-    npm run watch:app --workspace webview_panels &
+    npm run watch:app --workspace webviews &
     npm run watch:extension:app &
     wait
 
@@ -149,12 +149,12 @@ check:
 [group("quality")]
 fmt-just:
     just --fmt
-    just --justfile webview_panels/justfile --fmt
+    just --justfile webviews/justfile --fmt
 
 [group("quality")]
 lint-just:
     just --fmt --check
-    just --justfile webview_panels/justfile --fmt --check
+    just --justfile webviews/justfile --fmt --check
     just --dump > /dev/null
 
 [group("quality")]
