@@ -355,6 +355,22 @@ export function createMockLogOutputChannel(name?: string): LogOutputChannel {
   };
 }
 
+export class TabInputText {
+  readonly uri: unknown;
+  constructor(uri: unknown) {
+    this.uri = uri;
+  }
+}
+
+export class TabInputTextDiff {
+  readonly original: unknown;
+  readonly modified: unknown;
+  constructor(original: unknown, modified: unknown) {
+    this.original = original;
+    this.modified = modified;
+  }
+}
+
 export const window = {
   showInformationMessage: vi.fn().mockReturnValue(Promise.resolve()),
   showWarningMessage: vi.fn().mockReturnValue(Promise.resolve()),
@@ -366,6 +382,10 @@ export const window = {
   onDidChangeActiveColorTheme: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidChangeTextEditorSelection: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidChangeVisibleTextEditors: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  tabGroups: {
+    all: [] as { tabs: { input: unknown }[] }[],
+    onDidChangeTabs: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  },
   activeTextEditor: undefined as any,
   visibleTextEditors: [] as unknown[],
   activeColorTheme: { kind: ColorThemeKind.Dark },

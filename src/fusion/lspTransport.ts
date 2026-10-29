@@ -33,6 +33,7 @@ import {
   acceptWithProcessExit,
   listenForServer,
 } from "./reverseSocketTransport";
+import { ShownDocuments } from "./shownDocuments";
 
 /** What the transport reads from the client that owns it. */
 export interface LspTransportHost {
@@ -56,6 +57,7 @@ export class LspTransport {
   private childProcess: SpawnedLspProcess | undefined;
   private stateListener: Disposable | undefined;
   private processExitListener: (() => void) | undefined;
+  private shownDocuments: ShownDocuments | undefined;
   private readonly options: FusionClientOptions;
   private readonly deps: FusionLanguageClientDependencies;
   private readonly host: LspTransportHost;
@@ -128,6 +130,7 @@ export class LspTransport {
 
       const createLanguageClient =
         this.deps.createLanguageClient ?? defaultCreateLanguageClient;
+      this.shownDocuments = new ShownDocuments(this.deps.shownDocuments);
 
       const serverOptions: ServerOptions = async () => {
         return accept(server, processAdapter, BOUNDS.connectionTimeoutMs);
@@ -149,6 +152,7 @@ export class LspTransport {
           compileState: this.host.compileState,
           nestedRoots: this.host.nestedRoots,
           isInactive: this.host.isInactive,
+          shownDocuments: this.shownDocuments,
         }),
       );
 
@@ -181,6 +185,8 @@ export class LspTransport {
     this.stateListener?.dispose();
     this.stateListener = undefined;
     this.host.nestedRoots?.openDocuments.clear();
+    this.shownDocuments?.dispose();
+    this.shownDocuments = undefined;
 
     const processAdapter = this.childProcess;
     if (processAdapter && this.processExitListener) {
