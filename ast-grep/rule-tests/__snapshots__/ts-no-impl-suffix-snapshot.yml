@@ -1,0 +1,52 @@
+id: ts-no-impl-suffix
+snapshots:
+  class DeclaredProjectImpl implements DeclaredProject {}:
+    labels:
+    - source: DeclaredProjectImpl
+      style: primary
+      start: 6
+      end: 25
+    - source: class DeclaredProjectImpl implements DeclaredProject {}
+      style: secondary
+      start: 0
+      end: 55
+  export abstract class BaseImpl {}:
+    labels:
+    - source: BaseImpl
+      style: primary
+      start: 22
+      end: 30
+    - source: abstract class BaseImpl {}
+      style: secondary
+      start: 7
+      end: 33
+  export class FusionClientPoolImpl implements FusionClientPool {}:
+    labels:
+    - source: FusionClientPoolImpl
+      style: primary
+      start: 13
+      end: 33
+    - source: class FusionClientPoolImpl implements FusionClientPool {}
+      style: secondary
+      start: 7
+      end: 64
+  'interface ServerImpl { port: number }':
+    labels:
+    - source: ServerImpl
+      style: primary
+      start: 10
+      end: 20
+    - source: 'interface ServerImpl { port: number }'
+      style: secondary
+      start: 0
+      end: 37
+  'type ClientImpl = { start(): void };':
+    labels:
+    - source: ClientImpl
+      style: primary
+      start: 5
+      end: 15
+    - source: 'type ClientImpl = { start(): void };'
+      style: secondary
+      start: 0
+      end: 36

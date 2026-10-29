@@ -1,0 +1,57 @@
+# A hand-written loop that disposes a list comes in three shapes here (pop until empty, forEach, for-of), and
+# they differ: forEach and for-of leave the disposed items in the list, so a second dispose() disposes them
+# again, and only the pop loop disposes in reverse order of registration. `disposeAll` in src/core/disposables.ts
+# is the one shape: it empties the list and disposes last-registered first.
+id: ts-dispose-through-helper
+language: typescript
+severity: error
+message: >-
+  Dispose a list of disposables with `disposeAll` from src/core/disposables.ts, not a hand-written loop. For an
+  exception, put `ast-grep-ignore: ts-dispose-through-helper -- <why>` in a comment above the line.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  # The refactor adds src/core/disposables.ts here when it creates the helper, whose own loop is the one shape.
+  # Baseline: the files that still hold a loop. The disposeAll refactor deletes these lines; nothing adds one.
+  - src/features/codeLenses.ts
+  - src/features/commands.ts
+  - src/features/compiledSql/sqlPreviewContentProvider.ts
+  - src/features/contentProviders.ts
+  - src/features/cte/cteProfilerDecorationProvider.ts
+  - src/features/cte/cteProfilerService.ts
+  - src/features/defer/deferToProductionStatusBar.ts
+  - src/features/lineage/lineageViewProvider.ts
+  - src/features/modelTree/documentationTreeview.ts
+  - src/features/modelTree/modelTreeviewProvider.ts
+  - src/features/panels.ts
+  - src/features/projectSetup/fileAssociations.ts
+  - src/features/projectSetup/projectConfigCommands.ts
+  - src/features/runHistory/runHistoryTreeviewProvider.ts
+  - src/features/sqlActions/virtualSqlCodeLensProvider.ts
+  - src/features/statusBars.ts
+  - src/features/treeViews.ts
+  - src/fusion/compileSignal.ts
+  - src/fusionPowerUserExtension.ts
+  - src/metadata/compositeMetadataSource.ts
+  - src/metadata/serverMetadataSource.ts
+  - src/projects/clients/fusionClientPool.ts
+  - src/projects/clients/fusionStatus.ts
+  - src/projects/clients/projectEnvironments.ts
+  - src/projects/manifest/manifestTrigger.ts
+  - src/projects/output/runHistoryService.ts
+  - src/projects/project/currentProject.ts
+  - src/projects/project/project.ts
+  - src/projects/project/projects.ts
+  - src/projects/registry/projectRegistry.ts
+  - src/webview/panelHost.ts
+rule:
+  any:
+    - all:
+        - pattern: while ($A.length) { $$$ }
+        - has: { stopBy: end, pattern: $A.pop() }
+        - has: { stopBy: end, kind: property_identifier, regex: ^dispose$ }
+    - pattern: $A.forEach(($D) => $D.dispose())
+    - pattern: $A.forEach(($D) => { $D.dispose(); })
+    - pattern: for (const $D of $A) { $D.dispose(); }
+    - pattern: for (const $D of $A) $D.dispose();

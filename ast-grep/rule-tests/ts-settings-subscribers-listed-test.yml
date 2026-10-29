@@ -1,0 +1,8 @@
+id: ts-settings-subscribers-listed
+valid:
+  - 'project.onDidChangeManifest(() => this.refresh());'
+  - 'const limit = readSetting("query.limit");'
+  - 'export function onDidChangeSettings(keys, listener) { return onDidChangeSettings(keys, listener); }'
+invalid:
+  - 'onDidChangeSettings(["query.limit"], () => this.refresh());'
+  - 'this.disposables.push(onDidChangeSettings(["defer.perProject"], (change) => { if (change.affects()) { this.update(); } }));'

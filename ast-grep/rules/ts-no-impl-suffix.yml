@@ -1,0 +1,24 @@
+# The rearchitecture plan's naming rule: a name says what a thing is, never its implementation (`…Impl`). A class
+# that is the only implementation of an interface is named for what it holds or does, or the interface goes.
+id: ts-no-impl-suffix
+language: typescript
+severity: error
+message: >-
+  A class, interface or type alias is named `…Impl`. Name it for what it is (what it holds or does), as the
+  naming conventions in docs/refactor/rearchitecture-plan.md require.
+files:
+  - src/**
+  - packages/**
+ignores:
+  - src/test/**
+  # Baseline: the five classes the rename refactor renames; it deletes these lines.
+  - src/core/manifest/nodeParser.ts
+  - src/fusion/fusionLanguageClient.ts
+  - src/fusion/reverseSocketTransport.ts
+  - src/projects/clients/fusionClientPool.ts
+  - src/projects/registry/projectRegistry.ts
+rule:
+  any:
+    - kind: type_identifier
+      regex: Impl$
+      inside: { any: [{ kind: class_declaration }, { kind: abstract_class_declaration }, { kind: interface_declaration }, { kind: type_alias_declaration }], field: name }

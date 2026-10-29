@@ -160,6 +160,29 @@ module.exports = {
       to: { path: "^src/webview/" },
     },
     {
+      name: "registry-project-set-is-pure",
+      severity: "error",
+      comment:
+        "The project-set plan (dedupe by realpath, keep unchanged projects, lookup order) is pure, so it is unit-tested without the VS Code mock; it may name vscode types but import no runtime vscode or fs.",
+      from: { path: "^src/projects/registry/projectSet\\.ts$" },
+      to: {
+        path: "^vscode$|^node_modules/@types/vscode/|^(node:)?fs(/promises)?$",
+        dependencyTypesNot: ["type-only"],
+      },
+    },
+    {
+      name: "webview-host-knows-no-project",
+      severity: "error",
+      comment:
+        "webview/ is panel infrastructure; a panel takes the project services it needs in its own constructor. The pathNot is the baseline the PanelHost refactor deletes.",
+      from: { path: "^src/webview/" },
+      to: {
+        path: "^src/projects/",
+        pathNot:
+          "^src/projects/project/(sharedStateService|queryManifestService)\\.ts$",
+      },
+    },
+    {
       name: "fusion-language-client-is-adapter",
       severity: "error",
       comment:
