@@ -98,3 +98,54 @@ describe.each(["balanced", "thorough"] as const)(
     });
   },
 );
+
+/**
+ * The int__column_profiles view: a function in Other feeds staging, and a model in Other hangs off a mart. Other
+ * is not a layer, so each Other card gets its own band where its edges put it, not one band spanning the drawing.
+ */
+describe("graphLayoutEngine with cards in Other", () => {
+  const card = (id: string, tag: string): LayoutCard => ({
+    id,
+    width: 280,
+    height: 56,
+    tag,
+  });
+  const cards = [
+    card("src", "source"),
+    card("fn", "other"),
+    card("stg", "staging"),
+    card("int", "intermediate"),
+    card("mart", "marts"),
+    card("downstream", "other"),
+  ];
+  const pairs: [string, string][] = [
+    ["src", "stg"],
+    ["fn", "stg"],
+    ["stg", "int"],
+    ["int", "mart"],
+    ["mart", "downstream"],
+  ];
+  const request: LayoutRequest = {
+    focus: "int",
+    cards,
+    edges: pairs.map(([from, to]) => ({
+      id: `${from}>${to}`,
+      from,
+      to,
+      role: "table" as const,
+    })),
+    rankPairs: pairs,
+    traceOn: false,
+  };
+  const response = graphLayoutEngine("balanced").layout(request);
+
+  it("draws one small Other band per Other card, overlapping no other band", () => {
+    const other = response.bands.filter((band) => band.tag === "other");
+    expect(other).toHaveLength(2);
+    for (const [i, a] of response.bands.entries()) {
+      for (const b of response.bands.slice(i + 1)) {
+        expect(overlap(a, b), `${a.tag} overlaps ${b.tag}`).toBe(false);
+      }
+    }
+  });
+});

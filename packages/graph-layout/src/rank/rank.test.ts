@@ -33,7 +33,7 @@ type Spec = [number, number, number];
 interface Case {
   count: number;
   edges: Spec[];
-  bands: number[];
+  bands: (number | undefined)[];
 }
 
 const caseArb: fc.Arbitrary<Case> = fc
@@ -47,7 +47,10 @@ const caseArb: fc.Arbitrary<Case> = fc
     return fc.record({
       count: fc.constant(count),
       edges: fc.array(edge, { maxLength: 12 }),
-      bands: fc.array(fc.nat(2), { minLength: count, maxLength: count }),
+      bands: fc.array(fc.option(fc.nat(2), { nil: undefined, freq: 4 }), {
+        minLength: count,
+        maxLength: count,
+      }),
     });
   });
 
@@ -64,13 +67,13 @@ const dagOf = (edges: readonly Spec[]): Spec[] =>
 function graphOf(
   count: number,
   edges: readonly Spec[],
-  bands: readonly number[],
+  bands: readonly (number | undefined)[],
 ): LayoutGraph {
   const nodes = Array.from({ length: count }, (_, i) => ({
     id: `n${i}`,
     width: 10,
     height: 10,
-    partition: bands[i],
+    ...(bands[i] === undefined ? {} : { partition: bands[i] }),
   }));
   const links: LayoutEdge[] = edges.map(([a, b, k], i) => ({
     id: `e${i}`,
@@ -224,6 +227,23 @@ describe("rank", () => {
       }),
       { numRuns: 120 },
     );
+  });
+
+  it("ranks a node in no partition by its edges alone under soft partitions", () => {
+    // Two band-2 nodes and one free node, with no edges. In no band, the free node puts no band above band 2, so
+    // all three share rank 0. Counted as band 0, it would push both band-2 nodes a rank below it.
+    const graph: LayoutGraph = {
+      nodes: [
+        { id: "n0", width: 10, height: 10, partition: 2 },
+        { id: "n1", width: 10, height: 10, partition: 2 },
+        { id: "free", width: 10, height: 10 },
+      ],
+      edges: [],
+    };
+    const result = rank(graph, optionsWith("soft"));
+    expect(["n0", "n1", "free"].map((id) => rankOf(result, id))).toEqual([
+      0, 0, 0,
+    ]);
   });
 
   it("gives the same ranks and reversed edges for the same input", () => {

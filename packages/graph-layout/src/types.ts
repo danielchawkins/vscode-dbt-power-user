@@ -45,7 +45,8 @@ export interface LayoutNode {
   /**
    * The node's band. When `LayoutOptions.partitions` is `strict`, every node of a lower partition sits in an earlier
    * rank than every node of a higher one; when `soft` (the default), crossing a partition boundary backwards costs
-   * ranking weight instead.
+   * ranking weight instead. A node with no partition is in no band under `soft`, so its edges alone rank it; under
+   * `strict` it is in the first band.
    */
   partition?: number;
 }
