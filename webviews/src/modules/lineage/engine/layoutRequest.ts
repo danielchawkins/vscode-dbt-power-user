@@ -156,6 +156,8 @@ export interface FlowInput {
   columnsNeedStrict?: boolean | undefined;
   /** Card placement; absent means `layered`. */
   layout?: lineage.LineageLayout | undefined;
+  /** The engine of the layered layout; absent means `balanced`. */
+  engine?: lineage.LineageEngine | undefined;
   /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
   layerColors?: Readonly<Record<string, string>> | undefined;
 }

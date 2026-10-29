@@ -397,7 +397,7 @@ describe("toFlow layered layout", () => {
       routed: RoutedRelationshipData;
     };
     expect(data.ref.id).toBe("ref1");
-    expect(data.routed.d).toMatch(/^M\d/);
+    expect(data.routed.d).toMatch(/^M-?\d/);
     // `src` sits above `mart`, so the referenced end leaves `src`'s bottom and the declaring end enters `mart`'s top.
     expect(data.routed.source.position).toBe(Position.Bottom);
     expect(data.routed.target.position).toBe(Position.Top);

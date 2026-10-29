@@ -168,6 +168,15 @@ export interface LineageRef {
  */
 export type LineageLayout = "layered" | "leftToRight";
 
+/**
+ * Which engine places and routes the `layered` layout: `balanced` and `thorough` are @fusion-power-user/graph-layout
+ * with that ordering effort, `thorough` searching harder for fewer crossings; `classic` is the earlier owned engine.
+ */
+export type LineageEngine = "balanced" | "thorough" | "classic";
+
+/** The engine an unset `lineage.engine` gives. */
+export const DEFAULT_LINEAGE_ENGINE: LineageEngine = "balanced";
+
 /** The lineage component's view settings; `getLineageSettings` answers with them. */
 export interface LineageSettings {
   showSelectEdges: boolean;
@@ -189,6 +198,8 @@ export interface LineageSettings {
   title?: "alias" | "name" | undefined;
   /** The card placement; absent means `layered`. A user setting, read-only here. */
   layout?: LineageLayout | undefined;
+  /** The engine of the `layered` layout; absent means `balanced`. A user setting, read-only here. */
+  engine?: LineageEngine | undefined;
   /**
    * A colour per layer tag (`source`, `staging`, `intermediate`, `marts`, `other`, or any custom layer) for its band
    * and card stripe: a theme colour id such as `charts.red`, or a CSS hex or colour function. A user setting.
@@ -197,8 +208,8 @@ export interface LineageSettings {
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`, `layout` and
- * `layerColors` are user settings the panel only reads.
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`, `layout`,
+ * `engine` and `layerColors` are user settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
   Omit<
@@ -208,6 +219,7 @@ export type PersistedLineageSettings = Partial<
     | "semanticZoom"
     | "title"
     | "layout"
+    | "engine"
     | "layerColors"
   >
 >;

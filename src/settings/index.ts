@@ -21,6 +21,7 @@ export interface SettingsSchema {
   "lineage.maxNeighbours": number;
   "lineage.groupBy": string;
   "lineage.layout": string;
+  "lineage.engine": string;
   "lineage.semanticZoom": boolean;
   "lineage.title": string;
   "lineage.layerColors": Readonly<Record<string, string>> | undefined;
@@ -91,6 +92,7 @@ export const SETTING_SCOPES = {
   "lineage.maxNeighbours": "window",
   "lineage.groupBy": "window",
   "lineage.layout": "window",
+  "lineage.engine": "window",
   "lineage.semanticZoom": "window",
   "lineage.title": "window",
   "lineage.layerColors": "window",

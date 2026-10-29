@@ -77,7 +77,10 @@ export const viteConfig = defineConfig({
   },
   // The dev server only pre-bundles linked workspace packages that are listed here.
   optimizeDeps: {
-    include: ["@fusion-power-user/webview-contract"],
+    include: [
+      "@fusion-power-user/graph-layout",
+      "@fusion-power-user/webview-contract",
+    ],
   },
   css: {
     modules: {
