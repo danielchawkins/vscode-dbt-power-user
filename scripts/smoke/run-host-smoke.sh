@@ -112,10 +112,10 @@ suites_for() {
       fi
       ;;
     lineage-groups)
-      echo "default,lineageGrouping"
+      echo "default,lineageGrouping${FPU_SMOKE_EXTRA_SUITES:+,$FPU_SMOKE_EXTRA_SUITES}"
       ;;
     lineage-layers)
-      echo "default,lineageLayers"
+      echo "default,lineageLayers${FPU_SMOKE_EXTRA_SUITES:+,$FPU_SMOKE_EXTRA_SUITES}"
       ;;
   esac
 }
