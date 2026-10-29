@@ -1,12 +1,10 @@
-# Upstream Altimate Markdown that is slated for deletion rather than repair stays
-# excluded. CLAUDE.md is a symlink to AGENTS.md and would otherwise be checked twice.
+# CLAUDE.md is a symlink to AGENTS.md and would otherwise be checked twice.
 flavor = "github"
 respect-gitignore = true
 # Prose uses one physical line per paragraph and editor soft wrapping.
 disable = ["MD013", "MD029"]
 exclude = [
   "media/**",
-  "altimate_packages/**",
   ".github/**",
   "CLAUDE.md",
   # Vendored sample dbt projects and formatter fixtures. Their Markdown is test input,
