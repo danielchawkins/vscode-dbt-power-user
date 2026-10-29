@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { type Drawing, type DrawnPath, measureDrawing } from "../metrics.js";
+import { measureDrawing } from "../metrics.js";
+import { drawingOf } from "../testing/drawings.js";
 import { caseArb, routeGraph, routeOptions } from "../testing/routeGraphs.js";
 import type {
   LayoutEdge,
@@ -8,41 +9,9 @@ import type {
   LayoutNode,
   LayoutOptions,
   Point,
-  Rect,
   Side,
 } from "../types.js";
 import { type Routing } from "./index.js";
-
-/** The drawing measureDrawing reads: node boxes, routed polylines, and the source port as each edge's trunk. */
-function drawingOf(graph: LayoutGraph, routing: Routing): Drawing {
-  const edges = new Map(graph.edges.map((e) => [e.id, e] as const));
-  const boxes = new Map<string, Rect>();
-  for (const node of graph.nodes) {
-    const c = routing.nodes.get(node.id);
-    if (c !== undefined) {
-      boxes.set(node.id, {
-        x: c.x - node.width / 2,
-        y: c.y - node.height / 2,
-        width: node.width,
-        height: node.height,
-      });
-    }
-  }
-  const paths = new Map<string, DrawnPath>();
-  for (const [id, points] of routing.edges) {
-    const edge = edges.get(id);
-    if (edge !== undefined) {
-      paths.set(id, { points, source: edge.source, target: edge.target });
-    }
-  }
-  const trunkOf = (id: string) => {
-    const edge = edges.get(id);
-    return edge?.sourcePort === undefined
-      ? undefined
-      : `${edge.source}:${edge.sourcePort}`;
-  };
-  return { boxes, paths, trunkOf };
-}
 
 describe("route", () => {
   it("leaves node boxes apart, and no polyline through a node it does not end at", () => {
