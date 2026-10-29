@@ -274,6 +274,12 @@ export class Project implements Disposable, ManifestProject {
     return integration;
   }
 
+  /** The CLI once any executable re-resolution in flight has finished; throws if none is committed then. */
+  async settledFusionCli(): Promise<FusionCli> {
+    await this.lifecycle.settled();
+    return this.getFusionCli();
+  }
+
   getProjectName(): string {
     return (
       this.currentIntegration?.getProjectName() ??

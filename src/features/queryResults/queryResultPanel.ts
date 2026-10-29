@@ -309,7 +309,7 @@ export class QueryResultPanel extends PanelHost<
   /** Runs a query transmitting appropriate notifications to webview */
   public async executeQuery({
     query,
-    fn: queryExecutionPromise,
+    fn: startQuery,
     projectName,
     preview,
   }: QueryPanelPayload) {
@@ -321,8 +321,7 @@ export class QueryResultPanel extends PanelHost<
     }
     void this.transmitLoading();
     try {
-      const queryExecution = (this.queryExecution =
-        await queryExecutionPromise);
+      const queryExecution = (this.queryExecution = await startQuery());
       const output = await queryExecution.executeQuery();
       const result = await this.transmitDataWrapper(output, query, preview);
       recordResult({

@@ -114,6 +114,11 @@ export class ExecutableLifecycle {
     return this.committed;
   }
 
+  /** Resolves once every queued resolution has finished, committed or failed. */
+  settled(): Promise<void> {
+    return this.refreshChain;
+  }
+
   /** Version of the most recently committed executable; kept after that CLI is disposed. */
   get version(): FusionVersion | undefined {
     return this.committedVersion;

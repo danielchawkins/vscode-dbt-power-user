@@ -12,6 +12,8 @@ type SqlExecutor = Pick<FusionCli, "executeSQL">;
 export interface SqlProject {
   readonly root: Uri;
   getFusionCli(): SqlExecutor;
+  /** The CLI once an executable re-resolution in flight has finished. */
+  settledFusionCli(): Promise<SqlExecutor>;
   getProjectName(): string;
   getAdapterType(): string;
   throwDiagnosticsErrorIfAvailable(): void;
@@ -23,10 +25,10 @@ export interface SqlDeps {
   terminal: Log;
 }
 
-/** A deferred query execution the query panel runs. */
+/** A query the query panel runs: `fn` starts it, so a failure to start lands inside the panel's error handling. */
 export type QueryPanelPayload = {
   query: string;
-  fn: Promise<QueryExecution>;
+  fn: () => Promise<QueryExecution>;
   projectName: string;
   /** Set when the query previews one model, so the panel can offer the other preview mode. */
   preview?: queryResults.ModelPreview | undefined;
@@ -141,7 +143,11 @@ async function queryExecution({
   modelName: string;
   limit: number;
 }): Promise<QueryExecution> {
-  return startSql(project.getFusionCli(), { query, modelName, limit });
+  return startSql(await project.settledFusionCli(), {
+    query,
+    modelName,
+    limit,
+  });
 }
 
 /** Logs `query` and its limit to the terminal, tagged with the adapter. */
@@ -167,7 +173,8 @@ export function queryPanelPayload(
   logQuery(deps, query, limit);
   return {
     query,
-    fn: queryExecution({ project: deps.project, query, modelName, limit }),
+    fn: () =>
+      queryExecution({ project: deps.project, query, modelName, limit }),
     projectName: deps.project.getProjectName(),
     preview,
   };

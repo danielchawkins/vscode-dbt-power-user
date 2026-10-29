@@ -51,7 +51,7 @@ export function registerQueryResultTestCommand(
       );
       await panel.executeQuery({
         query: "select synthetic",
-        fn: Promise.resolve(execution),
+        fn: () => Promise.resolve(execution),
         projectName: "",
       });
     },

@@ -220,6 +220,33 @@ describe("ExecutableLifecycle", () => {
     await lifecycle.dispose();
   });
 
+  it("settles only after a re-resolution in flight has committed its CLI", async () => {
+    const { factory, created } = recordingFactory();
+    let release: () => void = () => undefined;
+    let calls = 0;
+    const lifecycle = build(async () => {
+      calls++;
+      if (calls === 2) {
+        await new Promise<void>((resolve) => (release = resolve));
+      }
+      return sampleExecutable("/bin/dbt");
+    }, factory);
+
+    await lifecycle.initialize();
+    changePath();
+    await waitFor(() => expect(calls).toBe(2));
+    expect(lifecycle.current()).toBeUndefined();
+
+    let settled = false;
+    const wait = lifecycle.settled().then(() => (settled = true));
+    await flushAsync();
+    expect(settled).toBe(false);
+    release();
+    await wait;
+    expect(lifecycle.current()).toBe(created[1]);
+    await lifecycle.dispose();
+  });
+
   it("applies the last scoped dbtPath refresh when several arrive back-to-back", async () => {
     let configuredPath = "/project/v1/dbt";
     const { factory } = recordingFactory();
