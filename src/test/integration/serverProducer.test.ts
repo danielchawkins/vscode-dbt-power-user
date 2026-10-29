@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
 import { pollUntil } from "../async";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
+import { showLineageView } from "./helpers/workspaceHelper";
 
 /**
  * Pins the server producer: after a model gains a `ref` and is saved, the merged manifest lists the edge from the
@@ -18,7 +19,8 @@ suite("server producer: the merged graph follows a saved ref", function () {
   this.timeout(8 * 60_000);
   let child = "";
 
-  suiteSetup(function () {
+  suiteSetup(async function () {
+    await showLineageView();
     const projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
     child = path.join(projectDir, "models", "server_producer_child.sql");
   });
