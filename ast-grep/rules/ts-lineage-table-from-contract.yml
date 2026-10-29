@@ -11,8 +11,6 @@ files:
   - src/**
 ignores:
   - src/test/**
-  # Baseline: the `Table` copy the lineage-table refactor deletes; it deletes this line.
-  - src/core/dbt/domain.ts
 rule:
   kind: property_signature
   has: { field: name, regex: ^(childCount|parentCount)$ }
