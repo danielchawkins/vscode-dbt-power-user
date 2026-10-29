@@ -1,10 +1,10 @@
-import { compact } from "./bkCompaction.js";
 import {
   adjacency,
   alignBlocks,
   frameOf,
   typeOneConflicts,
 } from "./bkAlignment.js";
+import { compact } from "./bkCompaction.js";
 import type { Problem } from "./problem.js";
 import { projectRanks } from "./projection.js";
 

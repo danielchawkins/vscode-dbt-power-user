@@ -71,8 +71,13 @@ function segmentSeparations({
   return layered.segments.flatMap((segment) => {
     const upper = nodes[segment.top]!.rank;
     const lower = nodes[segment.bottom]!.rank;
-    if (!directed[segment.bundle] || upper >= lower) {
+    if (!directed[segment.bundle]) {
       return [];
+    }
+    if (upper >= lower) {
+      throw new Error(
+        `directed segment from rank ${upper} to rank ${lower} does not descend a rank`,
+      );
     }
     const gap =
       halfAcross[segment.top]! + halfAcross[segment.bottom]! + rankGap[upper]!;

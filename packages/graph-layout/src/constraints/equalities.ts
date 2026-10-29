@@ -1,3 +1,4 @@
+import { cyclicClasses } from "./cycles.js";
 import type { AxisProblem, Separation } from "./types.js";
 
 /** Offsets that differ by no more than this are the same offset: a float sum, not a tolerance on the layout. */
@@ -48,11 +49,13 @@ export function reduceEqualities(problem: AxisProblem): Reduction {
   }
   const classes = classesOf(problem);
   const { classOf, offset, count } = classes;
+  const separations = rewritten(problem, classes);
+  assertNoClassCycle(problem, classes, separations);
   return {
     problem: {
       desired: classMeans(problem, classes),
       weight: classWeights(problem, classOf, count),
-      separations: rewritten(problem, classes),
+      separations,
     },
     expand: (values) =>
       problem.desired.map((_, v) => values[classOf[v]!]! + offset[v]!),
@@ -141,7 +144,7 @@ function spread(walk: Walk, start: number): void {
         queue.push(to);
       } else if (Math.abs(offset[to]! - want) > TOLERANCE) {
         throw new Error(
-          `equalities contradict each other: ${nameOf(problem, u)} and ${nameOf(problem, to)} are forced ${want} and ${offset[to]} apart`,
+          `equalities contradict each other: ${nameOf(problem, to)} is forced ${want} from ${nameOf(problem, start)} through ${nameOf(problem, u)}, and ${offset[to]} through another chain`,
         );
       }
     }
@@ -176,6 +179,29 @@ function classWeights(
     weight[classOf[v]!]! += w;
   });
   return weight;
+}
+
+/**
+ * Throws, naming the variables, when the separations between classes form a cycle. Merging a DAG's classes can close
+ * such a cycle; the solver takes only DAGs, so the case is reported instead of failing inside it.
+ */
+function assertNoClassCycle(
+  problem: AxisProblem,
+  classes: Classes,
+  separations: readonly Separation[],
+): void {
+  const stuck = new Set(cyclicClasses(classes.count, separations));
+  if (stuck.size === 0) {
+    return;
+  }
+  const names = problem.desired
+    .flatMap((_, v) =>
+      stuck.has(classes.classOf[v]!) ? [nameOf(problem, v)] : [],
+    )
+    .join(", ");
+  throw new Error(
+    `separations form a cycle once equal variables are merged, which the solver cannot take: ${names}`,
+  );
 }
 
 /**

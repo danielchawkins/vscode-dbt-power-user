@@ -1,10 +1,5 @@
 import { type Drawing, type DrawnPath, measureDrawing } from "../metrics.js";
-import type {
-  LayoutGraph,
-  LayoutOptions,
-  Point,
-  Rect,
-} from "../types.js";
+import type { LayoutGraph, LayoutOptions, Point, Rect } from "../types.js";
 import { membersOf, type Member, type Phases, type Run } from "./pieces.js";
 import { framePoint } from "./polylines.js";
 
@@ -107,16 +102,14 @@ function runPoints(run: Run, frame: Frame): Point[] {
 
 /** The across coordinate of a layered node's side: `sign` 1 is the side below it, -1 the side above it. */
 function sideOf(across: Across, node: number, sign: 1 | -1): number {
-  return (
-    (across.centre[node] ?? 0) + sign * (across.half[node] ?? 0)
-  );
+  return (across.centre[node] ?? 0) + sign * (across.half[node] ?? 0);
 }
 
 /** Drops each point equal to its predecessor, then each point that lies straight between its neighbours. */
 function bendsOf(points: readonly Point[]): Point[] {
   const dense: Point[] = [];
   for (const point of points) {
-    const last = dense[dense.length - 1];
+    const last = dense.at(-1);
     if (last === undefined || last.x !== point.x || last.y !== point.y) {
       dense.push(point);
     }
@@ -124,7 +117,9 @@ function bendsOf(points: readonly Point[]): Point[] {
   return dense.filter((point, i) => {
     const prev = dense[i - 1];
     const next = dense[i + 1];
-    return prev === undefined || next === undefined || !straight(prev, point, next);
+    return (
+      prev === undefined || next === undefined || !straight(prev, point, next)
+    );
   });
 }
 

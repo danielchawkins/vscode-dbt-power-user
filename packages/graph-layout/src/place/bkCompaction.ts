@@ -65,8 +65,15 @@ export function compact(frame: Frame, blocks: Blocks): number[] {
  * The shift of each class: zero for a class no other class is pulled against, else the least of the shifts of the
  * classes it is pulled against plus their bounds. Classes are visited dependencies first, so each reads final shifts.
  */
-function classShifts(n: number, bounds: readonly ClassBound[], x: readonly number[]): number[] {
-  const deps: { on: number; bound: number }[][] = Array.from({ length: n }, () => []);
+function classShifts(
+  n: number,
+  bounds: readonly ClassBound[],
+  x: readonly number[],
+): number[] {
+  const deps: { on: number; bound: number }[][] = Array.from(
+    { length: n },
+    () => [],
+  );
   for (const b of bounds) {
     deps[b.from]!.push({ on: b.on, bound: x[b.v]! - x[b.u]! - b.gap });
   }
@@ -84,7 +91,9 @@ function classShifts(n: number, bounds: readonly ClassBound[], x: readonly numbe
 }
 
 /** The classes, each after every class it depends on: an iterative depth-first post-order. */
-function dependenciesFirst(deps: readonly (readonly { on: number }[])[]): number[] {
+function dependenciesFirst(
+  deps: readonly (readonly { on: number }[])[],
+): number[] {
   const out: number[] = [];
   const seen = Array.from({ length: deps.length }, () => false);
   for (let s = 0; s < deps.length; s++) {

@@ -31,7 +31,11 @@ describe("route under ranks: levels", () => {
             effort,
             ranks: "levels",
           };
-          const placed = place(graph, opts, order(graph, opts, rank(graph, opts)));
+          const placed = place(
+            graph,
+            opts,
+            order(graph, opts, rank(graph, opts)),
+          );
           const routing = routeGraph(graph, opts);
           expect(routing.nodes).toEqual(placed.nodes);
           expect(routing.clusters).toEqual(placed.clusters);

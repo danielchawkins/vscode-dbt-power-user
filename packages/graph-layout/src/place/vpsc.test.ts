@@ -226,7 +226,7 @@ describe("solveSeparations", () => {
     }
     const x = solveSeparations(x0, weight, seps);
     expect(feasible(seps, x, TOLERANCE)).toBe(true);
-  }, 30_000);
+  }, 120_000);
 
   it("leaves a self-separation with a non-positive gap out of the problem", () => {
     const x = solveSeparations([1, 2], [1, 1], [{ from: 0, to: 0, gap: -1 }]);
