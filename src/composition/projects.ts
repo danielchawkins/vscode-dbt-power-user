@@ -16,7 +16,7 @@ import { Project } from "../projects/project/project";
 import { ProjectQuickPick } from "../projects/project/projectQuickPick";
 import { Projects } from "../projects/project/projects";
 import { QueryManifestService } from "../projects/project/queryManifestService";
-import { SharedStateService } from "../projects/project/sharedStateService";
+import { QueryPanelRequests } from "../projects/project/queryPanelRequests";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { ProjectRegistry } from "../projects/registry/projectRegistry";
 import { cliFactoryFor } from "./fusionCli";
@@ -29,7 +29,7 @@ export function composeProjects(context: ExtensionContext) {
   const outputChannels = new OutputChannels(context.extension.id);
   bindExtensionOutput(() => outputChannels.channel.show(true));
   const terminal: Log = outputChannels;
-  const sharedState = new SharedStateService();
+  const queryRequests = new QueryPanelRequests();
   const runHistoryService = new RunHistoryService();
   const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
     logWarning: (message) => terminal.warn("FusionVersion", message),
@@ -49,7 +49,7 @@ export function composeProjects(context: ExtensionContext) {
     const log = outputChannels.projectLog(declared);
     return new Project({
       terminal: log,
-      sharedState,
+      queryRequests,
       runHistoryService,
       resolver: fusionExecutableResolver,
       environment: () => projectEnvironments.ensure(declared),
@@ -89,7 +89,7 @@ export function composeProjects(context: ExtensionContext) {
     extensionContextStore,
     outputChannels,
     terminal,
-    sharedState,
+    queryRequests,
     runHistoryService,
     fusionExecutableResolver,
     projectEnvironments,

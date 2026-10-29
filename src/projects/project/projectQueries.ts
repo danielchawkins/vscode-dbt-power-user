@@ -22,7 +22,7 @@ import {
   runNow,
   type WarehouseProject,
 } from "./projectWarehouse";
-import type { SharedStateService } from "./sharedStateService";
+import type { QueryPanelRequests } from "./queryPanelRequests";
 
 /** What the queries read from their project. */
 export interface QueriedProject extends WarehouseProject {
@@ -33,16 +33,16 @@ export interface QueriedProject extends WarehouseProject {
 export class ProjectQueries {
   private readonly project: QueriedProject;
   private readonly terminal: Log;
-  private readonly sharedState: SharedStateService;
+  private readonly queryRequests: QueryPanelRequests;
 
   constructor(
     project: QueriedProject,
     terminal: Log,
-    sharedState: SharedStateService,
+    queryRequests: QueryPanelRequests,
   ) {
     this.project = project;
     this.terminal = terminal;
-    this.sharedState = sharedState;
+    this.queryRequests = queryRequests;
   }
 
   /** Compiles a saved model through the language server, and unsaved or untitled text through the CLI. */
@@ -124,7 +124,7 @@ export class ProjectQueries {
   private async runOnQueryPanel(run: QueryPanelRun) {
     const payload = queryPanelPayload(this.sqlDeps, run);
     if (payload) {
-      this.sharedState.fire({ command: "executeQuery", payload });
+      this.queryRequests.request(payload);
     }
   }
 

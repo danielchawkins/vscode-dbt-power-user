@@ -10,13 +10,13 @@ import type { ManifestParsers } from "../manifest/manifest";
 import type { MetadataDemand } from "../manifest/metadataDemand";
 import type { RunHistoryService } from "../output/runHistoryService";
 import type { DeclaredProject } from "../registry/projectRegistry";
-import type { SharedStateService } from "./sharedStateService";
+import type { QueryPanelRequests } from "./queryPanelRequests";
 
 /** The collaborators a `Project` is built from. */
 export interface ProjectOptions {
   /** The Declared Project's log; the Project does not dispose it. */
   terminal: Log;
-  sharedState: SharedStateService;
+  queryRequests: QueryPanelRequests;
   runHistoryService: RunHistoryService;
   resolver: FusionExecutableResolver;
   cliFactory: FusionCommandIntegrationFactory;

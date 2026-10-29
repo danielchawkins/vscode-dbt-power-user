@@ -46,7 +46,7 @@ export class FusionPowerUserExtension implements Disposable {
 
   /**
    * `services` are what activation starts, watches and stops. `owned` is everything the extension disposes, in
-   * construction order: disposal runs last one first, so the first entries (shared state, run history) go last.
+   * construction order: disposal runs last one first, so the first entries (query requests, run history) go last.
    */
   constructor(services: ExtensionServices, owned: readonly Disposable[]) {
     this.projects = services.projects;

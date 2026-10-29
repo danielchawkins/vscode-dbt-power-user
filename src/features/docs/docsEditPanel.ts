@@ -17,7 +17,6 @@ import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import { notifyError } from "../../projects/output/notifications";
 import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
@@ -67,6 +66,7 @@ export class DocsEditViewPanel extends PanelHost<
   private readonly modelTests: ModelTestService;
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
+  private readonly queryManifestService: QueryManifestService;
   private projects: PanelProjects;
   private metadataDemand: MetadataDemand | undefined;
 
@@ -83,19 +83,14 @@ export class DocsEditViewPanel extends PanelHost<
       docGenService: DocGenService;
       modelTests: ModelTestService;
       queryManifestService: QueryManifestService;
-      sharedState: SharedStateService;
       columnProposals: ColumnProposalService;
       columnProposalRequests: ColumnProposalRequests;
     };
     terminal: Log;
     metadataDemand?: MetadataDemand;
   }) {
-    super({
-      extensionContext,
-      sharedState: services.sharedState,
-      log: terminal,
-      queryManifestService: services.queryManifestService,
-    });
+    super({ extensionContext, log: terminal });
+    this.queryManifestService = services.queryManifestService;
     this.projects = projects;
     this.metadataDemand = metadataDemand;
     this.docGenService = services.docGenService;

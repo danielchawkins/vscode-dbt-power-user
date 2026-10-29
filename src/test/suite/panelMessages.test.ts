@@ -619,7 +619,6 @@ function docsHarness() {
       docGenService,
       modelTests,
       queryManifestService,
-      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposals,
       columnProposalRequests,
     },

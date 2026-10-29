@@ -21,11 +21,6 @@ class TestPanel extends PanelHost<
   protected readonly csp = {} as never;
   protected readonly guard = isReadyMessage;
   protected override panelDescription = "Test description";
-  public events: string[] = [];
-
-  protected override async onEvent(event: { command: string }) {
-    this.events.push(event.command);
-  }
 
   protected override handlers(
     page: WebviewView | WebviewPanel,
@@ -55,23 +50,13 @@ class TestPanel extends PanelHost<
 }
 
 const make = () => {
-  let listener: ((e: { command: string }) => unknown) | undefined;
   const panel = new TestPanel({
     extensionContext: {
       extensionUri: { fsPath: "/ext", path: "/ext", scheme: "file" },
     } as never,
-    sharedState: {
-      eventEmitter: {
-        event: (l: typeof listener) => {
-          listener = l;
-          return { dispose: vi.fn() };
-        },
-      },
-    } as never,
     log: { debug: vi.fn() } as never,
-    queryManifestService: {} as never,
   });
-  return { panel, emit: (command: string) => listener?.({ command }) };
+  return { panel };
 };
 
 /** A fake page: a view when `kind` is "view", otherwise a panel. Its hooks fire the listeners `listen` attached. */
@@ -127,12 +112,6 @@ describe("PanelHost", () => {
     const { panel } = make();
     expect(panel.isWebviewView({ show: () => undefined } as never)).toBe(true);
     expect(panel.isWebviewView({} as never)).toBe(false);
-  });
-
-  it("forwards shared-state events to onEvent", () => {
-    const { panel, emit } = make();
-    emit("refresh");
-    expect(panel.events).toEqual(["refresh"]);
   });
 
   it("marks the page ready when it posts webview:ready", async () => {

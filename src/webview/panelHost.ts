@@ -19,11 +19,6 @@ import {
 import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import type { ExtensionContextStore } from "../extensionContext";
-import type { QueryManifestService } from "../projects/project/queryManifestService";
-import type {
-  SharedStateEventEmitterProps,
-  SharedStateService,
-} from "../projects/project/sharedStateService";
 import type { Handlers } from "./messageRouter";
 import { dispatchMessage, reply, replyError } from "./messageRouter";
 import { PageReadiness } from "./pageReadiness";
@@ -151,9 +146,7 @@ export abstract class PanelHost<
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _disposables: Disposable[] = [];
   protected extensionContext: ExtensionContextStore;
-  protected sharedState: SharedStateService;
   protected log: Log;
-  protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
   private readonly readiness = new PageReadiness<Page>();
   /** The subscriptions of each page `listen` attached to; they end with the page. */
@@ -166,35 +159,19 @@ export abstract class PanelHost<
 
   public constructor({
     extensionContext,
-    sharedState,
     log,
-    queryManifestService,
   }: {
     extensionContext: ExtensionContextStore;
-    sharedState: SharedStateService;
     log: Log;
-    queryManifestService: QueryManifestService;
   }) {
     this.extensionContext = extensionContext;
-    this.sharedState = sharedState;
     this.log = log;
-    this.queryManifestService = queryManifestService;
-    this._disposables.push(
-      sharedState.eventEmitter.event((d) => this.onEvent(d)),
-    );
   }
 
   public isWebviewView(
     panel: WebviewPanel | WebviewView,
   ): panel is WebviewView {
     return (panel as WebviewView).show !== undefined;
-  }
-
-  protected async onEvent({ command }: SharedStateEventEmitterProps) {
-    switch (command) {
-      default:
-        break;
-    }
   }
 
   /** Renders the panel's HTML; `listen` subscribes to the webview's messages once the page is attached. */

@@ -49,9 +49,9 @@ export function compose(context: ExtensionContext): Composition {
     lineageService: fusion.lineageService,
     projectEnvironments: graph.projectEnvironments,
   };
-  // Disposed last one first, so shared state and run history outlive everything that reports into them.
+  // Disposed last one first, so query requests and run history outlive everything that reports into them.
   const owned = [
-    graph.sharedState,
+    graph.queryRequests,
     graph.runHistoryService,
     terminal,
     graph.projects,

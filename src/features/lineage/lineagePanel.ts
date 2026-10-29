@@ -2,6 +2,7 @@ import type { PanelNotice } from "@fusion-power-user/webview-contract";
 import { lineage } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
 import type {
+  CancellationToken,
   Event,
   TextEditor,
   WebviewPanel,
@@ -10,7 +11,6 @@ import type {
   WebviewViewResolveContext,
 } from "vscode";
 import { commands, Uri, window } from "vscode";
-import type { CancellationToken } from "vscode";
 import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
@@ -18,7 +18,6 @@ import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 import { strictNeededMessage } from "../../projects/registry/strictNeeded";
@@ -79,7 +78,7 @@ export class LineagePanel
   private terminal: Log;
   private lineageService: LineageService;
   private metadataDemand: MetadataDemand | undefined;
-  declare protected queryManifestService: QueryManifestService;
+  private readonly queryManifestService: QueryManifestService;
   private readonly currentProject: CurrentProject;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
@@ -94,7 +93,6 @@ export class LineagePanel
     extensionContext,
     terminal,
     lineageService,
-    sharedState,
     queryManifestService,
     currentProject,
     metadataDemand,
@@ -102,17 +100,12 @@ export class LineagePanel
     extensionContext: ExtensionContextStore;
     terminal: Log;
     lineageService: LineageService;
-    sharedState: SharedStateService;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
     metadataDemand?: MetadataDemand;
   }) {
-    super({
-      extensionContext,
-      sharedState,
-      log: terminal,
-      queryManifestService,
-    });
+    super({ extensionContext, log: terminal });
+    this.queryManifestService = queryManifestService;
     this.currentProject = currentProject;
     this.terminal = terminal;
     this.lineageService = lineageService;
