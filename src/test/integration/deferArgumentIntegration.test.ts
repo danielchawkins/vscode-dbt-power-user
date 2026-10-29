@@ -15,6 +15,9 @@ import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";
 
 const execFile = promisify(execFileCb);
 
+/** Each dbt call's limit, under the suite's 60 s, so a stall fails with dbt's output rather than a bare timeout. */
+const DBT_TIMEOUT_MS = 20_000;
+
 /**
  * Blocking `spawnSync` calls stall the extension host's event loop long enough that VS Code's
  * unresponsive-extension-host watchdog kills the process mid-test; run dbt asynchronously instead.
@@ -25,18 +28,23 @@ async function runDbt(
   try {
     const { stdout, stderr } = await execFile("dbt", args, {
       encoding: "utf-8",
+      timeout: DBT_TIMEOUT_MS,
     });
     return { status: 0, stdout, stderr };
   } catch (error) {
     const failure = error as {
       code?: number;
+      killed?: boolean;
       stdout?: string;
       stderr?: string;
     };
     return {
       status: failure.code ?? 1,
       stdout: failure.stdout ?? "",
-      stderr: failure.stderr ?? String(error),
+      stderr:
+        (failure.killed
+          ? `dbt ${args[0]} was killed after ${DBT_TIMEOUT_MS} ms\n`
+          : "") + (failure.stderr ?? String(error)),
     };
   }
 }
