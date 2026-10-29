@@ -58,7 +58,7 @@ module.exports = {
       "projects/project",
       "^src/projects/(registry|output|clients|manifest)/",
     ),
-    layer("webview", `^src/(core|benchmark|projects/project)/|${SUPPORT}`),
+    layer("webview", `^src/(core|benchmark)/|${SUPPORT}`),
     layer(
       "features",
       // The manifest/ modules a feature reads: the Manifest type, a publication's id, and metadata demand.
@@ -174,13 +174,9 @@ module.exports = {
       name: "webview-host-knows-no-project",
       severity: "error",
       comment:
-        "webview/ is panel infrastructure; a panel takes the project services it needs in its own constructor. The pathNot is the baseline the PanelHost refactor deletes.",
+        "webview/ is panel infrastructure; a panel takes the project services it needs in its own constructor.",
       from: { path: "^src/webview/" },
-      to: {
-        path: "^src/projects/",
-        pathNot:
-          "^src/projects/project/(sharedStateService|queryManifestService)\\.ts$",
-      },
+      to: { path: "^src/projects/" },
     },
     {
       name: "fusion-language-client-is-adapter",

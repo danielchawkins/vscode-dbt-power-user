@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands, Uri, window } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
+import { QueryPanelRequests } from "../../projects/project/queryPanelRequests";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 import { flushAsync } from "../async";
 import { fakeView } from "../panelHarness";
@@ -28,6 +29,7 @@ function makePanel(
     picked?: ReturnType<typeof project> | undefined;
   } = {},
   ready = true,
+  queryRequests: object = { onDidRequest: () => ({ dispose: vi.fn() }) },
 ) {
   const service = { manifestFor: () => undefined };
   const currentProject = {
@@ -37,9 +39,7 @@ function makePanel(
   };
   const panel = new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as never,
-    sharedState: {
-      eventEmitter: { event: () => ({ dispose: vi.fn() }) },
-    } as never,
+    queryRequests: queryRequests as never,
     log: silentLog(),
     queryManifestService: service as never,
     currentProject: currentProject as never,
@@ -93,6 +93,36 @@ describe("QueryResultPanel", () => {
         "fusionPowerUser.previewComputed",
         { url: model },
       );
+    });
+  });
+
+  describe("query requests", () => {
+    const payload = {
+      query: "select 1",
+      fn: Promise.resolve({} as never),
+      projectName: "jaffle",
+    };
+
+    it("runs a payload sent through QueryPanelRequests", () => {
+      const requests = new QueryPanelRequests();
+      const { panel } = makePanel({ project: project() }, true, requests);
+      const executeQuery = vi
+        .spyOn(panel, "executeQuery")
+        .mockResolvedValue(undefined);
+      requests.request(payload);
+      expect(executeQuery).toHaveBeenCalledTimes(1);
+      expect(executeQuery).toHaveBeenCalledWith(payload);
+    });
+
+    it("stops running requests once the panel is disposed", () => {
+      const requests = new QueryPanelRequests();
+      const { panel } = makePanel({ project: project() }, true, requests);
+      const executeQuery = vi
+        .spyOn(panel, "executeQuery")
+        .mockResolvedValue(undefined);
+      panel.dispose();
+      requests.request(payload);
+      expect(executeQuery).not.toHaveBeenCalled();
     });
   });
 

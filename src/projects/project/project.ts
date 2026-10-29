@@ -44,7 +44,7 @@ import {
   sourcePathsOf,
 } from "./projectRootPaths";
 import { ProjectTasks } from "./projectTasks";
-import type { SharedStateService } from "./sharedStateService";
+import type { QueryPanelRequests } from "./queryPanelRequests";
 
 const LOG_SOURCE = "Project";
 
@@ -53,7 +53,7 @@ export class Project implements Disposable, ManifestProject {
   readonly declared: DeclaredProject;
   readonly root: Uri;
   private readonly terminal: Log;
-  private readonly sharedState: SharedStateService;
+  private readonly queryRequests: QueryPanelRequests;
   /** Compile, column and query operations. */
   readonly queries: ProjectQueries;
   /** dbt commands, each run as a task. */
@@ -112,7 +112,7 @@ export class Project implements Disposable, ManifestProject {
     this.declared = options.declared;
     this.root = options.root;
     this.terminal = options.terminal;
-    this.sharedState = options.sharedState;
+    this.queryRequests = options.queryRequests;
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
     this.fusionClient = options.fusionClient ?? (() => undefined);
@@ -148,7 +148,7 @@ export class Project implements Disposable, ManifestProject {
       commandDeps: this.commandDeps,
       terminal: this.terminal,
     });
-    this.queries = new ProjectQueries(this, this.terminal, this.sharedState);
+    this.queries = new ProjectQueries(this, this.terminal, this.queryRequests);
     this.commands = new ProjectDbtCommands(this, this.tasks);
     this.runResultsReader = new RunResultsReader(
       () => this.paths()?.targetPath,

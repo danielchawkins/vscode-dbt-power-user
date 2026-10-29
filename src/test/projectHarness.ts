@@ -26,7 +26,7 @@ import type { ManifestParsers } from "../projects/manifest/manifest";
 import type { RunHistoryService } from "../projects/output/runHistoryService";
 import { Project } from "../projects/project/project";
 import type { ProjectOptions } from "../projects/project/projectOptions";
-import type { SharedStateService } from "../projects/project/sharedStateService";
+import type { QueryPanelRequests } from "../projects/project/queryPanelRequests";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { CONFIGURATION_SECTION } from "../settings";
 import { silentLog } from "./testLog";
@@ -61,7 +61,7 @@ export function buildTestProject(
       warn: vi.fn(),
       error: vi.fn(),
     } as unknown as Log,
-    sharedState: {} as SharedStateService,
+    queryRequests: {} as QueryPanelRequests,
     runHistoryService: {
       addEntry: vi.fn(),
       notifyCommandFailed: vi.fn(),
