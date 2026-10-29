@@ -1,0 +1,13 @@
+id: ts-no-impl-suffix
+valid:
+  - 'export class FusionClientPool implements Disposable {}'
+  - 'class RegisteredProject implements DeclaredProject {}'
+  - 'const impl = new Pool();'
+  - 'import { SimplImplementation } from "./x";'
+  - 'export class Impl2 {}'
+invalid:
+  - 'export class FusionClientPoolImpl implements FusionClientPool {}'
+  - 'class DeclaredProjectImpl implements DeclaredProject {}'
+  - 'export abstract class BaseImpl {}'
+  - 'interface ServerImpl { port: number }'
+  - 'type ClientImpl = { start(): void };'

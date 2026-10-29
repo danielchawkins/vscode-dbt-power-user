@@ -1,0 +1,8 @@
+id: ts-lineage-table-from-contract
+valid:
+  - 'type Table = lineage.LineageTable;'
+  - 'const card: lineage.LineageTable = { table: key, label, childCount: 1, parentCount: 0, nodeType, tests: [] };'
+  - 'type TableBase = Pick<lineage.LineageTable, "table" | "childCount">;'
+invalid:
+  - 'export type Table = { label: string; childCount: number; parentCount: number };'
+  - 'export interface LineageCard { table: string; parentCount: number }'

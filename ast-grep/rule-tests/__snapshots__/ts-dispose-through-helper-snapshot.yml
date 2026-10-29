@@ -1,0 +1,54 @@
+id: ts-dispose-through-helper
+snapshots:
+  for (const d of this.disposables) { d.dispose(); }:
+    labels:
+    - source: for (const d of this.disposables) { d.dispose(); }
+      style: primary
+      start: 0
+      end: 50
+  for (const watcher of watchers) watcher.dispose();:
+    labels:
+    - source: for (const watcher of watchers) watcher.dispose();
+      style: primary
+      start: 0
+      end: 50
+  this.disposables.forEach((d) => d.dispose());:
+    labels:
+    - source: this.disposables.forEach((d) => d.dispose())
+      style: primary
+      start: 0
+      end: 44
+  this.watchers.forEach((w) => { w.dispose(); });:
+    labels:
+    - source: this.watchers.forEach((w) => { w.dispose(); })
+      style: primary
+      start: 0
+      end: 46
+  while (this.disposables.length) { const x = this.disposables.pop(); if (x) { x.dispose(); } }:
+    labels:
+    - source: while (this.disposables.length) { const x = this.disposables.pop(); if (x) { x.dispose(); } }
+      style: primary
+      start: 0
+      end: 93
+    - source: this.disposables.pop()
+      style: secondary
+      start: 44
+      end: 66
+    - source: dispose
+      style: secondary
+      start: 79
+      end: 86
+  while (this.subscriptions.length) { this.subscriptions.pop()?.dispose(); }:
+    labels:
+    - source: while (this.subscriptions.length) { this.subscriptions.pop()?.dispose(); }
+      style: primary
+      start: 0
+      end: 74
+    - source: this.subscriptions.pop()
+      style: secondary
+      start: 36
+      end: 60
+    - source: dispose
+      style: secondary
+      start: 62
+      end: 69

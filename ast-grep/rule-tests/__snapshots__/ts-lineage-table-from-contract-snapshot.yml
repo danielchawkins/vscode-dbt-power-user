@@ -1,0 +1,22 @@
+id: ts-lineage-table-from-contract
+snapshots:
+  'export interface LineageCard { table: string; parentCount: number }':
+    labels:
+    - source: 'parentCount: number'
+      style: primary
+      start: 46
+      end: 65
+    - source: parentCount
+      style: secondary
+      start: 46
+      end: 57
+  'export type Table = { label: string; childCount: number; parentCount: number };':
+    labels:
+    - source: 'childCount: number'
+      style: primary
+      start: 37
+      end: 55
+    - source: childCount
+      style: secondary
+      start: 37
+      end: 47

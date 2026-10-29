@@ -1,0 +1,14 @@
+id: ts-settings-subscribers-listed
+snapshots:
+  onDidChangeSettings(["query.limit"], () => this.refresh());:
+    labels:
+    - source: onDidChangeSettings(["query.limit"], () => this.refresh())
+      style: primary
+      start: 0
+      end: 58
+  this.disposables.push(onDidChangeSettings(["defer.perProject"], (change) => { if (change.affects()) { this.update(); } }));:
+    labels:
+    - source: onDidChangeSettings(["defer.perProject"], (change) => { if (change.affects()) { this.update(); } })
+      style: primary
+      start: 22
+      end: 121

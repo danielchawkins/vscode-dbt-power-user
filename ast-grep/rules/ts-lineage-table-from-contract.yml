@@ -1,0 +1,18 @@
+# The lineage panel's table card is `lineage.LineageTable` in packages/webview-contract. A second host-side shape
+# for it is assignable to the contract while carrying extra fields, so those fields are serialized to the panel
+# unseen; building the card as the contract type lets the excess-property check reject them.
+id: ts-lineage-table-from-contract
+language: typescript
+severity: error
+message: >-
+  A host type declares the lineage card's `childCount`. Build the card as `lineage.LineageTable` from
+  @fusion-power-user/webview-contract instead of a host copy of its shape.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  # Baseline: the `Table` copy the lineage-table refactor deletes; it deletes this line.
+  - src/core/dbt/domain.ts
+rule:
+  kind: property_signature
+  has: { field: name, regex: ^(childCount|parentCount)$ }
