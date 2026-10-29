@@ -66,8 +66,8 @@ export type UnservedRoot =
 
 /** Resolves and tracks the workspace's Declared Projects. */
 export class ProjectRegistry implements Disposable {
-  private _projects: DeclaredProjectImpl[] = [];
-  private lookupOrder: DeclaredProjectImpl[] = [];
+  private _projects: RegisteredProject[] = [];
+  private lookupOrder: RegisteredProject[] = [];
   private watchers = new Map<string, FileSystemWatcher>();
   /** Roots declared from opened files, keyed by canonical path. Held in memory until the window reloads. */
   private openedRoots = new Map<string, OpenedRoot>();
@@ -202,7 +202,7 @@ export class ProjectRegistry implements Disposable {
       }
     }
 
-    const next: DeclaredProjectImpl[] = [];
+    const next: RegisteredProject[] = [];
     for (const d of byRealpath.values()) {
       const existing = this._projects.find(
         (p) =>
@@ -216,7 +216,7 @@ export class ProjectRegistry implements Disposable {
       if (existing) {
         next.push(existing);
       } else {
-        next.push(new DeclaredProjectImpl(d));
+        next.push(new RegisteredProject(d));
       }
     }
 
@@ -355,7 +355,7 @@ export class ProjectRegistry implements Disposable {
   }
 }
 
-class DeclaredProjectImpl implements DeclaredProject {
+class RegisteredProject implements DeclaredProject {
   readonly folder: WorkspaceFolder;
   readonly root: Uri;
   readonly name: string;

@@ -11,12 +11,6 @@ files:
   - packages/**
 ignores:
   - src/test/**
-  # Baseline: the five classes the rename refactor renames; it deletes these lines.
-  - src/core/manifest/nodeParser.ts
-  - src/fusion/fusionLanguageClient.ts
-  - src/fusion/reverseSocketTransport.ts
-  - src/projects/clients/fusionClientPool.ts
-  - src/projects/registry/projectRegistry.ts
 rule:
   any:
     - kind: type_identifier

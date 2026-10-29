@@ -25,10 +25,10 @@ export function createFusionLanguageClient(
   options: FusionClientOptions,
   deps: FusionLanguageClientDependencies = {},
 ): FusionClient {
-  return new FusionLanguageClientImpl(options, deps);
+  return new LanguageServerFusionClient(options, deps);
 }
 
-class FusionLanguageClientImpl implements FusionClient {
+class LanguageServerFusionClient implements FusionClient {
   private _state: FusionClientState = "stopped";
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();

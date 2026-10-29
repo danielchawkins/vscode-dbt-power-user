@@ -70,7 +70,7 @@ export interface FusionLaunchSources {
   rootExists?: ((root: Uri) => boolean) | undefined;
 }
 
-export class FusionClientPoolImpl implements FusionClientPool {
+class PerProjectFusionClientPool implements FusionClientPool {
   private readonly clients = new Map<string, ManagedClient>();
   private readonly subscriptions: Disposable[] = [];
   private readonly _onDidChangeClients = new EventEmitter<void>();
@@ -412,6 +412,6 @@ export function createFusionClientPool(
   registry: ProjectRegistry,
   terminal: Log,
   deps: FusionClientPoolDependencies,
-): FusionClientPoolImpl {
-  return new FusionClientPoolImpl(registry, terminal, deps);
+): FusionClientPool {
+  return new PerProjectFusionClientPool(registry, terminal, deps);
 }
