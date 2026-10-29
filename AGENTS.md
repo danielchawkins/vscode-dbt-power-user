@@ -66,7 +66,7 @@ Load-bearing directories (abridged):
 src/
 ├── core/                    # manifest parsers, CLI args, LSP launch, project snapshot, dbt domain types; no VS Code
 ├── settings/                # typed `fusionPowerUser.*` settings and environment variables
-├── projects/                # Project Registry, Project Context, QueryManifestService, Fusion client pool and status
+├── projects/                # Project Registry, Current Project, QueryManifestService, Fusion client pool and status
 ├── fusion/                  # executable resolution, version gate, static-analysis mode, language client, transport
 ├── metadata/                # adapters of the ProjectMetadataSource port, which projects/ declares
 ├── executable/              # adapter of fusion/'s FusionExecutableResolver port: dbtPath, PATH, version probe
