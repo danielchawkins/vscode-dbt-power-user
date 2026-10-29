@@ -42,7 +42,7 @@ trap 'cleanup; exit 130' INT TERM
 trap cleanup EXIT
 
 # Same content-hash tag as scripts/test/docker-integration.sh, so the two share one base image.
-base_hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/fetch-vscode.mjs \
+base_hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/Dockerfile.dockerignore docker/integration/fetch-vscode.mjs \
   scripts/test/integration-layout.mjs mise.toml mise.lock package.json package-lock.json | shasum -a 256 | cut -c1-12)
 base=fpu-integration:$base_hash
 smoke_hash=$(cd "$repo" && {
