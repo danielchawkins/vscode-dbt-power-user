@@ -93,7 +93,7 @@ describe("cluster boxes follow Graphviz's rules", () => {
     };
     const result = placed(graph);
     expect([...result.clusters.keys()]).toEqual(["C"]);
-    expect(boxViolations(graph, result.nodes, result.clusters)).toEqual(NONE);
+    expect(drawings(graph)).toEqual([NONE, NONE]);
   });
 
   it("keeps a non-member beside a box outside it", () => {
