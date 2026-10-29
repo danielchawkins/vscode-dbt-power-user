@@ -12,15 +12,15 @@ import type {
 } from "vscode";
 import { commands, Uri, window } from "vscode";
 import type { Log } from "../../core/log";
+import { USE_STRICT_ANALYSIS_COMMAND } from "../../core/snapshot/schemaOrigin";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
+import { strictNeededMessage } from "../../core/snapshot/strictNeeded";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
 import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
-import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";

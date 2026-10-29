@@ -15,6 +15,7 @@ import type {
 } from "vscode";
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot";
+import { schemaOriginLaunchEnv } from "../../core/snapshot/schemaOrigin";
 import { BOUNDS } from "../../core/timing";
 import { ServerCompileState } from "../../fusion/compileSignal";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
@@ -36,7 +37,6 @@ import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/registry/projectRegistry";
-import { schemaOriginLaunchEnv } from "../../projects/registry/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { flushAsync as flushMicrotasks } from "../async";
 import { makeExecutable } from "../fusionClientHarness";

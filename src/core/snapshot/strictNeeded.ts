@@ -1,11 +1,10 @@
-import type { StaticAnalysisMode } from "../../core/snapshot";
-import type { FusionClient } from "../../fusion/fusionClient";
+import type { StaticAnalysisMode } from "./projectSnapshot";
 import type { FolderScope } from "./schemaOrigin";
 import { effectiveStaticAnalysis, whyNotStrict } from "./schemaOrigin";
 
 /** The effective mode when it computes no column lineage for a running `client`, else `undefined`. */
 export function needsStrict(
-  client: FusionClient | undefined,
+  client: { state: string; staticAnalysis: StaticAnalysisMode } | undefined,
   { strict, folder }: StrictInputs,
 ): NeedsStrict | undefined {
   if (client?.state !== "running") {

@@ -2,11 +2,11 @@ import type { Event, LanguageStatusItem, Uri } from "vscode";
 import { commands, Disposable, languages } from "vscode";
 import { disposeAll } from "../../core/disposables";
 import { projectRootDigest } from "../../core/snapshot/index";
+import { folderScopeOf } from "../../core/snapshot/schemaOrigin";
 import { vscodeDocumentSelectorForProject } from "../../fusion/documentSelector";
 import type { FusionClient } from "../../fusion/fusionClient";
 import { addDeclaredProjectRoot } from "../registry/projectConfiguration";
 import type { DeclaredProject } from "../registry/projectRegistry";
-import { folderScopeOf } from "../registry/schemaOrigin";
 import type { FusionClientPool } from "./fusionClientPool";
 import {
   clientItemView,

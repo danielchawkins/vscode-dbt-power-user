@@ -1,15 +1,15 @@
 import type { Command } from "vscode";
 import { LanguageStatusSeverity } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot/index";
-import { failureSummary } from "../../core/text";
-import type { FusionClientState } from "../../fusion/fusionClient";
 import {
   effectiveStaticAnalysis,
   type FolderScope,
   type SchemaOriginStatus,
   USE_STRICT_ANALYSIS_COMMAND,
   whyNotStrict,
-} from "../registry/schemaOrigin";
+} from "../../core/snapshot/schemaOrigin";
+import { failureSummary } from "../../core/text";
+import type { FusionClientState } from "../../fusion/fusionClient";
 
 /** What a project has opted into in its own project file. */
 export interface ProjectOptIns {

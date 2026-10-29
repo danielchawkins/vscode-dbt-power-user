@@ -6,8 +6,8 @@ import type {
 import { typeProposals } from "../../core/columns/typeProposals";
 import type { TypeSourceOutcome } from "../../core/columns/typeSourceMessage";
 import { typeSourceMessage } from "../../core/columns/typeSourceMessage";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
-import { strictNeededMessage } from "../../projects/registry/strictNeeded";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
+import { strictNeededMessage } from "../../core/snapshot/strictNeeded";
 import type { ModelRef } from "./columnTypeSource";
 import type { UpstreamDescriptionOutcome } from "./upstreamDescriptionSource";
 

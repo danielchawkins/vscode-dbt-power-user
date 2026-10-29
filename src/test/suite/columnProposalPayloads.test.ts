@@ -4,6 +4,7 @@ import type {
   DocColumn,
 } from "../../core/columns/typeProposals";
 import type { TypeSourceOutcome } from "../../core/columns/typeSourceMessage";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
 import type { TypeTarget } from "../../features/docs/columnProposalPayloads";
 import {
   descriptionPayloadOf,
@@ -11,7 +12,6 @@ import {
 } from "../../features/docs/columnProposalPayloads";
 import type { ModelRef } from "../../features/docs/columnTypeSource";
 import type { UpstreamDescriptionOutcome } from "../../features/docs/upstreamDescriptionSource";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 
 const MODEL: ModelRef = { name: "orders", filePath: "/p/models/orders.sql" };
 const YAML: DocColumn[] = [{ name: "id", type: "integer" }];
