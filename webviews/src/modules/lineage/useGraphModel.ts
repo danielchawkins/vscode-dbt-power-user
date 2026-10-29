@@ -102,6 +102,7 @@ const flowOf = ({
     connections: settings.connections,
     refs: visibleRefs(refs, settings, drawn),
     layout: settings.layout,
+    engine: settings.engine,
     layerColors: settings.layerColors,
   });
 };
@@ -180,7 +181,7 @@ export const useGraphModel = (
         .join("\n"),
     [nodes],
   );
-  const shapeKey = `${settings.layout}|${settings.connections}`;
+  const shapeKey = `${settings.layout}|${settings.engine}|${settings.connections}`;
   return {
     settings,
     change,

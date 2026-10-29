@@ -94,16 +94,17 @@ export function route(
       0,
     ),
   );
-  // Each rank gap also holds the margins of the boxes it separates, as placement's does.
-  const gaps = widths.map((w, r) =>
-    Math.max(w, placement.boxes.plan.rankGap[r] ?? 0),
-  );
+  // Each rank gap holds the margins of the boxes it separates outside its tracks, so no track runs inside a box's
+  // padding and boxes that end and start at one gap stay the tracks' width apart.
+  const { below, above } = placement.boxes.plan.margins;
+  const gaps = widths.map((w, r) => (below[r] ?? 0) + w + (above[r + 1] ?? 0));
   const centres = stackRanks(halves, gaps, anchorRank(ordering, options));
   const geometry: Geometry = {
     down,
     edge: spacing.edge,
     centres,
     halves,
+    trackMargin: halves.map((_, r) => below[r] ?? 0),
     nodeHalves,
     portAcross: layered.nodes.map((node) =>
       node.port === undefined

@@ -68,3 +68,78 @@ export async function readColumns(card: string): Promise<ColumnState> {
   assert.ok(match, "the lineage webview is not showing");
   return match.value;
 }
+
+/** What a drawn lineage graph looks like as geometry: its table edges' crossings and the hops drawn over them. */
+export interface DrawnCrossings {
+  entry: string;
+  /** Pairs of table edges whose drawn paths cross, counted from the paths in the DOM. */
+  crossings: number;
+  /** Hop arcs drawn in table edge paths, one per crossing the drawing marks. */
+  hops: number;
+  edges: number;
+}
+
+/**
+ * The script that measures the drawn table edges. It parses each path's M, L and H/V commands into straight runs,
+ * drops the hop arcs (an arc's ends join the run it interrupts), and counts each pair of edges whose runs cross at a
+ * point inside both. Edges that share an end card never count, since they meet at its bubble.
+ */
+const DRAWN_CROSSINGS = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const edges = [...document.querySelectorAll(".react-flow__edge.lineage-table-edge")].map((edge) => {
+    const d = edge.querySelector("path")?.getAttribute("d") ?? "";
+    const id = edge.getAttribute("data-id") ?? "";
+    const tokens = d.match(/[MLAHVCQZmlahvcqz]|-?\\d*\\.?\\d+(?:e-?\\d+)?/g) ?? [];
+    const points = [];
+    let hops = 0;
+    for (let i = 0; i < tokens.length; ) {
+      const command = tokens[i++];
+      const take = (n) => tokens.slice(i, (i += n)).map(Number);
+      if (command === "M" || command === "L") {
+        const [x, y] = take(2);
+        points.push([x, y]);
+      } else if (command === "A") {
+        const [, , , , , x, y] = take(7);
+        hops += 1;
+        points.push([x, y]);
+      } else if (command === "Q") {
+        const [, , x, y] = take(4);
+        points.push([x, y]);
+      }
+    }
+    const [from, to] = id.replace(/^t:/, "").split("->");
+    return { from, to, hops, runs: points.slice(1).map((p, k) => [points[k], p]) };
+  });
+  const cross = ([[ax, ay], [bx, by]], [[cx, cy], [dx, dy]]) => {
+    const d1 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx);
+    const d2 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+    const d3 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const d4 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+    return d1 * d2 < -1e-6 && d3 * d4 < -1e-6;
+  };
+  let crossings = 0;
+  for (let i = 0; i < edges.length; i++) {
+    for (let j = i + 1; j < edges.length; j++) {
+      const a = edges[i], b = edges[j];
+      if ([a.from, a.to].some((end) => end === b.from || end === b.to)) continue;
+      if (a.runs.some((r) => b.runs.some((s) => cross(r, s)))) crossings += 1;
+    }
+  }
+  return {
+    entry: "lineage",
+    crossings,
+    hops: edges.reduce((sum, edge) => sum + edge.hops, 0),
+    edges: edges.length,
+  };
+})()`;
+
+/** Measures the drawn table edges of the lineage view. */
+export async function readDrawnCrossings(): Promise<DrawnCrossings> {
+  const match = await evaluatePanel<DrawnCrossings>(
+    cdpPort(),
+    PANELS.lineage.entry,
+    DRAWN_CROSSINGS,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value;
+}

@@ -1,4 +1,4 @@
-import type { lineage } from "@fusion-power-user/webview-contract";
+import { lineage } from "@fusion-power-user/webview-contract";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { readSetting, writeSetting } from "../../settings";
 
@@ -11,6 +11,7 @@ type StoredLineageSettings = Omit<
   | "maxNeighbours"
   | "groupBy"
   | "layout"
+  | "engine"
   | "semanticZoom"
   | "title"
   | "layerColors"
@@ -77,6 +78,7 @@ export function readLineageSettings(store: Store): lineage.LineageSettings {
       readSetting("lineage.layout") === "leftToRight"
         ? "leftToRight"
         : "layered",
+    engine: lineageEngineSetting(),
     semanticZoom: readSetting("lineage.semanticZoom") !== false,
     title: readSetting("lineage.title") === "name" ? "name" : "alias",
     layerColors: layerColorsSetting(),
@@ -112,4 +114,18 @@ export async function persistLineageSettings(
       {};
     store.setToGlobalState(LINEAGE_SETTINGS_KEY, { ...stored, ...view });
   }
+}
+
+const ENGINES: readonly lineage.LineageEngine[] = [
+  "balanced",
+  "thorough",
+  "classic",
+];
+
+/** `lineage.engine` as a known engine; anything else is the default. */
+function lineageEngineSetting(): lineage.LineageEngine {
+  const value = readSetting("lineage.engine");
+  return (
+    ENGINES.find((engine) => engine === value) ?? lineage.DEFAULT_LINEAGE_ENGINE
+  );
 }

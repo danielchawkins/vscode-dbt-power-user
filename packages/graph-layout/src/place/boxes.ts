@@ -1,6 +1,6 @@
 import type { LayeredGraph } from "../layering.js";
 import type { LayoutCluster } from "../types.js";
-import { rankGaps } from "./boxGaps.js";
+import { rankGaps, rankMargins } from "./boxGaps.js";
 import { siblingOrder, siblings } from "./boxOrder.js";
 import type { Separation } from "./vpsc.js";
 
@@ -36,6 +36,8 @@ export interface BoxPlan {
   separations: Separation[];
   /** The least gap between each pair of adjacent ranks that keeps the drawn boxes apart. See `rankGaps`. */
   rankGap: number[];
+  /** How far the boxes are drawn below and above each rank. See `rankMargins`. */
+  margins: { below: number[]; above: number[] };
 }
 
 /** What the box plan is built from: the layered graph, its ranks' order, and the sizes and gaps of its nodes. */
@@ -82,6 +84,7 @@ export function planBoxes(input: BoxInput): BoxPlan {
     count: 2 * boxes.length,
     separations,
     rankGap: rankGaps(boxes, input.layered.ranks),
+    margins: rankMargins(boxes, input.layered.ranks),
   };
 }
 
@@ -190,6 +193,42 @@ function nesting(
       { from: box.right, to: parent.right, gap: parent.padding },
     ];
   });
+}
+
+/**
+ * `x` with every box's edges pulled in to its members and nested boxes, with its padding. The objective has no term
+ * for a box edge, so the solve leaves an edge wherever its constraints let it drift; pulling it in only shrinks the
+ * box, which keeps every separation of the plan. Nested boxes are tightened first, so a parent holds its children.
+ */
+export function tightenBoxes(
+  plan: BoxPlan,
+  x: readonly number[],
+  half: readonly number[],
+): number[] {
+  const out = [...x];
+  const index = new Map(plan.boxes.map((box, i) => [box.cluster, i] as const));
+  const depth = (box: Box): number =>
+    box.parent === undefined || !index.has(box.parent)
+      ? 0
+      : 1 + depth(plan.boxes[index.get(box.parent)!]!);
+  const deepestFirst = plan.boxes.toSorted((a, b) => depth(b) - depth(a));
+  for (const box of deepestFirst) {
+    let left = Infinity;
+    let right = -Infinity;
+    for (const m of box.members) {
+      left = Math.min(left, x[m]! - half[m]! - box.padding);
+      right = Math.max(right, x[m]! + half[m]! + box.padding);
+    }
+    for (const child of plan.boxes) {
+      if (child.parent === box.cluster) {
+        left = Math.min(left, out[child.left]! - box.padding);
+        right = Math.max(right, out[child.right]! + box.padding);
+      }
+    }
+    out[box.left] = left;
+    out[box.right] = right;
+  }
+  return out;
 }
 
 /** The starting edges of every box, from its members' starting positions, as `[left, right]` pairs flattened. */

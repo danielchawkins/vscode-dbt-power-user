@@ -8,7 +8,12 @@ import type {
   Spacing,
 } from "../types.js";
 import { acrossOf, acrossLayout, anchorIndex } from "./across.js";
-import { type BoxPlan, initialEdges, planBoxes } from "./boxes.js";
+import {
+  type BoxPlan,
+  initialEdges,
+  planBoxes,
+  tightenBoxes,
+} from "./boxes.js";
 import { type BoxFrame, boxRects } from "./boxRects.js";
 import { brandesKoepf } from "./brandesKoepf.js";
 import { hintShift } from "./hints.js";
@@ -83,11 +88,12 @@ export function place(
     gaps,
   });
   const solved = solveInRank({ problem, plan, effort, inRankHalf });
+  const x = tightenBoxes(plan, solved.x, inRankHalf);
 
   const anchor = anchorIndex(layered.nodes, options.anchor);
   const inShift = inRankShift({
     layered,
-    x: solved.x,
+    x,
     inRankHalf,
     options,
   });
@@ -97,7 +103,7 @@ export function place(
     layered,
     plan,
     spacing,
-    inRank: solved.x,
+    inRank: x,
     inRankHalf,
     half,
     centres,
@@ -107,7 +113,7 @@ export function place(
 
   const { points, nodes } = positionsOf({
     layered,
-    x: solved.x,
+    x,
     inShift,
     across,
     down,
@@ -116,8 +122,8 @@ export function place(
     plan,
     down,
     edges: plan.boxes.flatMap((box) => [
-      solved.x[box.left]! + inShift,
-      solved.x[box.right]! + inShift,
+      x[box.left]! + inShift,
+      x[box.right]! + inShift,
     ]),
     ...(boxes === undefined ? {} : { across: boxes }),
   };

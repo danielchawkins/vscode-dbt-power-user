@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/danielchawkins/vscode-dbt-power-user/issues"
   },
-  "version": "0.12.0-beta.0",
+  "version": "0.12.0-beta.1",
   "type": "module",
   "engines": {
     "vscode": "^1.128.0",
@@ -149,6 +149,21 @@
             ],
             "description": "How lineage cards are placed. Read-only in the panel, like the other lineage settings.",
             "default": "layered"
+          },
+          "fusionPowerUser.lineage.engine": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "thorough",
+              "classic"
+            ],
+            "enumDescriptions": [
+              "The graph-layout engine with a balanced search for the card order with the fewest crossings.",
+              "The graph-layout engine searching harder for that order. Slower on large graphs.",
+              "The earlier layered engine."
+            ],
+            "description": "Which engine places and routes the layered lineage layout. Read-only in the panel, like the other lineage settings.",
+            "default": "balanced"
           },
           "fusionPowerUser.lineage.semanticZoom": {
             "type": "boolean",

@@ -99,6 +99,7 @@ for host in "${hosts[@]}"; do
     -v "$repo:/src:ro" -v "$vsix:/vsix/smoke.vsix:ro" -v "$out:/out" \
     -e FPU_SMOKE_HOST="$host" -e FPU_SMOKE_SCREENSHOTS=/out -e FPU_SMOKE_DIAGNOSTICS=/out/diagnostics \
     ${FPU_SMOKE_REQUIRE_FUSION:+-e FPU_SMOKE_REQUIRE_FUSION="$FPU_SMOKE_REQUIRE_FUSION"} \
+    ${FPU_SMOKE_EXTRA_SUITES:+-e FPU_SMOKE_EXTRA_SUITES="$FPU_SMOKE_EXTRA_SUITES"} \
     "$smoke_image" bash -euc "$container_script" bash "$@" > "$work/$host.log" 2>&1 &
   pids+=("$!")
 done

@@ -109,8 +109,8 @@ clean:
 [group("quality")]
 fmt:
     just fmt-just
-    just fmt-code
     just webviews::fmt
+    just fmt-code
     just fmt-markdown
     just fmt-shell
 
@@ -161,11 +161,13 @@ lint-just:
 lint-mise-lock:
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT; MISE_IGNORED_CONFIG_PATHS="${XDG_CONFIG_HOME:-$HOME/.config}/mise" MISE_DATA_DIR="$tmp" mise install --locked --dry-run
 
+# The lint fixes run before the formatter, here and in `webviews::fmt` before this, since their rewrites are not
+# formatted; the formatter has the last word.
 [group("quality")]
 fmt-code:
-    npm run format
     npm run fix:oxlint
     npm run fix:eslint
+    npm run format
 
 [group("quality")]
 lint-code:
@@ -302,6 +304,19 @@ smoke-visual out="out/smoke-visual" *args:
     rm -rf "{{ out }}"
     FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
     @echo "visual evidence: {{ out }}/<host>/<fixture>/index.json"
+
+# On demand: draws several lineage views with each layered engine (classic, balanced, thorough) in Linux containers,
+# then writes a side-by-side contact sheet per view under `out`.
+[group("tests")]
+smoke-engines out="out/smoke-engines":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    rm -rf "{{ out }}"
+    for fixture in lineage-layers lineage-groups; do
+      FPU_SMOKE_EXTRA_SUITES=lineageEngines bash scripts/smoke/docker-smoke.sh "{{ out }}/$fixture" \
+        --fixture "src/test/fixtures/$fixture"
+    done
+    node scripts/smoke/engine-sheet.mjs "{{ out }}"
 
 # The same packaged-VSIX smoke on both hosts in Linux arm64 containers under Xvfb; no windows open on this machine.
 [group("tests")]
