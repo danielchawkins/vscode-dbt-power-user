@@ -70,6 +70,14 @@ export function onBoundary(p: Point, r: Rect): boolean {
   return inside && onSide;
 }
 
+/** The weighted crossings the ordering phase reaches for a graph: the objective a hinted layout may improve on. */
+export function orderingCrossings(
+  graph: LayoutGraph,
+  options: LayoutOptions,
+): number {
+  return runPhases(graph, options).ordering.crossings;
+}
+
 /** The layered order of a graph: each layer as real node ids, dummies as `#<index>`. */
 export function layeredOrder(
   graph: LayoutGraph,
