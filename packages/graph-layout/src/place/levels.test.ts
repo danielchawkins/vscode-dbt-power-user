@@ -127,6 +127,40 @@ describe("levels: the across axis is solved per node", () => {
     TIMEOUT,
   );
 
+  describe("hints across the ranks", () => {
+    const graph: LayoutGraph = {
+      nodes: ["a", "b"].map((id) => ({ id, width: 80, height: 40 })),
+      edges: [],
+    };
+    const hints: LayoutHints = {
+      nodes: new Map([
+        ["a", { rank: 0, order: 0, x: 0, y: 300 }],
+        ["b", { rank: 0, order: 1, x: 200, y: 0 }],
+      ]),
+    };
+    const across = (stability: number) => {
+      const opts: LayoutOptions = {
+        ...routeOptions,
+        direction: "down",
+        ranks: "levels",
+        hints,
+        stability,
+      };
+      const placed = place(graph, opts, order(graph, opts, rank(graph, opts)));
+      return ["a", "b"].map((id) => placed.nodes.get(id)!.y);
+    };
+
+    it("draws a hinted node to its hint's top plus half its height at high stability", () => {
+      const [a, b] = across(1000);
+      expect(a - b).toBeCloseTo(300, 0);
+    });
+
+    it("ignores the hints at stability zero", () => {
+      const [a, b] = across(0);
+      expect(a).toBeCloseTo(b, 6);
+    });
+  });
+
   it(
     "is not a relabelling of the rows: some graph draws its nodes at different heights",
     () => {

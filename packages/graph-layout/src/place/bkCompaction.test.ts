@@ -37,8 +37,8 @@ describe("compact (Brandes, Walter and Zink's corrected compaction)", () => {
         for (const { frame, x } of runsOf(problem)) {
           frame.left.forEach((left, w) => {
             if (left >= 0) {
-              expect(x[w]! - x[left]!).toBeGreaterThanOrEqual(
-                frame.gap[w]! - TOLERANCE,
+              expect(x[w] - x[left]).toBeGreaterThanOrEqual(
+                frame.gap[w] - TOLERANCE,
               );
             }
           });
@@ -52,11 +52,31 @@ describe("compact (Brandes, Walter and Zink's corrected compaction)", () => {
     // Found by the property above and shrunk: the class of node 9's left neighbour must follow the shift of the
     // class it is pulled into, and stopping the shift at the first class leaves the separation at node 9 short.
     const problem: Problem = {
-      layers: [[0], [1, 2, 3], [4, 5, 6, 7, 8, 9], [10, 11, 12, 13, 14, 15, 16]],
+      layers: [
+        [0],
+        [1, 2, 3],
+        [4, 5, 6, 7, 8, 9],
+        [10, 11, 12, 13, 14, 15, 16],
+      ],
       gapLeft: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
       dummy: [
-        false, false, true, false, true, false, false, false, false, false,
-        false, false, false, false, false, false, false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
       ],
       links: [
         { top: 5, bottom: 10, weight: 0.1, topOffset: 0, bottomOffset: 0 },
@@ -67,8 +87,8 @@ describe("compact (Brandes, Walter and Zink's corrected compaction)", () => {
     for (const { frame, x } of runsOf(problem)) {
       frame.left.forEach((left, w) => {
         if (left >= 0) {
-          expect(x[w]! - x[left]!).toBeGreaterThanOrEqual(
-            frame.gap[w]! - TOLERANCE,
+          expect(x[w] - x[left]).toBeGreaterThanOrEqual(
+            frame.gap[w] - TOLERANCE,
           );
         }
       });

@@ -3,18 +3,44 @@ import { describe, expect, it } from "vitest";
 import { solveSeparations } from "../place/vpsc.js";
 import { feasibleAxisArb } from "../testing/axisProblems.js";
 import { projectAxis } from "./axis.js";
+import { components } from "./components.js";
 import type { AxisProblem } from "./types.js";
 
-/** The projection, or `undefined` when the separations form a cycle (the fixture does not rule one out). */
+/**
+ * Whether the separations, with equal variables merged, form a cycle: an inequality between two classes lies in one
+ * strongly connected component of the graph that counts each equality in both directions.
+ */
+function mergedCycle(problem: AxisProblem): boolean {
+  const n = problem.desired.length;
+  const both = ({ from, to }: { from: number; to: number }) => [
+    [from, to] as const,
+    [to, from] as const,
+  ];
+  const equalities = problem.separations.filter((s) => s.equality === true);
+  const classOf = components(n, equalities.flatMap(both));
+  const comp = components(
+    n,
+    problem.separations.flatMap((s) =>
+      s.equality === true ? both(s) : [[s.from, s.to] as const],
+    ),
+  );
+  return problem.separations.some(
+    (s) =>
+      s.equality !== true &&
+      classOf[s.from] !== classOf[s.to] &&
+      comp[s.from] === comp[s.to],
+  );
+}
+
+/** The projection, or `undefined` when the merged separations form a cycle, which `projectAxis` must then reject. */
 function projectedOrCycle(problem: AxisProblem): number[] | undefined {
-  try {
-    return projectAxis(problem);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("directed cycle")) {
-      return undefined;
-    }
-    throw error;
+  if (mergedCycle(problem)) {
+    expect(() => projectAxis(problem)).toThrow(
+      /cycle once equal variables are merged|directed cycle/,
+    );
+    return undefined;
   }
+  return projectAxis(problem);
 }
 
 function cost(problem: AxisProblem, x: readonly number[]): number {
@@ -29,7 +55,9 @@ describe("projectAxis", () => {
     fc.assert(
       fc.property(feasibleAxisArb, ({ problem, point }) => {
         const x = projectedOrCycle(problem);
-        fc.pre(x !== undefined);
+        if (x === undefined) {
+          return;
+        }
         for (const s of problem.separations) {
           const diff = x[s.to] - x[s.from];
           if (s.equality) {
@@ -106,7 +134,27 @@ describe("projectAxis", () => {
           { from: 0, to: 2, gap: 9, equality: true },
         ],
       }),
-    ).toThrow(/equalities contradict each other: .* and .* are forced/);
+    ).toThrow(
+      /equalities contradict each other: c is forced 6 from a through b/,
+    );
+  });
+
+  it("names the variables of a DAG that merging its equal variables turns into a cycle", () => {
+    // x1 = x0 + 3, and x0 + 1 <= x2 <= x1 - 1: a feasible DAG, but merging x0 and x1 closes a cycle through x2.
+    expect(() =>
+      projectAxis({
+        desired: [0, 0, 0],
+        weight: [1, 1, 1],
+        names: ["p", "q", "r"],
+        separations: [
+          { from: 0, to: 1, gap: 3, equality: true },
+          { from: 0, to: 2, gap: 1 },
+          { from: 2, to: 1, gap: 1 },
+        ],
+      }),
+    ).toThrow(
+      /cycle once equal variables are merged, which the solver cannot take: p, q, r/,
+    );
   });
 
   it("names a separation that cannot hold between two equal variables", () => {
