@@ -27,6 +27,10 @@ import type {
   acceptWithProcessExit,
   listenForServer,
 } from "./reverseSocketTransport";
+import type {
+  ShownDocuments,
+  ShownDocumentsDependencies,
+} from "./shownDocuments";
 
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
 const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
@@ -146,8 +150,10 @@ export function languageClientOptions(input: {
    * not reported; see {@link clientErrorHandler}. Defaults to a client that is never inactive.
    */
   isInactive?: () => boolean;
+  /** Holds the opens of documents no editor shows; see {@link ShownDocuments}. Omitted, every open is sent. */
+  shownDocuments?: ShownDocuments;
 }): LanguageClientOptions {
-  const { project, nestedRoots } = input;
+  const { project, nestedRoots, shownDocuments } = input;
   const isInactive = input.isInactive ?? (() => false);
   const middleware = fusionMiddleware({
     compiled: input.compileState ?? new ServerCompileState(),
@@ -166,6 +172,9 @@ export function languageClientOptions(input: {
       );
     },
   });
+  const guarded = nestedRoots
+    ? guardMiddleware(nestedRoots.guard, middleware, nestedRoots.openDocuments)
+    : middleware;
   return {
     ...(input.selector ? { documentSelector: input.selector } : {}),
     ...(input.uriConverters ? { uriConverters: input.uriConverters } : {}),
@@ -182,13 +191,7 @@ export function languageClientOptions(input: {
       name: project.folder.name,
       index: project.folder.index,
     },
-    middleware: nestedRoots
-      ? guardMiddleware(
-          nestedRoots.guard,
-          middleware,
-          nestedRoots.openDocuments,
-        )
-      : middleware,
+    middleware: shownDocuments ? shownDocuments.wrap(guarded) : guarded,
   };
 }
 
@@ -286,6 +289,8 @@ export type FusionLanguageClientDependencies = {
   sleep?: (ms: number) => Promise<void>;
   /** Whether a project root still has its project file; defaults to the file system. Tests stand in for it. */
   rootExists?: (root: Uri) => boolean;
+  /** What the shown-document gate reads from the workbench; defaults to its tabs and visible editors. */
+  shownDocuments?: ShownDocumentsDependencies;
 };
 
 export type ClientHandle = Pick<
