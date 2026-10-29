@@ -9,7 +9,6 @@
     "lib": ["ES2024"],
     "sourceMap": true,
     "rootDir": ".",
-    // "rootDirs": ["src", "../altimate-dbt-integration/src"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

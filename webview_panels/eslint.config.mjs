@@ -111,11 +111,9 @@ export default defineConfig(
     ignores: [
       ".cache/**",
       "dist/**",
-      "eslint/**",
       "eslint.config.mjs",
       "lint/**",
       "oxlint.config.ts",
-      "src/lib/altimate/**",
       "**/*.{css,scss,svg}",
     ],
   },

@@ -10,11 +10,9 @@ const TESTS = ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
 export default {
   ignorePatterns: [
     "dist/**",
-    "eslint/**",
     "eslint.config.mjs",
     "lint/**",
     "oxlint.config.ts",
-    "src/lib/altimate/**",
     "**/*.{css,scss,svg}",
   ],
   plugins: ["typescript", "unicorn", "import", "react", "jsx-a11y"],
