@@ -58,6 +58,8 @@ Two build outputs from one repository: the extension host bundle (TypeScript, rs
 
 `src/extension.ts` → `src/fusionPowerUserExtension.ts` is the single activation path. Every collaborator is constructed with plain constructors by `compose` in `src/compositionRoot.ts`; there is no container or service locator. Fusion is the only dbt integration; dbt Core and dbt Cloud are removed.
 
+The top level is laid out by consumer ([ADR 0010](docs/adr/0010-repository-layout.md)): `src/` is the extension host, `webview_panels/` the webview app (built into `dist/webview/`), `packages/` the `tsc -b` libraries, `media/`, `syntaxes/` and `snippets/` the contributed assets, and `scripts/`, `lint/`, `ast-grep/` and `docker/` contributor tooling that never ships. The VSIX is the `files` allowlist in `package.json`.
+
 Load-bearing directories (abridged):
 
 ```text
