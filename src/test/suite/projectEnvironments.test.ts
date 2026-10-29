@@ -3,7 +3,6 @@ import type { ConfigurationChangeEvent, WorkspaceFolder } from "vscode";
 import { Uri, window, workspace } from "vscode";
 import type { ToolEnvironment } from "../../fusion/toolEnvironment";
 import { ProjectEnvironments } from "../../projects/clients/projectEnvironments";
-import { CONFIGURATION_SECTION } from "../../settings";
 import { flushAsync } from "../async";
 import { createdFileSystemWatchers } from "../mock/vscode";
 import { declaredProject } from "../projectHarness";
@@ -142,16 +141,11 @@ describe("ProjectEnvironments", () => {
     const fired = changes();
 
     setting = "auto";
-    configListener?.({
-      affectsConfiguration: (section, scope) =>
-        section === `${CONFIGURATION_SECTION}.toolEnvironment` &&
-        (scope as Uri | undefined)?.fsPath === a.root.fsPath,
-    });
-    await flushAsync();
+    await environments.refresh(a);
 
     expect(resolve).toHaveBeenCalledTimes(1);
-    expect(fired).toHaveBeenCalledTimes(1);
-    expect(fired).toHaveBeenCalledWith(a);
+    expect(environments.peek(a)).toBeDefined();
+    expect(fired).not.toHaveBeenCalled();
   });
 
   it("watches each folder with the two patterns", () => {

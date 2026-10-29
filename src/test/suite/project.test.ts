@@ -42,7 +42,7 @@ import type { Project } from "../../projects/project/project";
 import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
 import { queueCli } from "../../projects/project/projectCommands";
 import type { ProjectOptions } from "../../projects/project/projectOptions";
-import type { SharedStateService } from "../../projects/project/sharedStateService";
+import type { QueryPanelRequests } from "../../projects/project/queryPanelRequests";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 import {
@@ -100,7 +100,7 @@ function realParsers(terminal: Log): ManifestParsers {
 
 describe("Project Test Suite", () => {
   let mockTerminal: Mocked<Log>;
-  let mockSharedStateService: Mocked<SharedStateService>;
+  let mockQueryRequests: Mocked<QueryPanelRequests>;
   let mockRunHistoryService: Mocked<RunHistoryService>;
   let mockFusionCli: any;
   let dbtProject: Project;
@@ -108,7 +108,7 @@ describe("Project Test Suite", () => {
   function newProject(projectUri = vscode.Uri.file("/test/project")): Project {
     return buildTestProject(projectUri.fsPath, () => mockFusionCli, {
       terminal: mockTerminal,
-      sharedState: mockSharedStateService,
+      queryRequests: mockQueryRequests,
       runHistoryService: mockRunHistoryService,
       root: projectUri,
     });
@@ -159,7 +159,9 @@ describe("Project Test Suite", () => {
       logBlock: vi.fn(),
       warn: vi.fn(),
     } as unknown as Mocked<Log>;
-    mockSharedStateService = {} as unknown as Mocked<SharedStateService>;
+    mockQueryRequests = {
+      request: vi.fn(),
+    } as unknown as Mocked<QueryPanelRequests>;
     mockRunHistoryService = {
       addEntry: vi.fn(),
       notifyCommandFailed: vi.fn(),
@@ -333,6 +335,17 @@ describe("Project Test Suite", () => {
   describe("Query Execution", () => {
     beforeEach(async () => {
       dbtProject = await initializedProject();
+    });
+
+    it("sends the query panel payload through the query requests", async () => {
+      await dbtProject.queries.executeSQLWithLimitOnQueryPanel(
+        "select 1",
+        "orders",
+        10,
+      );
+      expect(mockQueryRequests.request).toHaveBeenCalledWith(
+        expect.objectContaining({ query: "select 1" }),
+      );
     });
 
     it("should compile query", async () => {

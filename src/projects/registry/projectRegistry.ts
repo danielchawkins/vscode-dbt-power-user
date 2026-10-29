@@ -9,6 +9,7 @@ import type {
   WorkspaceFolder,
 } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { isAtOrBelow } from "../../core/paths";
 import {
@@ -22,11 +23,18 @@ import {
   ENABLED_SETTING,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
+  type DeclaredProjectRoots,
 } from "./projectConfiguration";
 import { findProjectRootForFile } from "./projectDiscovery";
-
-/** How a Declared Project came to be declared. */
-export type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
+import {
+  type Candidate,
+  type DeclaredProjectOrigin,
+  type DesiredProject,
+  keepUnchanged,
+  lookupOrder,
+  mergeByRealpath,
+  sameOrder,
+} from "./projectSet";
 
 /** Both project file names; a simple, non-recursive glob, so VS Code does not filter it with `files.watcherExclude`. */
 const PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
@@ -66,8 +74,8 @@ export type UnservedRoot =
 
 /** Resolves and tracks the workspace's Declared Projects. */
 export class ProjectRegistry implements Disposable {
-  private _projects: DeclaredProjectImpl[] = [];
-  private lookupOrder: DeclaredProjectImpl[] = [];
+  private _projects: RegisteredProject[] = [];
+  private lookupOrder: RegisteredProject[] = [];
   private watchers = new Map<string, FileSystemWatcher>();
   /** Roots declared from opened files, keyed by canonical path. Held in memory until the window reloads. */
   private openedRoots = new Map<string, OpenedRoot>();
@@ -164,16 +172,7 @@ export class ProjectRegistry implements Disposable {
     const candidates: Candidate[] = [];
     for (const folder of workspace.workspaceFolders ?? []) {
       const resolved = resolveDeclaredProjectRoots(folder);
-      if (resolved.problems.length > 0) {
-        resolved.problems.forEach((problem) => {
-          const message =
-            problem.reason === "missingProjectFile"
-              ? `Declared Project entry ${problem.entry} has no dbt_project.yml or dbt_project.yaml at ${problem.root}`
-              : `Invalid Declared Project entry: ${problem.entry}`;
-          this.terminal.warn("projectRegistry", message);
-          this._onDidFindUnservedRoot.fire({ ...problem, folder });
-        });
-      }
+      this.reportProblems(folder, resolved.problems);
       for (const root of resolved.roots) {
         this.addCandidate(candidates, {
           folder,
@@ -182,47 +181,17 @@ export class ProjectRegistry implements Disposable {
         });
       }
     }
-    // Opened-file roots come last, so a root that is also configured keeps its configured origin.
     for (const opened of this.openedRoots.values()) {
       this.addCandidate(candidates, { ...opened, origin: "openedFile" });
     }
 
-    const byRealpath = new Map<string, DesiredProject>();
-    for (const candidate of candidates) {
-      const existing = byRealpath.get(candidate.realpathKey);
-      if (existing) {
-        if (!existing.aliases.includes(candidate.root.fsPath)) {
-          existing.aliases.push(candidate.root.fsPath);
-        }
-      } else {
-        byRealpath.set(candidate.realpathKey, {
-          ...candidate,
-          aliases: [...new Set([candidate.root.fsPath, candidate.realpathKey])],
-        });
-      }
-    }
-
-    const next: DeclaredProjectImpl[] = [];
-    for (const d of byRealpath.values()) {
-      const existing = this._projects.find(
-        (p) =>
-          p.realpathKey === d.realpathKey &&
-          p.root.fsPath === d.root.fsPath &&
-          p.folder.uri.fsPath === d.folder.uri.fsPath &&
-          p.name === d.name &&
-          p.origin === d.origin &&
-          samePaths(p.aliases, d.aliases),
-      );
-      if (existing) {
-        next.push(existing);
-      } else {
-        next.push(new DeclaredProjectImpl(d));
-      }
-    }
-
-    const nextWatchers = this.watchRoots(
-      Array.from(byRealpath.values(), (d) => d.root.fsPath),
+    const desired = mergeByRealpath(candidates);
+    const next = keepUnchanged(
+      this._projects,
+      desired,
+      (d) => new RegisteredProject(d),
     );
+    const nextWatchers = this.watchRoots(desired.map((d) => d.root.fsPath));
     for (const p of this._projects) {
       if (!next.includes(p)) {
         p.dispose();
@@ -234,19 +203,27 @@ export class ProjectRegistry implements Disposable {
       }
     }
 
-    const changed =
-      this._projects.length !== next.length ||
-      this._projects.some((p, i) => next[i] !== p);
+    const changed = !sameOrder(this._projects, next);
     this._projects = next;
-    this.lookupOrder = next.toSorted((a, b) => {
-      const depth =
-        b.root.fsPath.split(path.sep).length -
-        a.root.fsPath.split(path.sep).length;
-      return depth || b.root.fsPath.localeCompare(a.root.fsPath);
-    });
+    this.lookupOrder = lookupOrder(next);
     this.watchers = nextWatchers;
     if (changed) {
       this._onDidChangeProjects.fire();
+    }
+  }
+
+  /** Warns about each blocking configuration problem and fires it so listeners can tell the user. */
+  private reportProblems(
+    folder: WorkspaceFolder,
+    problems: DeclaredProjectRoots["problems"],
+  ): void {
+    for (const problem of problems) {
+      const message =
+        problem.reason === "missingProjectFile"
+          ? `Declared Project entry ${problem.entry} has no dbt_project.yml or dbt_project.yaml at ${problem.root}`
+          : `Invalid Declared Project entry: ${problem.entry}`;
+      this.terminal.warn("projectRegistry", message);
+      this._onDidFindUnservedRoot.fire({ ...problem, folder });
     }
   }
 
@@ -337,15 +314,9 @@ export class ProjectRegistry implements Disposable {
 
   dispose(): void {
     this.disposed = true;
-    while (this.subscriptions.length) {
-      this.subscriptions.pop()?.dispose();
-    }
-    for (const p of this._projects) {
-      p.dispose();
-    }
-    for (const w of this.watchers.values()) {
-      w.dispose();
-    }
+    disposeAll(this.subscriptions);
+    disposeAll([...this._projects]);
+    disposeAll([...this.watchers.values()]);
     this._projects = [];
     this.lookupOrder = [];
     this.watchers.clear();
@@ -355,7 +326,7 @@ export class ProjectRegistry implements Disposable {
   }
 }
 
-class DeclaredProjectImpl implements DeclaredProject {
+class RegisteredProject implements DeclaredProject {
   readonly folder: WorkspaceFolder;
   readonly root: Uri;
   readonly name: string;
@@ -380,18 +351,6 @@ class DeclaredProjectImpl implements DeclaredProject {
   }
 
   dispose(): void {}
-}
-
-interface Candidate {
-  folder: WorkspaceFolder;
-  root: Uri;
-  name: string;
-  realpathKey: string;
-  origin: DeclaredProjectOrigin;
-}
-
-interface DesiredProject extends Candidate {
-  aliases: string[];
 }
 
 /**
@@ -449,11 +408,4 @@ export function canonicalPath(fsPath: string): string {
   } catch {
     return fsPath;
   }
-}
-
-function samePaths(left: readonly string[], right: readonly string[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
 }

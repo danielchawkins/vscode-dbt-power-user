@@ -14,7 +14,6 @@ __pycache__/
 *.pyd
 
 # Build and dependencies
-src/lib/notebooks/
 .nyc_output/
 coverage/
 test-results/
@@ -70,6 +69,8 @@ mcp.json
 .agents/plans
 .agents/sessions
 .agents/strands.toml
+# Another agent harness's session store.
+/.agent/
 
 # Agent scratch: build and test logs, never committed.
 scratch/

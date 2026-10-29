@@ -327,9 +327,9 @@ I read the webview config, its package.json script and its boundaries file.
 
 Citations:
 
-- [r9a](../../webview_panels/.dependency-cruiser.cjs): "Outside its own tree, the webview imports only packages and the webview contract, never host code."
-- [r9b](../../webview_panels/package.json): ""lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err","
-- [r9c](../../webview_panels/lint/boundaries.mjs): "// Only the request executor posts to the host; every other file sends through its panel's requests module."
+- [r9a](../../webviews/.dependency-cruiser.cjs): "Outside its own tree, the webview imports only packages and the webview contract, never host code."
+- [r9b](../../webviews/package.json): ""lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err","
+- [r9c](../../webviews/lint/boundaries.mjs): "// Only the request executor posts to the host; every other file sends through its panel's requests module."
 
 Thesis (high): The webview side sits outside the import checker. depcruise is run only on src and packages/webview-contract/src, and the root Oxlint config ignores webview_panels/**, so webview_panels/src is never checked against the host boundary. The webview has its own 518-line oxlint config. Fix: add webview_panels/src to depcruise with a rule that it may import only @fusion-power-user/webview-contract and itself. Enforcement: the depcruise rule, which the existing contract-is-pure rule already models.
 
@@ -348,9 +348,9 @@ Antithesis: The thesis cites the root package.json depcruise command and the roo
 
 Counter-evidence:
 
-- [a22](../../webview_panels/.dependency-cruiser.cjs): "name: "webview-imports-contract-only","
-- [a23](../../webview_panels/package.json): ""lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err""
-- [a24](../../webview_panels/lint/boundaries.mjs): "// Only the request executor posts to the host; every other file sends through its panel's requests module."
+- [a22](../../webviews/.dependency-cruiser.cjs): "name: "webview-imports-contract-only","
+- [a23](../../webviews/package.json): ""lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err""
+- [a24](../../webviews/lint/boundaries.mjs): "// Only the request executor posts to the host; every other file sends through its panel's requests module."
 
 ### 10. The thesis counts are right: 1234 host suppressions. The gate it asks for already exists, though. ceilings.json records the totals, ratchet.mjs fails when a ceiling loosens, CI compares the ceilings against the PR base, and AGENTS.md documents that `just lint-ratchet` fails when a count rises. The work left is to pay the debt down, for example the 233 parameter-properties suppressions, not to build more gating
 
@@ -402,7 +402,7 @@ Thesis citations:
 
 - [c29](../../src/webview/messageRouter.ts): "One handler per command of `M`; a missing or extra command is a compile error."
 - [c30](../../lint/boundaries.mjs): "// Boundary lists shared by the root ESLint config and the root Oxlint config (O1)."
-- [c31](../../webview_panels/src/modules/lineage/requests.ts): "import { panelRequests } from "@modules/app/requestExecutor";"
+- [c31](../../webviews/src/modules/lineage/requests.ts): "import { panelRequests } from "@modules/app/requestExecutor";"
 
 Antithesis: The list of seams to keep is useful but it is built on the same incomplete view of the tooling. It leaves out the seams that make the other recommendations unnecessary: the ratchet (point 10), the webview's own depcruise config (point 9), ParseDemand.follow (point 6), and Project's ProjectOptions with its test harness (point 3).
 
@@ -501,13 +501,13 @@ I ran depcruise, and ls confirmed there is no sgconfig.yml or .ast-grep. A grep 
 
 Citations:
 
-- [r15a](../../webview_panels/package.json): ""react": "^19.3.0", "react-dom": "^19.3.0", "react-error-boundary": "^6.1.6""
+- [r15a](../../webviews/package.json): ""react": "^19.3.0", "react-dom": "^19.3.0", "react-error-boundary": "^6.1.6""
 
 Thesis (high): Caveats. I did not run tests, tsc, oxlint or eslint. There is no sgconfig file, so the ast-grep rules are not yet in the tree. The docs/research host audit is stale: it cites src/webview_provider, which does not exist. The brief mentions Redux Toolkit, but webview_panels/package.json has no Redux dependency and uses React 19 with Vite; state uses a custom typed reducer. Treat the plan's counts as history and re-measure before acting.
 
 Thesis citations:
 
-- [c40](../../webview_panels/package.json): ""react": "^19.3.0", "react-dom": "^19.3.0""
+- [c40](../../webviews/package.json): ""react": "^19.3.0", "react-dom": "^19.3.0""
 
 Antithesis: The caveats admit that nothing was run. That undermines the 'measured state' in the summary. The thesis states 'depcruise passes with 0 violations over 213 modules and 1135 dependencies' and also 'I did not run tests, tsc or lint'. I could not tell from the thesis which numbers came from a run.
 

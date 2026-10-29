@@ -1,6 +1,7 @@
 import type { Disposable } from "vscode";
 import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
+import { disposeAll } from "./core/disposables";
 import type { Log } from "./core/log";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
 import type { LineageService } from "./features/lineage/lineageService";
@@ -45,7 +46,7 @@ export class FusionPowerUserExtension implements Disposable {
 
   /**
    * `services` are what activation starts, watches and stops. `owned` is everything the extension disposes, in
-   * construction order: disposal runs last one first, so the first entries (shared state, run history) go last.
+   * construction order: disposal runs last one first, so the first entries (query requests, run history) go last.
    */
   constructor(services: ExtensionServices, owned: readonly Disposable[]) {
     this.projects = services.projects;
@@ -63,12 +64,7 @@ export class FusionPowerUserExtension implements Disposable {
   dispose() {
     this.disposed = true;
     this.startupGate.settle();
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   private own(disposable: Disposable | undefined): void {

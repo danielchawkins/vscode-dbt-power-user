@@ -1,6 +1,6 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
 import { type CancellationToken, Uri, workspace } from "vscode";
-import type { Table } from "../../core/dbt/domain";
 import type {
   ColumnEdge,
   ColumnLineage,
@@ -14,6 +14,15 @@ import {
 } from "../../core/lineage";
 import type { ListNodesResult } from "../../core/lsp";
 import type { GraphMetaMap } from "../../core/manifest/types";
+import type {
+  NeedsStrict,
+  StrictInputs,
+} from "../../core/snapshot/strictNeeded";
+import {
+  needsStrict,
+  STRICT_FIX,
+  strictNeededMessage,
+} from "../../core/snapshot/strictNeeded";
 import { failureSummary } from "../../core/text";
 import type {
   FusionClient,
@@ -22,15 +31,6 @@ import type {
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { CurrentProject } from "../../projects/project/currentProject";
-import type {
-  NeedsStrict,
-  StrictInputs,
-} from "../../projects/registry/strictNeeded";
-import {
-  needsStrict,
-  STRICT_FIX,
-  strictNeededMessage,
-} from "../../projects/registry/strictNeeded";
 import { readSetting } from "../../settings";
 import { lineageTable } from "./lineageTables";
 
@@ -270,7 +270,7 @@ export class LineageService {
   private getConnectedTables(
     key: keyof GraphMetaMap,
     table: string,
-  ): Table[] | undefined {
+  ): lineage.LineageTable[] | undefined {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       return;
@@ -281,7 +281,7 @@ export class LineageService {
     if (!node) {
       return;
     }
-    const tables: Map<string, Table> = new Map();
+    const tables = new Map<string, lineage.LineageTable>();
     node.nodes
       // Hide foreign-key-only edges: the parent is referenced by a declared FK
       // constraint but never read by the model's SQL, so it isn't a data-flow
@@ -305,7 +305,7 @@ export class LineageService {
     manifest: Manifest,
     tableUrl: string | undefined,
     key: string,
-  ): Table | undefined {
+  ): lineage.LineageTable | undefined {
     return lineageTable(manifest, key, {
       url: tableUrl,
       rootPackage: this.currentProject.current?.getProjectName(),

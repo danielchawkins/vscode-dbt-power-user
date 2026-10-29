@@ -49,12 +49,12 @@ jobs:
         run: just package
 
       - name: Checksum
-        run: sha256sum ./*.vsix | tee vsix.sha256
+        run: cd out && sha256sum ./*.vsix | tee vsix.sha256
 
       - name: Upload VSIX
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: fusion-power-user-vsix
           path: |
-            *.vsix
-            vsix.sha256
+            out/*.vsix
+            out/vsix.sha256

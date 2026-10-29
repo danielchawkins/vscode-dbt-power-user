@@ -8,6 +8,7 @@ import {
   dbtTemplateAssociations,
   literalGlobPath,
 } from "../../core/dbt/dbtAssociations";
+import { disposeAll } from "../../core/disposables";
 import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
 import { notifyErrorWithoutProject } from "../../projects/output/notifications";
 import type { ProjectRegistry } from "../../projects/registry/projectRegistry";
@@ -177,7 +178,6 @@ export class FileAssociationsCommand implements Disposable {
   }
 
   dispose(): void {
-    this.disposables.forEach((d) => d.dispose());
-    this.disposables.length = 0;
+    disposeAll(this.disposables);
   }
 }

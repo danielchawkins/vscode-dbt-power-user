@@ -6,7 +6,7 @@ export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
 
 scripts_dir := source_directory() / "scripts/workspace"
 
-mod webviews "webview_panels"
+mod webviews
 
 ####################
 # Setup
@@ -64,13 +64,13 @@ build-packages:
 [group("development")]
 build:
     just build-packages
-    npm run build:app --workspace webview_panels
+    npm run build:app --workspace webviews
     npm run build:app
 
 [group("development")]
 build-dev:
     just build-packages
-    npm run build:app --workspace webview_panels
+    npm run build:app --workspace webviews
     npm run build:dev:app
 
 [group("development")]
@@ -80,7 +80,7 @@ watch:
     just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
     npm run watch:packages &
-    npm run watch:app --workspace webview_panels &
+    npm run watch:app --workspace webviews &
     npm run watch:extension:app &
     wait
 
@@ -149,12 +149,12 @@ check:
 [group("quality")]
 fmt-just:
     just --fmt
-    just --justfile webview_panels/justfile --fmt
+    just --justfile webviews/justfile --fmt
 
 [group("quality")]
 lint-just:
     just --fmt --check
-    just --justfile webview_panels/justfile --fmt --check
+    just --justfile webviews/justfile --fmt --check
     just --dump > /dev/null
 
 [group("quality")]
@@ -339,38 +339,15 @@ package:
     # rsbuild keeps dist/ between builds, so stale chunks would otherwise ship.
     rm -rf dist
     # Only the VSIX built here may exist, so nothing downstream can install an older one.
-    rm -f ./*.vsix out/latest-vsix
-    npm run package:vsix
-    vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
+    rm -f out/*.vsix out/latest-vsix
+    mkdir -p out
+    npm run package:vsix -- --out out/
+    vsix="out/$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
     if [[ ! -f "$vsix" ]]; then
       echo "error: expected VSIX not found: $vsix" >&2
       exit 1
     fi
-    entries="$(unzip -Z1 "$vsix")"
-    py_entries="$(printf '%s\n' "$entries" | awk '/\.py$/')"
-    if [[ -n "$py_entries" ]]; then
-      echo "error: VSIX contains .py entries: $vsix" >&2
-      printf '%s\n' "$py_entries" >&2
-      exit 1
-    fi
-    echo "VSIX $vsix contains 0 .py entries"
-    if printf '%s\n' "$entries" | grep -qE '(^|/)\.oxfmtrc\.json$'; then
-      echo "error: VSIX contains .oxfmtrc.json: $vsix" >&2
-      exit 1
-    fi
-    if printf '%s\n' "$entries" | grep -qi 'altimate-core'; then
-      echo "error: VSIX contains altimate-core entries: $vsix" >&2
-      exit 1
-    fi
-    tooling_prog='/(^|\/)([^\/]*-suppressions\.json|knip\.json|\.dependency-cruiser\.cjs|'
-    tooling_prog="$tooling_prog"'eslint\.config\.[^\/]*|oxlint\.config\.[^\/]*)$|(^|\/)lint\//'
-    tooling_entries="$(printf '%s\n' "$entries" | awk "$tooling_prog")"
-    if [[ -n "$tooling_entries" ]]; then
-      echo "error: VSIX contains contributor lint or tooling entries: $vsix" >&2
-      printf '%s\n' "$tooling_entries" >&2
-      exit 1
-    fi
-    mkdir -p out
+    node scripts/quality/vsix-contents.mjs "$vsix"
     realpath "$vsix" > out/latest-vsix
     node scripts/quality/size-budget.mjs
 
@@ -390,5 +367,6 @@ release:
     just check
     just package
     vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
-    shasum -a 256 "$vsix" | tee vsix.sha256
-    echo "dry run: would push tag $tag and publish $vsix with checksum $(awk '{print $1}' vsix.sha256)"
+    # The checksum names the bare file, as the release publishes it.
+    (cd out && shasum -a 256 "$vsix" | tee vsix.sha256)
+    echo "dry run: would push tag $tag and publish out/$vsix with checksum $(awk '{print $1}' out/vsix.sha256)"

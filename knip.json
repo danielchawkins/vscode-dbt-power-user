@@ -29,7 +29,7 @@
       ],
       "project": ["src/**/*.ts!", "!src/**/*.test.ts!", "!src/testing/**!"]
     },
-    "webview_panels": {
+    "webviews": {
       "entry": ["src/entries/*.tsx!", "src/**/*.test.{ts,tsx}"],
       "project": [
         "src/**/*.{ts,tsx}!",

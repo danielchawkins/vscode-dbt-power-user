@@ -8,13 +8,10 @@ import {
   type Mocked,
   vi,
 } from "vitest";
-import type {
-  ConfigurationChangeEvent,
-  LogOutputChannel,
-  WorkspaceFolder,
-} from "vscode";
+import type { LogOutputChannel, WorkspaceFolder } from "vscode";
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { StaticAnalysisMode } from "../../core/snapshot";
+import { schemaOriginLaunchEnv } from "../../core/snapshot/schemaOrigin";
 import { BOUNDS } from "../../core/timing";
 import { ServerCompileState } from "../../fusion/compileSignal";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
@@ -29,15 +26,19 @@ import { onCurrentClientChange } from "../../projects/clients/clientChange";
 import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
 import {
   createFusionClientPool,
-  type FusionClientPoolImpl,
+  type FusionClientPool,
 } from "../../projects/clients/fusionClientPool";
+import type { FusionClientPoolDependencies } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
+import type {
+  SnapshotListener,
+  SnapshotStage,
+} from "../../projects/project/projectSettingsStream";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/registry/projectRegistry";
-import { schemaOriginLaunchEnv } from "../../projects/registry/schemaOrigin";
-import { CONFIGURATION_SECTION } from "../../settings";
+import type { SettingKey } from "../../settings";
 import { flushAsync as flushMicrotasks } from "../async";
 import { makeExecutable } from "../fusionClientHarness";
 import { createMockLogOutputChannel } from "../mock/vscode";
@@ -117,10 +118,10 @@ describe("FusionClientPool", () => {
   let registry: FakeRegistry;
   let resolver: Mocked<FusionExecutableResolver>;
   let factory: Mocked<FusionClientFactory>;
-  let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
+  let clientsListeners: SnapshotListener[];
   let settings: Record<string, unknown>;
   let channels: Map<string, LogOutputChannel>;
-  let pools: FusionClientPoolImpl[];
+  let pools: FusionClientPool[];
   let environments: ReturnType<typeof fakeProjectEnvironments>;
   /** Whether a root still holds its project file; tests remove a root to model a deleted checkout. */
   let rootExists: (root: Uri) => boolean;
@@ -142,11 +143,29 @@ describe("FusionClientPool", () => {
     if (update.length) {
       settings[key] = update[0];
     }
-    configListener?.({
-      affectsConfiguration: (section: string, scope?: Uri) =>
-        section === `${CONFIGURATION_SECTION}.${key}` &&
-        scope?.fsPath === root.fsPath,
-    });
+    const project = registry.projects.find(
+      (declared) => declared.root.fsPath === root.fsPath,
+    );
+    if (project) {
+      for (const listener of clientsListeners) {
+        void listener({ project, changedFields: [key as SettingKey] });
+      }
+    }
+  }
+
+  /** A settings stream whose `clients` stage listeners `changeSetting` drives. */
+  function fakeSettings(): FusionClientPoolDependencies["settings"] {
+    return {
+      onDidChangeSnapshot: (
+        stage: SnapshotStage,
+        listener: SnapshotListener,
+      ) => {
+        if (stage === "clients") {
+          clientsListeners.push(listener);
+        }
+        return { dispose: () => {} };
+      },
+    };
   }
 
   beforeEach(() => {
@@ -167,13 +186,8 @@ describe("FusionClientPool", () => {
       ),
     };
     settings = { "lint.enabled": true, staticAnalysis: "baseline" };
+    clientsListeners = [];
 
-    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
-      (listener) => {
-        configListener = listener as (event: ConfigurationChangeEvent) => void;
-        return { dispose: vi.fn() };
-      },
-    );
     vi.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: vi.fn((key: string) => settings[key]),
     } as any);
@@ -186,7 +200,7 @@ describe("FusionClientPool", () => {
     vi.mocked(workspace.getConfiguration).mockRestore();
   });
 
-  function createPool(): FusionClientPoolImpl {
+  function createPool(): FusionClientPool {
     const pool = createFusionClientPool(
       registry as unknown as ProjectRegistry,
       terminal as any,
@@ -197,6 +211,7 @@ describe("FusionClientPool", () => {
         environments,
         outputChannel: channelFor,
         rootExists: (root) => rootExists(root),
+        settings: fakeSettings(),
       },
     );
     pools.push(pool);
@@ -599,6 +614,7 @@ describe("FusionClientPool", () => {
         environments,
         outputChannel: channelFor,
         rootExists: () => true,
+        settings: fakeSettings(),
       },
     );
     pools.push(pool);
@@ -827,6 +843,7 @@ describe("FusionClientPool", () => {
         outputChannel: channelFor,
         launchEnv: { resolve, onDidChange: changed.event },
         rootExists: () => true,
+        settings: fakeSettings(),
       },
     );
     const project = makeProject("general", "/workspace/general");

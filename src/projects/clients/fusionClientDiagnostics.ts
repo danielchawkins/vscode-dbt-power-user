@@ -2,10 +2,8 @@ import type { Disposable } from "vscode";
 import { commands, type DiagnosticCollection } from "vscode";
 import type { FusionClientState } from "../../fusion/fusionClient";
 import { testCommandsEnabled } from "../../settings/index";
-import type {
-  DeclaredProjectOrigin,
-  ProjectRegistry,
-} from "../registry/projectRegistry";
+import type { ProjectRegistry } from "../registry/projectRegistry";
+import type { DeclaredProjectOrigin } from "../registry/projectSet";
 import type { FusionClientPool } from "./fusionClientPool";
 import type { FusionStatus } from "./fusionStatus";
 import type {

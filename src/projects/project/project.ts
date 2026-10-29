@@ -1,11 +1,17 @@
 import type { Diagnostic, Event } from "vscode";
 import { Disposable, EventEmitter, Uri } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { type ManifestProject } from "../../core/manifest/index";
 import { isAtOrBelow } from "../../core/paths";
 import type { ProjectPaths, ResolvedDefer } from "../../core/snapshot/index";
 import { dbtProjectFilePath } from "../../core/snapshot/index";
+import type { SchemaOriginStatus } from "../../core/snapshot/schemaOrigin";
+import {
+  projectOptIns,
+  projectSchemaOrigin,
+} from "../../core/snapshot/schemaOrigin";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { FusionClient } from "../../fusion/fusionClient";
@@ -29,8 +35,6 @@ import { ProjectDiagnostics } from "../output/projectDiagnostics";
 import { ProjectErrors } from "../output/projectErrors";
 import type { RunHistoryService } from "../output/runHistoryService";
 import type { DeclaredProject } from "../registry/projectRegistry";
-import type { SchemaOriginStatus } from "../registry/schemaOrigin";
-import { projectOptIns, projectSchemaOrigin } from "../registry/schemaOrigin";
 import { CommandQueue } from "./commandQueue";
 import type { ProjectCommandDeps } from "./projectCommands";
 import { refreshCliConfig } from "./projectCommands";
@@ -43,7 +47,7 @@ import {
   sourcePathsOf,
 } from "./projectRootPaths";
 import { ProjectTasks } from "./projectTasks";
-import type { SharedStateService } from "./sharedStateService";
+import type { QueryPanelRequests } from "./queryPanelRequests";
 
 const LOG_SOURCE = "Project";
 
@@ -52,7 +56,7 @@ export class Project implements Disposable, ManifestProject {
   readonly declared: DeclaredProject;
   readonly root: Uri;
   private readonly terminal: Log;
-  private readonly sharedState: SharedStateService;
+  private readonly queryRequests: QueryPanelRequests;
   /** Compile, column and query operations. */
   readonly queries: ProjectQueries;
   /** dbt commands, each run as a task. */
@@ -111,7 +115,7 @@ export class Project implements Disposable, ManifestProject {
     this.declared = options.declared;
     this.root = options.root;
     this.terminal = options.terminal;
-    this.sharedState = options.sharedState;
+    this.queryRequests = options.queryRequests;
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
     this.fusionClient = options.fusionClient ?? (() => undefined);
@@ -147,7 +151,7 @@ export class Project implements Disposable, ManifestProject {
       commandDeps: this.commandDeps,
       terminal: this.terminal,
     });
-    this.queries = new ProjectQueries(this, this.terminal, this.sharedState);
+    this.queries = new ProjectQueries(this, this.terminal, this.queryRequests);
     this.commands = new ProjectDbtCommands(this, this.tasks);
     this.runResultsReader = new RunResultsReader(
       () => this.paths()?.targetPath,
@@ -200,6 +204,13 @@ export class Project implements Disposable, ManifestProject {
           this.manifestRebuild.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
       },
+      subscribeSettings: (listener) =>
+        options.settings.onDidChangeSnapshot("executable", (change) =>
+          listener({
+            root: change.project.root,
+            changedFields: change.changedFields,
+          }),
+        ),
     });
   }
 
@@ -261,6 +272,12 @@ export class Project implements Disposable, ManifestProject {
       );
     }
     return integration;
+  }
+
+  /** The CLI once any executable re-resolution in flight has finished; throws if none is committed then. */
+  async settledFusionCli(): Promise<FusionCli> {
+    await this.lifecycle.settled();
+    return this.getFusionCli();
   }
 
   getProjectName(): string {
@@ -431,9 +448,7 @@ export class Project implements Disposable, ManifestProject {
     }
     this.disposed = true;
     this.trigger.dispose();
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
+    disposeAll(this.disposables);
     await this.lifecycle.dispose();
   }
 

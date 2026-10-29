@@ -15,8 +15,9 @@ import { CurrentProject } from "../projects/project/currentProject";
 import { Project } from "../projects/project/project";
 import { ProjectQuickPick } from "../projects/project/projectQuickPick";
 import { Projects } from "../projects/project/projects";
+import { ProjectSettingsStream } from "../projects/project/projectSettingsStream";
 import { QueryManifestService } from "../projects/project/queryManifestService";
-import { SharedStateService } from "../projects/project/sharedStateService";
+import { QueryPanelRequests } from "../projects/project/queryPanelRequests";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { ProjectRegistry } from "../projects/registry/projectRegistry";
 import { cliFactoryFor } from "./fusionCli";
@@ -24,12 +25,27 @@ import { cliFactoryFor } from "./fusionCli";
 /** Builds the Project of a Declared Project. */
 export type ProjectFactory = (project: DeclaredProject) => Project;
 
+function metadataSourceFor(demand: MetadataDemand, log: Log) {
+  return (declared: DeclaredProject, project: Project) =>
+    createProjectMetadataSource(declared, project, { demand, log });
+}
+
+/** The environment is re-read before the executable stage, which resolves its executable against it. */
+function refreshEnvironmentOnChange(
+  settings: ProjectSettingsStream,
+  environments: ProjectEnvironments,
+): void {
+  settings.onDidChangeSnapshot("environment", (change) =>
+    environments.refresh(change.project),
+  );
+}
+
 export function composeProjects(context: ExtensionContext) {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
   bindExtensionOutput(() => outputChannels.channel.show(true));
   const terminal: Log = outputChannels;
-  const sharedState = new SharedStateService();
+  const queryRequests = new QueryPanelRequests();
   const runHistoryService = new RunHistoryService();
   const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
     logWarning: (message) => terminal.warn("FusionVersion", message),
@@ -44,15 +60,15 @@ export function composeProjects(context: ExtensionContext) {
     outputChannels.projectLog.bind(outputChannels),
   );
   const metadataDemand = new MetadataDemand();
-  const metadataSourceDeps = { demand: metadataDemand, log: terminal };
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
     return new Project({
       terminal: log,
-      sharedState,
+      queryRequests,
       runHistoryService,
       resolver: fusionExecutableResolver,
       environment: () => projectEnvironments.ensure(declared),
+      settings: projectSettings,
       cliFactory: cliFactoryFor(declared, projectEnvironments, log),
       parsers: createProjectParsers(log),
       declared,
@@ -69,12 +85,14 @@ export function composeProjects(context: ExtensionContext) {
 
   const projectRegistry = new ProjectRegistry(terminal);
   outputChannels.follow(projectRegistry);
+  const projectSettings = new ProjectSettingsStream(projectRegistry, terminal);
+  refreshEnvironmentOnChange(projectSettings, projectEnvironments);
   const projects = new Projects(
     projectRegistry,
     {
       project: projectFactory,
-      metadataSource: (declared, project) =>
-        createProjectMetadataSource(declared, project, metadataSourceDeps),
+      metadataSource: metadataSourceFor(metadataDemand, terminal),
+      settings: projectSettings,
     },
     terminal,
   );
@@ -84,21 +102,21 @@ export function composeProjects(context: ExtensionContext) {
     projects,
     projectQuickPick,
   );
-  const queryManifestService = new QueryManifestService(currentProject);
   return {
     extensionContextStore,
     outputChannels,
     terminal,
-    sharedState,
+    queryRequests,
     runHistoryService,
     fusionExecutableResolver,
     projectEnvironments,
     projectFactory,
     projectRegistry,
+    projectSettings,
     projects,
     projectQuickPick,
     currentProject,
-    queryManifestService,
+    queryManifestService: new QueryManifestService(currentProject),
     clients,
     metadataDemand,
   };

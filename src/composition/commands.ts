@@ -20,6 +20,7 @@ export function composeCommands(
   const deferToProductionStatusBar = new DeferToProductionStatusBar(
     projects,
     terminal,
+    graph.projectSettings,
   );
   const vscodeCommands = new VSCodeCommands({
     projects,

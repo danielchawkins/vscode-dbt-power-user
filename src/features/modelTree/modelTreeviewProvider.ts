@@ -9,6 +9,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { GraphMetaMap, NodeData } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
@@ -74,12 +75,7 @@ abstract class ModelTreeviewProvider
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   getTreeItem(element: NodeTreeItem): NodeTreeItem | Thenable<ModelTreeItem> {

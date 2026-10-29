@@ -110,6 +110,8 @@ function createDbtSpy() {
       "start=$(date +%s)000",
       'id="$$-$start"',
       `printf '%s start %s %s\\n' "$start" "$id" "$sub" >> '${log}'`,
+      // A test holds a subcommand back by creating hold-<subcommand> beside the log; the invocation waits until it goes.
+      `while [ -e '${dir}/hold-'"$sub" ]; do sleep 0.1; done`,
       // Backgrounded so the signal trap can run.
       `'${real}' "$@" <&3 3<&- &`,
       "child=$!",

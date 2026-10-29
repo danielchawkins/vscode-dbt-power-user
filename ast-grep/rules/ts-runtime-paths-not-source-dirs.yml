@@ -1,0 +1,17 @@
+# The VSIX holds build output (dist/, media/, syntaxes/, snippets/), never a source directory, so the shipped host
+# must not name one when it builds a path under the extension. Naming dist/ keeps the repository layout free to
+# change without a runtime change.
+id: ts-runtime-paths-not-source-dirs
+language: typescript
+severity: error
+message: >-
+  Shipped code names a source directory. Point at the build output under `dist/` instead, which the VSIX
+  carries whatever the source layout is. For an exception, put
+  `ast-grep-ignore: ts-runtime-paths-not-source-dirs -- <why>` in a comment above the line and say why in review.
+files:
+  - src/**
+ignores:
+  - src/test/**
+rule:
+  kind: string_fragment
+  regex: '^(webviews|packages|scripts|docker|lint)(/|$)'

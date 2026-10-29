@@ -58,7 +58,7 @@ module.exports = {
       "projects/project",
       "^src/projects/(registry|output|clients|manifest)/",
     ),
-    layer("webview", `^src/(core|benchmark|projects/project)/|${SUPPORT}`),
+    layer("webview", `^src/(core|benchmark)/|${SUPPORT}`),
     layer(
       "features",
       // The manifest/ modules a feature reads: the Manifest type, a publication's id, and metadata demand.
@@ -158,6 +158,25 @@ module.exports = {
         "core/, settings/, fusion/ and projects/ do not import the webview host.",
       from: { path: "^src/(core|settings|fusion|projects)/" },
       to: { path: "^src/webview/" },
+    },
+    {
+      name: "registry-project-set-is-pure",
+      severity: "error",
+      comment:
+        "The project-set plan (dedupe by realpath, keep unchanged projects, lookup order) is pure, so it is unit-tested without the VS Code mock; it may name vscode types but import no runtime vscode or fs.",
+      from: { path: "^src/projects/registry/projectSet\\.ts$" },
+      to: {
+        path: "^vscode$|^node_modules/@types/vscode/|^(node:)?fs(/promises)?$",
+        dependencyTypesNot: ["type-only"],
+      },
+    },
+    {
+      name: "webview-host-knows-no-project",
+      severity: "error",
+      comment:
+        "webview/ is panel infrastructure; a panel takes the project services it needs in its own constructor.",
+      from: { path: "^src/webview/" },
+      to: { path: "^src/projects/" },
     },
     {
       name: "fusion-language-client-is-adapter",

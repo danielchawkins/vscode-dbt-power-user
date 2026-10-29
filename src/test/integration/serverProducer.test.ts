@@ -1,10 +1,10 @@
-import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
 import { pollUntil } from "../async";
-import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
+import { holdDbt } from "./helpers/dbtSpy";
+import { showLineageView } from "./helpers/workspaceHelper";
 
 /**
  * Pins the server producer: after a model gains a `ref` and is saved, the merged manifest lists the edge from the
@@ -18,7 +18,8 @@ suite("server producer: the merged graph follows a saved ref", function () {
   this.timeout(8 * 60_000);
   let child = "";
 
-  suiteSetup(function () {
+  suiteSetup(async function () {
+    await showLineageView();
     const projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
     child = path.join(projectDir, "models", "server_producer_child.sql");
   });
@@ -38,18 +39,17 @@ suite("server producer: the merged graph follows a saved ref", function () {
   test("lists the new edge soon after the save, before any dbt parse starts", async function () {
     const parentFile = path.join(path.dirname(child), "order_totals.sql");
     await vscode.window.showTextDocument(vscode.Uri.file(parentFile));
-    const spawned = dbtInvocations().length;
-    fs.writeFileSync(child, "select * from {{ ref('order_totals') }}\n");
-    await pollUntil(parents, (seen) => seen.includes(PARENT), {
-      timeoutMs: DEADLINE_MS,
-      intervalMs: 100,
-      describe: `parents of ${CHILD} to include ${PARENT}`,
-    });
-    // The parse starts after the watcher's debounce; the edge must already be visible by then.
-    assert.deepStrictEqual(
-      dbtInvocationsSince(spawned, "parse"),
-      [],
-      "the edge appeared only after a dbt parse was spawned",
-    );
+    // Every parse waits at its start, so the edge can come only from the server's listNodes.
+    const release = holdDbt("parse");
+    try {
+      fs.writeFileSync(child, "select * from {{ ref('order_totals') }}\n");
+      await pollUntil(parents, (seen) => seen.includes(PARENT), {
+        timeoutMs: DEADLINE_MS,
+        intervalMs: 100,
+        describe: `parents of ${CHILD} to include ${PARENT}`,
+      });
+    } finally {
+      release();
+    }
   });
 });

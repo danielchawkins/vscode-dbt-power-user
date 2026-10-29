@@ -1,4 +1,4 @@
-import type { Table } from "../../core/dbt/domain";
+import type { lineage } from "@fusion-power-user/webview-contract";
 import { inferLayer } from "../../core/manifest/modelLayer";
 import type { Meta, NodeGraphMap } from "../../core/manifest/types";
 import {
@@ -16,7 +16,10 @@ function connectedNodeCount(g: NodeGraphMap, key: string): number {
 }
 
 /** The tests on `key`, as the lineage table lists them. */
-function testsOf(manifest: Manifest, key: string): Table["tests"] {
+function testsOf(
+  manifest: Manifest,
+  key: string,
+): lineage.LineageTable["tests"] {
   return (manifest.graphMetaMap.tests.get(key)?.nodes ?? []).map((n) => {
     const testKey = n.label.split(".")[0] ?? "";
     return { ...manifest.testMetaMap.get(testKey), key: testKey };
@@ -56,7 +59,7 @@ export function lineageTable(
   manifest: Manifest,
   key: string,
   options: CardOptions = NO_LAYERS,
-): Table | undefined {
+): lineage.LineageTable | undefined {
   const splits = key.split(".");
   const at = (index: number) => splits[index] ?? "";
   const nodeType = at(0);
@@ -76,7 +79,6 @@ export function lineageTable(
         label: at(2),
         materialization: undefined,
         tests: [],
-        columns: {},
       };
     case RESOURCE_TYPE_EXPOSURE: {
       const exposure = manifest.exposureMetaMap.get(at(2));
@@ -85,7 +87,6 @@ export function lineageTable(
         label: at(2),
         materialization: undefined,
         tests: [],
-        columns: {},
         ...hiddenPart(exposure?.meta, exposure?.config?.meta),
       };
     }
@@ -97,7 +98,6 @@ export function lineageTable(
         label: at(2),
         materialization: fnType ? `${fnType} function` : "function",
         tests: [],
-        columns: {},
         ...hiddenPart(fn?.meta, fn?.config?.meta),
       };
     }
@@ -107,7 +107,7 @@ export function lineageTable(
 }
 
 type TableBase = Pick<
-  Table,
+  lineage.LineageTable,
   "table" | "url" | "childCount" | "parentCount" | "nodeType"
 > & { options: CardOptions };
 
@@ -115,7 +115,7 @@ function sourceTable(
   manifest: Manifest,
   { options, ...base }: TableBase,
   [sourceName, tableName]: [string, string],
-): Table | undefined {
+): lineage.LineageTable | undefined {
   const source = manifest.sourceMetaMap.get(sourceName);
   const table = source?.tables.find((t) => t.name === tableName);
   if (!source || !table) {
@@ -125,7 +125,6 @@ function sourceTable(
     ...base,
     label: tableName,
     tests: testsOf(manifest, base.table),
-    columns: table.columns,
     description: table.description,
     packageName: source.package_name,
     rootPackage: source.package_name === options.rootPackage,
@@ -145,7 +144,7 @@ function nodeTable(
   manifest: Manifest,
   { options, ...base }: TableBase,
   key: string,
-): Table | undefined {
+): lineage.LineageTable | undefined {
   const node = manifest.nodeMetaMap.lookupByUniqueId(key);
   if (!node) {
     return undefined;
@@ -156,8 +155,6 @@ function nodeTable(
     label: node.alias,
     materialization,
     description: node.description,
-    columns: node.columns,
-    patchPath: node.patch_path ?? "",
     path: node.original_file_path,
     tests: testsOf(manifest, key),
     packageName: node.package_name,

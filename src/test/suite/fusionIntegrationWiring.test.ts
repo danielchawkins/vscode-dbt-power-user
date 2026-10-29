@@ -24,6 +24,7 @@ sharedWindow.createOutputChannel = vi.fn(
 );
 
 import { compose } from "../../compositionRoot";
+import { disposeAll } from "../../core/disposables";
 
 function stubContext(workspaceValue?: string) {
   return {
@@ -37,9 +38,7 @@ describe("Fusion-only integration wiring", () => {
   const disposables: Array<{ dispose: () => void }> = [];
 
   afterEach(() => {
-    while (disposables.length) {
-      disposables.pop()?.dispose();
-    }
+    disposeAll(disposables);
   });
 
   function composeTracked(workspaceValue?: string) {

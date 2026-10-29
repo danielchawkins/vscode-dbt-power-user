@@ -1,5 +1,6 @@
 import type { Disposable } from "vscode";
 import { workspace } from "vscode";
+import { disposeAll } from "../core/disposables";
 import { SqlPreviewContentProvider } from "./compiledSql/sqlPreviewContentProvider";
 
 export class ContentProviders implements Disposable {
@@ -18,11 +19,6 @@ export class ContentProviders implements Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 }

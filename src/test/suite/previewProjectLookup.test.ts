@@ -76,6 +76,7 @@ describe("compiled preview project lookup", () => {
             demand: new MetadataDemand(),
             log: terminal,
           }),
+        settings: { onDidChangeSnapshot: () => ({ dispose: () => {} }) },
       },
       terminal,
     );

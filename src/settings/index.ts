@@ -281,6 +281,8 @@ export async function clearDisabled(folder: WorkspaceFolder): Promise<void> {
 export interface SettingsChange {
   /** Whether a subscribed key changed for `resource`, or in any scope when omitted. */
   affects(resource?: Uri): boolean;
+  /** The subscribed keys that changed for `resource`, in subscription order. */
+  changed(resource?: Uri): SettingKey[];
 }
 
 /** Calls `listener` on every configuration change; it checks `affects` for the resources it owns. */
@@ -288,15 +290,14 @@ export function onDidChangeSettings(
   keys: readonly SettingKey[],
   listener: (change: SettingsChange) => void,
 ): Disposable {
-  return workspace.onDidChangeConfiguration((event) =>
+  return workspace.onDidChangeConfiguration((event) => {
+    const changed = (resource?: Uri) =>
+      keys.filter((key) =>
+        event.affectsConfiguration(`${CONFIGURATION_SECTION}.${key}`, resource),
+      );
     listener({
-      affects: (resource) =>
-        keys.some((key) =>
-          event.affectsConfiguration(
-            `${CONFIGURATION_SECTION}.${key}`,
-            resource,
-          ),
-        ),
-    }),
-  );
+      affects: (resource) => changed(resource).length > 0,
+      changed,
+    });
+  });
 }

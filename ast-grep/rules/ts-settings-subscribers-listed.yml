@@ -1,0 +1,25 @@
+# The rearchitecture plan's change-stream rule: only projects/ subscribes to Settings for project-scoped values,
+# and features subscribe to Project. Each subscriber below reacts to a setting change on its own, so a new one adds
+# another uncoordinated reaction to the same change. This list is the set that exists; shrinking it is the
+# snapshot change-stream refactor, and growing it needs a reason in review.
+id: ts-settings-subscribers-listed
+language: typescript
+severity: error
+message: >-
+  `onDidChangeSettings` is called outside the listed subscribers. A feature follows its Project's events, and a
+  project-scoped setting reaches the code through the Project Snapshot. For an exception, put
+  `ast-grep-ignore: ts-settings-subscribers-listed -- <why>` in a comment above the line.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - src/settings/**
+  # Window-wide: activation follows `enabled` for every folder.
+  - src/fusionPowerUserExtension.ts
+  # projects/: the registry and the project-settings stream, the one subscriber of project-scoped settings.
+  - src/projects/registry/projectRegistry.ts
+  - src/projects/project/projectSettingsStream.ts
+rule:
+  pattern: onDidChangeSettings($$$ARGS)
+  not:
+    inside: { kind: function_declaration, stopBy: end, has: { field: name, regex: ^onDidChangeSettings$ } }

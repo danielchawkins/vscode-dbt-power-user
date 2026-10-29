@@ -10,6 +10,7 @@ import {
   workspace,
   WorkspaceEdit,
 } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import {
   DBT_PROJECT_FILE,
@@ -17,12 +18,12 @@ import {
   declaredProjectName,
   parseDbtProjectYaml,
 } from "../../core/snapshot";
+import { SCHEMA_ORIGIN_HOOK } from "../../core/snapshot/schemaOrigin";
 import type { ProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import { notifyError } from "../../projects/output/notifications";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { DeclaredProject } from "../../projects/registry/projectRegistry";
-import { SCHEMA_ORIGIN_HOOK } from "../../projects/registry/schemaOrigin";
 import { writeStrictStaticAnalysis } from "../../settings";
 import type { StartupGate } from "../../startupGate";
 
@@ -116,9 +117,7 @@ export class ProjectConfigCommands implements Disposable {
   }
 
   dispose(): void {
-    for (const disposable of this.disposables) {
-      disposable.dispose();
-    }
+    disposeAll(this.disposables);
   }
 }
 

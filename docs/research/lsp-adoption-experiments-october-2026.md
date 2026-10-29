@@ -4,7 +4,7 @@ Captured 2026-10-04 against `dbt lsp` 2.0.6 on Darwin arm64 over stdio, for step
 
 Projects:
 
-- **jaffle**: `test-fixtures/jaffle-shop-duckdb`, prepared fresh per run by `prep-jaffle.sh` (E1 adds a snapshot), `--static-analysis strict` unless stated.
+- **jaffle**: `scripts/spikes/lsp-capabilities/jaffle-shop-duckdb`, prepared fresh per run by `prep-jaffle.sh` (E1 adds a snapshot), `--static-analysis strict` unless stated.
 - **multi-root**: a copy of `src/test/fixtures/multi-root` (`general` and `sox`), each project with one added CTE model.
 - **finance**: the copy of `finance_general` at `/tmp/lsp-fin/finance_general` (330 models, 1,270 sources, Snowflake), `--profiles-dir ~/.dbt`, `baseline` unless stated, under the heavy-run lock. Account, user, role, database, warehouse and schema names, three-part relation names and every row value are redacted; the redaction also masks one local package name that matches a warehouse name.
 

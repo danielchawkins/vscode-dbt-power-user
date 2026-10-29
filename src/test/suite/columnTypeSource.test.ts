@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DeferState } from "../../core/cli";
+import { whyNotStrict } from "../../core/snapshot/schemaOrigin";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
 import type { TypeSourceProject } from "../../features/docs/columnTypeSource";
 import { resolveColumnTypes } from "../../features/docs/columnTypeSource";
-import { whyNotStrict } from "../../projects/registry/schemaOrigin";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 import { spyLog } from "../testLog";
 
 const MODEL = { name: "orders", filePath: "/p/models/orders.sql" };

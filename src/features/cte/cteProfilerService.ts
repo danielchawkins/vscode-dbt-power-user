@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Disposable, Event, Uri } from "vscode";
 import { CancellationTokenSource, EventEmitter, window } from "vscode";
 import { countSql, type FusionCte } from "../../core/cte/ctePreview";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import {
   notifyError,
@@ -10,12 +11,12 @@ import {
 import type { Project } from "../../projects/project/project";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { ProjectLookup } from "../../projects/project/projects";
+import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 /** What profiling reads from a file's project. */
 type ProfiledProject = Pick<Project, "log" | "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "immediatelyExecuteSQLWithLimit">;
 };
-import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 /** Reads a compiled file once per profiling run, so every CTE is sliced from the same version. */
 function readOnce(files: Map<string, Buffer>, filePath: string): Buffer {
@@ -47,12 +48,7 @@ export class CteProfilerService implements Disposable {
 
   dispose() {
     this.cancellationTokenSource?.dispose();
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   getResult(uri: string): CteProfileResult | undefined {

@@ -7,6 +7,7 @@ import { ColumnProposalRequests } from "../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
 import { LineagePanel } from "../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../features/queryResults/queryResultPanel";
+import { QueryPanelRequests } from "../projects/project/queryPanelRequests";
 import { spyLog } from "./testLog";
 
 type Listener = (message: unknown) => unknown;
@@ -157,7 +158,7 @@ export function queryResultPanel(
 ): QueryResultPanel {
   return new QueryResultPanel({
     extensionContext,
-    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
+    queryRequests: new QueryPanelRequests(),
     log: terminal,
     queryManifestService: queryManifestService as never,
     currentProject: currentProject as never,
@@ -192,7 +193,6 @@ export function docsEditPanel(
         getUnitTestsForCurrentModel: vi.fn(async () => []),
       },
       queryManifestService: { manifestFor: () => undefined },
-      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposalRequests: new ColumnProposalRequests(),
       ...services,
     } as never,
@@ -217,7 +217,6 @@ export function lineagePanel(
     terminal,
     lineageService: (services.lineageService ?? {}) as never,
     currentProject: (services.currentProject ?? {}) as never,
-    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
   });
 }

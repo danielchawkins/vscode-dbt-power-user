@@ -28,6 +28,18 @@ COPY --chown=tester:tester mise.toml mise.lock ./
 RUN mise install --locked node "aqua:getdbt.com/dbt-fusion" \
     && ln -s "$(mise which dbt)" /home/tester/.local/bin/dbt
 
+# Fusion downloads an adapter's driver from its CDN on first use and caches it in ~/.cache/com.getdbt. Every fixture
+# uses DuckDB, so one throwaway run bakes that driver into the image; otherwise each container's first DuckDB command
+# waits on the network inside a test's time budget.
+RUN mkdir -p /tmp/warm/models \
+    && printf 'name: warm\nversion: "1.0.0"\nconfig-version: 2\nprofile: warm\n' > /tmp/warm/dbt_project.yml \
+    && printf 'warm:\n  target: dev\n  outputs:\n    dev:\n      type: duckdb\n      path: /tmp/warm/warm.duckdb\n' \
+      > /tmp/warm/profiles.yml \
+    && echo 'select 1 as id' > /tmp/warm/models/warm.sql \
+    && dbt run --project-dir /tmp/warm --profiles-dir /tmp/warm \
+    && test -n "$(find /home/tester/.cache/com.getdbt/adbc -name 'libadbc_driver_duckdb*')" \
+    && rm -rf /tmp/warm
+
 # Dependencies come from the lockfile; test-electron is one of them. VS Code is baked into /work/.vscode-test,
 # where test-electron looks when the tests run from /work.
 COPY --chown=tester:tester package.json package-lock.json ./

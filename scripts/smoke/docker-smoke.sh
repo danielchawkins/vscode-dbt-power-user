@@ -42,7 +42,7 @@ trap 'cleanup; exit 130' INT TERM
 trap cleanup EXIT
 
 # Same content-hash tag as scripts/test/docker-integration.sh, so the two share one base image.
-base_hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/fetch-vscode.mjs \
+base_hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/Dockerfile.dockerignore docker/integration/fetch-vscode.mjs \
   scripts/test/integration-layout.mjs mise.toml mise.lock package.json package-lock.json | shasum -a 256 | cut -c1-12)
 base=fpu-integration:$base_hash
 smoke_hash=$(cd "$repo" && {
@@ -83,7 +83,7 @@ chmod 777 "$out"
 # shellcheck disable=SC2016
 container_script='
   tar -C /src --exclude=./node_modules --exclude=./.vscode-test --exclude=./.jj --exclude=./.git \
-    --exclude=./.cache --exclude=./out --exclude=./dist --exclude=./*.vsix -cf - . | tar -C /work -xf -
+    --exclude=./.cache --exclude=./out --exclude=./dist -cf - . | tar -C /work -xf -
   cd /work
   mkdir -p out
   exec bash scripts/smoke/run-host-smoke.sh --host "$FPU_SMOKE_HOST" --vsix /vsix/smoke.vsix "$@"

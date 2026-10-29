@@ -7,10 +7,10 @@ import type {
 } from "../../core/columns/typeSourceMessage";
 import type { Log } from "../../core/log";
 import { dbColumnsFrom } from "../../core/lsp";
+import { whyNotStrict } from "../../core/snapshot/schemaOrigin";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
 import { errorText } from "../../core/text";
 import type { Project } from "../../projects/project/project";
-import { whyNotStrict } from "../../projects/registry/schemaOrigin";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 
 /** The project's parts the type attempts read. */
 export type TypeSourceProject = Pick<Project, "root" | "lsp" | "getFusionCli">;

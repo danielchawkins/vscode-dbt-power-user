@@ -1,13 +1,17 @@
 import type { Event, Uri } from "vscode";
 import { Disposable, EventEmitter } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
-import { onDidChangeSettings } from "../../settings/index";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../registry/projectRegistry";
 import type { Project } from "./project";
 import type { ProjectMetadataSource } from "./projectMetadataSource";
+import type { ProjectSettingsEvents } from "./projectSettingsStream";
+
+/** The project-scoped settings whose change rebuilds a project's manifest. */
+const MANIFEST_SETTINGS = ["target", "profilesDir", "perProject"] as const;
 
 /** Builds the Project Metadata Source for one Declared Project and the `Project` built for it. */
 export type MetadataSourceFactory = (
@@ -58,13 +62,6 @@ export class Projects implements Disposable {
     this._onDidRemoveProject,
     this._onDidChangeErrors,
     this._onDidChangeProjects,
-    onDidChangeSettings(["target", "profilesDir", "perProject"], (change) => {
-      for (const { project } of this.projectsByRoot.values()) {
-        if (change.affects(project.root)) {
-          void project.rebuildManifest();
-        }
-      }
-    }),
   ];
 
   private readonly projectsByRoot = new Map<string, ProjectEntry>();
@@ -82,11 +79,28 @@ export class Projects implements Disposable {
     factories: {
       project: (project: DeclaredProject) => Project;
       metadataSource: MetadataSourceFactory;
+      settings: ProjectSettingsEvents;
     },
     log: Log,
   ) {
     this.projectRegistry = projectRegistry;
     this.projectFactory = factories.project;
+    this.disposables.push(
+      factories.settings.onDidChangeSnapshot(
+        "manifest",
+        ({ project, changedFields }) => {
+          if (
+            changedFields.some((key) =>
+              (MANIFEST_SETTINGS as readonly string[]).includes(key),
+            )
+          ) {
+            void this.projectsByRoot
+              .get(project.root.fsPath)
+              ?.project.rebuildManifest();
+          }
+        },
+      ),
+    );
     this.metadataSourceFactory = factories.metadataSource;
     this.log = log;
   }
@@ -150,19 +164,12 @@ export class Projects implements Disposable {
       this.projectsByRoot.delete(rootPath);
       this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
-      for (const sub of entry.subscriptions) {
-        sub.dispose();
-      }
+      disposeAll(entry.subscriptions);
       void entry.project.dispose();
     }
     this.projectsByRoot.clear();
     this.projectOrder = [];
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   private async sync(): Promise<void> {
@@ -209,9 +216,7 @@ export class Projects implements Disposable {
     for (const entry of removed) {
       this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
-      for (const sub of entry.subscriptions) {
-        sub.dispose();
-      }
+      disposeAll(entry.subscriptions);
       await entry.project.dispose();
     }
 

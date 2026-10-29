@@ -47,7 +47,7 @@ Thesis (high): Today's TS 7 block is typescript-eslint's peer range. The install
 Thesis citations:
 
 - [c1](../../package.json): ""typescript": "^6.0.3","
-- [c2](../../webview_panels/package.json): ""typescript-eslint": "^8.71.0","
+- [c2](../../webviews/package.json): ""typescript-eslint": "^8.71.0","
 
 Antithesis: [confidence: high] The premise that TS 7 is 'blocked only because typescript-eslint peers <6.1.0' is true only for a single-`typescript` install. Microsoft documents a supported side-by-side route: alias `typescript` to `@typescript/typescript6` and add `typescript-7` for `tsc`. That unblocks TS 7 for `tsc`, `just check` and the rsbuild/Vite builds with typescript-eslint, ESLint and Prettier all kept. The thesis never mentions it, and it undermines the whole 'cannot drop ... and stay equivalent' framing.
 
@@ -72,7 +72,7 @@ The antithesis said the thesis never checked rules by name. I checked them with 
 Citations:
 
 - [r2a](../../eslint.config.mjs): ""@typescript-eslint/no-floating-promises": "error","
-- [r2b](../../webview_panels/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
+- [r2b](../../webviews/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
 - [r2c](https://oxc.rs/docs/guide/usage/linter/type-aware.html): "Type-aware linting currently supports 59 out of 61 type-aware rules from typescript-eslint."
 - [r2d](https://oxc.rs/docs/guide/usage/linter/type-aware.html): "Rule coverage is incomplete (but very close)"
 
@@ -81,8 +81,8 @@ Thesis (high): Inventory, type-aware. Root `eslint.config.cjs` enables these typ
 Thesis citations:
 
 - [c3](../../eslint.config.mjs): ""@typescript-eslint/no-floating-promises": "error","
-- [c4](../../webview_panels/eslint.config.mjs): "...tseslint.configs.recommendedTypeChecked,"
-- [c5](../../webview_panels/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
+- [c4](../../webviews/eslint.config.mjs): "...tseslint.configs.recommendedTypeChecked,"
+- [c5](../../webviews/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
 
 Antithesis: [confidence: medium] The thesis says each of the ~15 host rules and the whole webview presets 'has to be checked by name' against Oxlint but never does it. The 59-of-61 figure covers typescript-eslint rules in general and says nothing about which two are missing. The stylistic-type-checked preset also contains rules outside the 61.
 
@@ -104,7 +104,7 @@ I grepped the local `oxlint --rules` output. `no-restricted-syntax` and `cogniti
 Citations:
 
 - [r3a](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-properties.html): "This rule was added in v1.63.0."
-- [r3b](../../webview_panels/eslint.config.mjs): ""CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])","
+- [r3b](../../webviews/eslint.config.mjs): ""CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])","
 - [r3c](../../eslint.config.mjs): ""sonarjs/cognitive-complexity": ["error", 15],"
 - [r3d](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "JS plugins are currently in alpha, and remain under active development."
 
@@ -132,7 +132,7 @@ Counter-evidence:
 - [c2](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-properties.html): "This rule was added in v1.63.0."
 - [c3](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html): "It applies to static imports and to dynamic import() with a string-literal source; computed sources like import(bar) are ignored."
 - [c4](https://registry.npmjs.org/oxlint-plugin-eslint): ""description":"ESLint's built-in rules as an Oxlint plugin""
-- [c5](../../webview_panels/eslint.config.mjs): ""CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])","
+- [c5](../../webviews/eslint.config.mjs): ""CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])","
 
 ### 4. The thesis is right that the ratchet reads ESLint's bulk-suppression files. But the coupling is only to a file schema, and Oxlint writes the same schema. `suppressionTotal` sums `count` values over a map of file → rule → `{count}`. I ran `oxlint --suppress-all`, and it wrote `oxlint-suppressions.json` in exactly that shape. So moving the ratchet means changing two filenames, not rewriting the two `measure` functions. Separately, the `typeCoverage.*` ceilings depend on `type-coverage`, which uses the TypeScript compiler API, so the TS 7 move affects them too
 
@@ -153,7 +153,7 @@ Thesis citations:
 
 - [c9](../../scripts/quality/ratchet.mjs): "measure: () => suppressionTotal("eslint-suppressions.json"),"
 - [c10](../../scripts/quality/ceilings.json): ""suppressions.host": 29,"
-- [c11](../../webview_panels/package.json): ""lint:prune": "eslint . --prune-suppressions""
+- [c11](../../webviews/package.json): ""lint:prune": "eslint . --prune-suppressions""
 
 Antithesis: [confidence: high] The thesis states the ratchet depends on ESLint's suppression file, but it never checks whether Oxlint can produce an equivalent. It can, in part (see point 7). It also does not say that `lint:prune` and `suppressionTotal` would need to be re-pointed at a different file whose schema the thesis did not read.
 
@@ -204,8 +204,8 @@ Citations:
 
 - [r6a](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "eslint-plugin-sonarjs ( conformance test results )"
 - [r6b](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "Lint rules that rely on TypeScript type-awareness."
-- [r6c](../../webview_panels/eslint.config.mjs): ""@eslint-react/no-unused-props": "error","
-- [r6d](../../webview_panels/eslint.config.mjs): ""react-refresh/only-export-components": ["
+- [r6c](../../webviews/eslint.config.mjs): ""@eslint-react/no-unused-props": "error","
+- [r6d](../../webviews/eslint.config.mjs): ""react-refresh/only-export-components": ["
 
 Thesis (medium): Oxlint's custom-rule and plugin story is usable but alpha. Its JS plugin API is ESLint v9+ compatible and supports selectors, so the repo's `no-restricted-syntax` selectors and ESLint's own `no-restricted-*` rules are plausible to carry over through `jsPlugins`. The same page lists `eslint-plugin-sonarjs` and `eslint-plugin-react-hooks` among the conformance-tested plugins, which would cover cognitive-complexity and the hooks rules. The page lists JS plugins as alpha, and the repo's boundary rules are what the architecture relies on. It also lists 'Lint rules that rely on TypeScript type-awareness' as not yet supported in JS plugins, which does not affect the no-restricted rules. I did not verify native Oxlint rules for `no-restricted-imports` or `max-lines-per-function` by name. I also did not verify `@eslint-react` and `jsx-a11y-x` equivalents, though Oxlint has built-in jsx-a11y and react plugins.
 
@@ -226,7 +226,7 @@ Antithesis: The conformance list names `eslint-plugin-sonarjs` and `eslint-plugi
 Counter-evidence:
 
 - [f1](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "Lint rules that rely on TypeScript type-awareness."
-- [f2](../../webview_panels/eslint.config.mjs): ""@eslint-react/exhaustive-deps": "error","
+- [f2](../../webviews/eslint.config.mjs): ""@eslint-react/exhaustive-deps": "error","
 
 ### 7. Oxlint does have bulk suppressions, available since v1.64.0. `--suppress-all` and `--prune-suppressions` work in the installed 1.87.0. They write and prune `oxlint-suppressions.json` in ESLint's file → rule → count schema, and suppressed violations exit 0. The risk is stability, not absence. Maintainers deliberately hid the flags from `--help` and the docs to keep room for breaking changes, and the PR that would document them is still a draft. So the baseline carries over, but the oxlint version must be pinned and the format treated as unstable
 

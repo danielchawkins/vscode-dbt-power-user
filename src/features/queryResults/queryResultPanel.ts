@@ -22,10 +22,7 @@ import {
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { QueryPanelPayload } from "../../projects/project/projectSql";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import type {
-  SharedStateEventEmitterProps,
-  SharedStateService,
-} from "../../projects/project/sharedStateService";
+import type { QueryPanelRequests } from "../../projects/project/queryPanelRequests";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { type Page, PanelHost, postToWebview } from "../../webview/panelHost";
@@ -84,34 +81,31 @@ export class QueryResultPanel extends PanelHost<
   // stored only for current session, if user reloads or opens new workspace, this will be reset
   declare protected extensionContext: ExtensionContextStore;
   declare protected log: Log;
-  declare protected queryManifestService: QueryManifestService;
+  private readonly queryManifestService: QueryManifestService;
   private readonly currentProject: CurrentProject;
   private readonly history: QueryHistoryStore;
 
   public constructor({
     extensionContext,
-    sharedState,
+    queryRequests,
     log,
     queryManifestService,
     currentProject,
     onDidRemoveProject,
   }: {
     extensionContext: ExtensionContextStore;
-    sharedState: SharedStateService;
+    queryRequests: QueryPanelRequests;
     log: Log;
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
     onDidRemoveProject: Event<Uri>;
   }) {
-    super({
-      extensionContext,
-      sharedState,
-      log,
-      queryManifestService,
-    });
+    super({ extensionContext, log });
+    this.queryManifestService = queryManifestService;
     this.currentProject = currentProject;
     this.history = new QueryHistoryStore(log);
     this._disposables.push(
+      queryRequests.onDidRequest((payload) => void this.executeQuery(payload)),
       onDidRemoveProject(() => {
         this.replay.clear();
         this.tabDataByPage.clear();
@@ -161,19 +155,6 @@ export class QueryResultPanel extends PanelHost<
       command: "updateViewType",
       args: { body: { type: viewType } },
     });
-  }
-
-  protected override async onEvent({
-    command,
-    payload,
-  }: SharedStateEventEmitterProps) {
-    switch (command) {
-      case "executeQuery":
-        void this.executeQuery(payload as QueryPanelPayload);
-        break;
-      default:
-        void super.onEvent({ command, payload });
-    }
   }
 
   private openResultsInTab(queryTabData: queryResults.QueryTabData) {
@@ -328,7 +309,7 @@ export class QueryResultPanel extends PanelHost<
   /** Runs a query transmitting appropriate notifications to webview */
   public async executeQuery({
     query,
-    fn: queryExecutionPromise,
+    fn: startQuery,
     projectName,
     preview,
   }: QueryPanelPayload) {
@@ -340,8 +321,7 @@ export class QueryResultPanel extends PanelHost<
     }
     void this.transmitLoading();
     try {
-      const queryExecution = (this.queryExecution =
-        await queryExecutionPromise);
+      const queryExecution = (this.queryExecution = await startQuery());
       const output = await queryExecution.executeQuery();
       const result = await this.transmitDataWrapper(output, query, preview);
       recordResult({

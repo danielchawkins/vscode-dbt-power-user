@@ -196,9 +196,9 @@ describe("suppression ratchet keys", () => {
   it("maps exactly the four suppression keys to their files", () => {
     expect(SUPPRESSION_FILES).toEqual({
       "suppressions.host": "eslint-suppressions.json",
-      "suppressions.webview": "webview_panels/eslint-suppressions.json",
+      "suppressions.webview": "webviews/eslint-suppressions.json",
       "oxlintSuppressions.host": "oxlint-suppressions.json",
-      "oxlintSuppressions.webview": "webview_panels/oxlint-suppressions.json",
+      "oxlintSuppressions.webview": "webviews/oxlint-suppressions.json",
     });
   });
 
@@ -214,10 +214,10 @@ describe("suppression ratchet keys", () => {
   });
 
   it("keeps oxlint and held rules out of eslint-suppressions.json after pruning", () => {
-    const inventory = readJson<Inventory>("test-fixtures/lint/inventory.json");
+    const inventory = readJson<Inventory>("lint/fixtures/inventory.json");
     for (const [workspace, file] of [
       ["host", "eslint-suppressions.json"],
-      ["webview", "webview_panels/eslint-suppressions.json"],
+      ["webview", "webviews/eslint-suppressions.json"],
     ]) {
       const moved = new Set(
         Object.values(inventory[workspace])

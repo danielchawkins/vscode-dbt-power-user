@@ -32,7 +32,7 @@ const RESOURCE_TYPE_FALLBACK_ORDER: readonly NodeResourceType[] = [
   RESOURCE_TYPE_SNAPSHOT,
 ];
 
-class NodeMetaMapImpl implements NodeMetaMap {
+class IndexedNodeMetaMap implements NodeMetaMap {
   private latestVersionLookupMap: Map<string, string>;
   private nameLookupMapsByType: Map<NodeResourceType, Map<string, string>>;
   private modelMetadataLookupMap: Map<string, NodeMetaData>;
@@ -122,7 +122,7 @@ export class NodeParser {
       Map<string, string>
     > = new Map();
     if (nodesMap === null || nodesMap === undefined) {
-      return new NodeMetaMapImpl(new Map(), new Map());
+      return new IndexedNodeMetaMap(new Map(), new Map());
     }
     const nodesMaps = Object.values(nodesMap).filter((model) =>
       isResourceNode(model.resource_type),
@@ -198,7 +198,7 @@ export class NodeParser {
       nameLookupMapsByType,
       modelMetadataLookupMap,
     );
-    const nodeMetaMap: NodeMetaMap = new NodeMetaMapImpl(
+    const nodeMetaMap: NodeMetaMap = new IndexedNodeMetaMap(
       latestVersionLookupMap,
       nameLookupMapsByType,
       modelMetadataLookupMap,

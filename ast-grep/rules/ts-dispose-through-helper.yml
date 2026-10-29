@@ -1,0 +1,26 @@
+# A hand-written loop that disposes a list comes in three shapes here (pop until empty, forEach, for-of), and
+# they differ: forEach and for-of leave the disposed items in the list, so a second dispose() disposes them
+# again, and only the pop loop disposes in reverse order of registration. `disposeAll` in src/core/disposables.ts
+# is the one shape: it empties the list and disposes last-registered first.
+id: ts-dispose-through-helper
+language: typescript
+severity: error
+message: >-
+  Dispose a list of disposables with `disposeAll` from src/core/disposables.ts, not a hand-written loop. For an
+  exception, put `ast-grep-ignore: ts-dispose-through-helper -- <why>` in a comment above the line.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  # The helper's own loop is the one shape.
+  - src/core/disposables.ts
+rule:
+  any:
+    - all:
+        - pattern: while ($A.length) { $$$ }
+        - has: { stopBy: end, pattern: $A.pop() }
+        - has: { stopBy: end, kind: property_identifier, regex: ^dispose$ }
+    - pattern: $A.forEach(($D) => $D.dispose())
+    - pattern: $A.forEach(($D) => { $D.dispose(); })
+    - pattern: for (const $D of $A) { $D.dispose(); }
+    - pattern: for (const $D of $A) $D.dispose();

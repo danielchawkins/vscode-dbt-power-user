@@ -4,7 +4,7 @@ import type { Webview, WebviewOptions } from "vscode";
 import { Uri } from "vscode";
 
 /**
- * The Vite entries under `webview_panels/src/entries`, one per panel.
+ * The Vite entries under `webviews/src/entries`, one per panel.
  * @internal
  */
 export const panelEntries = [
@@ -39,7 +39,7 @@ interface ManifestChunk {
 export type ViteManifest = Record<string, ManifestChunk>;
 
 const assetRoot = (extensionUri: Uri) =>
-  Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");
+  Uri.joinPath(extensionUri, "dist", "webview", "assets");
 
 /** Scripts on, and local resources limited to the built webview assets. */
 export function panelWebviewOptions(extensionUri: Uri): WebviewOptions {
@@ -124,7 +124,7 @@ export function panelHtml({
   page: PanelPage;
   manifest?: ViteManifest;
 }): string {
-  const dist = Uri.joinPath(extensionUri, "webview_panels", "dist");
+  const dist = Uri.joinPath(extensionUri, "dist", "webview");
   const asset = (file: string) =>
     webview.asWebviewUri(Uri.joinPath(dist, file));
   const { script, styles } = entryAssets(manifest, page.entry);

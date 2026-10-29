@@ -9,10 +9,9 @@ const mediaDirectory = path.join(repositoryRoot, "media", "images");
 function referencedMediaFiles(): string[] {
   const files = [
     "package.json",
-    ...globSync(
-      ["src/**/*.{ts,tsx,js}", "webview_panels/src/**/*.{ts,tsx,js}"],
-      { cwd: repositoryRoot },
-    ).filter((file) => !file.startsWith(`src${path.sep}test${path.sep}`)),
+    ...globSync(["src/**/*.{ts,tsx,js}", "webviews/src/**/*.{ts,tsx,js}"], {
+      cwd: repositoryRoot,
+    }).filter((file) => !file.startsWith(`src${path.sep}test${path.sep}`)),
   ];
   const references = new Set<string>();
   const mediaPath = /media\/images\/([A-Za-z0-9._-]+)/g;

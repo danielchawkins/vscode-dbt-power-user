@@ -1,5 +1,6 @@
 import type { Disposable, Event, LogOutputChannel, Uri } from "vscode";
 import { EventEmitter } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import type { LspLaunch } from "../../core/lsp/index";
 import { sameLspLaunch, toLspLaunch } from "../../core/lsp/index";
@@ -14,8 +15,7 @@ import type {
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
 import { isFusionExecutable } from "../../fusion/fusionExecutable";
-import type { SettingsChange } from "../../settings/index";
-import { onDidChangeSettings } from "../../settings/index";
+import type { SettingKey } from "../../settings";
 import type {
   DeclaredProject,
   ProjectRegistry,
@@ -24,7 +24,6 @@ import { launchClient } from "./clientLaunch";
 import type { FusionClientFactory } from "./fusionClientFactory";
 import type { ProjectEnvironments } from "./projectEnvironments";
 import { sameEnv } from "./projectEnvironments";
-import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
 
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */
@@ -70,7 +69,7 @@ export interface FusionLaunchSources {
   rootExists?: ((root: Uri) => boolean) | undefined;
 }
 
-export class FusionClientPoolImpl implements FusionClientPool {
+class PerProjectFusionClientPool implements FusionClientPool {
   private readonly clients = new Map<string, ManagedClient>();
   private readonly subscriptions: Disposable[] = [];
   private readonly _onDidChangeClients = new EventEmitter<void>();
@@ -95,9 +94,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
       this.registry.onDidChangeProjects(() => {
         this.scheduleReconcile();
       }),
-      onDidChangeSettings(PROJECT_SNAPSHOT_SETTINGS, (change) => {
-        void this.enqueue(() => this.handleConfigurationChange(change));
-      }),
+      this.deps.settings.onDidChangeSnapshot("clients", (change) =>
+        this.enqueue(() => this.handleConfigurationChange(change)),
+      ),
       this.deps.environments.onDidChange((project) => {
         void this.enqueue(() => this.handleEnvironmentChange(project));
       }),
@@ -146,9 +145,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
   private async doStop(): Promise<void> {
     clearTimeout(this.reconcileTimer);
     this.reconcileTimer = undefined;
-    while (this.subscriptions.length) {
-      this.subscriptions.pop()?.dispose();
-    }
+    disposeAll(this.subscriptions);
     const managed = [...this.clients];
     await Promise.all(
       managed.map(([key, entry]) => this.stopManaged(key, entry)),
@@ -228,26 +225,23 @@ export class FusionClientPoolImpl implements FusionClientPool {
       : hasDbtProjectFile(root.fsPath);
   }
 
-  private async handleConfigurationChange(
-    change: SettingsChange,
-  ): Promise<void> {
+  /** Restarts the affected project's client when its launch differs; the stream awaits this stage. */
+  private async handleConfigurationChange({
+    project,
+  }: SnapshotChange): Promise<void> {
     if (!this.initialized || this.disposed) {
       return;
     }
-
-    const projects = this.registry.projects.map(
-      (project): [string, DeclaredProject] => [projectKey(project), project],
-    );
-    const changed = await this.replaceEach(projects, async (key, project) => {
-      if (!change.affects(project.root)) {
-        return false;
-      }
-      const managed = this.clients.get(key);
-      return (
-        managed !== undefined && !(await this.isCurrentLaunch(project, managed))
-      );
-    });
-    if (changed) {
+    const key = projectKey(project);
+    const managed = this.clients.get(key);
+    if (
+      managed === undefined ||
+      (await this.isCurrentLaunch(project, managed))
+    ) {
+      return;
+    }
+    await this.replaceClient(project, key);
+    if (!this.disposed) {
       this._onDidChangeClients.fire();
     }
   }
@@ -403,15 +397,31 @@ function projectKey(project: DeclaredProject): string {
   return project.root.fsPath;
 }
 
+/** The project a project-settings change affects, and the keys that changed for it. */
+interface SnapshotChange {
+  readonly project: DeclaredProject;
+  readonly changedFields: readonly SettingKey[];
+}
+
+/** The clients stage of the project-settings stream; the pool's only use of it. */
+interface ProjectSettingsEvents {
+  onDidChangeSnapshot(
+    stage: "clients",
+    listener: (change: SnapshotChange) => void | Promise<void>,
+  ): Disposable;
+}
+
 export type FusionClientPoolDependencies = FusionLaunchSources & {
   resolver: FusionExecutableResolver;
   factory: FusionClientFactory;
+  /** The pool restarts a client at the stream's clients stage, and the stream awaits that restart. */
+  settings: ProjectSettingsEvents;
 };
 
 export function createFusionClientPool(
   registry: ProjectRegistry,
   terminal: Log,
   deps: FusionClientPoolDependencies,
-): FusionClientPoolImpl {
-  return new FusionClientPoolImpl(registry, terminal, deps);
+): FusionClientPool {
+  return new PerProjectFusionClientPool(registry, terminal, deps);
 }

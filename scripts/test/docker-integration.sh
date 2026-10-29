@@ -14,7 +14,7 @@ labels=$(printf '%s\n' "$shards" | tr ' ' '\n' | paste -sd, -)
 
 # The tag is a content hash of everything the image is built from,
 # so workspaces with different inputs never share one.
-hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/fetch-vscode.mjs \
+hash=$(cd "$repo" && cat docker/integration/Dockerfile docker/integration/Dockerfile.dockerignore docker/integration/fetch-vscode.mjs \
   scripts/test/integration-layout.mjs mise.toml mise.lock package.json package-lock.json | shasum -a 256 | cut -c1-12)
 image=fpu-integration:$hash
 
@@ -56,7 +56,7 @@ shard_script='
     -cf - . | tar -C /work -xf -
   cd /work
   # The recorded VSIX path is the host path.
-  set -- /work/*.vsix
+  set -- /work/out/*.vsix
   echo "$1" > out/latest-vsix
   for label in $FPU_LABELS; do
     echo "FPU-LABEL-BEGIN $label"

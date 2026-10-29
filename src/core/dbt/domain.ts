@@ -1,5 +1,4 @@
 import type {
-  ColumnMetaData,
   DocMetaMap,
   ExposureMetaMap,
   FunctionMetaMap,
@@ -84,40 +83,6 @@ export interface RunResultsEventData {
   /** Total elapsed time in seconds */
   elapsedTime: number;
 }
-
-export type Table = {
-  label: string;
-  table: string;
-  url: string | undefined;
-  /** Number of dbt children. */
-  childCount: number;
-  /** Number of dbt parents. */
-  parentCount: number;
-  nodeType: string;
-  materialization?: string | undefined;
-  description?: string;
-  tests: {
-    key: string;
-    raw_sql?: string | null | undefined;
-    column_name?: string | null | undefined;
-  }[];
-  meta?: Record<string, unknown> | undefined;
-  columns: { [columnName: string]: ColumnMetaData };
-  patchPath?: string;
-  packageName?: string;
-  refName?: string;
-  identifier?: string;
-  database?: string;
-  schema?: string;
-  rootPackage?: boolean;
-  layer?: string | undefined;
-  /** True when the node sets `meta.lineage.hidden: true`. */
-  hidden?: boolean;
-  /** The node's configured `schema`. */
-  customSchema?: string;
-  /** The node's file path, `/`-separated; the lineage panel groups neighbours by their folder. */
-  path?: string | undefined;
-};
 
 export const RunModelType = {
   RUN_PARENTS: 0,

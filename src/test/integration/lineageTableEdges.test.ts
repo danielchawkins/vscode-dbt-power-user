@@ -3,6 +3,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
 import { pollUntil } from "../async";
+import { showLineageView } from "./helpers/workspaceHelper";
 
 /**
  * Pins that the lineage panel's table edges follow manifest rebuilds: a model that adds a `ref` lists its
@@ -18,7 +19,8 @@ suite("Lineage table edges follow the rebuilt manifest", function () {
   let projectDir = "";
   let child = "";
 
-  suiteSetup(function () {
+  suiteSetup(async function () {
+    await showLineageView();
     projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
     child = path.join(projectDir, "models", "edge_child.sql");
   });

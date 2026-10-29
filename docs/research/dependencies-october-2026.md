@@ -207,7 +207,7 @@ Counter-evidence:
 
 - [e1](practice-review-october-2026.md): "Valid: types must not exceed the engine."
 - [e2](../../src/test/suite/outputChannels.test.ts): "log.channel.show(2, false);"
-- [e3](../../webview_panels/src/modules/documentationEditor/components/tests/forms/TestForm.tsx): "import { FormEvent, useEffect } from "react";"
+- [e3](../../webviews/src/modules/documentationEditor/components/tests/forms/TestForm.tsx): "import { FormEvent, useEffect } from "react";"
 - [e4](../../src/projects/project/dbtTask.ts): "workspace.getWorkspaceFolder(Uri.file(root)) ?? TaskScope.Workspace,"
 
 ### 6. The version survey was too thin: about 4 of the roughly 20 named packages. Its two concerns are also misplaced. On `@vscode/test-cli`, the real problem is not slow releases but the mocha 11 pin, which brings in the deprecated glob. Replacing `which` would just add a dependency to remove one. The antithesis reports several packages behind latest but still within their caret ranges: rsbuild, knip, dependency-cruiser, mocha, happy-dom and @tanstack/react-table. A lockfile refresh (`npm update`) covers those. mocha 12 is a root devDependency used directly by the smoke harness, so the repo runs two test runners: mocha and Vitest
@@ -301,7 +301,7 @@ Antithesis: The point is labelled 'speculative' and has no citations, so it is n
 Counter-evidence:
 
 - [h1](../../node_modules/typed-rest-client/HttpClient.js): "let parsedUrl = url.parse(requestUrl);"
-- [h2](../../webview_panels/src/renderPanel.tsx): "ReactDOM.createRoot(document.getElementById("root")!).render("
+- [h2](../../webviews/src/renderPanel.tsx): "ReactDOM.createRoot(document.getElementById("root")!).render("
 
 ### 9. Deprecated-API worklist. The host `src/` has no deprecated VS Code API uses. Test code calls the deprecated two-argument `OutputChannel.show(column, preserveFocus)` twice, at lines 111 and 211 of outputChannels.test.ts; switch to `show(false)`. The webview uses the deprecated React type `FormEvent` in TestForm.tsx and DisplayTestDetails.tsx; replace it with `SubmitEvent`, `ChangeEvent` or `SyntheticEvent` as each handler requires. Nothing that React 19 removed is in use, and the entry point uses `createRoot`. Add a type-aware no-deprecated lint rule to keep it that way; I did not confirm Oxlint ships one. Deprecated `vscode-languageclient` options were not scanned
 
@@ -314,8 +314,8 @@ Citations:
 - [r9a](../../src/test/suite/outputChannels.test.ts): "log.channel.show(2, false);"
 - [r9b](../../node_modules/@types/vscode/index.d.ts): "@deprecated Use the overload with just one parameter (`show(preserveFocus?: boolean): void`)."
 - [r9c](../../node_modules/@types/react/index.d.ts): "@deprecated FormEvent doesn't actually exist."
-- [r9d](../../webview_panels/src/modules/documentationEditor/components/tests/forms/TestForm.tsx): "const handleSubmit = (event: FormEvent<HTMLFormElement>) => {"
-- [r9e](../../webview_panels/src/renderPanel.tsx): "ReactDOM.createRoot(document.getElementById("root")!).render("
+- [r9d](../../webviews/src/modules/documentationEditor/components/tests/forms/TestForm.tsx): "const handleSubmit = (event: FormEvent<HTMLFormElement>) => {"
+- [r9e](../../webviews/src/renderPanel.tsx): "ReactDOM.createRoot(document.getElementById("root")!).render("
 
 ### 10. `url.parse()` (DEP0169) is called in typed-rest-client and azure-devops-node-api. In this tree both arrive only through @vscode/vsce's publish stack, not through the shipped runtime dependencies. So a DEP0169 warning in a smoke log most likely comes from tooling, and the fix is a newer vsce rather than a change to `src/`. This attribution is by static search; I did not read a smoke log
 

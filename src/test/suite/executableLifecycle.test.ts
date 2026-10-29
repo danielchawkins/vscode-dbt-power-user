@@ -13,12 +13,14 @@ import type { DiagnosticData } from "../../core/diagnostics";
 import type {
   ExecutableLifecycleHooks,
   FusionCommandIntegrationFactory,
+  ProjectSettingsSubscription,
 } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import { SHOW_OUTPUT } from "../../projects/output/projectErrors";
 import type { Project } from "../../projects/project/project";
+import { onDidChangeSettings } from "../../settings";
 import { flushAsync, waitFor } from "../async";
 import { createdFileSystemWatchers } from "../mock/vscode";
 import {
@@ -36,6 +38,15 @@ import { silentLog } from "../testLog";
 
 const ROOT = "/workspace/project";
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
+
+/** The stream's executable stage for ROOT, fed by the mocked configuration events the tests fire. */
+const subscribeSettings: ProjectSettingsSubscription = (listener) =>
+  onDidChangeSettings(["dbtPath", "perProject"], (change) => {
+    const changedFields = change.changed(Uri.file(ROOT));
+    if (changedFields.length > 0) {
+      void listener({ root: Uri.file(ROOT), changedFields });
+    }
+  });
 
 interface StubCli {
   path: string;
@@ -68,6 +79,7 @@ function build(
     factory,
     projectRoot: ROOT,
     terminal: silentLog(),
+    subscribeSettings,
     hooks: {
       activate: hooks.activate ?? (async () => undefined),
       deactivate: hooks.deactivate ?? (() => undefined),
@@ -114,6 +126,7 @@ describe("ExecutableLifecycle", () => {
       factory,
       projectRoot: ROOT,
       terminal: silentLog(),
+      subscribeSettings,
       hooks: {
         activate: async () => undefined,
         deactivate: () => undefined,
@@ -204,6 +217,33 @@ describe("ExecutableLifecycle", () => {
 
     expect(order).toEqual(["activate", "deactivate", "activate"]);
     expect(created[0].dispose).toHaveBeenCalledTimes(1);
+    await lifecycle.dispose();
+  });
+
+  it("settles only after a re-resolution in flight has committed its CLI", async () => {
+    const { factory, created } = recordingFactory();
+    let release: () => void = () => undefined;
+    let calls = 0;
+    const lifecycle = build(async () => {
+      calls++;
+      if (calls === 2) {
+        await new Promise<void>((resolve) => (release = resolve));
+      }
+      return sampleExecutable("/bin/dbt");
+    }, factory);
+
+    await lifecycle.initialize();
+    changePath();
+    await waitFor(() => expect(calls).toBe(2));
+    expect(lifecycle.current()).toBeUndefined();
+
+    let settled = false;
+    const wait = lifecycle.settled().then(() => (settled = true));
+    await flushAsync();
+    expect(settled).toBe(false);
+    release();
+    await wait;
+    expect(lifecycle.current()).toBe(created[1]);
     await lifecycle.dispose();
   });
 

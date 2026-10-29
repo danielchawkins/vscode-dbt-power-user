@@ -5,6 +5,7 @@ import {
   registerQueryResultTestCommand,
   RENDER_TEST_RESULT_COMMAND,
 } from "../../features/queryResults/queryResultTestCommand";
+import { QueryPanelRequests } from "../../projects/project/queryPanelRequests";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 import { fakeTab, fakeView, listenTo } from "../panelHarness";
 import { spyLog } from "../testLog";
@@ -18,7 +19,7 @@ vi.mock("../../webview/panelHtml", async (importOriginal) => ({
 function realPanel(removed = new EventEmitter<Uri>()) {
   return new QueryResultPanel({
     extensionContext: { extensionUri: Uri.file("/ext") } as any,
-    sharedState: { eventEmitter: new EventEmitter<unknown>() } as any,
+    queryRequests: new QueryPanelRequests(),
     log: spyLog(),
     queryManifestService: {} as any,
     currentProject: {} as any,

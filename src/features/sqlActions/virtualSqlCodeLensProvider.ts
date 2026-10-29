@@ -6,6 +6,7 @@ import type {
   TextDocument,
 } from "vscode";
 import { CodeLens, Range } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { CurrentProject } from "../../projects/project/currentProject";
 
 export class VirtualSqlCodeLensProvider
@@ -19,12 +20,7 @@ export class VirtualSqlCodeLensProvider
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   private getProjectName() {

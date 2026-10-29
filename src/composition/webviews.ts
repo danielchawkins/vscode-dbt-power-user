@@ -19,7 +19,7 @@ export function composeWebviews(
   const {
     extensionContextStore,
     terminal,
-    sharedState,
+    queryRequests,
     projects,
     queryManifestService,
   } = graph;
@@ -27,7 +27,6 @@ export function composeWebviews(
     extensionContext: extensionContextStore,
     terminal,
     lineageService,
-    sharedState,
     queryManifestService,
     currentProject: graph.currentProject,
     metadataDemand: graph.metadataDemand,
@@ -40,7 +39,7 @@ export function composeWebviews(
   return new WebviewViewProviders(
     new QueryResultPanel({
       extensionContext: extensionContextStore,
-      sharedState,
+      queryRequests,
       log: terminal,
       queryManifestService,
       currentProject: graph.currentProject,
@@ -53,7 +52,6 @@ export function composeWebviews(
         docGenService: new DocGenService(projects, graph.currentProject),
         modelTests: new ModelTestService(graph.currentProject),
         queryManifestService,
-        sharedState,
         columnProposals: new ColumnProposalService({
           log: terminal,
           columnsNeedStrict: () => lineageService.columnsNeedStrict(),

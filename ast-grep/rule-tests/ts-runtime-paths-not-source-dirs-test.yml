@@ -1,0 +1,9 @@
+id: ts-runtime-paths-not-source-dirs
+valid:
+  - 'Uri.joinPath(extensionUri, "dist", "webview", "assets");'
+  - 'const label = "packaged";'
+  - 'path.join(root, "media", "images", "dbt.png");'
+invalid:
+  - 'Uri.joinPath(extensionUri, "webviews", "dist", "assets");'
+  - 'path.join(extensionPath, "packages/graph-layout/dist/index.js");'
+  - 'readFileSync(join(root, "scripts", "quality", "ceilings.json"));'

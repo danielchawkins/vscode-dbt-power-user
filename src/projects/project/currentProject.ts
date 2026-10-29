@@ -1,12 +1,13 @@
 import type { Disposable, Event, TextEditor, Uri } from "vscode";
 import { commands, EventEmitter, window, workspace } from "vscode";
+import { disposeAll } from "../../core/disposables";
+import type { FolderScope } from "../../core/snapshot/schemaOrigin";
+import { folderScopeOf } from "../../core/snapshot/schemaOrigin";
 import { activeModelUri } from "../registry/previewUri";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../registry/projectRegistry";
-import type { FolderScope } from "../registry/schemaOrigin";
-import { folderScopeOf } from "../registry/schemaOrigin";
 import type { Project } from "./project";
 import type { ProjectQuickPick } from "./projectQuickPick";
 import type { Projects } from "./projects";
@@ -136,9 +137,7 @@ export class CurrentProject implements Disposable {
   }
 
   dispose(): void {
-    while (this.subscriptions.length) {
-      this.subscriptions.pop()?.dispose();
-    }
+    disposeAll(this.subscriptions);
     this._onDidChangeCurrent.dispose();
   }
 

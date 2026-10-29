@@ -1,5 +1,6 @@
 import type { Disposable } from "vscode";
 import { commands, window } from "vscode";
+import { disposeAll } from "../core/disposables";
 import { testCommandsEnabled } from "../settings";
 import { DocsEditViewPanel } from "./docs/docsEditPanel";
 import { LineageViewProvider } from "./lineage/lineageViewProvider";
@@ -54,11 +55,6 @@ export class WebviewViewProviders implements Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 }

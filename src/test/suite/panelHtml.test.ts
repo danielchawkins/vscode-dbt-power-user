@@ -90,8 +90,8 @@ describe("contentSecurityPolicy", () => {
 });
 
 describe("panelEntries", () => {
-  it("names exactly the files in webview_panels/src/entries", () => {
-    const dir = path.resolve(__dirname, "../../../webview_panels/src/entries");
+  it("names exactly the files in webviews/src/entries", () => {
+    const dir = path.resolve(__dirname, "../../../webviews/src/entries");
     const files = readdirSync(dir)
       .filter((file) => file.endsWith(".tsx"))
       .map((file) => path.basename(file, ".tsx"));
@@ -125,7 +125,7 @@ describe("panelHtml", () => {
 
   it("loads only the panel's own entry and stylesheets", () => {
     const html = render();
-    const dist = "https://res.example/ext/webview_panels/dist";
+    const dist = "https://res.example/ext/dist/webview";
     expect(html).toContain(`src="${dist}/assets/lineage.js"`);
     expect(html).toContain(`href="${dist}/assets/shared.css"`);
     expect(html).toContain(`href="${dist}/assets/lineage.css"`);
@@ -153,7 +153,7 @@ describe("panelWebviewOptions", () => {
     expect(panelWebviewOptions(extensionUri)).toEqual({
       enableScripts: true,
       localResourceRoots: [
-        expect.objectContaining({ path: "/ext/webview_panels/dist/assets" }),
+        expect.objectContaining({ path: "/ext/dist/webview/assets" }),
       ],
     });
   });
@@ -162,7 +162,7 @@ describe("panelWebviewOptions", () => {
 describe("panelHtml manifest cache", () => {
   it("re-reads the built manifest when its modification time changes", () => {
     const root = mkdtempSync(path.join(tmpdir(), "panel-html-"));
-    const assets = path.join(root, "webview_panels", "dist", "assets");
+    const assets = path.join(root, "dist", "webview", "assets");
     mkdirSync(assets, { recursive: true });
     const file = path.join(assets, "manifest.json");
     const write = (script: string, seconds: number) => {

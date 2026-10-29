@@ -117,3 +117,11 @@ export async function closeAllEditors(): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   await sleep(500);
 }
+
+/**
+ * Shows the lineage view, so it holds the metadata demand: the server graph and the parse refresh only while a
+ * metadata consumer is visible.
+ */
+export async function showLineageView(): Promise<void> {
+  await vscode.commands.executeCommand("fusionPowerUser.Lineage.focus");
+}

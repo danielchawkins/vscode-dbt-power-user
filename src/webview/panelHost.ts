@@ -16,13 +16,9 @@ import {
   completeWebviewReady,
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
+import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import type { ExtensionContextStore } from "../extensionContext";
-import type { QueryManifestService } from "../projects/project/queryManifestService";
-import type {
-  SharedStateEventEmitterProps,
-  SharedStateService,
-} from "../projects/project/sharedStateService";
 import type { Handlers } from "./messageRouter";
 import { dispatchMessage, reply, replyError } from "./messageRouter";
 import { PageReadiness } from "./pageReadiness";
@@ -139,7 +135,7 @@ export abstract class PanelHost<
   R,
 > implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
-  /** The panel's file in `webview_panels/src/entries`. */
+  /** The panel's file in `webviews/src/entries`. */
   protected abstract readonly entry: PanelEntry;
   /** What the entry's page needs beyond the shared policy in `contentSecurityPolicy`. */
   protected abstract readonly csp: PanelCsp;
@@ -150,9 +146,7 @@ export abstract class PanelHost<
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _disposables: Disposable[] = [];
   protected extensionContext: ExtensionContextStore;
-  protected sharedState: SharedStateService;
   protected log: Log;
-  protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
   private readonly readiness = new PageReadiness<Page>();
   /** The subscriptions of each page `listen` attached to; they end with the page. */
@@ -165,35 +159,19 @@ export abstract class PanelHost<
 
   public constructor({
     extensionContext,
-    sharedState,
     log,
-    queryManifestService,
   }: {
     extensionContext: ExtensionContextStore;
-    sharedState: SharedStateService;
     log: Log;
-    queryManifestService: QueryManifestService;
   }) {
     this.extensionContext = extensionContext;
-    this.sharedState = sharedState;
     this.log = log;
-    this.queryManifestService = queryManifestService;
-    this._disposables.push(
-      sharedState.eventEmitter.event((d) => this.onEvent(d)),
-    );
   }
 
   public isWebviewView(
     panel: WebviewPanel | WebviewView,
   ): panel is WebviewView {
     return (panel as WebviewView).show !== undefined;
-  }
-
-  protected async onEvent({ command }: SharedStateEventEmitterProps) {
-    switch (command) {
-      default:
-        break;
-    }
   }
 
   /** Renders the panel's HTML; `listen` subscribes to the webview's messages once the page is attached. */
@@ -358,9 +336,7 @@ export abstract class PanelHost<
 
   /** Ends a page's subscription and demand, and forgets its readiness. A subclass ends its own state here too. */
   protected endPage(page: WebviewView | WebviewPanel) {
-    for (const end of this.listening.get(page) ?? []) {
-      end.dispose();
-    }
+    disposeAll(this.listening.get(page) ?? []);
     this.listening.delete(page);
     this.demands.get(page)?.dispose();
     this.demands.delete(page);
@@ -395,11 +371,6 @@ export abstract class PanelHost<
     for (const page of this.demands.keys()) {
       this.endPage(page);
     }
-    while (this._disposables.length) {
-      const x = this._disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this._disposables);
   }
 }

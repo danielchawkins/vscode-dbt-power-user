@@ -1,0 +1,14 @@
+id: ts-dispose-through-helper
+valid:
+  - 'disposeAll(this.disposables);'
+  - 'while (this.pendingMessages.length) { const message = this.pendingMessages.pop(); if (message) { void this.post(message); } }'
+  - 'this.items.forEach((item) => item.refresh());'
+  - 'for (const client of this.clients.values()) { await client.stop(); }'
+  - 'this.subscription.dispose();'
+invalid:
+  - 'while (this.disposables.length) { const x = this.disposables.pop(); if (x) { x.dispose(); } }'
+  - 'while (this.subscriptions.length) { this.subscriptions.pop()?.dispose(); }'
+  - 'this.disposables.forEach((d) => d.dispose());'
+  - 'this.watchers.forEach((w) => { w.dispose(); });'
+  - 'for (const d of this.disposables) { d.dispose(); }'
+  - 'for (const watcher of watchers) watcher.dispose();'

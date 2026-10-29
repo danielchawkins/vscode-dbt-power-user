@@ -18,7 +18,7 @@ export default {
     "out/**",
     "dist/**",
     "packages/*/dist/**",
-    "webview_panels/**",
+    "webviews/**",
     "src/test/fixtures/**",
     "**/*.d.ts",
     "scripts/spikes/**",
