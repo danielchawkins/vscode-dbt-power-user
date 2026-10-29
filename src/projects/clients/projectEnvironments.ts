@@ -1,6 +1,7 @@
 import { dirname } from "node:path";
 import type { Disposable, Event, Uri, WorkspaceFolder } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { isAtOrBelow } from "../../core/paths";
 import { projectDirVariable } from "../../core/snapshot/dbtEnvironment";
@@ -136,10 +137,10 @@ export class ProjectEnvironments implements Disposable {
   dispose(): void {
     this.disposed = true;
     for (const watchers of this.watchers.values()) {
-      watchers.forEach((watcher) => watcher.dispose());
+      disposeAll(watchers);
     }
     this.watchers.clear();
-    this.subscriptions.forEach((subscription) => subscription.dispose());
+    disposeAll(this.subscriptions);
     this.cache.clear();
   }
 
@@ -226,7 +227,7 @@ export class ProjectEnvironments implements Disposable {
     const watched = [...this.watchers];
     for (const [key, watchers] of watched) {
       if (!current.has(key)) {
-        watchers.forEach((watcher) => watcher.dispose());
+        disposeAll(watchers);
         this.watchers.delete(key);
       }
     }

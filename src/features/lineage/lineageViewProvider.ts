@@ -7,6 +7,7 @@ import type {
   WebviewViewResolveContext,
 } from "vscode";
 import { window } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Projects } from "../../projects/project/projects";
 import type { LineagePanel } from "./lineagePanel";
 import { LINEAGE_VIEW_TYPE } from "./lineagePanel";
@@ -48,12 +49,7 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
   }
 
   dispose() {
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 
   private init = async () => {

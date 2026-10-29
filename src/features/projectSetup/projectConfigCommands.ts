@@ -10,6 +10,7 @@ import {
   workspace,
   WorkspaceEdit,
 } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import {
   DBT_PROJECT_FILE,
@@ -116,9 +117,7 @@ export class ProjectConfigCommands implements Disposable {
   }
 
   dispose(): void {
-    for (const disposable of this.disposables) {
-      disposable.dispose();
-    }
+    disposeAll(this.disposables);
   }
 }
 

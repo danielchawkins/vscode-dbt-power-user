@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
+import { disposeAll } from "../core/disposables";
 import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
 import { followClientIdle } from "../projects/clients/clientChange";
@@ -86,7 +87,7 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
   }
 
   dispose(): void {
-    this.subscriptions.forEach((s) => s.dispose());
+    disposeAll(this.subscriptions);
     this.parseProducer.dispose();
     this.server.dispose();
     this.emitter.dispose();

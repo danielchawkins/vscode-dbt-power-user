@@ -1,5 +1,6 @@
 import type { Disposable } from "vscode";
 import { languages } from "vscode";
+import { disposeAll } from "../core/disposables";
 import {
   DBT_SQL_SELECTOR,
   DBT_YAML_SELECTOR,
@@ -57,11 +58,6 @@ export class CodeLensProviders implements Disposable {
 
   dispose() {
     this.sqlActionsCodeLensProvider.dispose();
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      if (x) {
-        x.dispose();
-      }
-    }
+    disposeAll(this.disposables);
   }
 }

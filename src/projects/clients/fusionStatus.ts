@@ -1,5 +1,6 @@
 import type { Event, LanguageStatusItem, Uri } from "vscode";
 import { commands, Disposable, languages } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import { projectRootDigest } from "../../core/snapshot/index";
 import { vscodeDocumentSelectorForProject } from "../../fusion/documentSelector";
 import type { FusionClient } from "../../fusion/fusionClient";
@@ -101,9 +102,7 @@ export class FusionStatus implements Disposable {
     for (const key of keys) {
       this.remove(key);
     }
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
+    disposeAll(this.disposables);
   }
 
   private reconcile(): void {

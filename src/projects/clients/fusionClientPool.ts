@@ -1,5 +1,6 @@
 import type { Disposable, Event, LogOutputChannel, Uri } from "vscode";
 import { EventEmitter } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import type { LspLaunch } from "../../core/lsp/index";
 import { sameLspLaunch, toLspLaunch } from "../../core/lsp/index";
@@ -146,9 +147,7 @@ class PerProjectFusionClientPool implements FusionClientPool {
   private async doStop(): Promise<void> {
     clearTimeout(this.reconcileTimer);
     this.reconcileTimer = undefined;
-    while (this.subscriptions.length) {
-      this.subscriptions.pop()?.dispose();
-    }
+    disposeAll(this.subscriptions);
     const managed = [...this.clients];
     await Promise.all(
       managed.map(([key, entry]) => this.stopManaged(key, entry)),

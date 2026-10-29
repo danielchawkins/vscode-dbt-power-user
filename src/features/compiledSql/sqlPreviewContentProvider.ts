@@ -5,9 +5,11 @@ import type {
   Uri,
 } from "vscode";
 import { EventEmitter, ProgressLocation, window, workspace } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Project } from "../../projects/project/project";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { ProjectLookup, Projects } from "../../projects/project/projects";
+import { modelUriOf, PREVIEW_SCHEME } from "../../projects/registry/previewUri";
 
 /** What a compiled-SQL preview reads from a model's project. */
 type PreviewProject = Pick<Project, "onDidCompile"> & {
@@ -17,7 +19,6 @@ type PreviewProject = Pick<Project, "onDidCompile"> & {
 /** The projects a preview finds models in, and the event that says they are loaded. */
 type PreviewProjects = ProjectLookup<PreviewProject> &
   Pick<Projects, "onDidInitialize">;
-import { modelUriOf, PREVIEW_SCHEME } from "../../projects/registry/previewUri";
 
 const DIRTY_MARKER = "-- Unsaved changes: showing the last saved version.";
 const WAITING = "Waiting for the first compile";
@@ -86,7 +87,7 @@ export class SqlPreviewContentProvider
 
   dispose(): void {
     this._onDidChange.dispose();
-    this.subscriptions.forEach((s) => s.dispose());
+    disposeAll(this.subscriptions);
     this.previews.forEach((p) => p.compileSubscription?.dispose());
     this.previews.clear();
   }

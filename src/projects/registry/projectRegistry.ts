@@ -9,6 +9,7 @@ import type {
   WorkspaceFolder,
 } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
+import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import { isAtOrBelow } from "../../core/paths";
 import {
@@ -337,15 +338,9 @@ export class ProjectRegistry implements Disposable {
 
   dispose(): void {
     this.disposed = true;
-    while (this.subscriptions.length) {
-      this.subscriptions.pop()?.dispose();
-    }
-    for (const p of this._projects) {
-      p.dispose();
-    }
-    for (const w of this.watchers.values()) {
-      w.dispose();
-    }
+    disposeAll(this.subscriptions);
+    disposeAll([...this._projects]);
+    disposeAll([...this.watchers.values()]);
     this._projects = [];
     this.lookupOrder = [];
     this.watchers.clear();

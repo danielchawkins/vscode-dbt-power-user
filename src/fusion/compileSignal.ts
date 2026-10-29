@@ -1,6 +1,7 @@
 import type { CancellationToken, Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
+import { disposeAll } from "../core/disposables";
 import { REQUEST_POLICIES } from "../core/lsp/requestPolicy";
 
 /** Fusion's notifications that start or end a compile. */
@@ -105,9 +106,7 @@ export class ServerCompileState implements Disposable {
       const subscriptions: Disposable[] = [];
       const done = () => {
         clearTimeout(timer);
-        for (const subscription of subscriptions) {
-          subscription.dispose();
-        }
+        disposeAll(subscriptions);
         resolve();
       };
       const timer = setTimeout(done, timeoutMs);
