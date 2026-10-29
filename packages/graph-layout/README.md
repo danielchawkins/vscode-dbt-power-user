@@ -6,7 +6,7 @@ The package is pure TypeScript with no runtime dependencies. It reads no DOM, No
 
 It is private to this repository and not published; `package.json` keeps `"private": true` until the owner decides otherwise. The licence is MIT, as the extension's.
 
-> Status: the types (`src/types.ts`), the named presets (`src/presets.ts`), `validateGraph` and the drawing metrics (`measureDrawing`, `compareDrawings`) exist. `layout` lands phase by phase; see "Build order".
+> Status: the types (`src/types.ts`), the named presets (`src/presets.ts`), `validateGraph`, the drawing metrics (`measureDrawing`, `compareDrawings`) and `layout` exist. The phases behind `layout` are listed in "Build order".
 
 ## Use
 
@@ -68,10 +68,19 @@ The caller merges a preset with its own options, as the example does, and may ov
 `compact` is orthogonal and packed into the least area: a quick search (`effort: "fast"`) and the tightest spacing.
 Both values are starting points; the evaluation harness tunes them against the golden graphs.
 
+## Hints
+
+`result.hints` fed back as `hints` on the same graph with the same options reproduces the result as follows. These bounds are measured by `layout.test.ts` and `layoutResult.test.ts`, not proved.
+
+- Ranks: always reproduced. Measured on random graphs under both `ranks` values, both directions and both suites.
+- Real-node order: reproduced for route graphs. For clustered graphs it is not: the cluster blocks are re-derived from the hints, and an order hint is a preference the search may override. "documents the clustered limitation" in `layoutResult.test.ts` shows one such graph.
+- Positions: reproduced only where the layered order, dummies included, repeats. `LayoutHints` carries no dummy order, so the dummies are re-derived, and the order can change when the hints are fed back. The field cannot be added without changing the shape of `LayoutHints`, which is why this stays a limitation of the hints.
+- Where the layered order repeats, no node moves more than two smallest node extents. A suspected cause of the remaining movement is the placement solver's stopping rule, which can leave the second solve a little short of the first.
+
 ## Guarantees
 
 - Deterministic: the same graph, options and `seed` give the same result. No `Math.random`, no clocks (ast-grep rule `ts-graph-layout-deterministic`).
-- No overlaps: no two nodes overlap, and no edge passes through a node it does not end at. The property tests assert this on random graphs.
+- No overlaps: under `ranks: "rows"` no two nodes overlap, and no edge passes through a node it does not end at (`metrics.overlaps` is zero). Under `ranks: "levels"` no two nodes overlap, but an edge can pass through a node it does not end at: a run that goes upward can cross other nodes. `layoutResult.test.ts` counts these ("documents the levels limitation"), and the property tests assert the rest on random graphs.
 - Orthogonal edges: every polyline alternates horizontal and vertical segments, and starts and ends at its ports.
 - Standalone: the package imports only itself (dependency-cruiser rule `graph-layout-is-standalone`), and its `tsconfig.json` has no DOM or Node types.
 - Input is checked before layout: `validateGraph` reports every problem at once, including port sides and offsets and kind default sides that are not valid.
@@ -136,7 +145,7 @@ Rejected, with the reason:
 5. Placement: in place. Node centres along each rank from the quadratic objective, with the Brandes and Köpf warm start and the effort caps. Cluster boxes: in place. Each box's left and right edges are variables of the projection, constrained to keep its members inside with its padding and room for its label, nodes beside it outside, its parent's box and its siblings in their fixed order (`place/boxes.ts`). The projection solves these separation constraints with VPSC's active-set block merge (Dwyer, Marriott and Stuckey, GD 2005, `place/vpsc.ts`). Each box's rectangle is returned by cluster id in `Placement.clusters`. A lateral port dummy belongs to its owner's block: a real node's gap to the next block is at least `spacing.node`, and only gaps inside a block use `spacing.edge` (`place/ports.test.ts`).
 6. Channel routing: in place. A run joins the first star whose members all still share an upper or a lower point with it, otherwise it starts one; a star shares one track and never chains an upper point to a lower one, so unrelated runs do not chain. A star that touches another hyperedge in the order chosen, where the reverse order would not, is split into single runs and placed again. Each band orders its hyperedges by preference (a touch costs more than a crossing) with cycles broken at the fewest unmet touch preferences, and ranks are re-stacked to the band widths, so each routed edge is an orthogonal polyline. Cluster boxes are recomputed from the re-stacked centres, so they still hold their members, and no edge runs through a node. Lateral ports are in place: a port on a side lateral to the flow gets a dummy beside its owner in the owner's rank, ordered by port offset (`layering.ts`, with the block kept contiguous in `order/` and placement). Its edge leaves the side at the port offset and runs to the dummy, and the stubs' crossings with one another are counted (`route/stubs.ts`). Doglegs (Deutsch, 1976) are in place for a run alone in its hyperedge: it may jog at an in-rank column to a second track, which may be new, and the jog is kept only where the run's crossings plus touches fall and neither count rises. The channel's crossings count the jog's segments, so they match `measureDrawing`, and `doglegs.test.ts` checks on 200 seeded bands that doglegs never add a crossing and lower the total. Stars of several runs are not jogged. Two runs that swap ends (they meet the same two in-rank positions in opposite order) still share a vertical: the only jog that separates them trades the overlap for a crossing, which the jog rule refuses, so the collinear-overlap property in `route/index.test.ts` excuses exactly that pair. Doglegs bound their work by one budget per band. Self-loops are not yet done.
 7. Constraint layer: in place (`constraints/`). Each axis is one problem: desired positions, weights, separations and equalities. Equalities are reduced to classes first, and a cycle the merge closes is reported by name, because the solver takes only DAGs. `ranks: "rows"` (default) keeps the stacked rows, byte for byte (`route/rowsGolden.test.ts`). `ranks: "levels"`: no shared row per rank; each node sits at its rank's row as a desired position, directed separations run down every ranking edge outside a strongly connected component, and overlapping nodes stay apart on whichever axis they already separate. Routing under levels draws each run in the gap between its two ends, with its horizontal part at the gap's midline. A run that goes upward from its lower end leaves beneath both nodes, and its horizontal part can still pass through other nodes: that is a stated limitation of this route.
-8. `layout` composes the phases; the property tests run on it.
+8. `layout` composes the phases: in place (`layout.ts`, `phases.ts`, `result.ts`). It validates first and throws `LayoutInputError`, which carries every issue. Its result has node rectangles (the routed centre minus half the size, with `rank` and the real-node `order`), one rectangle per partition present, cluster boxes, the edges that are drawn, the hints and the metrics. The property tests are in `layout.test.ts` and `layoutResult.test.ts`, under both `ranks` values and both directions.
 
 ## References and benchmarks
 

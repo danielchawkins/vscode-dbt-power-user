@@ -1,8 +1,6 @@
 import fc from "fast-check";
-import { order } from "../order/index.js";
-import { place } from "../place/index.js";
-import { rank } from "../rank/index.js";
-import { type Routing, route } from "../route/index.js";
+import { runPhases } from "../phases.js";
+import type { Routing } from "../route/index.js";
 import type {
   LayoutEdge,
   LayoutGraph,
@@ -84,9 +82,5 @@ export const caseArb = fc.record({
 
 /** Runs the layout phases up to routing. */
 export function routeGraph(graph: LayoutGraph, opts: LayoutOptions): Routing {
-  const ordering = order(graph, opts, rank(graph, opts));
-  return route(graph, opts, {
-    ordering,
-    placement: place(graph, opts, ordering),
-  });
+  return runPhases(graph, opts).routing;
 }

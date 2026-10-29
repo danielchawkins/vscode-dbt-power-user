@@ -61,13 +61,19 @@ export function routeLevels(
 /** The across centre and half-extent of every layered node: placement's positions, and each real node's size. */
 function acrossOf(graph: LayoutGraph, phases: Phases, down: boolean): Across {
   const { layered } = phases.ordering;
-  return {
-    centre: phases.placement.points.map((p) => (down ? p.y : p.x)),
-    half: layered.nodes.map((node, i) => {
-      const real = node.id === undefined ? undefined : graph.nodes[i];
-      return real === undefined ? 0 : (down ? real.height : real.width) / 2;
-    }),
-  };
+  const half = layered.nodes.map((node, i) => {
+    const real = node.id === undefined ? undefined : graph.nodes[i];
+    return real === undefined ? 0 : (down ? real.height : real.width) / 2;
+  });
+  const centre = phases.placement.points.map((p) => (down ? p.y : p.x));
+  // A lateral port's dummy lies on its owner's side, at the port's offset along it: placement's own point does not.
+  layered.nodes.forEach((node, i) => {
+    if (node.port !== undefined) {
+      const owner = node.port.owner;
+      centre[i] = (centre[owner] ?? 0) + node.port.offset - (half[owner] ?? 0);
+    }
+  });
+  return { centre, half };
 }
 
 interface Frame {
@@ -76,14 +82,19 @@ interface Frame {
   edge: number;
 }
 
-/** The polyline of a member: its runs in order, with repeated and straight-through points dropped. */
+/**
+ * The polyline of a member: its runs in order, with repeated and straight-through points dropped. The runs run from the
+ * upper end, so a reversed member is turned round to run from its source end, as the rows router does.
+ */
 function pathOf(member: Member, frame: Frame): Point[] {
-  return bendsOf(member.runs.flatMap((run) => runPoints(run, frame)));
+  const points = bendsOf(member.runs.flatMap((run) => runPoints(run, frame)));
+  return member.reversed ? points.reverse() : points;
 }
 
 /**
- * The four corners of a run: from the upper end down to the middle of the gap, across, and to the lower end. A run
- * whose lower end is not below the upper end goes beneath both, from the bottom of the lower end.
+ * The points of a run: from the upper end down to the middle of the gap, across, and to the lower end. A run whose
+ * lower end is not below the upper end goes beneath both, from the bottom of the lower end. A lateral port's stub, when
+ * an end is one, runs from the owner's side to the port at that end.
  */
 function runPoints(run: Run, frame: Frame): Point[] {
   const { across, down, edge } = frame;
@@ -93,11 +104,22 @@ function runPoints(run: Run, frame: Frame): Point[] {
   const bottom = pointsDown ? lowerTop : sideOf(across, run.lower, 1);
   const mid = pointsDown ? (top + bottom) / 2 : Math.max(top, bottom) + edge;
   return [
+    ...stubPoints(run.upperStub, top, down),
     framePoint(down, run.from, top),
     framePoint(down, run.from, mid),
     framePoint(down, run.to, mid),
     framePoint(down, run.to, bottom),
+    ...stubPoints(run.lowerStub, bottom, down),
   ];
+}
+
+/** The point where a lateral port's stub leaves its owner's side, at the port's in-rank coordinate; none at an end that is no port. */
+function stubPoints(
+  stub: number | undefined,
+  across: number,
+  down: boolean,
+): Point[] {
+  return stub === undefined ? [] : [framePoint(down, stub, across)];
 }
 
 /** The across coordinate of a layered node's side: `sign` 1 is the side below it, -1 the side above it. */

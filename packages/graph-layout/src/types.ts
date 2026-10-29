@@ -96,9 +96,14 @@ export interface EdgeKindPolicy {
   targetSide?: Side;
 }
 
-/** Where a previous result put each node, fed back so a grown graph keeps its shape. */
+/**
+ * Where a previous result put each node, fed back so a grown graph keeps its shape. Ranks are reproduced exactly. The
+ * in-rank order of real nodes is reproduced for route graphs and not always for clustered ones, and positions are
+ * reproduced only where the layered order, dummies included, repeats: `LayoutHints` carries no dummy order. See README,
+ * "Hints", for the measured bounds.
+ */
 export interface LayoutHints {
-  /** Rank and in-rank order of each node, and its top-left corner. */
+  /** Rank and in-rank order of each node (its index among the real nodes of its rank), and its top-left corner. */
   nodes: ReadonlyMap<
     string,
     { rank: number; order: number; x: number; y: number }
@@ -135,7 +140,7 @@ export interface LayoutOptions {
   ranks?: "rows" | "levels";
   /** A node kept at the origin, such as the node a view is centred on. */
   anchor?: string;
-  /** The previous result's hints; `LayoutResult.hints` is in this form. */
+  /** The previous result's hints; `LayoutResult.hints` is in this form. See `LayoutHints` for what they reproduce. */
   hints?: LayoutHints;
   /** Weight of the hint terms against edge length: 0 uses hints only as the starting order. Defaults to 1. */
   stability?: number;
@@ -146,7 +151,9 @@ export interface LayoutOptions {
 }
 
 export interface NodeLayout extends Rect {
+  /** The rank the node is in, as ranking set it, lowest real node at 0. */
   rank: number;
+  /** The node's index among the real nodes of its rank, in drawing order: dummies are not counted. */
   order: number;
 }
 
@@ -166,15 +173,22 @@ export interface LayoutMetrics {
   area: number;
   /** Total node area over `area`, between 0 and 1. */
   density: number;
-  /** Pairs of nodes, or of a node and an edge it does not end at, that overlap. Zero unless the engine has a bug. */
+  /**
+   * Pairs of nodes, or of a node and an edge it does not end at, that overlap. Zero under `ranks: "rows"`. Under
+   * `ranks: "levels"` node pairs still never overlap, but an edge can pass through a node it does not end at (README,
+   * "Guarantees").
+   */
   overlaps: number;
 }
 
 export interface LayoutResult {
   nodes: ReadonlyMap<string, NodeLayout>;
+  /**
+   * Every routed edge, by id. Absent: the edges of a kind with `routed: false`, and self-loops, which are not drawn yet.
+   */
   edges: ReadonlyMap<string, EdgeLayout>;
   clusters: ReadonlyMap<string, Rect>;
-  /** One box per partition present, spanning its ranks. Empty when `partitions` is `none`. */
+  /** One box per partition some node sets: the bounding box of its members' rects. Empty when `partitions` is `none` or no node sets one. */
   partitions: readonly (Rect & { partition: number })[];
   bounds: Rect;
   /** Feed to the next `layout` call as `LayoutOptions.hints`. */
