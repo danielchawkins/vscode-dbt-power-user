@@ -103,24 +103,36 @@ function toGraph(request: LayoutRequest, tags: readonly string[]): LayoutGraph {
       });
     }
   });
-  const clusters = tags.map((tag) => ({ id: tag, padding: BAND_PAD }));
+  const clusters = [
+    ...tags
+      .filter((tag) => tag !== OTHER_TAG)
+      .map((tag) => ({ id: tag, padding: BAND_PAD })),
+    ...request.cards
+      .filter((card) => card.tag === OTHER_TAG)
+      .map((card) => ({ id: otherCluster(card), padding: BAND_PAD })),
+  ];
   return { nodes, edges, clusters };
 }
 
+/** The cluster of a card in Other: its own, so Other cards sit wherever their edges put them, each in a small band. */
+const otherCluster = (card: LayoutCard): string => `${OTHER_TAG}:${card.id}`;
+
 /**
  * A card as a node in its layer's partition and cluster; its column rows become east and west ports at their offsets.
+ * A card in Other has no partition, so the layer order does not move it, and a cluster of its own.
  */
 function nodeOf(card: LayoutCard, tags: readonly string[]): LayoutNode {
   const ports = (card.rows ?? []).flatMap((row) => [
     { id: `out:${row.id}`, side: "east" as const, offset: row.offset },
     { id: `in:${row.id}`, side: "west" as const, offset: row.offset },
   ]);
+  const other = card.tag === OTHER_TAG;
   return {
     id: card.id,
     width: card.width,
     height: card.height,
-    partition: tags.indexOf(card.tag),
-    cluster: card.tag,
+    ...(other ? {} : { partition: tags.indexOf(card.tag) }),
+    cluster: other ? otherCluster(card) : card.tag,
     ...(ports.length > 0 ? { ports } : {}),
   };
 }
@@ -171,9 +183,12 @@ function positionsOf(result: LayoutResult): Map<string, Point> {
   );
 }
 
-/** One band per layer cluster's box, which already holds its padding; a cluster's id is its layer tag. */
+/** One band per cluster box, which already holds its padding: a layer's, or one Other card's, labelled Other. */
 function bandsOf(result: LayoutResult): LayerBand[] {
-  return Array.from(result.clusters, ([tag, box]) => ({ tag, ...box }));
+  return Array.from(result.clusters, ([id, box]) => ({
+    tag: id.startsWith(`${OTHER_TAG}:`) ? OTHER_TAG : id,
+    ...box,
+  }));
 }
 
 /** Every routed edge's polyline, which the package runs from the source card, so the source is where it starts. */

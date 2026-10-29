@@ -61,7 +61,9 @@ export function rank(graph: LayoutGraph, options: LayoutOptions): RankResult {
     mode === "none"
       ? { count: graph.nodes.length, edges: [] }
       : partitionConstraints(
-          graph.nodes.map((node) => node.partition ?? 0),
+          graph.nodes.map((node) =>
+            mode === "strict" ? (node.partition ?? 0) : node.partition,
+          ),
           mode,
         );
   const stability = options.stability ?? 1;
@@ -85,16 +87,19 @@ function rankingEdges(
   options: LayoutOptions,
   strict: boolean,
 ): RankingEdge[] {
+  // Under strict a node in no partition joins the first band: a free node on a path that runs back across bands
+  // would leave no ranking that keeps the bands in order.
   const bandOf = new Map(
     graph.nodes.map((node) => [node.id, node.partition ?? 0]),
   );
-  const band = (id: string): number => bandOf.get(id) ?? 0;
+  const backwardAcross = (from: string, to: string): boolean =>
+    (bandOf.get(from) ?? 0) > (bandOf.get(to) ?? 0);
   return graph.edges.flatMap((e) => {
     const policy = options.edgeKinds[e.kind];
     if (policy === undefined || !policy.ranks || e.source === e.target) {
       return [];
     }
-    const backward = strict && band(e.source) > band(e.target);
+    const backward = strict && backwardAcross(e.source, e.target);
     return [
       {
         id: e.id,
