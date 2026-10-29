@@ -294,3 +294,64 @@ describe("documented limitations", () => {
     expect(moved.length).toBeGreaterThan(0);
   });
 });
+
+describe("hints", () => {
+  it("keeps the order when a long edge's dummies must move together to repeat it", () => {
+    // A long edge runs from n2 to n3 past n1 and n4. Re-seeded from the hints, its dummies start on the other side of
+    // the real nodes, and no single dummy move lowers the crossings, so sifting alone kept a worse order and the hinted
+    // search swapped n0 and n3. The unhinted search is now a candidate, and it finds the original order.
+    const port = (id: string, side: "north" | "east") => ({
+      id,
+      side,
+      offset: 0,
+    });
+    const graph: LayoutGraph = {
+      nodes: ["n0", "n1", "n2", "n3", "n4"].map((id) => ({
+        id,
+        width: 20,
+        height: 20,
+        ports: [
+          port("p0", "north"),
+          port("p1", id === "n2" ? "east" : "north"),
+        ],
+      })),
+      edges: [
+        {
+          id: "e0",
+          source: "n2",
+          target: "n3",
+          kind: "column",
+          sourcePort: "p1",
+          targetPort: "p0",
+        },
+        {
+          id: "e1",
+          source: "n2",
+          target: "n1",
+          kind: "dependency",
+          sourcePort: "p1",
+        },
+        {
+          id: "e2",
+          source: "n1",
+          target: "n4",
+          kind: "dependency",
+          targetPort: "p0",
+        },
+        { id: "e3", source: "n4", target: "n0", kind: "dependency" },
+      ],
+    };
+    const o: LayoutOptions = {
+      ...routeOptions,
+      direction: "right",
+      effort: "fast",
+      ranks: "levels",
+      partitions: "soft",
+    };
+    const first = layout(graph, o);
+    const again = layout(graph, { ...o, hints: first.hints });
+    for (const [id, node] of first.nodes) {
+      expect(again.nodes.get(id)!.order, id).toBe(node.order);
+    }
+  });
+});
