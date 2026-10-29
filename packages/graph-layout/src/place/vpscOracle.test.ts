@@ -93,7 +93,7 @@ const degenerateArb: fc.Arbitrary<Instance> = fc
           fc.integer({ min: 0, max: n - 1 }),
           fc.integer({ min: 0, max: n - 1 }),
           fc.integer({ min: 0, max: 2 }),
-          fc.constant(0.5),
+          fc.constantFrom(0, 0.5, 1),
         ),
         { minLength: n, maxLength: 3 * n },
       ),
@@ -104,6 +104,38 @@ const degenerateArb: fc.Arbitrary<Instance> = fc
     weight,
     seps: separate(x0, pairs).map((s) => ({ ...s, gap: Math.round(s.gap) })),
   }));
+
+/** The instance with its variables renumbered by `order`, so separations no longer run from lower to higher index. */
+function permute(inst: Instance, order: readonly number[]): Instance {
+  const at = new Map(order.map((from, to) => [from, to] as const));
+  const place = (i: number): number => at.get(i) ?? i;
+  const x0: number[] = [];
+  const weight: number[] = [];
+  inst.x0.forEach((value, i) => {
+    x0[place(i)] = value;
+    weight[place(i)] = inst.weight[i] ?? 1;
+  });
+  return {
+    x0,
+    weight,
+    seps: inst.seps.map((s) => ({
+      ...s,
+      from: place(s.from),
+      to: place(s.to),
+    })),
+  };
+}
+
+/** An instance with its variable indices shuffled, so the solver's topological sort has work to do. */
+const shuffled = (arb: fc.Arbitrary<Instance>): fc.Arbitrary<Instance> =>
+  arb.chain((inst) =>
+    fc
+      .shuffledSubarray(
+        inst.x0.map((_, i) => i),
+        { minLength: inst.x0.length, maxLength: inst.x0.length },
+      )
+      .map((order) => permute(inst, order)),
+  );
 
 /** The weighted squared distance moved from the targets. */
 function objective(inst: Instance, x: readonly number[]): number {
@@ -196,34 +228,31 @@ function minimise(inst: Instance): Instance {
   return current;
 }
 
-/** Fails with the reason and the minimal counterexample when the two solvers disagree. */
-function assertAgree(inst: Instance): void {
-  const reason = disagreement(inst);
-  if (reason !== null) {
+/** Checks the property, then minimises the shrunk counterexample once and fails with it. */
+function assertAgreement(
+  arb: fc.Arbitrary<Instance>,
+  seed: number,
+  numRuns: number,
+): void {
+  const details = fc.check(
+    fc.property(arb, (inst) => disagreement(inst) === null),
+    { seed, numRuns },
+  );
+  const found = details.counterexample?.[0];
+  if (details.failed && found !== undefined) {
+    const small = minimise(found);
     throw new Error(
-      `${reason}\nminimal counterexample: ${JSON.stringify(minimise(inst))}`,
+      `${disagreement(small) ?? "disagreement"}\nminimal counterexample: ${JSON.stringify(small)}`,
     );
   }
 }
 
 describe("solveSeparations against WebCola's vpsc", () => {
-  it("reaches the same cost, and satisfies every separation, on seeded random DAGs of up to 200 variables", () => {
-    fc.assert(
-      fc.property(instanceArb, (inst) => {
-        assertAgree(inst);
-        return true;
-      }),
-      { seed: SEED, numRuns: 100 },
-    );
+  it("reaches the same cost, and satisfies every separation, on seeded random DAGs of up to 200 variables, in any index order", () => {
+    assertAgreement(shuffled(instanceArb), SEED, 100);
   }, 120_000);
 
   it("agrees on degenerate integer DAGs, where ties and boundary decisions are common", () => {
-    fc.assert(
-      fc.property(degenerateArb, (inst) => {
-        assertAgree(inst);
-        return true;
-      }),
-      { seed: SEED + 1, numRuns: 200 },
-    );
+    assertAgreement(shuffled(degenerateArb), SEED + 1, 200);
   }, 120_000);
 });
