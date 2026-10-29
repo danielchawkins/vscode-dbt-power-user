@@ -2,6 +2,7 @@ import type { OrderResult } from "../order/index.js";
 import { boxRects } from "../place/boxRects.js";
 import type { LayoutGraph, LayoutOptions, Point, Rect } from "../types.js";
 import { routeChannel } from "./channel.js";
+import { routeLevels } from "./levelRoutes.js";
 import type { ChannelPiece } from "./channelTypes.js";
 import { membersOf, type Phases, type Run } from "./pieces.js";
 import { framePoint, type Geometry, polylinesOf } from "./polylines.js";
@@ -60,6 +61,9 @@ export function route(
   options: LayoutOptions,
   phases: Phases,
 ): Routing {
+  if (options.ranks === "levels") {
+    return routeLevels(graph, options, phases);
+  }
   const { ordering, placement } = phases;
   const spacing = { ...DEFAULT_SPACING, ...options.spacing };
   const effort: Effort = options.effort ?? "balanced";
