@@ -56,7 +56,7 @@ shard_script='
     -cf - . | tar -C /work -xf -
   cd /work
   # The recorded VSIX path is the host path.
-  set -- /work/*.vsix
+  set -- /work/out/*.vsix
   echo "$1" > out/latest-vsix
   for label in $FPU_LABELS; do
     echo "FPU-LABEL-BEGIN $label"

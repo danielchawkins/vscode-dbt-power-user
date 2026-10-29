@@ -339,15 +339,15 @@ package:
     # rsbuild keeps dist/ between builds, so stale chunks would otherwise ship.
     rm -rf dist
     # Only the VSIX built here may exist, so nothing downstream can install an older one.
-    rm -f ./*.vsix out/latest-vsix
-    npm run package:vsix
-    vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
+    rm -f out/*.vsix out/latest-vsix
+    mkdir -p out
+    npm run package:vsix -- --out out/
+    vsix="out/$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
     if [[ ! -f "$vsix" ]]; then
       echo "error: expected VSIX not found: $vsix" >&2
       exit 1
     fi
     node scripts/quality/vsix-contents.mjs "$vsix"
-    mkdir -p out
     realpath "$vsix" > out/latest-vsix
     node scripts/quality/size-budget.mjs
 
@@ -367,5 +367,6 @@ release:
     just check
     just package
     vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
-    shasum -a 256 "$vsix" | tee vsix.sha256
-    echo "dry run: would push tag $tag and publish $vsix with checksum $(awk '{print $1}' vsix.sha256)"
+    # The checksum names the bare file, as the release publishes it.
+    (cd out && shasum -a 256 "$vsix" | tee vsix.sha256)
+    echo "dry run: would push tag $tag and publish out/$vsix with checksum $(awk '{print $1}' out/vsix.sha256)"

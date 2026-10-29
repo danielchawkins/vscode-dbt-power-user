@@ -83,7 +83,7 @@ chmod 777 "$out"
 # shellcheck disable=SC2016
 container_script='
   tar -C /src --exclude=./node_modules --exclude=./.vscode-test --exclude=./.jj --exclude=./.git \
-    --exclude=./.cache --exclude=./out --exclude=./dist --exclude=./*.vsix -cf - . | tar -C /work -xf -
+    --exclude=./.cache --exclude=./out --exclude=./dist -cf - . | tar -C /work -xf -
   cd /work
   mkdir -p out
   exec bash scripts/smoke/run-host-smoke.sh --host "$FPU_SMOKE_HOST" --vsix /vsix/smoke.vsix "$@"
