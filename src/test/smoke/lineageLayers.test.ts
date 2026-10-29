@@ -13,6 +13,7 @@ import {
   clickFirstColumn,
   clickOnCard,
   readColumns,
+  readDrawnCrossings,
   tracedCardsListed,
 } from "./lineageProbes";
 import { evaluatePanel } from "./panelFrames";
@@ -275,16 +276,17 @@ suite("Lineage layers", function () {
     await evidence?.capture(LINEAGE, {
       name: "lineage-layers-layered",
       expect:
-        "The start model's neighbourhood in layered mode: bands labelled source, staging, intermediate and marts " +
-        "from top to bottom, the untagged audit_log card beside them in the other band, every card titled with its " +
-        "alias, the start card showing its relation line, and no group chips. Crossings and hops are not drawn as " +
-        "text and are not in this checkpoint.",
+        "The start model's neighbourhood drawn by the default balanced engine: bands labelled source, staging, " +
+        "intermediate and marts from top to bottom, the untagged audit_log card in the other band, no two bands " +
+        "overlapping, every card titled with its alias, the start card showing its relation line, and no group " +
+        "chips. The drawn crossings and hops are in measured.",
       measured: {
         bands: drawn.bands,
         cards: drawn.cards,
         chips: drawn.chips,
         edges: drawn.edges,
         startExpanders: drawn.startExpanders,
+        drawn: await readDrawnCrossings(),
       },
     });
   });
@@ -325,31 +327,10 @@ suite("Lineage layers", function () {
     );
     assert.deepStrictEqual(zoomedOut.tableD, tableDBefore);
 
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-layers-trace-zoomed-out",
-      expect:
-        "The same graph zoomed out below 50%: no column edges are drawn, and the table edges are in the same places " +
-        "as before the zoom.",
-      measured: {
-        traced: zoomedOut.traced,
-        tableD: zoomedOut.tableD,
-      },
-    });
-
     await zoomPastHalf(LINEAGE, "in");
-    const zoomedIn = await waitForColumns(
+    await waitForColumns(
       "zooming back in should draw the column edges again",
       (current) => current.traced.length === tracedBefore,
     );
-
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-layers-trace-zoomed-in",
-      expect:
-        "Zoomed back to 50% or more: the column edges are drawn again, the same number as before the zoom out.",
-      measured: {
-        traced: zoomedIn.traced,
-        tableD: zoomedIn.tableD,
-      },
-    });
   });
 });

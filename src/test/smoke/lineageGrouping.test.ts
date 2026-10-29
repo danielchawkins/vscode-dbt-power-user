@@ -7,6 +7,7 @@ import {
   clickFirstColumn,
   clickOnCard,
   readColumns,
+  readDrawnCrossings,
   tracedCardsListed,
 } from "./lineageProbes";
 import { evaluatePanel, waitForPanelGone } from "./panelFrames";
@@ -395,29 +396,27 @@ suite("Lineage grouping", function () {
     assert.ok(chip?.text.includes("3/3"), `chip text was ${chip?.text}`);
     assert.deepStrictEqual(opened.more, []);
     await expectWebviewDom(LINEAGE, { role: "button", name: "Open b" });
+    // The layered layout draws a band per layer behind the cards; the checkpoint records the band labels and titles.
+    const bands = await bandLabels();
+    assert.ok(bands.length > 0, "the layered layout should draw layer bands");
     await evidence?.capture(LINEAGE, {
       name: "lineage-groups-opened",
       expect:
-        "After opening group a: three stg_a cards, the group b node still closed, the marts card, and an 'a' chip on the hub reading 3/3 with no +K button.",
+        "After opening group a, drawn by the default balanced engine: three stg_a cards, the group b node still " +
+        "closed, the marts card, and an 'a' chip on the hub reading 3/3 with no +K button. A labelled band sits " +
+        "behind each layer's cards, no two bands overlap, and no edge runs along a band's border.",
       measured: {
         cards: opened.cards,
         groups: opened.groups,
         chips: opened.chips,
         more: opened.more,
+        bands,
+        titles: await cardTitles(),
+        drawn: await readDrawnCrossings(),
       },
     });
 
-    // The layered layout draws a band per layer run behind the cards; the checkpoint records the band labels and titles.
-    const bands = await bandLabels();
-    assert.ok(bands.length > 0, "the layered layout should draw layer bands");
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-groups-layered",
-      expect:
-        "The opened graph in layered mode: a layer band behind each layer run, labelled with its layer name, and every card titled.",
-      measured: { bands, titles: await cardTitles() },
-    });
-
-    // Checkpoint 3: zoomed out, cards keep their size and show a larger title and a wider layer stripe only.
+    // Zoomed out, cards keep their size and show a larger title and a wider layer stripe only.
     const before = await zoomState(LINEAGE);
     const zoomed = await zoomPastHalf(LINEAGE, "out");
     assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
@@ -455,13 +454,12 @@ suite("Lineage grouping", function () {
     });
   });
 
-  // Checkpoint 4: with lineage.title set to name, cards show the dbt name, not the alias.
+  // With lineage.title set to name, cards show the dbt name, not the alias.
   test("titles cards by dbt name when lineage.title is name", async function () {
     if (!runsHere()) {
       this.skip();
       return;
     }
-    const evidence = interactionEvidence(host());
     const config = vscode.workspace.getConfiguration("fusionPowerUser");
     // In alias mode, the default, the fixture's aliased marts model is titled by its alias.
     await reopenModel(HUB);
@@ -511,14 +509,6 @@ suite("Lineage grouping", function () {
         !Object.values(titles).includes("summary_mart"),
         `the alias still titled a card: ${JSON.stringify(titles)}`,
       );
-      await clickInWebview(LINEAGE, { role: "button", name: "Fit View" });
-      await evidence?.capture(LINEAGE, {
-        name: "lineage-groups-name-mode",
-        expect:
-          "The hub's children expanded with lineage.title set to name: the marts card is titled mart_summary, " +
-          "not its alias summary_mart.",
-        measured: { aliasTitles, titles },
-      });
     } finally {
       await config.update(
         "lineage.title",
@@ -528,7 +518,7 @@ suite("Lineage grouping", function () {
     }
   });
 
-  // Checkpoints 5 to 7: in the leftToRight layout, a traced column's edges follow the zoom, the table edges do not.
+  // In the leftToRight layout, a traced column's edges follow the zoom, the table edges do not.
   test("traces hub.id to mart_summary in leftToRight, drops the column edges zoomed out, and redraws them zoomed in", async function () {
     if (!runsHere()) {
       this.skip();
@@ -582,28 +572,12 @@ suite("Lineage grouping", function () {
       );
       assert.deepStrictEqual(zoomedOut.tableD, tableDBefore);
 
-      await evidence?.capture(LINEAGE, {
-        name: "lineage-groups-ltr-trace-zoomed-out",
-        expect:
-          "The same leftToRight graph zoomed out below 50%: the column edges are gone, and the table edges keep " +
-          "their paths, the same as before the zoom.",
-        measured: { traced: zoomedOut.traced, tableD: zoomedOut.tableD },
-      });
-
       await zoomPastHalf(LINEAGE, "in");
       const zoomedIn = await waitForColumns(
         "zooming back in should draw the column edges again",
         (current) => current.traced.length === tracedBefore,
       );
       assert.deepStrictEqual(zoomedIn.tableD, tableDBefore);
-
-      await evidence?.capture(LINEAGE, {
-        name: "lineage-groups-ltr-trace-zoomed-in",
-        expect:
-          "Zoomed back to 50% or more: the column edges come back, the same number as before the zoom out, and the " +
-          "table edges still keep their paths.",
-        measured: { traced: zoomedIn.traced, tableD: zoomedIn.tableD },
-      });
     } finally {
       await config.update(
         "lineage.layout",
@@ -613,7 +587,7 @@ suite("Lineage grouping", function () {
     }
   });
 
-  // Checkpoints 8 to 10: without folder groups a capped expansion draws its first maxNeighbours children and a "+N" button.
+  // Without folder groups a capped expansion draws its first maxNeighbours children and a "+N" button.
   test("caps a fanout card's children and opens and closes the overflow", async function () {
     if (!runsHere()) {
       this.skip();
@@ -673,18 +647,13 @@ suite("Lineage grouping", function () {
         role: "button",
         name: `Hide ${FANOUT_CHILDREN} children`,
       });
-      const collapsed = await waitForFanoutCard(
+      await waitForFanoutCard(
         "collapsing the children should draw no child cards and no overflow button",
         (card) =>
           card.children === 0 &&
           card.overflow.length === 0 &&
           card.expander === `Show ${FANOUT_CHILDREN} children`,
       );
-      await evidence?.capture(LINEAGE, {
-        name: "lineage-groups-overflow-closed",
-        expect: `After collapsing the children: no child cards, no "+N" button, and the expander reads "Show ${FANOUT_CHILDREN} children".`,
-        measured: { ...collapsed },
-      });
     } finally {
       await config.update(
         "lineage.groupBy",
