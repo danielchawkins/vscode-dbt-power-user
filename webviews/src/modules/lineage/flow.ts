@@ -1,4 +1,4 @@
-import type { lineage } from "@fusion-power-user/webview-contract";
+import { lineage } from "@fusion-power-user/webview-contract";
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import type { TitleMode } from "./card";
 import {
@@ -187,7 +187,9 @@ function placeLayered(
   paths: Map<string, RoutedEdgeData>;
 } {
   const request = layoutRequest(input, listed, heightOf);
-  const response = engineFor().layout(request);
+  const response = engineFor(
+    input.engine ?? lineage.DEFAULT_LINEAGE_ENGINE,
+  ).layout(request);
   const { paths: drawn } = drawLayout(request, response);
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of drawn) {

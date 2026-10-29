@@ -1,4 +1,4 @@
-import type { lineage } from "@fusion-power-user/webview-contract";
+import { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
 import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { createContext } from "react";
@@ -37,6 +37,7 @@ const resolveUserSettings = (
   | "semanticZoom"
   | "title"
   | "layout"
+  | "engine"
   | "layerColors"
 > => ({
   maxNeighbours: settings?.maxNeighbours ?? 20,
@@ -44,6 +45,7 @@ const resolveUserSettings = (
   semanticZoom: settings?.semanticZoom ?? true,
   title: settings?.title ?? "alias",
   layout: settings?.layout ?? "layered",
+  engine: settings?.engine ?? lineage.DEFAULT_LINEAGE_ENGINE,
   layerColors: settings?.layerColors ?? {},
 });
 

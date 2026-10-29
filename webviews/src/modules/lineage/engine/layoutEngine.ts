@@ -92,7 +92,7 @@ export interface LayoutResponse {
   hints: LayoutHints;
 }
 
-export type LayoutEngineId = "owned" | "graph-layout";
+type LayoutEngineId = "owned" | "graph-layout";
 
 /** A layout engine: pure and synchronous, with no DOM, React or React Flow. */
 export interface LayoutEngine {
