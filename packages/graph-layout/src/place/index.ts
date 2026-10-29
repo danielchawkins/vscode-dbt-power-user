@@ -7,10 +7,12 @@ import type {
   Rect,
   Spacing,
 } from "../types.js";
-import { initialEdges, planBoxes } from "./boxes.js";
+import { type BoxPlan, initialEdges, planBoxes } from "./boxes.js";
 import { type BoxFrame, boxRects } from "./boxRects.js";
 import { brandesKoepf } from "./brandesKoepf.js";
 import { rankCentres } from "./gaps.js";
+import { hintShift } from "./hints.js";
+import { levelsAcross } from "./levels.js";
 import { problemOf } from "./links.js";
 import type { Problem } from "./problem.js";
 import { solveQuadratic } from "./quadratic.js";
@@ -43,7 +45,7 @@ function acrossLayout({
   layered: LayeredGraph;
   down: boolean;
   gaps: readonly number[];
-}): { rankHalf: number[]; centres: number[] } {
+}): { rankHalf: number[]; centres: number[]; half: number[] } {
   const sizes = new Map(graph.nodes.map((node) => [node.id, node] as const));
   const acrossOf = (id: string | undefined): number => {
     if (id === undefined) {
@@ -61,7 +63,7 @@ function acrossLayout({
       ),
     ),
   );
-  return { rankHalf, centres: rankCentres(rankHalf, gaps) };
+  return { rankHalf, centres: rankCentres(rankHalf, gaps), half };
 }
 
 /** Where each node sits: real nodes by id, every layered node by index, and the work the solver did. */
@@ -82,7 +84,8 @@ export interface Placement {
  * Places every node of the ordering: along each rank, by minimising the weighted straightness of the segments under
  * the ordered separation constraints, from the Brandes and Köpf coordinates. Ranks sit at the cumulative thickness of
  * their nodes plus `spacing.rank`. An anchor lands exactly at the origin; without one, the drawing starts at the origin.
- * Hints are soft pulls towards their previous in-rank positions.
+ * Hints are soft pulls towards their previous in-rank positions. Under `ranks: "levels"` the across positions come from
+ * `levelsAcross` rather than from the rows.
  */
 export function place(
   graph: LayoutGraph,
@@ -105,53 +108,42 @@ export function place(
     spacing: spacing.cluster,
   });
   // A rank gap is never below the spacing, and grows to hold the margins of the boxes it separates.
-  const { rankHalf, centres } = acrossLayout({
+  const gaps = plan.rankGap.map((gap) => Math.max(spacing.rank, gap));
+  const { rankHalf, centres, half } = acrossLayout({
     graph,
     layered,
     down,
-    gaps: plan.rankGap.map((gap) => Math.max(spacing.rank, gap)),
+    gaps,
   });
-  const boxed: Problem =
-    plan.count === 0
-      ? problem
-      : {
-          ...problem,
-          extra: { count: plan.count, separations: plan.separations },
-        };
-
-  const warm = brandesKoepf(problem);
-  const cap = ITERATION_CAP[effort];
-  const start =
-    plan.count === 0
-      ? warm
-      : [...warm, ...initialEdges(plan, warm, inRankHalf)];
-  const solved =
-    cap === 0 && plan.count === 0
-      ? { x: warm, iterations: 0 }
-      : solveQuadratic(boxed, start, cap);
+  const solved = solveInRank({ problem, plan, effort, inRankHalf });
 
   const anchor = anchorIndex(layered.nodes, options.anchor);
-  const inShift =
-    anchor !== undefined
-      ? -solved.x[anchor]!
-      : (hintShift(layered.nodes, solved.x, options) ??
-        -layered.nodes.reduce(
-          (low, node, i) => Math.min(low, solved.x[i]! - node.breadth / 2),
-          Infinity,
-        ));
-  const acrossShift =
-    anchor === undefined ? 0 : -centres[layered.nodes[anchor]!.rank]!;
-
-  const points = layered.nodes.map((node, i) => {
-    const inRank = solved.x[i]! + inShift;
-    const across = centres[node.rank]! + acrossShift;
-    return down ? { x: inRank, y: across } : { x: across, y: inRank };
+  const inShift = inRankShift({
+    layered,
+    x: solved.x,
+    inRankHalf,
+    options,
   });
-  const nodes = new Map<string, Point>();
-  layered.nodes.forEach((node, i) => {
-    if (node.id !== undefined) {
-      nodes.set(node.id, points[i]!);
-    }
+  const { across, acrossShift, boxes } = acrossOf({
+    graph,
+    options,
+    layered,
+    plan,
+    spacing,
+    inRank: solved.x,
+    inRankHalf,
+    half,
+    centres,
+    gaps,
+    anchor,
+  });
+
+  const { points, nodes } = positionsOf({
+    layered,
+    x: solved.x,
+    inShift,
+    across,
+    down,
   });
   const boxFrame: BoxFrame = {
     plan,
@@ -160,6 +152,7 @@ export function place(
       solved.x[box.left]! + inShift,
       solved.x[box.right]! + inShift,
     ]),
+    ...(boxes === undefined ? {} : { across: boxes }),
   };
   const clusters = boxRects(
     boxFrame,
@@ -170,26 +163,146 @@ export function place(
 }
 
 /**
- * The translation that best fits the hinted nodes to their previous centres: the mean of (hint - x). Translation is
- * free, so it applies whatever the effort or stability. `undefined` when no real node is hinted.
+ * The in-rank solution: the Brandes and Köpf start, improved by the quadratic solve over the boxes when there are any.
+ * At `fast` without boxes the start is the answer.
  */
-function hintShift(
-  nodes: readonly { id: string | undefined; breadth: number }[],
-  x: readonly number[],
-  options: LayoutOptions,
-): number | undefined {
-  let sum = 0;
-  let count = 0;
-  nodes.forEach((node, i) => {
-    const hint =
-      node.id === undefined ? undefined : options.hints?.nodes.get(node.id);
-    if (hint !== undefined) {
-      const corner = options.direction === "down" ? hint.x : hint.y;
-      sum += corner + node.breadth / 2 - x[i]!;
-      count += 1;
+function solveInRank({
+  problem,
+  plan,
+  effort,
+  inRankHalf,
+}: {
+  problem: Problem;
+  plan: BoxPlan;
+  effort: Effort;
+  inRankHalf: readonly number[];
+}): { x: number[]; iterations: number } {
+  const boxed: Problem =
+    plan.count === 0
+      ? problem
+      : {
+          ...problem,
+          extra: { count: plan.count, separations: plan.separations },
+        };
+  const warm = brandesKoepf(problem);
+  const cap = ITERATION_CAP[effort];
+  const start =
+    plan.count === 0
+      ? warm
+      : [...warm, ...initialEdges(plan, warm, inRankHalf)];
+  return cap === 0 && plan.count === 0
+    ? { x: warm, iterations: 0 }
+    : solveQuadratic(boxed, start, cap);
+}
+
+/** Each layered node's point, from its in-rank position and its across position, and the real nodes by id. */
+function positionsOf({
+  layered,
+  x,
+  inShift,
+  across,
+  down,
+}: {
+  layered: LayeredGraph;
+  x: readonly number[];
+  inShift: number;
+  across: readonly number[];
+  down: boolean;
+}): { points: Point[]; nodes: Map<string, Point> } {
+  const points = layered.nodes.map((_, i) => {
+    const inRank = x[i]! + inShift;
+    return down ? { x: inRank, y: across[i]! } : { x: across[i]!, y: inRank };
+  });
+  const nodes = new Map<string, Point>();
+  layered.nodes.forEach((node, i) => {
+    if (node.id !== undefined) {
+      nodes.set(node.id, points[i]!);
     }
   });
-  return count === 0 ? undefined : sum / count;
+  return { points, nodes };
+}
+
+/** The translation along the ranks: the anchor at the origin, else the best fit to the hints, else the drawing's start. */
+function inRankShift({
+  layered,
+  x,
+  inRankHalf,
+  options,
+}: {
+  layered: LayeredGraph;
+  x: readonly number[];
+  inRankHalf: readonly number[];
+  options: LayoutOptions;
+}): number {
+  const anchor = anchorIndex(layered.nodes, options.anchor);
+  if (anchor !== undefined) {
+    return -x[anchor]!;
+  }
+  const hinted = hintShift(
+    layered.nodes.map((node, i) => ({
+      id: node.id,
+      half: inRankHalf[i]!,
+      x: x[i]!,
+    })),
+    options,
+    true,
+  );
+  return (
+    hinted ??
+    -layered.nodes.reduce(
+      (low, node, i) => Math.min(low, x[i]! - node.breadth / 2),
+      Infinity,
+    )
+  );
+}
+
+/** What the across axis is placed from. */
+interface AcrossInput {
+  graph: LayoutGraph;
+  options: LayoutOptions;
+  layered: LayeredGraph;
+  plan: BoxPlan;
+  spacing: Pick<Spacing, "node" | "edge" | "cluster">;
+  inRank: readonly number[];
+  inRankHalf: readonly number[];
+  half: readonly number[];
+  centres: readonly number[];
+  gaps: readonly number[];
+  anchor: number | undefined;
+}
+
+/**
+ * Each layered node's across position in the drawing's frame, the shift the rows took, and the boxes' top and bottom
+ * edges when `ranks: "levels"` solves them (`undefined` for rows).
+ */
+function acrossOf(input: AcrossInput): {
+  across: number[];
+  acrossShift: number;
+  boxes: number[] | undefined;
+} {
+  const { layered, centres, anchor } = input;
+  const acrossShift =
+    anchor === undefined ? 0 : -centres[layered.nodes[anchor]!.rank]!;
+  if (input.options.ranks !== "levels") {
+    return {
+      across: layered.nodes.map((node) => centres[node.rank]! + acrossShift),
+      acrossShift,
+      boxes: undefined,
+    };
+  }
+  const levels = levelsAcross({
+    graph: input.graph,
+    options: input.options,
+    layered,
+    plan: input.plan,
+    spacing: input.spacing,
+    inRank: input.inRank,
+    halfIn: input.inRankHalf,
+    halfAcross: input.half,
+    rankGap: input.gaps,
+    anchor,
+  });
+  return { across: levels.across, acrossShift, boxes: levels.boxes };
 }
 
 /** The anchor's layered index, or `undefined` when no anchor is set or it is not in the layered graph. */

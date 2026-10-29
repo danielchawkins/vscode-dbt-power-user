@@ -127,6 +127,12 @@ export interface LayoutOptions {
    * partition boundary; `strict` forbids it. Defaults to `soft`.
    */
   partitions?: "none" | "soft" | "strict";
+  /**
+   * How the across axis is drawn. `rows` (the default) stacks each rank as one shared row. `levels` gives each node its
+   * rank's level as a desired position, but pushes it below the nodes its ranking edges place above it, so ancestors
+   * sit at distinct heights and the nodes of one rank may sit at different ones.
+   */
+  ranks?: "rows" | "levels";
   /** A node kept at the origin, such as the node a view is centred on. */
   anchor?: string;
   /** The previous result's hints; `LayoutResult.hints` is in this form. */
