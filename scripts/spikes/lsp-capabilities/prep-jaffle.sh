@@ -3,11 +3,10 @@
 # an exposure and a singular test, then seeds and builds it so `dbt show` has relations to read.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
-repo=$(cd "$here/../../.." && pwd)
 dest=${1:-/tmp/lsp-jaffle}
 dbt=${DBT_BIN:-/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt}
 rm -rf "$dest"
-cp -R "$repo/test-fixtures/jaffle-shop-duckdb" "$dest"
+cp -R "$here/jaffle-shop-duckdb" "$dest"
 cd "$dest"
 rm -rf target logs jaffle_shop.duckdb
 mkdir -p macros tests

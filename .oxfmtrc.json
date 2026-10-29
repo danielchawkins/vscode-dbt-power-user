@@ -40,7 +40,7 @@
     "webview_panels/dist",
     "scripts/spikes",
     "src/test/suite/fixtures",
-    "test-fixtures/lint",
+    "lint/fixtures",
     "docs/research/evidence",
     "eslint-suppressions.json",
     "oxlint-suppressions.json"
