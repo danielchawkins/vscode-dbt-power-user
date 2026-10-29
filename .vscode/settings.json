@@ -87,7 +87,7 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    ".git-dotfiles": ".gitignore, .dockerignore, lefthook.yml",
+    ".git-dotfiles": ".gitignore, lefthook.yml",
     ".workspace-dotfiles": "justfile, dprint.json, mise.toml, mise.lock, mise.local.toml, rumdl.toml, sgconfig.yml",
     ".typescript-dotfiles": "package.json, package-lock.json, tsconfig*.json, rsbuild.config.ts, vitest.config.ts, .vscode-test.mjs, eslint.config.mjs, eslint-suppressions.json, oxlint.config.ts, oxlint-suppressions.json, .oxfmtrc.json, knip.json, .dependency-cruiser.cjs",
     "README.md": "AGENTS.md, CONTEXT.md, LICENSE, *.md"
