@@ -1,0 +1,20 @@
+id: ts-runtime-paths-not-source-dirs
+snapshots:
+  Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");:
+    labels:
+    - source: webview_panels
+      style: primary
+      start: 28
+      end: 42
+  path.join(extensionPath, "packages/graph-layout/dist/index.js");:
+    labels:
+    - source: packages/graph-layout/dist/index.js
+      style: primary
+      start: 26
+      end: 61
+  readFileSync(join(root, "scripts", "quality", "ceilings.json"));:
+    labels:
+    - source: scripts
+      style: primary
+      start: 25
+      end: 32

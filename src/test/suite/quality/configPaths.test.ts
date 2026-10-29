@@ -162,7 +162,7 @@ describe("staleSites", () => {
     const sites = [
       { source: "probe", pattern: "src/**" },
       { source: "probe", pattern: "no_such_directory/**" },
-      { source: "probe", pattern: "webview_panels/dist" },
+      { source: "probe", pattern: "dist/webview" },
     ];
     expect(staleSites(sites)).toEqual([
       { source: "probe", pattern: "no_such_directory/**" },

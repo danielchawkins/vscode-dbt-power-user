@@ -23,7 +23,7 @@ export function overBudget(budgets, sizes) {
 const sizeOf = (file) => fs.statSync(path.join(root, file)).size;
 
 function measure(budgets) {
-  const assets = "webview_panels/dist/assets";
+  const assets = "dist/webview/assets";
   const sizes = {};
   for (const key of Object.keys(budgets)) {
     if (key === "vsix") {

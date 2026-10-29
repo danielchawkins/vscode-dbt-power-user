@@ -103,13 +103,13 @@ suite("Pinned-host VSIX smoke", function () {
 
     const extRoot = ext.extensionUri.fsPath;
     for (const asset of [
-      "webview_panels/dist/assets/manifest.json",
+      "dist/webview/assets/manifest.json",
       ...["documentationEditor", "queryResults", "lineage"].flatMap((entry) => [
-        `webview_panels/dist/assets/${entry}.js`,
-        `webview_panels/dist/assets/${entry}.css`,
+        `dist/webview/assets/${entry}.js`,
+        `dist/webview/assets/${entry}.css`,
       ]),
-      "webview_panels/dist/assets/codicons/codicon.css",
-      "webview_panels/dist/assets/codicons/codicon.ttf",
+      "dist/webview/assets/codicons/codicon.css",
+      "dist/webview/assets/codicons/codicon.ttf",
     ]) {
       assert.ok(
         fs.existsSync(path.join(extRoot, asset)),

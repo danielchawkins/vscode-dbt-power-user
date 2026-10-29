@@ -55,7 +55,7 @@
     "media/images/*.{svg,png,gif}",
     "syntaxes/*.tmLanguage.json",
     "snippets/*.json",
-    "webview_panels/dist/assets/**",
+    "dist/webview/assets/**",
     "LICENSE",
     "README.md"
   ],

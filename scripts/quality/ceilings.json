@@ -17,14 +17,14 @@
   "size": {
     "dist/extension.js": 1250000,
     "vsix": 800000,
-    "webview_panels/dist/assets/chunk-shared.js": 282300,
-    "webview_panels/dist/assets/documentationEditor.css": 8760,
-    "webview_panels/dist/assets/documentationEditor.js": 39770,
-    "webview_panels/dist/assets/lineage.css": 36000,
-    "webview_panels/dist/assets/lineage.js": 297211,
-    "webview_panels/dist/assets/queryResults.css": 9800,
-    "webview_panels/dist/assets/queryResults.js": 102700,
-    "webview_panels/dist/assets/shared.css": 12200
+    "dist/webview/assets/chunk-shared.js": 282300,
+    "dist/webview/assets/documentationEditor.css": 8760,
+    "dist/webview/assets/documentationEditor.js": 39770,
+    "dist/webview/assets/lineage.css": 36000,
+    "dist/webview/assets/lineage.js": 297211,
+    "dist/webview/assets/queryResults.css": 9800,
+    "dist/webview/assets/queryResults.js": 102700,
+    "dist/webview/assets/shared.css": 12200
   },
   "oxlintSuppressions.host": 59,
   "oxlintSuppressions.webview": 25,

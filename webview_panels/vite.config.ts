@@ -51,6 +51,8 @@ export const viteConfig = defineConfig({
   base: "./",
   plugins: [svgr(), react(), copyCodicons()],
   build: {
+    // The host bundle shares dist/ with the webview; `build:app` clears only dist/webview.
+    outDir: "../dist/webview",
     target: "chrome148",
     // The host reads each entry's script and transitive stylesheets from here.
     manifest: "assets/manifest.json",

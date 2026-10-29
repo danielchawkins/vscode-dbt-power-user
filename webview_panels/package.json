@@ -10,9 +10,9 @@
   "packageManager": "npm@11.19.0",
   "scripts": {
     "dev:app": "vite",
-    "watch:app": "rm -rf dist && node ../node_modules/typescript-7/bin/tsc && vite build --watch",
+    "watch:app": "rm -rf ../dist/webview && node ../node_modules/typescript-7/bin/tsc && vite build --watch",
     "build": "npm run build:packages --prefix .. && npm run build:app",
-    "build:app": "rm -rf dist && node ../node_modules/typescript-7/bin/tsc && vite build --emptyOutDir=false",
+    "build:app": "rm -rf ../dist/webview && node ../node_modules/typescript-7/bin/tsc && vite build --emptyOutDir=false",
     "preview": "vite preview",
     "typecheck": "node ../node_modules/typescript-7/bin/tsc --noEmit && node ../node_modules/typescript-7/bin/tsc -p tsconfig.test.json --noEmit",
     "lint:oxlint": "oxlint --deny-warnings --type-aware .",
