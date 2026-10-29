@@ -346,30 +346,7 @@ package:
       echo "error: expected VSIX not found: $vsix" >&2
       exit 1
     fi
-    entries="$(unzip -Z1 "$vsix")"
-    py_entries="$(printf '%s\n' "$entries" | awk '/\.py$/')"
-    if [[ -n "$py_entries" ]]; then
-      echo "error: VSIX contains .py entries: $vsix" >&2
-      printf '%s\n' "$py_entries" >&2
-      exit 1
-    fi
-    echo "VSIX $vsix contains 0 .py entries"
-    if printf '%s\n' "$entries" | grep -qE '(^|/)\.oxfmtrc\.json$'; then
-      echo "error: VSIX contains .oxfmtrc.json: $vsix" >&2
-      exit 1
-    fi
-    if printf '%s\n' "$entries" | grep -qi 'altimate-core'; then
-      echo "error: VSIX contains altimate-core entries: $vsix" >&2
-      exit 1
-    fi
-    tooling_prog='/(^|\/)([^\/]*-suppressions\.json|knip\.json|\.dependency-cruiser\.cjs|'
-    tooling_prog="$tooling_prog"'eslint\.config\.[^\/]*|oxlint\.config\.[^\/]*)$|(^|\/)lint\//'
-    tooling_entries="$(printf '%s\n' "$entries" | awk "$tooling_prog")"
-    if [[ -n "$tooling_entries" ]]; then
-      echo "error: VSIX contains contributor lint or tooling entries: $vsix" >&2
-      printf '%s\n' "$tooling_entries" >&2
-      exit 1
-    fi
+    node scripts/quality/vsix-contents.mjs "$vsix"
     mkdir -p out
     realpath "$vsix" > out/latest-vsix
     node scripts/quality/size-budget.mjs

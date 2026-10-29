@@ -50,6 +50,15 @@
     "workspaceContains:**/dbt_project.yaml"
   ],
   "main": "./dist/extension.js",
+  "files": [
+    "dist/*.js",
+    "media/images/*.{svg,png,gif}",
+    "syntaxes/*.tmLanguage.json",
+    "snippets/*.json",
+    "webview_panels/dist/assets/**",
+    "LICENSE",
+    "README.md"
+  ],
   "contributes": {
     "taskDefinitions": [
       {
