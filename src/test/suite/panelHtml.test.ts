@@ -90,8 +90,8 @@ describe("contentSecurityPolicy", () => {
 });
 
 describe("panelEntries", () => {
-  it("names exactly the files in webview_panels/src/entries", () => {
-    const dir = path.resolve(__dirname, "../../../webview_panels/src/entries");
+  it("names exactly the files in webviews/src/entries", () => {
+    const dir = path.resolve(__dirname, "../../../webviews/src/entries");
     const files = readdirSync(dir)
       .filter((file) => file.endsWith(".tsx"))
       .map((file) => path.basename(file, ".tsx"));

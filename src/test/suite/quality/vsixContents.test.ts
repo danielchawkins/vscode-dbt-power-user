@@ -29,14 +29,14 @@ describe("unexpectedEntries", () => {
         "extension/.dockerignore",
         "extension/docker/integration/Dockerfile",
         "extension/dist/extension.js.map",
-        "extension/webview_panels/dist/.gitkeep",
+        "extension/webviews/dist/.gitkeep",
         "extension/mise.toml",
       ]),
     ).toEqual([
       "extension/.dockerignore",
       "extension/docker/integration/Dockerfile",
       "extension/dist/extension.js.map",
-      "extension/webview_panels/dist/.gitkeep",
+      "extension/webviews/dist/.gitkeep",
       "extension/mise.toml",
     ]);
   });

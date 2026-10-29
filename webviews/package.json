@@ -1,5 +1,5 @@
 {
-  "name": "webview_panels",
+  "name": "@fusion-power-user/webviews",
   "private": true,
   "version": "0.0.0",
   "type": "module",

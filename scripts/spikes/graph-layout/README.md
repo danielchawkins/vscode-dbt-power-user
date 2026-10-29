@@ -21,7 +21,7 @@ code; `knip.json` ignores `scripts/spikes/**`.
 ```sh
 N=~/.local/share/mise/installs/node/24.18.1/bin/node   # Node 24 strips the types
 mkdir -p /tmp/graph-layout-spike
-printf 'export { layeredFlow } from "%s/webview_panels/src/modules/lineage/layeredFlow.ts";\n' "$PWD" \
+printf 'export { layeredFlow } from "%s/webviews/src/modules/lineage/layeredFlow.ts";\n' "$PWD" \
   > /tmp/graph-layout-spike/entry.ts
 node_modules/.bin/rolldown /tmp/graph-layout-spike/entry.ts --format esm --platform node \
   --file /tmp/graph-layout-spike/layeredFlow.mjs

@@ -171,14 +171,14 @@ I ran `oxlint --react-plugin` with those rules on webview_panels/src and got exa
 Citations:
 
 - [r5a](https://raw.githubusercontent.com/reactjs/react-codemod/master/README.md): "Converts `Context.Provider` JSX opening and closing elements into `Context`."
-- [r5b](../../webview_panels/src/modules/app/useAppContext.ts): "return use(AppContext);"
-- [r5c](../../webview_panels/src/uiCore/components/codeblock/CodeBlock.test.tsx): "<AppContext.Provider"
+- [r5b](../../webviews/src/modules/app/useAppContext.ts): "return use(AppContext);"
+- [r5c](../../webviews/src/uiCore/components/codeblock/CodeBlock.test.tsx): "<AppContext.Provider"
 
 Thesis (medium): React 19 patterns are already clean in webview_panels/src. forwardRef, defaultProps, propTypes, ReactDOM.render, findDOMNode and useContext: 0 hits. Only 14 `Context.Provider` usages remain, in test files such as CodeBlock.test.tsx and useQueryPanelListeners.test.tsx. Oxlint natively has react/forward-ref-uses-ref (💡), no-render-return-value, no-string-refs and rules-of-hooks. I found no native rule that flags `Context.Provider`→`<Context>` or `useContext`→`use`. Those two have no Oxlint home, so use the React codemods or a manual edit; I did not run react-codemod. The Oxlint docs banner announces React Compiler support, but I did not verify which compiler diagnostics Oxlint implements. useMemo/useCallback are used 35 times in 18 files, which is a candidate manual review if the React Compiler is adopted.
 
 Thesis citations:
 
-- [c8](../../webview_panels/src/uiCore/components/codeblock/CodeBlock.test.tsx): "<AppContext.Provider"
+- [c8](../../webviews/src/uiCore/components/codeblock/CodeBlock.test.tsx): "<AppContext.Provider"
 - [c9](https://oxc.rs/docs/guide/usage/linter/rules.html): "Announcing React Compiler Support"
 
 Antithesis: 'I did not run react-codemod' leaves the central React question unanswered. I ran the React 19 codemods in dry-run through the `codemod` CLI (v1.18.3) with `--dry-run --allow-dirty`, on webview_panels/src: remove-context-provider would modify 6 files (14 sites: 4+2+2+2+2+2). remove-forward-ref, use-context-hook and replace-act-import would modify 0. The thesis's 14 is correct, and this is the autofix that confirms it.
@@ -195,7 +195,7 @@ Counter-evidence:
 
 - [a8](https://raw.githubusercontent.com/reactjs/react-codemod/master/README.md): "Converts `Context.Provider` JSX opening and closing elements into `Context`."
 - [a9](https://raw.githubusercontent.com/reactjs/react-codemod/master/README.md): "Replaces usages of `React.useContext(...)` with `React.use(...)`."
-- [a10](../../webview_panels/src/modules/app/useAppContext.ts): "return use(AppContext);"
+- [a10](../../webviews/src/modules/app/useAppContext.ts): "return use(AppContext);"
 
 ### 6. The Node.js userland-migrations codemods have nothing to change in this repo. The antithesis ran `@nodejs/v22-to-v24` in dry-run over every root and reported 'Would modify 0 files'. Its recipe list (chalk-to-util-styletext, axios-to-whatwg-fetch, import-assertions-to-attributes, rmdir and others) has no recipe for node: protocol, fs.promises, promisify, fs.glob or uuid. The one site that looks like a candidate, `fs.rmdirSync(testDir)`, is non-recursive, so the rmdir recipe does not apply. Run the codemods once as a check, not as a recurring gate, and make no PR from them
 

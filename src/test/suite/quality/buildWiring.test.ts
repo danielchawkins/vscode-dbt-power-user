@@ -58,7 +58,7 @@ function recipes(justfile: string): Map<string, string> {
 /** `"<file> <entrypoint>"` for each npm script and Just recipe whose command names one workspace package. */
 function packageNamingSites(): string[] {
   const sites: string[] = [];
-  for (const file of ["package.json", "webview_panels/package.json"]) {
+  for (const file of ["package.json", "webviews/package.json"]) {
     const scripts = (
       JSON.parse(read(file)) as { scripts: Record<string, string> }
     ).scripts;
@@ -68,7 +68,7 @@ function packageNamingSites(): string[] {
       }
     }
   }
-  for (const file of ["justfile", "webview_panels/justfile"]) {
+  for (const file of ["justfile", "webviews/justfile"]) {
     for (const [name, body] of recipes(read(file))) {
       if (namesAPackage(body, PACKAGE_DIRS)) {
         sites.push(`${file} ${name}`);
@@ -110,7 +110,7 @@ describe("namesAPackage", () => {
 
   it.each([
     "npm run build:packages --prefix ..",
-    "npm run build:app --workspace webview_panels",
+    "npm run build:app --workspace webviews",
     "npm run watch:extension:app",
     "node node_modules/typescript-7/bin/tsc -p tsconfig.integration.json",
     "eslint src scripts packages",

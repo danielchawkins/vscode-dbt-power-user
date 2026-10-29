@@ -9,7 +9,7 @@ message: >-
   `ModelTest`, `FusionPowerUserExtension`.
 files:
   - src/**
-  - webview_panels/src/**
+  - webviews/src/**
   - packages/*/src/**
   - scripts/**
 rule:

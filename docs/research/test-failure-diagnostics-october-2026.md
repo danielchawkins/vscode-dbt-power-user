@@ -585,7 +585,7 @@ Citations:
 
 - [r19a](../../src/features/docs/docsEditPanel.ts): "Unsaved drafts by model file path; host memory only, never webview state."
 - [r19b](../../src/features/docs/docsEditPanel.ts): "draft: this.documentation"
-- [r19c](../../webview_panels/src/modules/documentationEditor/state/useDraftSync.ts): "executeRequestInAsync("saveDraft", { model: held });"
+- [r19c](../../webviews/src/modules/documentationEditor/state/useDraftSync.ts): "executeRequestInAsync("saveDraft", { model: held });"
 - [r19d](../../src/test/smoke/documentationEditorInteractions.test.ts): "alone can match before the editor has settled, and a dirty editor leaks into the next suite."
 - [r19e](../../src/test/smoke/documentationEditorInteractions.test.ts): "const edit = `${original} smoke draft`;"
 

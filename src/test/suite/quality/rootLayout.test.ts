@@ -27,7 +27,7 @@ const ROOT_DIRECTORIES = new Set([
   "snippets", // shipped snippets
   "src", // the extension host and its tests
   "syntaxes", // shipped TextMate grammars
-  "webview_panels", // the webview app, bundled by Vite
+  "webviews", // the webview app, bundled by Vite
 ]);
 
 /** Local, untracked overrides that a group may list before they exist. */

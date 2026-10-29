@@ -1,5 +1,5 @@
 /**
- * Import rules for the webview panels. Paths are relative to `webview_panels/`.
+ * Import rules for the webview panels. Paths are relative to `webviews/`.
  * @type {import("dependency-cruiser").IConfiguration}
  */
 // The lineage modules that hold plain data and pure functions: graph state, grouping, the card model, and both

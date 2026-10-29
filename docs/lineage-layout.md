@@ -1,6 +1,6 @@
 # Lineage layout: where the panel differs from the design gallery
 
-The design gallery (`spike/gallery/designs.html`, design M, table mode) is the reference for the layered lineage layout, and this page records where the shipped panel differs from it and why. The fixture `src/test/fixtures/lineage-layers` reproduces the gallery's neighbourhood around `int_orders__enriched`. `webview_panels/src/modules/lineage/lineageLayers.parity.test.ts` runs the real layout (`layered.ts`, `layeredFlow.ts`) and gutter router (`gutterRouter.ts`) on that fixture, and `src/test/smoke/lineageLayers.test.ts` records the same view in the host. Each difference below is asserted at the panel's actual value in the parity test, not at the gallery's value.
+The design gallery (`spike/gallery/designs.html`, design M, table mode) is the reference for the layered lineage layout, and this page records where the shipped panel differs from it and why. The fixture `src/test/fixtures/lineage-layers` reproduces the gallery's neighbourhood around `int_orders__enriched`. `webviews/src/modules/lineage/lineageLayers.parity.test.ts` runs the real layout (`layered.ts`, `layeredFlow.ts`) and gutter router (`gutterRouter.ts`) on that fixture, and `src/test/smoke/lineageLayers.test.ts` records the same view in the host. Each difference below is asserted at the panel's actual value in the parity test, not at the gallery's value.
 
 ## Counts
 

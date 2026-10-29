@@ -5,16 +5,16 @@ language: tsx
 severity: error
 message: >-
   `saveDocumentation` may be sent only from
-  webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx, the Save button.
+  webviews/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx, the Save button.
   Put the save in that component. For an exception, put
   `ast-grep-ignore: tsx-save-only-from-save-button -- <why>` in a comment above the line and say why in review.
 files:
-  - webview_panels/src/**
+  - webviews/src/**
 ignores:
-  - webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx
-  - webview_panels/src/test/**
-  - webview_panels/src/**/*.test.ts
-  - webview_panels/src/**/*.test.tsx
+  - webviews/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx
+  - webviews/src/test/**
+  - webviews/src/**/*.test.ts
+  - webviews/src/**/*.test.tsx
 rule:
   any:
     - pattern: executeRequestInSync("saveDocumentation", $$$)

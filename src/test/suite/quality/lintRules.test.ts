@@ -11,8 +11,8 @@ import { describe, expect, it } from "vitest";
 import eslintConfig from "../../../../eslint.config.mjs";
 import { HELD_RULES } from "../../../../lint/held-rules.mjs";
 import hostConfig from "../../../../oxlint.config";
-import webviewEslintConfig from "../../../../webview_panels/eslint.config.mjs";
-import webviewConfig from "../../../../webview_panels/oxlint.config";
+import webviewEslintConfig from "../../../../webviews/eslint.config.mjs";
+import webviewConfig from "../../../../webviews/oxlint.config";
 
 // Must-fire fixtures. Each fixture carries headers that say what it must trigger:
 //   // lint-expect: <engine> <rule-id> [count]
@@ -58,7 +58,7 @@ const WORKSPACES: Workspace[] = [
   { name: "host", dir: ROOT, config: hostConfig, jsx: false },
   {
     name: "webview",
-    dir: join(ROOT, "webview_panels"),
+    dir: join(ROOT, "webviews"),
     config: webviewConfig,
     jsx: true,
   },

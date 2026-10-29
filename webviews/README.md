@@ -28,7 +28,7 @@ classDiagram
     PanelHost --> panelHtml : renders with
     DocsEditViewPanel --> panelHtml : renders with
 
-    class Entries["webview_panels/src/entries/*.tsx"]
+    class Entries["webviews/src/entries/*.tsx"]
     panelHtml --> Entries : loads one
 
     click PanelHost href "../src/webview/panelHost.ts" ""
@@ -48,7 +48,7 @@ classDiagram
 - `panelHtml` in [`../src/webview/panelHtml.ts`](../src/webview/panelHtml.ts) is the only HTML and Content Security Policy generator. It reads the Vite manifest and loads the panel's entry script with a nonce, plus that entry's stylesheets and the codicons.
 - Each panel names its `entry` and the `PanelCsp` allowances its page needs; the policy otherwise starts from `default-src 'none'`. The evidence for each directive is in [`../docs/research/webview-csp-october-2026.md`](../docs/research/webview-csp-october-2026.md).
 
-### webview_panels react app
+### webviews react app
 
 - One Vite entry per panel in [`./src/entries`](./src/entries); each calls [`renderPanel`](./src/renderPanel.tsx) with its root component. The file name is the entry name the host loads.
 - Uses [reduxjstoolkit](https://redux-toolkit.js.org/) with useReducer in [AppProvider](./src/modules/app/AppProvider.tsx)

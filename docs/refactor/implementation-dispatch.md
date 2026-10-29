@@ -69,7 +69,7 @@ After the initial implementation for PR N is locally reviewed and pushed, the or
 ## Agent contract
 
 1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching phase of `rearchitecture-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Current Project, Project Snapshot, Local Capability, Hosted Capability, Consumer Repository.
-2. This is **product** work. The shipped extension (`src/`, `webview_panels/`, `package.json` contributions) must not invoke `mise` or `just`, read `mise.toml`, or assume a Consumer Repository layout.
+2. This is **product** work. The shipped extension (`src/`, `webviews/`, `package.json` contributions) must not invoke `mise` or `just`, read `mise.toml`, or assume a Consumer Repository layout.
 3. TDD at the seam the step names. Split the PR into focused revisions by concern and file group; keep implementation and its focused tests together. Put plan or user documentation in a separate revision. The bookmark tip must pass the gates in [Gate cadence](#gate-cadence) before the implementer reports done.
 4. No issue or PR numbers in code. Lines under 120 characters. Markdown: one physical line per prose paragraph.
 5. Ponytail: shortest working diff after reading the real call graph. Do not port code the plan says to delete later. Do not add shims the plan forbids (especially a no-op telemetry sink).

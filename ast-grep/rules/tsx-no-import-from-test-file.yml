@@ -1,6 +1,6 @@
 # A test file is an entry point: importing one registers its suites in the importer, so they run twice, and its
 # exports are helpers that only one test can see. Shared fixtures, harnesses and tested-control lists live in a
-# non-test module (webview_panels/src/test/ or src/test/), which both test files import.
+# non-test module (webviews/src/test/ or src/test/), which both test files import.
 id: tsx-no-import-from-test-file
 language: tsx
 severity: error
@@ -9,7 +9,7 @@ message: >-
   non-test module under the tree's test/ folder and import it from there.
 files:
   - src/**
-  - webview_panels/src/**
+  - webviews/src/**
   - packages/**
 rule:
   any:

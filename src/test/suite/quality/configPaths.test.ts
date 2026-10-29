@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 import eslintConfig from "../../../../eslint.config.mjs";
 import hostOxlint from "../../../../oxlint.config";
-import webviewEslintConfig from "../../../../webview_panels/eslint.config.mjs";
-import webviewOxlint from "../../../../webview_panels/oxlint.config";
+import webviewEslintConfig from "../../../../webviews/eslint.config.mjs";
+import webviewOxlint from "../../../../webviews/oxlint.config";
 
 // Every path or glob that a repository config names must match a file in the checkout, so a moved or deleted
 // directory fails here instead of leaving a rule that silently matches nothing.
@@ -120,17 +120,9 @@ function lintIgnoreSites(): Site[] {
     );
   return [
     ...oxlint("oxlint.config.ts", hostOxlint, ""),
-    ...oxlint(
-      "webview_panels/oxlint.config.ts",
-      webviewOxlint,
-      "webview_panels",
-    ),
+    ...oxlint("webviews/oxlint.config.ts", webviewOxlint, "webviews"),
     ...eslint("eslint.config.mjs", eslintConfig, ""),
-    ...eslint(
-      "webview_panels/eslint.config.mjs",
-      webviewEslintConfig,
-      "webview_panels",
-    ),
+    ...eslint("webviews/eslint.config.mjs", webviewEslintConfig, "webviews"),
   ];
 }
 

@@ -14,4 +14,4 @@ ignores:
   - src/test/**
 rule:
   kind: string_fragment
-  regex: '^(webview_panels|packages|scripts|docker|lint|test-fixtures)(/|$)'
+  regex: '^(webviews|packages|scripts|docker|lint)(/|$)'

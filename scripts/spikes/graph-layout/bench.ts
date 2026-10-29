@@ -1,5 +1,5 @@
 // Spike, not production code: synthetic dbt-like graphs, timings and metrics for prototype.ts, the current owned
-// layered pipeline (webview_panels/src/modules/lineage/layeredFlow.ts) on the same graphs, and a scripted-expansion
+// layered pipeline (webviews/src/modules/lineage/layeredFlow.ts) on the same graphs, and a scripted-expansion
 // stability run. Run it as README.md says; the numbers it printed are recorded there.
 import { layout, rng, type Hints, type Options, type SEdge, type SNode } from "./prototype.ts";
 

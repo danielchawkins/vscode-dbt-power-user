@@ -139,7 +139,7 @@ export abstract class PanelHost<
   R,
 > implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
-  /** The panel's file in `webview_panels/src/entries`. */
+  /** The panel's file in `webviews/src/entries`. */
   protected abstract readonly entry: PanelEntry;
   /** What the entry's page needs beyond the shared policy in `contentSecurityPolicy`. */
   protected abstract readonly csp: PanelCsp;

@@ -1084,7 +1084,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:packages && npm run build:app --workspace webview_panels && npm run build:app",
+    "vscode:prepublish": "npm run build:packages && npm run build:app --workspace webviews && npm run build:app",
     "build:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout",
     "watch:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout --watch --preserveWatchOutput",
     "build": "npm run build:packages && npm run build:app",
@@ -1113,7 +1113,7 @@
   },
   "workspaces": [
     "packages/*",
-    "webview_panels"
+    "webviews"
   ],
   "devDependencies": {
     "@e18e/eslint-plugin": "0.8.1",

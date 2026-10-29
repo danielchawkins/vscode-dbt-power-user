@@ -42,7 +42,7 @@ const tagCount = (tag) => () =>
     "src",
     "packages/webview-contract/src",
     "packages/graph-layout/src",
-    "webview_panels/src",
+    "webviews/src",
   ]
     .flatMap(productionFiles)
     .reduce(
@@ -61,9 +61,9 @@ const tagCount = (tag) => () =>
  */
 export const SUPPRESSION_FILES = {
   "suppressions.host": "eslint-suppressions.json",
-  "suppressions.webview": "webview_panels/eslint-suppressions.json",
+  "suppressions.webview": "webviews/eslint-suppressions.json",
   "oxlintSuppressions.host": "oxlint-suppressions.json",
-  "oxlintSuppressions.webview": "webview_panels/oxlint-suppressions.json",
+  "oxlintSuppressions.webview": "webviews/oxlint-suppressions.json",
 };
 
 export const METRICS = [

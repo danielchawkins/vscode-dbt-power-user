@@ -13,7 +13,7 @@ Finding codes used below:
 - **Spike**: [`lsp-capabilities-fusion-2.0.6.md`](../research/lsp-capabilities-fusion-2.0.6.md) (on `main`).
 - **#210 seed / R7 / R8**: items in the nitpick issue: the seeded list, the R7 review comment, the R8 review comment.
 
-Shared files in every phase: `project.ts` (`src/projects/project/project.ts`), `compositionRoot.ts`, `fusionLanguageClient.ts`, `package.json` (either), the lockfile, `eslint-suppressions.json`, `webview_panels/eslint-suppressions.json`, `scripts/quality/ceilings.json`, `justfile`, and both ESLint configs. Two steps that touch the same shared file are sequential. A step that changes a lint count, a coverage floor or a bundle size touches `ceilings.json`.
+Shared files in every phase: `project.ts` (`src/projects/project/project.ts`), `compositionRoot.ts`, `fusionLanguageClient.ts`, `package.json` (either), the lockfile, `eslint-suppressions.json`, `webviews/eslint-suppressions.json`, `scripts/quality/ceilings.json`, `justfile`, and both ESLint configs. Two steps that touch the same shared file are sequential. A step that changes a lint count, a coverage floor or a bundle size touches `ceilings.json`.
 
 ## Grounding
 
@@ -59,7 +59,7 @@ The owner's rule: one consumer seam, and the language server does everything it 
 
 ## Gate budget
 
-Phase 0 gates ratchet: a count can only fall and a floor can only rise. `scripts/quality/ceilings.json` is the single source for every count, floor and size budget; `vitest.config.ts`, `webview_panels/vitest.config.ts` and `size-budget.mjs` read their values from it. `just lint-ratchet` fails when a measured value is worse than its entry, and when it is better (the entry must be tightened in the same revision, with `just lint-ratchet --write`). CI fails a pull request whose `ceilings.json` loosens a value relative to the base branch, unless a commit in the pull request carries a `Ratchet-Loosen: <key> <reason>` trailer for that key; the CI job prints each accepted trailer. Floors are compared after rounding to the stored precision (two decimals for type coverage, integers for coverage percentages), so rounding noise is not a loosening.
+Phase 0 gates ratchet: a count can only fall and a floor can only rise. `scripts/quality/ceilings.json` is the single source for every count, floor and size budget; `vitest.config.ts`, `webviews/vitest.config.ts` and `size-budget.mjs` read their values from it. `just lint-ratchet` fails when a measured value is worse than its entry, and when it is better (the entry must be tightened in the same revision, with `just lint-ratchet --write`). CI fails a pull request whose `ceilings.json` loosens a value relative to the base branch, unless a commit in the pull request carries a `Ratchet-Loosen: <key> <reason>` trailer for that key; the CI job prints each accepted trailer. Floors are compared after rounding to the stored precision (two decimals for type coverage, integers for coverage percentages), so rounding noise is not a loosening.
 
 Loosening is expected in these cases, each with a trailer: a step that deletes covered code (2.6, 2.9) re-baselines its coverage and type-coverage floors with `just lint-ratchet --write` in the same revision as the deletion, so every revision tip passes; a dependency step (4.3, 4.8) may raise a bundle budget; any other loosening needs the owner's approval in the pull request.
 
@@ -95,7 +95,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.4 Gate on knip
 
 - Goal: unused files, exports, types, enum members and dependencies fail `just lint`.
-- Files: `knip.json` as in Qual §2 (production entries and projects suffixed `!`; `src/test/**/*.test.ts`, `src/test/{integration,smoke}/**/*.ts`, `scripts/**/*.{mjs,ts}` and `.vscode-test.mjs` as non-production entries; `webview_panels/src/test/setup.ts` as an entry; `tags: ["-internal"]`; drop the `@types/vscode`, `ts-loader` and `src/test/mock/**` ignores and the `sample` binary if knip flags it); `package.json` `lint:unused` runs `knip` and `knip --production`; `justfile` `lint` calls `lint-unused`, and its comment changes.
+- Files: `knip.json` as in Qual §2 (production entries and projects suffixed `!`; `src/test/**/*.test.ts`, `src/test/{integration,smoke}/**/*.ts`, `scripts/**/*.{mjs,ts}` and `.vscode-test.mjs` as non-production entries; `webviews/src/test/setup.ts` as an entry; `tags: ["-internal"]`; drop the `@types/vscode`, `ts-loader` and `src/test/mock/**` ignores and the `sample` binary if knip flags it); `package.json` `lint:unused` runs `knip` and `knip --production`; `justfile` `lint` calls `lint-unused`, and its comment changes.
 - Resolves: Qual §2, §1E, M4 (`@vscode/test-cli`); Prac §3 (`@vscode/test-cli`, stale `ts-loader`); Prac 11 ("run `lint-unused` each phase", now permanent).
 - Revisions: (1) `knip.json`; (2) scripts and recipe; (3) the cost probe: run `tsc -p tsconfig.strict.json --noEmit --incremental` (build info under `out/`) and `type-coverage --strict --cache` cold and warm on the host and the webview, and record the four wall times in the step result. If a warm run exceeds 20 s or the total would push `just check` past the 60 s budget, stop and confirm before 0.10 and 0.11.
 - Verify: `just lint` runs knip; adding an unused export makes `just lint` fail; `just lint-unused` takes 15 s or less; the cost probe times are in the step result.
@@ -114,7 +114,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.6 Add the layer rules
 
 - Goal: the target-model layers are enforced in the host and the contract, with no baseline.
-- Files: `.dependency-cruiser.cjs` gains `settings-imports-core`, `fusion-imports-core-and-settings`, `lower-layers-skip-webview` (`core|settings|fusion|projects` must not import `src/webview`), `contract-is-pure` (`packages/webview-contract/src` imports only itself), `no-orphans` (error; entries, `.d.ts` and tests excluded) and `no-deprecated-core`; `lint:imports` also cruises `packages/webview-contract/src`; new `webview_panels/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) run by `just webviews::lint`. Moves: `src/fusion/{fusionClientPool,fusionStatus,fusionClientDiagnostics}.ts` to `src/projects/`, because they are driven by the Project Registry; `src/fusion/schemaOrigin.ts` to `src/projects/`, because it reads `project.manifest` (`schemaOrigin.ts:34`) and `SourceMetaMap`; `fusionLanguageClient.ts` takes a `FusionProjectRef` (`root`, `folder`, `name`, `commandPrefix`; the executor confirms the fields from current use) instead of `DeclaredProject`. `fusion-imports-core-and-settings` allows `src/fusion → src/dbt_integration` until 1.1, as a named exception in the rule (`DBTTerminal`, `EnvironmentVariables`, `DBColumn`, `DBTCommand`, `QueryExecution` are imported today); 1.1 deletes the exception. `docs/architecture.md` paths change.
+- Files: `.dependency-cruiser.cjs` gains `settings-imports-core`, `fusion-imports-core-and-settings`, `lower-layers-skip-webview` (`core|settings|fusion|projects` must not import `src/webview`), `contract-is-pure` (`packages/webview-contract/src` imports only itself), `no-orphans` (error; entries, `.d.ts` and tests excluded) and `no-deprecated-core`; `lint:imports` also cruises `packages/webview-contract/src`; new `webviews/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) run by `just webviews::lint`. Moves: `src/fusion/{fusionClientPool,fusionStatus,fusionClientDiagnostics}.ts` to `src/projects/`, because they are driven by the Project Registry; `src/fusion/schemaOrigin.ts` to `src/projects/`, because it reads `project.manifest` (`schemaOrigin.ts:34`) and `SourceMetaMap`; `fusionLanguageClient.ts` takes a `FusionProjectRef` (`root`, `folder`, `name`, `commandPrefix`; the executor confirms the fields from current use) instead of `DeclaredProject`. `fusion-imports-core-and-settings` allows `src/fusion → src/dbt_integration` until 1.1, as a named exception in the rule (`DBTTerminal`, `EnvironmentVariables`, `DBColumn`, `DBTCommand`, `QueryExecution` are imported today); 1.1 deletes the exception. `docs/architecture.md` paths change.
 - Resolves: Qual §4 (missing layer rules: `contract-is-pure`, `no-orphans`, `no-deprecated-core`, cruise the contract), Qual §6 (dependency-cruiser row).
 - Revisions: (1) moves and the narrow type; (2) rules; (3) webview cruise; (4) docs.
 - Verify: `just lint-code`; `just webviews::lint`; a scratch `import` from `src/projects/` in a `src/fusion/` file fails. If the host rules find more than five edges beyond the listed moves and the `dbt_integration` exception, or the webview cruise finds more than five edges, stop and confirm.
@@ -123,21 +123,21 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 
 ### 0.6b Break the webview import cycles, then cruise the webview
 
-- Goal: `webview_panels/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) runs in `just webviews::lint` with no baseline.
-- Files: each React context object, its hooks and its types move into leaf files (`context.ts`, `types.ts`) that import no components; providers and components import the leaves, and components stop importing the provider. `modules/queryPanel` (17 edges: components ↔ `QueryPanelProvider.tsx` and `useQueryPanelState.ts`); `modules/documentationEditor` (19 edges, mostly through `state/useDocumentationContext.ts`, the `tests/*` and `docGenerator/*` components and `useTestFormSave`); `modules/commonActionButtons` (1 edge: `CommonActionButtons.tsx` → `HelpButton.tsx` → documentation help → `CommonActionButtons.tsx`); `modules/app` (1 edge: `appReducer.ts` ↔ `types.ts`). Tests that mock a moved module by path take the new path. New `webview_panels/.dependency-cruiser.cjs`, run by `just webviews::lint`.
+- Goal: `webviews/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) runs in `just webviews::lint` with no baseline.
+- Files: each React context object, its hooks and its types move into leaf files (`context.ts`, `types.ts`) that import no components; providers and components import the leaves, and components stop importing the provider. `modules/queryPanel` (17 edges: components ↔ `QueryPanelProvider.tsx` and `useQueryPanelState.ts`); `modules/documentationEditor` (19 edges, mostly through `state/useDocumentationContext.ts`, the `tests/*` and `docGenerator/*` components and `useTestFormSave`); `modules/commonActionButtons` (1 edge: `CommonActionButtons.tsx` → `HelpButton.tsx` → documentation help → `CommonActionButtons.tsx`); `modules/app` (1 edge: `appReducer.ts` ↔ `types.ts`). Tests that mock a moved module by path take the new path. New `webviews/.dependency-cruiser.cjs`, run by `just webviews::lint`.
 - Resolves: the webview half of 0.6 (Qual §4 cycles, Qual §6 dependency-cruiser row).
-- Revisions: (1) `modules/app`; (2) `documentationEditor`, which also breaks the `commonActionButtons` cycle because it ran through `useDocumentationContext.ts` → `DocumentationProvider.tsx`; (3) `queryPanel`; (4) webview cruise (`lint:imports` in `webview_panels/package.json`, run by `lint`).
+- Revisions: (1) `modules/app`; (2) `documentationEditor`, which also breaks the `commonActionButtons` cycle because it ran through `useDocumentationContext.ts` → `DocumentationProvider.tsx`; (3) `queryPanel`; (4) webview cruise (`lint:imports` in `webviews/package.json`, run by `lint`).
 - Verify: `just webviews::lint` passes with no baseline; `just webviews::test`; no behaviour change, checked by `just smoke-visual` on the query results and documentation editor checkpoints.
 - Depends: 0.6. Parallel with the lineage work, which it does not touch.
 
 ### 0.7 Add the bug-class ESLint rules
 
 - Goal: bug classes the current lint misses fail with no baseline entries.
-- Files: `eslint.config.cjs` and `webview_panels/eslint.config.mjs`: `@typescript-eslint/no-for-in-array`, `no-misused-spread`, `no-base-to-string`, `no-non-null-asserted-optional-chain`, `switch-exhaustiveness-check`, `no-unnecessary-type-assertion`, `prefer-promise-reject-errors`, `only-throw-error`, `ban-ts-comment` (a described `@ts-expect-error` is allowed), core `no-async-promise-executor`, and `no-console` scoped to `src/**` and `webview_panels/src/**` with tests excluded (scripts, configs and `.vscode-test.mjs` may log). Fix every hit: the `ManifestJson` input types become `Record<string, …>` (`projects/manifest.ts:99-111`, `core/manifest/nodeParser.ts:101`); `for…in` over arrays (`macroParser.ts`, `metricParser.ts`, `sourceModelCreationCodeLensProvider.ts`); base-to-string (`commands.ts:421`, `runModel.ts:99`, `outputChannels.ts:216`); `console.*` (`queryManifestService.ts:104`, `lineagePanel.ts:400`, `modelTreeviewProvider.ts:176`, `utils.ts`, `graphParser.ts`, `core/manifest/utils.ts`, and webview sites) becomes a log call or is deleted; `@ts-ignore` at `docsEditPanel.ts:497`; the non-null assertions in `graphParser.ts:176-244`; the four `new Promise(async …)` executors become `async` methods (`nodeParser.ts:104`, `macroParser.ts:16`, `metricParser.ts:12`, `docParser.ts:13`), which `no-async-promise-executor` would otherwise flag.
+- Files: `eslint.config.cjs` and `webviews/eslint.config.mjs`: `@typescript-eslint/no-for-in-array`, `no-misused-spread`, `no-base-to-string`, `no-non-null-asserted-optional-chain`, `switch-exhaustiveness-check`, `no-unnecessary-type-assertion`, `prefer-promise-reject-errors`, `only-throw-error`, `ban-ts-comment` (a described `@ts-expect-error` is allowed), core `no-async-promise-executor`, and `no-console` scoped to `src/**` and `webviews/src/**` with tests excluded (scripts, configs and `.vscode-test.mjs` may log). Fix every hit: the `ManifestJson` input types become `Record<string, …>` (`projects/manifest.ts:99-111`, `core/manifest/nodeParser.ts:101`); `for…in` over arrays (`macroParser.ts`, `metricParser.ts`, `sourceModelCreationCodeLensProvider.ts`); base-to-string (`commands.ts:421`, `runModel.ts:99`, `outputChannels.ts:216`); `console.*` (`queryManifestService.ts:104`, `lineagePanel.ts:400`, `modelTreeviewProvider.ts:176`, `utils.ts`, `graphParser.ts`, `core/manifest/utils.ts`, and webview sites) becomes a log call or is deleted; `@ts-ignore` at `docsEditPanel.ts:497`; the non-null assertions in `graphParser.ts:176-244`; the four `new Promise(async …)` executors become `async` methods (`nodeParser.ts:104`, `macroParser.ts:16`, `metricParser.ts:12`, `docParser.ts:13`), which `no-async-promise-executor` would otherwise flag.
 - First add characterization tests for `sourceModelCreationCodeLensProvider.ts` (7.3% covered) before changing it.
 - Resolves: Qual M2, M3; Qual §6 (typescript-eslint bug-finding subset, `ban-ts-comment`, `no-console`); Qual S6 (codegen lens part).
 - Revisions: (1) codegen lens tests; (2) manifest types, parser loops and `async` parser methods; (3) codegen lens loops; (4) console and base-to-string; (5) rules enabled.
-- Verify: `just check`; `rg -n 'console\.' src webview_panels/src --glob '!**/test/**' --glob '!**/*.test.*'` is empty; `eslint-suppressions.json` gains no entries; each rule fails on a scratch violation. If there are more than 40 hits, stop and confirm.
+- Verify: `just check`; `rg -n 'console\.' src webviews/src --glob '!**/test/**' --glob '!**/*.test.*'` is empty; `eslint-suppressions.json` gains no entries; each rule fails on a scratch violation. If there are more than 40 hits, stop and confirm.
 - Depends: 0.6. Sequential (`eslint.config.cjs`).
 
 ### 0.8 Make the lint plumbing ratchet
@@ -152,7 +152,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.9 Stage 1 TypeScript flags and the ES2024 target
 
 - Goal: a modern target and the cheap strictness flags.
-- Files: `tsconfig.json`, `tsconfig.integration.json` if it sets them, `webview_panels/tsconfig.json`, `webview_panels/tsconfig.node.json`, `packages/webview-contract/tsconfig.json`: `target` and `lib` ES2024 (the webview adds DOM); root `noImplicitOverride`, `noUnusedLocals` and `noUnusedParameters`; `noImplicitOverride` in the webview and the contract. Fix the 34 override and 15 unused-symbol errors (the unused-symbol count includes `src/test/**`, which the root tsconfig compiles), and prune the `no-unused-vars` entries they clear.
+- Files: `tsconfig.json`, `tsconfig.integration.json` if it sets them, `webviews/tsconfig.json`, `webviews/tsconfig.node.json`, `packages/webview-contract/tsconfig.json`: `target` and `lib` ES2024 (the webview adds DOM); root `noImplicitOverride`, `noUnusedLocals` and `noUnusedParameters`; `noImplicitOverride` in the webview and the contract. Fix the 34 override and 15 unused-symbol errors (the unused-symbol count includes `src/test/**`, which the root tsconfig compiles), and prune the `no-unused-vars` entries they clear.
 - Resolves: Prac §4 (TS target); Qual §6 (`noImplicitOverride`, `noUnusedLocals`/`noUnusedParameters`); D9.
 - Revisions: (1) target and lib; (2) `noImplicitOverride`; (3) unused symbols.
 - Verify: `just check` (the typecheck is the check for D9; bundle targets are unchanged, so no smoke run).
@@ -161,7 +161,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.10 Stage 2 TypeScript flags, starting with the contract
 
 - Goal: `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` are on in the contract package; elsewhere their error counts only fall.
-- Files: `packages/webview-contract/tsconfig.json` with both flags, every error fixed, and the `optional()`/`nullish()` audit; new `tsconfig.strict.json` (root) and `webview_panels/tsconfig.strict.json`, counted by `scripts/quality/strict-ts.mjs` over production files only, with `strictTs.host` and `strictTs.webview` ceilings at the measured counts. They run in `just lint-ratchet`, not pre-commit.
+- Files: `packages/webview-contract/tsconfig.json` with both flags, every error fixed, and the `optional()`/`nullish()` audit; new `tsconfig.strict.json` (root) and `webviews/tsconfig.strict.json`, counted by `scripts/quality/strict-ts.mjs` over production files only, with `strictTs.host` and `strictTs.webview` ceilings at the measured counts. They run in `just lint-ratchet`, not pre-commit.
 - Resolves: Qual §6 (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, contract first); #210 seed (`optional()` rejects `null`).
 - Revisions: (1) contract flags and fixes; (2) nullish audit; (3) strict counter and ceilings.
 - Verify: `just check`; `npm run build:packages`; adding one unchecked index access in `src/` fails `just lint-ratchet`.
@@ -180,16 +180,16 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.12 Ratchet test coverage
 
 - Goal: coverage floors are part of `just check`.
-- Files: `scripts/quality/ceilings.json` gains `coverage.host` and `coverage.webview` floors at the measured values (host now: lines 69, branches 61, functions 75, statements 69); `vitest.config.ts` and `webview_panels/vitest.config.ts` read `coverage.thresholds` from `ceilings.json`, with no copy of the numbers and no `autoUpdate`; `just test` and `just webviews::test` run with `--coverage`.
+- Files: `scripts/quality/ceilings.json` gains `coverage.host` and `coverage.webview` floors at the measured values (host now: lines 69, branches 61, functions 75, statements 69); `vitest.config.ts` and `webviews/vitest.config.ts` read `coverage.thresholds` from `ceilings.json`, with no copy of the numbers and no `autoUpdate`; `just test` and `just webviews::test` run with `--coverage`.
 - Resolves: Qual §6 (coverage threshold).
 - Revisions: one.
-- Verify: `just check` gets at most 5 s slower; a scratch floor set one point above the measured value in `ceilings.json` fails `just test`; `rg -n 'thresholds' vitest.config.ts webview_panels/vitest.config.ts` shows no literal numbers.
+- Verify: `just check` gets at most 5 s slower; a scratch floor set one point above the measured value in `ceilings.json` fails `just test`; `rg -n 'thresholds' vitest.config.ts webviews/vitest.config.ts` shows no literal numbers.
 - Depends: 0.11. Sequential (`justfile`).
 
 ### 0.13 Add a bundle-size budget
 
 - Goal: the bundle sizes cannot grow without the ceiling being raised.
-- Files: new `scripts/quality/size-budget.mjs` and tests; budgets in `ceilings.json`: `dist/extension.js` 1.25 MB or less, the VSIX 5.5 MB or less, each `webview_panels/dist/assets/<entry>.{js,css}` at most 10% over today's value, and the total `.wasm`; `just package` runs it after `vsce package`.
+- Files: new `scripts/quality/size-budget.mjs` and tests; budgets in `ceilings.json`: `dist/extension.js` 1.25 MB or less, the VSIX 5.5 MB or less, each `webviews/dist/assets/<entry>.{js,css}` at most 10% over today's value, and the total `.wasm`; `just package` runs it after `vsce package`.
 - Resolves: Qual §6 (bundle-size budget).
 - Revisions: one.
 - Verify: `just package` passes; a budget set below the current value fails it.
@@ -198,7 +198,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 ### 0.14 Check that documented symbols exist
 
 - Goal: a backticked symbol or path in the design documents exists in the code.
-- Files: new `scripts/quality/docs-symbols.mjs`, `scripts/quality/docs-symbols-allow.txt` and tests; it reads `AGENTS.md`, `CONTEXT.md`, `docs/architecture.md` and `docs/adr/*.md`, and checks `PascalCase` and `camelCase` identifiers and `src/`, `webview_panels/`, `packages/`, `scripts/` paths against `src`, `webview_panels/src`, `packages/*/src`, `scripts` and `package.json`; `just lint-markdown` runs it. Fix today's drift: `ManifestCacheProjectAddedEvent` becomes `Projects.onDidChangeManifest` (the symbol only; the "no second consumer seam" rule stays); `FusionProjectIntegration` becomes "`Project` implements `ManifestProject`"; fix the `architecture.md:70` path and the CONTEXT Project Metadata Source entry.
+- Files: new `scripts/quality/docs-symbols.mjs`, `scripts/quality/docs-symbols-allow.txt` and tests; it reads `AGENTS.md`, `CONTEXT.md`, `docs/architecture.md` and `docs/adr/*.md`, and checks `PascalCase` and `camelCase` identifiers and `src/`, `webviews/`, `packages/`, `scripts/` paths against `src`, `webviews/src`, `packages/*/src`, `scripts` and `package.json`; `just lint-markdown` runs it. Fix today's drift: `ManifestCacheProjectAddedEvent` becomes `Projects.onDidChangeManifest` (the symbol only; the "no second consumer seam" rule stays); `FusionProjectIntegration` becomes "`Project` implements `ManifestProject`"; fix the `architecture.md:70` path and the CONTEXT Project Metadata Source entry.
 - Resolves: Qual §6 (documentation drift); Qual M1 (documentation part).
 - Revisions: (1) script and tests; (2) documentation fixes.
 - Verify: `just lint-markdown`; a scratch bogus symbol fails it.
@@ -249,10 +249,10 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
 ### 1.4 Vendor leftovers in the webview
 
 - Goal: no Altimate names or hosted documentation links in the shipped extension.
-- Files: `webview_panels/src/modules/queryPanel/constants.ts`, `documentationEditor/components/help/TestsHelpContent.tsx`, `DocumentationHelpContent.tsx`, `lineage/components/help/HelpContent.tsx` (links go to docs.getdbt.com or are removed); `assets/icons/index.tsx` alt text; `AltimateSelect` → `Select` and `.altimate-select` → `.select` (`uiCore/components/select/`); `altimatePerspectiveViewer` → `perspectiveViewer` and `altimate-styles` → `perspective-styles` (`PerspectiveViewer.tsx`); an ESLint `no-restricted-syntax` rule on string and template literals matching `/altimate/i` in both configs.
+- Files: `webviews/src/modules/queryPanel/constants.ts`, `documentationEditor/components/help/TestsHelpContent.tsx`, `DocumentationHelpContent.tsx`, `lineage/components/help/HelpContent.tsx` (links go to docs.getdbt.com or are removed); `assets/icons/index.tsx` alt text; `AltimateSelect` → `Select` and `.altimate-select` → `.select` (`uiCore/components/select/`); `altimatePerspectiveViewer` → `perspectiveViewer` and `altimate-styles` → `perspective-styles` (`PerspectiveViewer.tsx`); an ESLint `no-restricted-syntax` rule on string and template literals matching `/altimate/i` in both configs.
 - Resolves: Prac 10; Prac §2 (Altimate leftovers).
 - Revisions: (1) links and alt text; (2) renames; (3) rule.
-- Verify: `just check`; `rg -ni altimate src webview_panels/src --glob '!**/NOTICE.md'` is empty; `just smoke-visual` help pages.
+- Verify: `just check`; `rg -ni altimate src webviews/src --glob '!**/NOTICE.md'` is empty; `just smoke-visual` help pages.
 - Depends: 1.2. Parallel-safe with 1.3, 1.5; sequential with 1.10 (`uiCore/components/select/`) and 1.9 (`eslint.config.cjs`).
 
 ### 1.5 Cruft and dbt-loom
@@ -261,13 +261,13 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
 - Files: `core/manifest/types.ts` (five "dbt cloud" comments), `DocGeneratorInput.tsx:107` (Redux comment), `uiCore/utilities.css:1` (Bootstrap comment), `lineagePanel.ts:212` ("dbt Cloud IDE"); delete dbt-loom support (`core/manifest/utils.ts:13-30`, `dbtLoomConfigPath` in `settings/environment.ts`, and its tests). finance-pipelines does not use dbt-loom; checked with `rg -il loom` on 2026-10-04.
 - Resolves: Prac 11 (stale comments); Prac §2 (Bootstrap and dbt Cloud comments, `dbt_loom`).
 - Revisions: (1) comments; (2) dbt-loom.
-- Verify: `just check`; `rg -ni 'dbt.?loom|dbt cloud|redux|bootstrap' src webview_panels/src --glob '!**/test/**'` is empty.
+- Verify: `just check`; `rg -ni 'dbt.?loom|dbt cloud|redux|bootstrap' src webviews/src --glob '!**/test/**'` is empty.
 - Depends: 1.2. Parallel-safe with 1.3, 1.4; sequential with 1.10 (`uiCore/utilities.css`) and 1.11 (`lineagePanel.ts`).
 
 ### 1.6 Dependency trims
 
 - Goal: every dependency removal the reviews list that needs no design work.
-- Files: root `package.json` and lockfile: drop `vscode-languageserver-protocol` (`fusionLanguageClient.ts` imports `ExecuteCommandRequest` from `vscode-languageclient/node`); `glob` → `fs.globSync` in `src/test/smoke/runTests.ts`, `src/test/integration/untrusted/index.ts`, `mediaAssets.test.ts` and any remaining runner; port `commandProcessExecution.test.ts` from `ts-mockito` to `vi.fn` and drop the package; check `@types/which` 3 against `which` 7, which ships no types: done when `just compile` passes with the pair and the `which(...)` call in `fusionExecutable.ts` types its result without a cast; otherwise pin `which` to the major `@types/which` describes, with a one-line reason in the `rearchitecture-plan.md` dependency row. Webview: `vite-plugin-svgr` → devDependencies; `use-debounce` → `useDebouncedValue` in `webview_panels/src/modules/app/` with a test; remove `NODE_OPTIONS=--max-old-space-size=8192` from `build:app` and `watch:app`.
+- Files: root `package.json` and lockfile: drop `vscode-languageserver-protocol` (`fusionLanguageClient.ts` imports `ExecuteCommandRequest` from `vscode-languageclient/node`); `glob` → `fs.globSync` in `src/test/smoke/runTests.ts`, `src/test/integration/untrusted/index.ts`, `mediaAssets.test.ts` and any remaining runner; port `commandProcessExecution.test.ts` from `ts-mockito` to `vi.fn` and drop the package; check `@types/which` 3 against `which` 7, which ships no types: done when `just compile` passes with the pair and the `which(...)` call in `fusionExecutable.ts` types its result without a cast; otherwise pin `which` to the major `@types/which` describes, with a one-line reason in the `rearchitecture-plan.md` dependency row. Webview: `vite-plugin-svgr` → devDependencies; `use-debounce` → `useDebouncedValue` in `webviews/src/modules/app/` with a test; remove `NODE_OPTIONS=--max-old-space-size=8192` from `build:app` and `watch:app`.
 - Resolves: Prac 15; Prac §3 (`glob`, `ts-mockito`, `which`/`@types/which`, `vite-plugin-svgr`, `use-debounce`, 8 GB flag); Qual M4 (`ts-mockito`, `glob`), O3.
 - Revisions: one per package or flag.
 - Verify: `just check`; `just package`; `npm ls vscode-languageserver-protocol` shows it only under `vscode-languageclient`; `just webviews::build` passes without the flag, with peak RSS recorded (`/usr/bin/time -l`) in the step's result.
@@ -306,7 +306,7 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
 ### 1.9 Host nitpicks
 
 - Goal: the #210 seed items, apart from the contract audit (0.10) and the lineage contract (1.11).
-- Files: `src/projects/project/userFiles.ts` (replace only the changed range, computed from the common prefix and suffix; `readUserFile` reads through `workspace.fs.readFile` when the document is not open); `eslint.config.cjs` (the fs-write rule matches any binding of `fs` or `fs/promises`, and `workspace.fs.writeFile`/`delete` outside the allowed modules); `src/webview/panelHtml.ts` (the manifest cache is keyed on file mtime); `webview_panels/vite.config.ts` (chunks named by content hash or by explicit groups, never after their first module); `queryResultPanel.ts` (types `_queryTabData`); `webview_panels/src/modules/vscode/index.ts` (no file-wide `eslint-disable`); `src/test/integration/fusionLspCaptureProbe.test.ts` is renamed for the behaviour it guards, or deleted if it only records evidence.
+- Files: `src/projects/project/userFiles.ts` (replace only the changed range, computed from the common prefix and suffix; `readUserFile` reads through `workspace.fs.readFile` when the document is not open); `eslint.config.cjs` (the fs-write rule matches any binding of `fs` or `fs/promises`, and `workspace.fs.writeFile`/`delete` outside the allowed modules); `src/webview/panelHtml.ts` (the manifest cache is keyed on file mtime); `webviews/vite.config.ts` (chunks named by content hash or by explicit groups, never after their first module); `queryResultPanel.ts` (types `_queryTabData`); `webviews/src/modules/vscode/index.ts` (no file-wide `eslint-disable`); `src/test/integration/fusionLspCaptureProbe.test.ts` is renamed for the behaviour it guards, or deleted if it only records evidence.
 - Resolves: #210 seed (whole-text replace, `readUserFile` opens documents, fs-write rule, `panelHtml` cache, `chunk-yaml.js` naming, `_queryTabData: any`, file-wide `eslint-disable`, `fusionLspCaptureProbe` name).
 - Revisions: one per item.
 - Verify: `just check` (unit tests: a minimal edit keeps an unchanged prefix; an unopened file read fires no `onDidOpenTextDocument`); `just smoke-visual` docs editor save.
@@ -329,7 +329,7 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
 - Re-verify, and close on #210 if resolved: `aiEnabled` and AI chat (no hit), and the static SQL lineage mode (delete any remnant).
 - Resolves: #210 R8 optional (all items), #210 seed (`getConnectedColumns` drops parameters).
 - Revisions: (1) lineage graph; (2) lineage contract with the host.
-- Verify: `just check`; `just smoke-visual` lineage checkpoints; `rg -n 'currAnd1HopTables|allowSelfReference|showIndirectEdges' src webview_panels/src packages` is empty.
+- Verify: `just check`; `just smoke-visual` lineage checkpoints; `rg -n 'currAnd1HopTables|allowSelfReference|showIndirectEdges' src webviews/src packages` is empty.
 - Depends: 1.10. Sequential (`lineagePanel.ts`, webview suppression file).
 
 ### Phase 1 checkpoint
@@ -661,7 +661,7 @@ The reviewer confirms that every production file is under 600 lines, the ceiling
 ### 4.1 Strict flags in production at zero
 
 - Goal: `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` everywhere in production.
-- Files: production `tsconfig.json` (excludes `src/test/`) with both flags; new `src/test/tsconfig.json` referencing it, without the flags; the same split in `webview_panels/`; delete `tsconfig.strict.json`, `strict-ts.mjs` and their ceilings.
+- Files: production `tsconfig.json` (excludes `src/test/`) with both flags; new `src/test/tsconfig.json` referencing it, without the flags; the same split in `webviews/`; delete `tsconfig.strict.json`, `strict-ts.mjs` and their ceilings.
 - Resolves: Qual §6 (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, production).
 - Revisions: one per directory group, then the config switch.
 - Verify: `just check`; `just compile` runs both projects.
@@ -697,7 +697,7 @@ The reviewer confirms that every production file is under 600 lines, the ceiling
 ### 4.5 happy-dom trial
 
 - Goal: decide on the DOM test environment.
-- Files: `webview_panels/vitest.config.ts` environment. Switch to `happy-dom` only if the webview suite passes unchanged and runs at least 20% faster; otherwise record the timings and keep `jsdom`.
+- Files: `webviews/vitest.config.ts` environment. Switch to `happy-dom` only if the webview suite passes unchanged and runs at least 20% faster; otherwise record the timings and keep `jsdom`.
 - Resolves: Prac §3 (`jsdom` → `happy-dom`).
 - Revisions: one.
 - Verify: `just webviews::test` timings recorded in the step result.
@@ -714,7 +714,7 @@ The reviewer confirms that every production file is under 600 lines, the ceiling
 ### 4.7 Replace Perspective with TanStack Table
 
 - Goal: carry out D7. This is hard to reverse: a beta prerelease comes first, and it is not batched with anything else.
-- Files: `webview_panels/src/modules/queryPanel/components/perspective/` → `components/grid/`; `@perspective-dev/*` removed; `src/webview/panelHtml.ts` query results `PanelCsp` drops `'wasm-unsafe-eval'`, `worker-src blob:` and the WASM `connect-src`; size budgets lowered; `scripts/spikes/perspective-migration/` deleted; the smoke reads rows from the grid DOM instead of the Perspective table API.
+- Files: `webviews/src/modules/queryPanel/components/perspective/` → `components/grid/`; `@perspective-dev/*` removed; `src/webview/panelHtml.ts` query results `PanelCsp` drops `'wasm-unsafe-eval'`, `worker-src blob:` and the WASM `connect-src`; size budgets lowered; `scripts/spikes/perspective-migration/` deleted; the smoke reads rows from the grid DOM instead of the Perspective table API.
 - Resolves: the Perspective size decision.
 - Revisions: (1) grid; (2) CSP; (3) dependency and spike removal; (4) budgets.
 - Verify: `just check`; `just package` (VSIX size recorded); `just smoke-visual` query results in three themes, with the 10,000-row memory run from R6 repeated.

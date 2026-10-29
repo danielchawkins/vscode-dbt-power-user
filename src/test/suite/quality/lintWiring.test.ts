@@ -44,14 +44,12 @@ describe("lint wiring", () => {
   });
 
   it("runs the webview Oxlint config in webviews::lint", () => {
-    expect(recipeBody(read("webview_panels"), "lint")).toContain(
+    expect(recipeBody(read("webviews"), "lint")).toContain(
       "npm run lint:oxlint",
     );
   });
 
   it("applies the webview Oxlint fixes in webviews::fmt", () => {
-    expect(recipeBody(read("webview_panels"), "fmt")).toContain(
-      "npm run fix:oxlint",
-    );
+    expect(recipeBody(read("webviews"), "fmt")).toContain("npm run fix:oxlint");
   });
 });

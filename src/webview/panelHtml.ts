@@ -4,7 +4,7 @@ import type { Webview, WebviewOptions } from "vscode";
 import { Uri } from "vscode";
 
 /**
- * The Vite entries under `webview_panels/src/entries`, one per panel.
+ * The Vite entries under `webviews/src/entries`, one per panel.
  * @internal
  */
 export const panelEntries = [

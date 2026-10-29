@@ -4,6 +4,6 @@ valid:
   - 'const label = "packaged";'
   - 'path.join(root, "media", "images", "dbt.png");'
 invalid:
-  - 'Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");'
+  - 'Uri.joinPath(extensionUri, "webviews", "dist", "assets");'
   - 'path.join(extensionPath, "packages/graph-layout/dist/index.js");'
   - 'readFileSync(join(root, "scripts", "quality", "ceilings.json"));'

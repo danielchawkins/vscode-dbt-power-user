@@ -1,17 +1,17 @@
 # A React Flow edge id names its kind with a prefix (`t:` dbt table edge, `g:` group edge, `c:` column edge, `r:`
 # declared relationship). The id is built where the edge is drawn and again where the layered layout routes it, and
-# the two must agree, so every id is built by the functions in webview_panels/src/modules/lineage/edgeIds.ts.
+# the two must agree, so every id is built by the functions in webviews/src/modules/lineage/edgeIds.ts.
 id: ts-lineage-edge-ids-from-one-module
 language: typescript
 severity: error
 message: >-
   Build a lineage edge id with `tableEdgeId`, `groupEdgeId`, `columnEdgeId` or `relationshipEdgeId` from
-  webview_panels/src/modules/lineage/edgeIds.ts, not with a template literal, so the drawn edge and its routed path
+  webviews/src/modules/lineage/edgeIds.ts, not with a template literal, so the drawn edge and its routed path
   keep one id.
 files:
-  - webview_panels/src/modules/lineage/**
+  - webviews/src/modules/lineage/**
 ignores:
-  - webview_panels/src/modules/lineage/edgeIds.ts
+  - webviews/src/modules/lineage/edgeIds.ts
 rule:
   kind: template_string
   regex: '^`[tgcr]:\$\{'
