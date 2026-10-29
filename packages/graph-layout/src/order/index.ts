@@ -41,8 +41,10 @@ export interface OrderResult {
  * Orders the nodes and dummies of each rank to reduce weighted crossings. The search starts from the hinted or
  * depth-first order and keeps the order with the fewest crossings seen; a restart replaces it only with strictly
  * fewer. Hints are a preference, not a constraint: the result can move hinted nodes, but keeps their order whenever
- * that order, with its dummies sifted, has no more crossings than the search found. At `thorough`, seeded restarts
- * from shuffled starts are tried as well. The result is a pure function of the graph, options and seed.
+ * that order, with its dummies sifted, has no more crossings than the search found. With hints, the unhinted search
+ * runs as well, so the order of the run that produced the hints is always among the candidates: the hints record no
+ * dummy, and moving a long edge's dummies together across ranks is a step sifting cannot take. At `thorough`, seeded
+ * restarts from shuffled starts are tried as well. The result is a pure function of the graph, options and seed.
  */
 export function order(
   graph: LayoutGraph,
@@ -50,9 +52,37 @@ export function order(
   ranking: RankResult,
 ): OrderResult {
   const layered = layer(graph, options, ranking);
+  const start = startingLayers(layered, options.hints);
+  let best = searchFrom(layered, start, options);
+  if (options.hints !== undefined) {
+    const fresh = searchFrom(
+      layered,
+      startingLayers(layered, undefined),
+      options,
+    );
+    if (fresh.crossings < best.crossings) {
+      best = fresh;
+    }
+    // Dummies start where the seed put them, where the search did, or where the unhinted search did.
+    const kept = [start, best.layers, fresh.layers]
+      .map((found, i) => (i === 0 ? found : hintedOrder(layered, start, found)))
+      .map((layers) => keepHinted(layered, layers))
+      .reduce((a, b) => (b.crossings < a.crossings ? b : a));
+    if (kept.crossings <= best.crossings) {
+      best = kept;
+    }
+  }
+  return { layered, layers: best.layers, crossings: best.crossings };
+}
+
+/** The search from one start, then from `RESTARTS` shuffles of it, keeping the order with the fewest crossings. */
+function searchFrom(
+  layered: LayeredGraph,
+  start: number[][],
+  options: LayoutOptions,
+): Found {
   const effort: Effort = options.effort ?? "balanced";
   const random = seededRandom(options.seed ?? 0);
-  const start = startingLayers(layered, options.hints);
   let best = refine(layered, start, effort);
   for (let r = 0; r < RESTARTS[effort]; r++) {
     const restart = start.map((layer) =>
@@ -63,16 +93,7 @@ export function order(
       best = candidate;
     }
   }
-  if (options.hints !== undefined) {
-    // Dummies start either where the seed put them or where the search did; the cheaper of the two is the candidate.
-    const kept = [start, hintedOrder(layered, start, best.layers)]
-      .map((layers) => keepHinted(layered, layers))
-      .reduce((a, b) => (b.crossings < a.crossings ? b : a));
-    if (kept.crossings <= best.crossings) {
-      best = kept;
-    }
-  }
-  return { layered, layers: best.layers, crossings: best.crossings };
+  return best;
 }
 
 /**
