@@ -11,6 +11,7 @@ import {
   maxMove,
   onBoundary,
   optionsOf,
+  orderingCrossings,
   overlapping,
   RANKS,
 } from "./testing/layoutChecks.js";
@@ -144,15 +145,19 @@ describe.each(SUITES)("layout on %s graphs", (suite, arb) => {
         );
       });
 
-      it("feeds the hints back: the same ranks, and for route graphs the same real-node order", () => {
+      it("feeds the hints back: the same ranks, and for route graphs the same real-node order unless the ordering improves", () => {
         fc.assert(
           fc.property(arb, (c) => {
             const o = optionsOf(c, ranks);
             const first = layout(c.graph, o);
-            const again = layout(c.graph, { ...o, hints: first.hints });
+            const hinted = { ...o, hints: first.hints };
+            const again = layout(c.graph, hinted);
+            const improved =
+              orderingCrossings(c.graph, hinted) <
+              orderingCrossings(c.graph, o) - EPS;
             for (const [id, n] of first.nodes) {
               expect(again.nodes.get(id)!.rank).toBe(n.rank);
-              if (suite === "route") {
+              if (suite === "route" && !improved) {
                 expect(again.nodes.get(id)!.order).toBe(n.order);
               }
             }
@@ -223,4 +228,53 @@ describe.each(SUITES)("layout on %s graphs", (suite, arb) => {
       });
     });
   }
+});
+
+describe("hint round trip", () => {
+  it("keeps the order when a zero-crossing order exists only after its dummies move", () => {
+    // A dummy chain beside n4 must move for the hinted order to reach zero crossings; the search instead swaps n1 and n4.
+    const twoPorts = (east = false) => [
+      {
+        id: "p0",
+        side: east ? ("east" as const) : ("north" as const),
+        offset: 0,
+      },
+      { id: "p1", side: "north" as const, offset: 0 },
+    ];
+    const graph: LayoutGraph = {
+      nodes: Array.from({ length: 8 }, (_, i) => ({
+        id: `n${i}`,
+        width: 20,
+        height: 20,
+        ports: twoPorts(i === 2),
+      })),
+      edges: [
+        { id: "e0", source: "n6", target: "n2", kind: "dependency" },
+        { id: "e1", source: "n3", target: "n1", kind: "dependency" },
+        { id: "e2", source: "n1", target: "n2", kind: "dependency" },
+        {
+          id: "e3",
+          source: "n0",
+          target: "n2",
+          kind: "dependency",
+          targetPort: "p1",
+        },
+        { id: "e4", source: "n3", target: "n4", kind: "column" },
+        { id: "e5", source: "n6", target: "n3", kind: "dependency" },
+        {
+          id: "e6",
+          source: "n1",
+          target: "n2",
+          kind: "dependency",
+          targetPort: "p0",
+        },
+      ],
+    };
+    const o = optionsOf({ graph, direction: "down", effort: "fast" }, "rows");
+    const first = layout(graph, o);
+    const again = layout(graph, { ...o, hints: first.hints });
+    for (const [id, n] of first.nodes) {
+      expect(again.nodes.get(id)!.order).toBe(n.order);
+    }
+  });
 });

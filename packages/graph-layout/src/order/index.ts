@@ -26,6 +26,9 @@ const RESTARTS: Record<Effort, number> = { fast: 0, balanced: 0, thorough: 8 };
 /** Passes of sifting over the dummies alone, before the search, so that each dummy starts in a good place. */
 const DUMMY_SIFT_ROUNDS = 3;
 
+/** Passes of dummy sifting for the hinted order; sifting stops early once a pass moves nothing. */
+const HINTED_DUMMY_SIFT_ROUNDS = 12;
+
 /** The layered graph, and the order of each rank including dummies, left to right. */
 export interface OrderResult {
   layered: LayeredGraph;
@@ -37,7 +40,8 @@ export interface OrderResult {
 /**
  * Orders the nodes and dummies of each rank to reduce weighted crossings. The search starts from the hinted or
  * depth-first order and keeps the order with the fewest crossings seen; a restart replaces it only with strictly
- * fewer. Hints are a preference, not a constraint: the result can move hinted nodes. At `thorough`, seeded restarts
+ * fewer. Hints are a preference, not a constraint: the result can move hinted nodes, but keeps their order whenever
+ * that order, with its dummies sifted, has no more crossings than the search found. At `thorough`, seeded restarts
  * from shuffled starts are tried as well. The result is a pure function of the graph, options and seed.
  */
 export function order(
@@ -59,7 +63,53 @@ export function order(
       best = candidate;
     }
   }
+  if (options.hints !== undefined) {
+    // Dummies start either where the seed put them or where the search did; the cheaper of the two is the candidate.
+    const kept = [start, hintedOrder(layered, start, best.layers)]
+      .map((layers) => keepHinted(layered, layers))
+      .reduce((a, b) => (b.crossings < a.crossings ? b : a));
+    if (kept.crossings <= best.crossings) {
+      best = kept;
+    }
+  }
   return { layered, layers: best.layers, crossings: best.crossings };
+}
+
+/**
+ * `found`'s order with each rank's real units put back in their `start` order, in the slots real units hold in
+ * `found`; dummy units stay where the search put them.
+ */
+function hintedOrder(
+  layered: LayeredGraph,
+  start: number[][],
+  found: number[][],
+): number[][] {
+  const isReal = (unit: number[]) =>
+    layered.nodes[layered.block[unit[0]!]!]!.id !== undefined;
+  return found.map((layer, rank) => {
+    const units = unitsOf(layer, layered.block);
+    const hinted = unitsOf(start[rank]!, layered.block).filter(isReal);
+    let next = 0;
+    return units.flatMap((unit) => (isReal(unit) ? hinted[next++]! : unit));
+  });
+}
+
+/**
+ * The hinted order with its real nodes held in place and only the dummies sifted, so a layout fed its own hints keeps
+ * its order whenever that order is no worse than what the search finds.
+ */
+function keepHinted(layered: LayeredGraph, layers: number[][]): Found {
+  const model: OrderModel = createModel(
+    layered,
+    layers.map((layer) => [...layer]),
+  );
+  gatherClusters(model);
+  sift(
+    model,
+    HINTED_DUMMY_SIFT_ROUNDS,
+    (x) => layered.nodes[x]!.id === undefined,
+  );
+  return found(model);
 }
 
 /** Searches from one starting order, after sifting its dummies, then sifts the result. */
