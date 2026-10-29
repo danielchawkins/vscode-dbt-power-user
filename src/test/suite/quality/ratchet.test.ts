@@ -214,7 +214,7 @@ describe("suppression ratchet keys", () => {
   });
 
   it("keeps oxlint and held rules out of eslint-suppressions.json after pruning", () => {
-    const inventory = readJson<Inventory>("test-fixtures/lint/inventory.json");
+    const inventory = readJson<Inventory>("lint/fixtures/inventory.json");
     for (const [workspace, file] of [
       ["host", "eslint-suppressions.json"],
       ["webview", "webview_panels/eslint-suppressions.json"],

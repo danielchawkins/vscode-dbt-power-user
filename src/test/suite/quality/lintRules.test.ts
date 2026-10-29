@@ -20,7 +20,7 @@ import webviewConfig from "../../../../webview_panels/oxlint.config";
 // Each engine checks its own headers, and `any` headers are checked by both.
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
-const FIXTURES = join(ROOT, "test-fixtures/lint");
+const FIXTURES = join(ROOT, "lint/fixtures");
 const OXLINT = join(ROOT, "node_modules/.bin/oxlint");
 const execFileAsync = promisify(execFile);
 

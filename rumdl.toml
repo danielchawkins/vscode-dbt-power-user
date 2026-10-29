@@ -9,6 +9,6 @@ exclude = [
   "CLAUDE.md",
   # Vendored sample dbt projects and formatter fixtures. Their Markdown is test input,
   # not prose this repository owns.
-  "test-fixtures/**",
+  "scripts/spikes/lsp-capabilities/jaffle-shop-duckdb/**",
   "src/test/fixtures/**",
 ]
