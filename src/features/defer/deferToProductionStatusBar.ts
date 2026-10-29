@@ -3,7 +3,7 @@ import { StatusBarAlignment, window } from "vscode";
 import { disposeAll } from "../../core/disposables";
 import type { Log } from "../../core/log";
 import type { Projects } from "../../projects/project/projects";
-import { onDidChangeSettings } from "../../settings";
+import type { ProjectSettingsEvents } from "../../projects/project/projectSettingsStream";
 
 export class DeferToProductionStatusBar implements Disposable {
   readonly statusBar: StatusBarItem = window.createStatusBarItem(
@@ -14,12 +14,12 @@ export class DeferToProductionStatusBar implements Disposable {
   private projects: Projects;
   private log: Log;
 
-  constructor(projects: Projects, log: Log) {
+  constructor(projects: Projects, log: Log, settings: ProjectSettingsEvents) {
     this.projects = projects;
     this.log = log;
     this.disposables.push(
-      onDidChangeSettings(["defer.perProject"], (change) => {
-        if (change.affects()) {
+      settings.onDidChangeSnapshot("features", ({ changedFields }) => {
+        if (changedFields.includes("defer.perProject")) {
           this.updateStatusBar();
         }
       }),

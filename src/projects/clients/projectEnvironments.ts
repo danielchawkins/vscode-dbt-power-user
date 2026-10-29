@@ -10,11 +10,7 @@ import {
   applyOverlay,
   resolveToolEnvironment,
 } from "../../fusion/toolEnvironment";
-import {
-  onDidChangeSettings,
-  readEnvironment,
-  readSetting,
-} from "../../settings/index";
+import { readEnvironment, readSetting } from "../../settings/index";
 import { notifyWarning } from "../output/notifications";
 import type { DeclaredProject } from "../registry/projectRegistry";
 
@@ -80,10 +76,9 @@ export class ProjectEnvironments implements Disposable {
     this.host = host;
     this.subscriptions.push(
       this._onDidChange,
-      onDidChangeSettings(["toolEnvironment"], (change) =>
-        this.reresolve((project) => change.affects(project.root)),
+      workspace.onDidGrantWorkspaceTrust(() =>
+        this.notifyReresolved(() => true),
       ),
-      workspace.onDidGrantWorkspaceTrust(() => this.reresolve(() => true)),
       workspace.onDidChangeWorkspaceFolders(() => this.syncWatchers()),
     );
     this.syncWatchers();
@@ -113,6 +108,16 @@ export class ProjectEnvironments implements Disposable {
     };
     this.cache.set(key, entry);
     return entry.probe;
+  }
+
+  /**
+   * Re-reads `project`'s environment after its `toolEnvironment` changed, and resolves once the new one is cached.
+   * Called by the project-settings stream before the executable stage; it fires no `onDidChange` for this.
+   */
+  async refresh(project: DeclaredProject): Promise<void> {
+    await this.reresolve(
+      (candidate) => candidate.root.fsPath === project.root.fsPath,
+    );
   }
 
   /** The environment as last resolved, for synchronous readers; undefined until `ensure` has settled. */
@@ -197,27 +202,45 @@ export class ProjectEnvironments implements Disposable {
     }
   }
 
-  /** Probes again every cached project `affected` selects, firing `onDidChange` for those whose env changed. */
-  private reresolve(affected: (project: DeclaredProject) => boolean): void {
+  /** Fires `onDidChange` for each project `affected` selects whose environment changed when probed again. */
+  private notifyReresolved(
+    affected: (project: DeclaredProject) => boolean,
+  ): void {
+    void this.reresolve(affected).then((changed) => {
+      if (!this.disposed) {
+        for (const project of changed) {
+          this._onDidChange.fire(project);
+        }
+      }
+    });
+  }
+
+  /** Probes again every cached project `affected` selects; resolves with those whose environment changed. */
+  private async reresolve(
+    affected: (project: DeclaredProject) => boolean,
+  ): Promise<DeclaredProject[]> {
     // Snapshot: the loop deletes from the cache.
     const entries = [...this.cache];
-    for (const [key, entry] of entries) {
-      if (!affected(entry.project)) {
-        continue;
-      }
-      this.cache.delete(key);
-      void Promise.all([entry.probe, this.ensure(entry.project)]).then(
-        ([before, after]) => {
-          if (
-            !this.disposed &&
+    const results = await Promise.all(
+      entries.map(
+        async ([key, entry]): Promise<DeclaredProject | undefined> => {
+          if (!affected(entry.project)) {
+            return undefined;
+          }
+          this.cache.delete(key);
+          const [before, after] = await Promise.all([
+            entry.probe,
+            this.ensure(entry.project),
+          ]);
+          return !this.disposed &&
             !sameEnv(before.env, after.env) &&
             this.cache.get(key)?.value === after
-          ) {
-            this._onDidChange.fire(entry.project);
-          }
+            ? entry.project
+            : undefined;
         },
-      );
-    }
+      ),
+    );
+    return results.filter((project) => project !== undefined);
   }
 
   private syncWatchers(): void {
@@ -245,7 +268,9 @@ export class ProjectEnvironments implements Disposable {
       );
       const onEvent = (uri: { fsPath: string }) => {
         const dir = governed(uri.fsPath);
-        this.reresolve((project) => isAtOrBelow(dir, project.root.fsPath));
+        this.notifyReresolved((project) =>
+          isAtOrBelow(dir, project.root.fsPath),
+        );
       };
       return [
         watcher,

@@ -26,6 +26,7 @@ import type { ManifestParsers } from "../projects/manifest/manifest";
 import type { RunHistoryService } from "../projects/output/runHistoryService";
 import { Project } from "../projects/project/project";
 import type { ProjectOptions } from "../projects/project/projectOptions";
+import { ProjectSettingsStream } from "../projects/project/projectSettingsStream";
 import type { QueryPanelRequests } from "../projects/project/queryPanelRequests";
 import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { CONFIGURATION_SECTION } from "../settings";
@@ -54,13 +55,15 @@ export function buildTestProject(
   cliFactory: FusionCommandIntegrationFactory,
   overrides: Partial<ProjectOptions> = {},
 ): Project {
+  const terminal = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  } as unknown as Log;
+  const declared = declaredAt(root);
   return new Project({
-    terminal: {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as Log,
+    terminal,
     queryRequests: {} as QueryPanelRequests,
     runHistoryService: {
       addEntry: vi.fn(),
@@ -69,8 +72,9 @@ export function buildTestProject(
     resolver: stubResolver(),
     cliFactory,
     parsers: {} as ManifestParsers,
-    declared: declaredAt(root),
+    declared,
     root: Uri.file(root),
+    settings: new ProjectSettingsStream({ projects: [declared] }, terminal),
     ...overrides,
   });
 }

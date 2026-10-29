@@ -10,6 +10,7 @@ import type { ManifestParsers } from "../manifest/manifest";
 import type { MetadataDemand } from "../manifest/metadataDemand";
 import type { RunHistoryService } from "../output/runHistoryService";
 import type { DeclaredProject } from "../registry/projectRegistry";
+import type { ProjectSettingsEvents } from "./projectSettingsStream";
 import type { QueryPanelRequests } from "./queryPanelRequests";
 
 /** The collaborators a `Project` is built from. */
@@ -22,6 +23,8 @@ export interface ProjectOptions {
   cliFactory: FusionCommandIntegrationFactory;
   /** The project's resolved environment for executable lookup; the host's when absent. */
   environment?: () => Promise<ResolverEnvironment>;
+  /** The project-settings stream; the Project's executable lifecycle subscribes at its executable stage. */
+  settings: ProjectSettingsEvents;
   parsers: ManifestParsers;
   /** The Declared Project this one is built for; `Projects` rebuilds the Project when that entry is replaced. */
   declared: DeclaredProject;

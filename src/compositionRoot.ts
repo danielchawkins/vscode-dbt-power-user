@@ -57,6 +57,7 @@ export function compose(context: ExtensionContext): Composition {
     graph.projects,
     registerDbtTaskProvider(graph.projects),
     graph.projectEnvironments,
+    graph.projectSettings,
     columnProposalRequests,
     composeWebviews(graph, fusion.lineageService, columnProposalRequests),
     editor.treeviewProviders,

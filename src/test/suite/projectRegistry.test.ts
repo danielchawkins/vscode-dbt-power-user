@@ -1234,6 +1234,7 @@ describe("ProjectRegistry", () => {
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: () => createMockLogOutputChannel(),
+        settings: { onDidChangeSnapshot: () => ({ dispose: () => {} }) },
       });
       pool.initialize();
       registry.declareFromDocuments([openedDocument(soxModel)]);

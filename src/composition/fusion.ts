@@ -23,6 +23,7 @@ export function composeFusion(graph: ProjectsGraph) {
       factory: new DefaultFusionClientFactory(),
       readSnapshot: readProjectSnapshot,
       environments: graph.projectEnvironments,
+      settings: graph.projectSettings,
       outputChannel: fusionOutputChannel,
       launchEnv: {
         resolve: (declared) =>

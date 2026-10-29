@@ -149,6 +149,7 @@ describe("fusionNotificationPolicy", () => {
       environments: fakeProjectEnvironments(),
       outputChannel: () => createMockLogOutputChannel("project"),
       rootExists: () => true,
+      settings: { onDidChangeSnapshot: () => ({ dispose: () => {} }) },
     });
     pool.initialize();
     await flushAsync();
