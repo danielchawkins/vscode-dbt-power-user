@@ -1,13 +1,11 @@
-import type { SourceMetaMap } from "../../core/manifest/types";
-import type {
-  DbtProjectConfig,
-  StaticAnalysisMode,
-} from "../../core/snapshot/index";
+import type { SourceMetaMap } from "../manifest/types";
+import type { DbtProjectConfig } from "./dbtProjectFile";
 import {
   DBT_PROJECT_FILE,
   declaredProjectName,
   readDbtProjectFile,
-} from "../../core/snapshot/index";
+} from "./dbtProjectFile";
+import type { StaticAnalysisMode } from "./projectSnapshot";
 
 /** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */
 const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";

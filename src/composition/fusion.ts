@@ -1,4 +1,5 @@
 import { Disposable } from "vscode";
+import { schemaOriginLaunchEnv } from "../core/snapshot/schemaOrigin";
 import { LineageService } from "../features/lineage/lineageService";
 import { DefaultFusionClientFactory } from "../languageClient/defaultFusionClientFactory";
 import {
@@ -7,7 +8,6 @@ import {
 } from "../projects/clients/fusionClientPool";
 import { FusionStatus } from "../projects/clients/fusionStatus";
 import { readProjectSnapshot } from "../projects/clients/readProjectSnapshot";
-import { schemaOriginLaunchEnv } from "../projects/registry/schemaOrigin";
 import type { ProjectsGraph } from "./projects";
 
 export function composeFusion(graph: ProjectsGraph) {

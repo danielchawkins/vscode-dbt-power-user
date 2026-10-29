@@ -10,6 +10,7 @@ import type {
 } from "vscode";
 import { commands, window } from "vscode";
 import type { Log } from "../../core/log";
+import { USE_STRICT_ANALYSIS_COMMAND } from "../../core/snapshot/schemaOrigin";
 import { BOUNDS } from "../../core/timing";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
@@ -18,7 +19,6 @@ import { notifyError } from "../../projects/output/notifications";
 import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import { activeModelUri } from "../../projects/registry/previewUri";
-import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {

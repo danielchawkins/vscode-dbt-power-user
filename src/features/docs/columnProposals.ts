@@ -6,7 +6,7 @@ import type { Disposable, Uri } from "vscode";
 import { EventEmitter } from "vscode";
 import type { DocColumn } from "../../core/columns/typeProposals";
 import type { Log } from "../../core/log";
-import type { NeedsStrict } from "../../projects/registry/strictNeeded";
+import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
 import { descriptionPayloadOf, payloadOf } from "./columnProposalPayloads";
 import type { ModelRef, TypeSourceProject } from "./columnTypeSource";
 import { resolveColumnTypes } from "./columnTypeSource";

@@ -14,6 +14,15 @@ import {
 } from "../../core/lineage";
 import type { ListNodesResult } from "../../core/lsp";
 import type { GraphMetaMap } from "../../core/manifest/types";
+import type {
+  NeedsStrict,
+  StrictInputs,
+} from "../../core/snapshot/strictNeeded";
+import {
+  needsStrict,
+  STRICT_FIX,
+  strictNeededMessage,
+} from "../../core/snapshot/strictNeeded";
 import { failureSummary } from "../../core/text";
 import type {
   FusionClient,
@@ -22,15 +31,6 @@ import type {
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { CurrentProject } from "../../projects/project/currentProject";
-import type {
-  NeedsStrict,
-  StrictInputs,
-} from "../../projects/registry/strictNeeded";
-import {
-  needsStrict,
-  STRICT_FIX,
-  strictNeededMessage,
-} from "../../projects/registry/strictNeeded";
 import { readSetting } from "../../settings";
 import { lineageTable } from "./lineageTables";
 

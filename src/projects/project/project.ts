@@ -7,6 +7,11 @@ import { type ManifestProject } from "../../core/manifest/index";
 import { isAtOrBelow } from "../../core/paths";
 import type { ProjectPaths, ResolvedDefer } from "../../core/snapshot/index";
 import { dbtProjectFilePath } from "../../core/snapshot/index";
+import type { SchemaOriginStatus } from "../../core/snapshot/schemaOrigin";
+import {
+  projectOptIns,
+  projectSchemaOrigin,
+} from "../../core/snapshot/schemaOrigin";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { FusionClient } from "../../fusion/fusionClient";
@@ -30,8 +35,6 @@ import { ProjectDiagnostics } from "../output/projectDiagnostics";
 import { ProjectErrors } from "../output/projectErrors";
 import type { RunHistoryService } from "../output/runHistoryService";
 import type { DeclaredProject } from "../registry/projectRegistry";
-import type { SchemaOriginStatus } from "../registry/schemaOrigin";
-import { projectOptIns, projectSchemaOrigin } from "../registry/schemaOrigin";
 import { CommandQueue } from "./commandQueue";
 import type { ProjectCommandDeps } from "./projectCommands";
 import { refreshCliConfig } from "./projectCommands";
