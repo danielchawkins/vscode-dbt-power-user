@@ -2,7 +2,7 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-dist="$root/webview_panels/dist"
+dist="$root/dist/webview"
 manifest="$dist/assets/manifest.json"
 
 if [[ ! -f "$manifest" ]]; then

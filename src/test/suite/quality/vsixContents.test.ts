@@ -17,7 +17,7 @@ describe("unexpectedEntries", () => {
         "extension/media/images/dbt.png",
         "extension/syntaxes/jinja-sql.tmLanguage.json",
         "extension/snippets/snippets_sql.json",
-        "extension/webview_panels/dist/assets/lineage.js",
+        "extension/dist/webview/assets/lineage.js",
         "",
       ]),
     ).toEqual([]);

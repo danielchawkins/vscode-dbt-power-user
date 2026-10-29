@@ -22,7 +22,6 @@ const SHIPPED = [
   "extension/media/",
   "extension/syntaxes/",
   "extension/snippets/",
-  "extension/webview_panels/dist/assets/",
 ];
 
 /** Whether `entry` is a file the extension loads: under a shipped directory and not a source map. */

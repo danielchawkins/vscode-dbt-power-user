@@ -37,7 +37,6 @@
     "coverage",
     "media",
     "packages/graph-layout/src/testing/webcolaVpsc.ts",
-    "webview_panels/dist",
     "scripts/spikes",
     "src/test/suite/fixtures",
     "lint/fixtures",
