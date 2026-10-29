@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { sleep } from "../../async";
 
 /** Environment variable naming the log the integration runner's `dbt` wrapper appends to. */
@@ -59,6 +60,20 @@ function startsIn(records: SpyRecord[]): DbtInvocation[] {
 /** Every `dbt` invocation since the run started, in the order they started; empty when no wrapper is installed. */
 export function dbtInvocations(): DbtInvocation[] {
   return startsIn(spyRecords());
+}
+
+/**
+ * Holds every `dbt <subcommand>` invocation at its start until the returned function releases it: the wrapper logs
+ * the start, then waits while `hold-<subcommand>` exists beside the spy log. Throws when no wrapper is installed.
+ */
+export function holdDbt(subcommand: string): () => void {
+  const log = process.env[DBT_SPY_LOG_ENV];
+  if (!log) {
+    throw new Error("holdDbt needs the dbt spy wrapper");
+  }
+  const hold = path.join(path.dirname(log), `hold-${subcommand}`);
+  fs.writeFileSync(hold, "");
+  return () => fs.rmSync(hold, { force: true });
 }
 
 /** Invocations after the first `since` ones whose subcommand is `command`. */
