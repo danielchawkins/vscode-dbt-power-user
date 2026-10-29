@@ -4,23 +4,22 @@ import { composeEditorProviders } from "./composition/editorProviders";
 import { composeFusion } from "./composition/fusion";
 import { composeProjects, type ProjectFactory } from "./composition/projects";
 import { composeWebviews } from "./composition/webviews";
-import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { ColumnProposalRequests } from "./features/docs/columnProposals";
-import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
 import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { UnservedProjectsNotice } from "./features/projectSetup/unservedProjects";
 import { StatusBars } from "./features/statusBars";
 import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
+import { FusionPowerUserExtension } from "./fusionPowerUserExtension";
 import type { FusionLaunchSources } from "./projects/clients/fusionClientPool";
 import type { FusionStatus } from "./projects/clients/fusionStatus";
 import { StartupGate } from "./startupGate";
 
 /** The composed graph: the extension plus the collaborators tests inspect. */
 export interface Composition {
-  extension: DBTPowerUserExtension;
+  extension: FusionPowerUserExtension;
   extensionContextStore: ExtensionContextStore;
   fusionStatus: FusionStatus;
   fusionExecutableResolver: ConfiguredFusionExecutableResolver;
@@ -47,7 +46,7 @@ export function compose(context: ExtensionContext): Composition {
     fusionClientPool: fusion.fusionClientPool,
     fusionStatus: fusion.fusionStatus,
     startupGate,
-    dbtLineageService: fusion.dbtLineageService,
+    lineageService: fusion.lineageService,
     projectEnvironments: graph.projectEnvironments,
   };
   // Disposed last one first, so shared state and run history outlive everything that reports into them.
@@ -59,13 +58,12 @@ export function compose(context: ExtensionContext): Composition {
     registerDbtTaskProvider(graph.projects),
     graph.projectEnvironments,
     columnProposalRequests,
-    composeWebviews(graph, fusion.dbtLineageService, columnProposalRequests),
+    composeWebviews(graph, fusion.lineageService, columnProposalRequests),
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,
     commands.vscodeCommands,
     statusBars,
-    new DbtPowerUserActionsCenter(currentProject, graph.extensionContextStore),
     projectRegistry,
     currentProject,
     fusion.fusionClientPool,
@@ -77,7 +75,7 @@ export function compose(context: ExtensionContext): Composition {
     new UnservedProjectsNotice(projectRegistry),
   ];
   return {
-    extension: new DBTPowerUserExtension(services, owned),
+    extension: new FusionPowerUserExtension(services, owned),
     extensionContextStore: graph.extensionContextStore,
     fusionStatus: fusion.fusionStatus,
     fusionExecutableResolver: graph.fusionExecutableResolver,

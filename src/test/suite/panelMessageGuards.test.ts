@@ -298,14 +298,14 @@ describe("documentation editor handlers", () => {
   const docsPanel = async () => {
     const { panel, view } = await resolvedDocs();
     const project = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       getProjectName: () => "p",
       getColumnValues: vi.fn(),
     };
     const reloadDocumentationFromManifest = vi.fn();
     Object.assign(panel, {
       projects: { get: () => project },
-      dbtTestService: {
+      modelTests: {
         getTestsForCurrentModel: vi.fn(),
         getUnitTestsForCurrentModel: vi.fn(),
       },

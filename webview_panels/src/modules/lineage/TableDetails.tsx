@@ -1,4 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import type { Themes } from "@modules/app/types";
+import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock } from "@uicore";
 import { useEffect, useState } from "react";
@@ -102,7 +104,13 @@ const ColumnsTable = ({
   </table>
 );
 
-const Tests = ({ tests }: { tests: lineage.LineageTable["tests"] }) => (
+const Tests = ({
+  tests,
+  theme,
+}: {
+  tests: lineage.LineageTable["tests"];
+  theme: Themes;
+}) => (
   <>
     {tests.map((test) => (
       <CodeBlock
@@ -112,6 +120,7 @@ const Tests = ({ tests }: { tests: lineage.LineageTable["tests"] }) => (
         }
         code={test.raw_sql ?? ""}
         language="sql"
+        theme={theme}
       />
     ))}
   </>
@@ -190,6 +199,9 @@ const TabBody = ({
   table: lineage.LineageTable;
   columns: lineage.TableColumns | undefined;
 }) => {
+  const {
+    state: { theme },
+  } = useAppContext();
   switch (tab) {
     case "columns":
       return (
@@ -199,12 +211,13 @@ const TabBody = ({
         />
       );
     case "tests":
-      return <Tests tests={table.tests} />;
+      return <Tests tests={table.tests} theme={theme} />;
     case "meta":
       return (
         <CodeBlock
           code={JSON.stringify(columns?.meta ?? table.meta ?? {}, null, 2)}
           language="json"
+          theme={theme}
         />
       );
   }

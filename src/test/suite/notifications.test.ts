@@ -29,7 +29,7 @@ describe("error notifications", () => {
     const projectRoot = Uri.file("/p");
     (window.showErrorMessage as Mock).mockResolvedValueOnce(undefined);
     await notifyError(
-      { projectRoot, getProjectName: () => "jaffle" },
+      { root: projectRoot, getProjectName: () => "jaffle" },
       "Could not compile",
       new Error("bad ref"),
     );

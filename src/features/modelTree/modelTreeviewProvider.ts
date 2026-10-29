@@ -93,8 +93,8 @@ abstract class ModelTreeviewProvider
 
     const currentFilePath = window.activeTextEditor.document.uri;
     const project = this.projects.get(currentFilePath);
-    const event = project?.manifest;
-    if (event === undefined) {
+    const manifest = project?.manifest;
+    if (manifest === undefined) {
       return Promise.resolve([]);
     }
 
@@ -103,17 +103,17 @@ abstract class ModelTreeviewProvider
     }
 
     if (element) {
-      return Promise.resolve(this.getTreeItems(element.key, event));
+      return Promise.resolve(this.getTreeItems(element.key, manifest));
     }
 
     const model = lookupModelByEditorContent(
-      event.nodeMetaMap,
+      manifest.nodeMetaMap,
       window.activeTextEditor.document,
     );
     if (!model) {
       return Promise.resolve([]);
     }
-    const items = this.getTreeItems(model.unique_id, event);
+    const items = this.getTreeItems(model.unique_id, manifest);
     const notice =
       items.length === 0 && this.treeType !== "tests"
         ? project?.graphNotice?.()
@@ -172,8 +172,11 @@ abstract class ModelTreeviewProvider
     return new ModelTreeItem(node);
   }
 
-  private getTreeItems(elementName: string, event: Manifest): NodeTreeItem[] {
-    const { graphMetaMap } = event;
+  private getTreeItems(
+    elementName: string,
+    manifest: Manifest,
+  ): NodeTreeItem[] {
+    const { graphMetaMap } = manifest;
     const parentModels = graphMetaMap[this.treeType].get(elementName);
     if (parentModels === undefined) {
       return [];
@@ -196,7 +199,7 @@ abstract class ModelTreeviewProvider
             : TreeItemCollapsibleState.None;
 
         // Calculate depth from modelDepthMap
-        const depth = event.modelDepthMap.get(node.key);
+        const depth = manifest.modelDepthMap.get(node.key);
         if (depth !== undefined) {
           treeItem.setDepth(depth);
         }

@@ -1,24 +1,23 @@
 import type { RegisterCommand } from "../../commandRegistry";
-import type { ExtensionContextStore } from "../../extensionContext";
-import type { ProjectQuickPickItem } from "../../projects/project/projectQuickPick";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { ProjectSetupCommands } from "./projectSetupCommands";
 
-/** Commands that validate a project and install its dependencies, on the project picked last. */
+/** Commands that validate a project and install its dependencies, on the Current Project's pick. */
 export function registerProjectSetupCommands(
-  extensionContext: ExtensionContextStore,
+  currentProject: Pick<CurrentProject, "requireForCommand">,
   projectSetupCommands: ProjectSetupCommands,
   register: RegisterCommand,
 ) {
-  const picked = () =>
-    extensionContext.getFromWorkspaceState<ProjectQuickPickItem>(
-      "fusionPowerUser.projectSelected",
-    );
   return [
-    register("fusionPowerUser.validateProject", () =>
-      projectSetupCommands.validateProjects(picked()),
+    register("fusionPowerUser.validateProject", async () =>
+      projectSetupCommands.validateProjects(
+        await currentProject.requireForCommand(),
+      ),
     ),
-    register("fusionPowerUser.installDeps", () =>
-      projectSetupCommands.installDeps(picked()),
+    register("fusionPowerUser.installDeps", async () =>
+      projectSetupCommands.installDeps(
+        await currentProject.requireForCommand(),
+      ),
     ),
   ];
 }

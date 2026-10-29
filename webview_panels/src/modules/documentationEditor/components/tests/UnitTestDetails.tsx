@@ -1,11 +1,12 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
+import useAppContext from "@modules/app/useAppContext";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
-import type { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock, Stack } from "@uicore";
 import { useEffect, useState } from "react";
 
 interface Props {
-  test: DBTUnitTest;
+  test: documentationEditor.UnitTest;
   modelName: string;
 }
 
@@ -16,6 +17,9 @@ interface GetUnitTestCodeResponse {
 
 const UnitTestDetails = ({ test, modelName }: Props): React.JSX.Element => {
   const [content, setContent] = useState<GetUnitTestCodeResponse | null>(null);
+  const {
+    state: { theme },
+  } = useAppContext();
 
   useEffect(() => {
     executeRequestInSync("getUnitTestCode", {
@@ -33,9 +37,16 @@ const UnitTestDetails = ({ test, modelName }: Props): React.JSX.Element => {
   return (
     <Stack direction="column">
       <h3 className="mb-2">Unit Test: {test.name}</h3>
-      {content?.yaml ? <CodeBlock code={content.yaml} language="yaml" /> : null}
+      {content?.yaml ? (
+        <CodeBlock code={content.yaml} language="yaml" theme={theme} />
+      ) : null}
       {content?.error ? (
-        <CodeBlock code={content.error} language="yaml" fileName="Error" />
+        <CodeBlock
+          code={content.error}
+          language="yaml"
+          fileName="Error"
+          theme={theme}
+        />
       ) : null}
     </Stack>
   );

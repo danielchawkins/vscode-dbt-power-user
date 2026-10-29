@@ -1,12 +1,7 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import type { MessageOf } from "@modules/app/requestExecutor";
 import { isStateDirty } from "../utils";
-import type {
-  DBTDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
-  DocumentationStateProps,
-} from "./types";
+import type { EditorDocumentation, DocumentationStateProps } from "./types";
 
 type HostMessage = documentationEditor.HostMessage;
 /** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
@@ -14,11 +9,14 @@ export type RenderMessage = Omit<
   MessageOf<HostMessage, "renderDocumentation">,
   "docs" | "tests" | "unitTests" | "draft"
 > & {
-  docs?: DBTDocumentation | undefined;
-  tests?: DBTModelTest[] | undefined;
-  unitTests?: DBTUnitTest[] | undefined;
+  docs?: EditorDocumentation | undefined;
+  tests?: documentationEditor.ModelTest[] | undefined;
+  unitTests?: documentationEditor.UnitTest[] | undefined;
   draft?:
-    | { docs: DBTDocumentation; tests?: DBTModelTest[] | undefined }
+    | {
+        docs: EditorDocumentation;
+        tests?: documentationEditor.ModelTest[] | undefined;
+      }
     | undefined;
 };
 

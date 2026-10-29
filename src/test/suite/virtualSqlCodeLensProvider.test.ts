@@ -1,17 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { CancellationToken, CodeLens, TextDocument, Uri } from "vscode";
 import { VirtualSqlCodeLensProvider } from "../../features/sqlActions/virtualSqlCodeLensProvider";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 
 describe("VirtualSqlCodeLensProvider", () => {
   it.each([
     [undefined, "Project: Select a project"],
     [{ getProjectName: () => "analytics" }, "Project: analytics"],
   ])("renders the Current Project result", (project, title) => {
-    const queryManifest = {
-      getProject: vi.fn().mockReturnValue(project),
-    } as unknown as QueryManifestService;
-    const provider = new VirtualSqlCodeLensProvider(queryManifest);
+    const currentProject = {
+      current: project,
+    } as unknown as CurrentProject;
+    const provider = new VirtualSqlCodeLensProvider(currentProject);
 
     const lenses = provider.provideCodeLenses(
       {

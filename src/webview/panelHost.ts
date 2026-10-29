@@ -1,4 +1,7 @@
-import type { WebviewReady } from "@fusion-power-user/webview-contract";
+import type {
+  Response,
+  WebviewReady,
+} from "@fusion-power-user/webview-contract";
 import type {
   CancellationToken,
   Disposable,
@@ -21,7 +24,7 @@ import type {
   SharedStateService,
 } from "../projects/project/sharedStateService";
 import type { Handlers } from "./messageRouter";
-import { dispatchMessage } from "./messageRouter";
+import { dispatchMessage, reply, replyError } from "./messageRouter";
 import { PageReadiness } from "./pageReadiness";
 import type { PanelCsp, PanelEntry } from "./panelHtml";
 import { panelHtml, panelWebviewOptions } from "./panelHtml";
@@ -64,10 +67,7 @@ export type Page = "bottom" | WebviewPanel;
  * after hiding it shows what it showed before. Rows stay in host memory, never in webview state.
  */
 export class PanelReplay<K, H extends { command: string }> {
-  private readonly pages = new Map<
-    K,
-    { slots: Map<string, H>; tabData?: unknown }
-  >();
+  private readonly pages = new Map<K, { slots: Map<string, H> }>();
   private readonly rules: ReplayRules<H>;
 
   public constructor(rules: ReplayRules<H>) {
@@ -103,21 +103,12 @@ export class PanelReplay<K, H extends { command: string }> {
       : [];
   }
 
-  /** Binds the data a results tab renders to its page, which asks for it again after each rebuild. */
-  setTabData(key: K, data: unknown): void {
-    this.page(key).tabData = data;
-  }
-
-  tabDataFor(key: K): unknown {
-    return this.pages.get(key)?.tabData;
-  }
-
   /** Forgets a closed page. */
   delete(key: K): void {
     this.pages.delete(key);
   }
 
-  /** Forgets every page's state and tab data. */
+  /** Forgets every page's state. */
   clear(): void {
     this.pages.clear();
   }
@@ -128,10 +119,24 @@ export interface DemandFollow {
   follow(isVisible: () => boolean, onDidChange: Event<unknown>): Disposable;
 }
 
-/** Renders a panel's Vite entry, subscribes to its messages and tracks each page's readiness; each panel subclasses it. */
+/** Answers the requests of one page; `R` is the panel's `ResponseBodies`, so each body is checked against its command. */
+export interface Responder<R> {
+  respond<C extends keyof R & string>(
+    command: C,
+    syncRequestId: string | undefined,
+    body: R[C],
+  ): unknown;
+  respondError(syncRequestId: string | undefined, error: string): unknown;
+}
+
+/**
+ * Renders a panel's Vite entry, subscribes to its messages and tracks each page's readiness; each panel subclasses
+ * it. `H` is the panel's `HostMessage`, `I` its `PanelMessage` and `R` its `ResponseBodies`.
+ */
 export abstract class PanelHost<
   H extends { command: string },
   I extends { command: string },
+  R,
 > implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
   /** The panel's file in `webview_panels/src/entries`. */
@@ -145,8 +150,8 @@ export abstract class PanelHost<
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _disposables: Disposable[] = [];
   protected extensionContext: ExtensionContextStore;
-  protected emitterService: SharedStateService;
-  protected dbtTerminal: Log;
+  protected sharedState: SharedStateService;
+  protected log: Log;
   protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
   private readonly readiness = new PageReadiness<Page>();
@@ -160,21 +165,21 @@ export abstract class PanelHost<
 
   public constructor({
     extensionContext,
-    emitterService,
-    dbtTerminal,
+    sharedState,
+    log,
     queryManifestService,
   }: {
     extensionContext: ExtensionContextStore;
-    emitterService: SharedStateService;
-    dbtTerminal: Log;
+    sharedState: SharedStateService;
+    log: Log;
     queryManifestService: QueryManifestService;
   }) {
     this.extensionContext = extensionContext;
-    this.emitterService = emitterService;
-    this.dbtTerminal = dbtTerminal;
+    this.sharedState = sharedState;
+    this.log = log;
     this.queryManifestService = queryManifestService;
     this._disposables.push(
-      emitterService.eventEmitter.event((d) => this.onEvent(d)),
+      sharedState.eventEmitter.event((d) => this.onEvent(d)),
     );
   }
 
@@ -214,7 +219,40 @@ export abstract class PanelHost<
     message: H,
   ): Thenable<boolean> | undefined {
     this.replay.record(this.pageOf(panel), message);
-    return postToWebview(panel, message, this.dbtTerminal);
+    return postToWebview(panel, message, this.log);
+  }
+
+  /** Answers the requests of `page`, the page they came from; a missing page gets no answer. */
+  protected respondOn(
+    page: WebviewView | WebviewPanel | undefined,
+  ): Responder<R> {
+    // A reply records no replay slot, so it goes straight out rather than through `postTo`.
+    const sink = {
+      reply: (response: Response) => postToWebview(page, response, this.log),
+    };
+    return {
+      respond: (_command, syncRequestId, body) =>
+        reply(sink, syncRequestId, body),
+      respondError: (syncRequestId, error) =>
+        replyError(sink, syncRequestId, error),
+    };
+  }
+
+  /** Answers a request from the current page; `body` is checked against the panel's `ResponseBodies[command]`. */
+  protected respond<C extends keyof R & string>(
+    command: C,
+    syncRequestId: string | undefined,
+    body: R[C],
+  ): unknown {
+    return this.respondOn(this._panel).respond(command, syncRequestId, body);
+  }
+
+  /** Answers a request from the current page with `error`, which the page's request executor rejects with. */
+  protected respondError(
+    syncRequestId: string | undefined,
+    error: string,
+  ): unknown {
+    return this.respondOn(this._panel).respondError(syncRequestId, error);
   }
 
   /** A panel that replays state to rebuilt pages overrides this. */
@@ -279,10 +317,9 @@ export abstract class PanelHost<
           guard: this.guard,
           handlers: this.handlers(page),
           sink: {
-            log: this.dbtTerminal,
+            log: this.log,
             // A reply records no replay slot, so it goes straight out rather than through `postTo`.
-            reply: (response) =>
-              postToWebview(page, response, this.dbtTerminal),
+            reply: (response) => postToWebview(page, response, this.log),
           },
         }),
       ),

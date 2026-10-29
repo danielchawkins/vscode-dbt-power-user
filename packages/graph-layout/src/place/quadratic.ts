@@ -1,8 +1,11 @@
 import type { Problem } from "./problem.js";
-import { projectRanks } from "./projection.js";
+import { project } from "./projection.js";
 
 /** A step that lowers the objective by less than this fraction of its value ends the search. */
 const RELATIVE_TOLERANCE = 1e-6;
+
+/** Projection weight of a box edge: small, so the projection moves boxes before it moves nodes. */
+const BOX_WEIGHT = 1e-3;
 
 export interface Solution {
   /** The coordinates reached; they satisfy every separation constraint. */
@@ -27,7 +30,7 @@ export function solveQuadratic(
 ): Solution {
   const scale = jacobiScale(problem);
   const x = [...start];
-  projectRanks(problem, x, scale);
+  project(problem, x, scale);
   let f = objective(problem, x);
   let iterations = 0;
   while (iterations < cap) {
@@ -39,7 +42,7 @@ export function solveQuadratic(
       break;
     }
     const trial = x.map((xi, i) => xi - (gs / qs) * s[i]!);
-    projectRanks(problem, trial, scale);
+    project(problem, trial, scale);
     const d = trial.map((t, i) => t - x[i]!);
     const gd = dot(g, d);
     if (gd >= 0 || Number.isNaN(gd)) {
@@ -106,9 +109,16 @@ function hessianVector(problem: Problem, v: readonly number[]): number[] {
   return out;
 }
 
-/** The Hessian's diagonal, with 1 where a node has no term, so that scaling never divides by zero. */
+/**
+ * The Hessian's diagonal, with 1 where a node has no term, so that scaling never divides by zero. A box edge has no
+ * term of its own; it takes the small weight `BOX_WEIGHT`, so that the projection moves boxes rather than nodes.
+ */
 function jacobiScale(problem: Problem): number[] {
-  const diag = Array.from({ length: problem.dummy.length }, () => 0);
+  const nodes = problem.dummy.length;
+  const diag = Array.from(
+    { length: nodes + (problem.extra?.count ?? 0) },
+    () => 0,
+  );
   for (const link of problem.links) {
     diag[link.top]! += 2 * link.weight;
     diag[link.bottom]! += 2 * link.weight;
@@ -116,7 +126,7 @@ function jacobiScale(problem: Problem): number[] {
   for (const pull of problem.pulls) {
     diag[pull.node]! += 2 * pull.weight;
   }
-  return diag.map((d) => (d > 0 ? d : 1));
+  return diag.map((d, i) => (d > 0 ? d : i < nodes ? 1 : BOX_WEIGHT));
 }
 
 function dot(a: readonly number[], b: readonly number[]): number {

@@ -1,6 +1,3 @@
-import { initialState } from "@modules/app/appReducer";
-import { AppContext } from "@modules/app/context";
-import { Themes } from "@modules/app/types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import classes from "./codeblock.module.css";
@@ -10,21 +7,15 @@ const sampleSql = "select 1 as id";
 const sampleYaml = "version: 2";
 
 const renderCodeBlock = (
-  theme: Themes,
-  props: React.ComponentProps<typeof CodeBlock>,
+  theme: "dark" | "light",
+  props: Omit<React.ComponentProps<typeof CodeBlock>, "theme">,
 ): ReturnType<typeof render> => {
-  return render(
-    <AppContext
-      value={{ state: { ...initialState, theme }, dispatch: () => undefined }}
-    >
-      <CodeBlock {...props} />
-    </AppContext>,
-  );
+  return render(<CodeBlock {...props} theme={theme} />);
 };
 
 describe("CodeBlock", () => {
   it("renders code text safely without interpreting markup", () => {
-    const { container } = renderCodeBlock(Themes.Dark, {
+    const { container } = renderCodeBlock("dark", {
       code: "<script>alert(1)</script>",
       language: "sql",
     });
@@ -36,7 +27,7 @@ describe("CodeBlock", () => {
   });
 
   it("renders SQL with line numbers when enabled", () => {
-    const { container } = renderCodeBlock(Themes.Dark, {
+    const { container } = renderCodeBlock("dark", {
       code: sampleSql,
       language: "sql",
       showLineNumbers: true,
@@ -49,7 +40,7 @@ describe("CodeBlock", () => {
   });
 
   it("omits line numbers when disabled", () => {
-    const { container } = renderCodeBlock(Themes.Dark, {
+    const { container } = renderCodeBlock("dark", {
       code: sampleSql,
       language: "sql",
       showLineNumbers: false,
@@ -59,7 +50,7 @@ describe("CodeBlock", () => {
   });
 
   it("renders YAML language path", () => {
-    const { container } = renderCodeBlock(Themes.Dark, {
+    const { container } = renderCodeBlock("dark", {
       code: sampleYaml,
       language: "yaml",
     });
@@ -70,7 +61,7 @@ describe("CodeBlock", () => {
   });
 
   it("renders filename and title actions", () => {
-    renderCodeBlock(Themes.Dark, {
+    renderCodeBlock("dark", {
       code: sampleYaml,
       language: "yaml",
       fileName: "schema.yml",
@@ -82,7 +73,7 @@ describe("CodeBlock", () => {
   });
 
   it("applies a custom classname on the card", () => {
-    const { container } = renderCodeBlock(Themes.Dark, {
+    const { container } = renderCodeBlock("dark", {
       code: sampleSql,
       language: "sql",
       classname: "border border-primary",
@@ -92,12 +83,12 @@ describe("CodeBlock", () => {
     expect(card?.className).toContain("border border-primary");
   });
 
-  it("uses dark styling context from app state", () => {
-    const { container: darkContainer } = renderCodeBlock(Themes.Dark, {
+  it("styles dark and light themes differently from the theme prop", () => {
+    const { container: darkContainer } = renderCodeBlock("dark", {
       code: sampleSql,
       language: "sql",
     });
-    const { container: lightContainer } = renderCodeBlock(Themes.Light, {
+    const { container: lightContainer } = renderCodeBlock("light", {
       code: sampleSql,
       language: "sql",
     });

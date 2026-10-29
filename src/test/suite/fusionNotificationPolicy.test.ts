@@ -10,11 +10,11 @@ import {
 import type { WorkspaceFolder } from "vscode";
 import { extensions, Uri, window, workspace } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
-import {
-  DBTPowerUserExtension,
-  type ExtensionServices,
-} from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
+import {
+  FusionPowerUserExtension,
+  type ExtensionServices,
+} from "../../fusionPowerUserExtension";
 import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
 import { createFusionClientPool } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
@@ -85,10 +85,10 @@ describe("fusionNotificationPolicy", () => {
       statusBars: { initialize: vi.fn(() => Promise.resolve()) },
       log: { error: vi.fn() },
       startupGate: new StartupGate(),
-      dbtLineageService: {},
+      lineageService: {},
       projectEnvironments: {},
     };
-    const extension = new DBTPowerUserExtension(
+    const extension = new FusionPowerUserExtension(
       services as unknown as ExtensionServices,
       [],
     );

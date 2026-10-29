@@ -17,7 +17,7 @@ export class UnitTestParser {
     project: ManifestProject,
   ): Promise<UnitTestMetaMap> {
     return new Promise((resolve) => {
-      const projectRoot = project.getProjectRoot();
+      const projectRoot = project.root.fsPath;
       const projectName = project.getProjectName();
       this.terminal.debug(
         "UnitTestParser",

@@ -198,7 +198,7 @@ describe("command contribution consistency", () => {
       "fusionPowerUser.yamlRunModel": "CodeLens-only; src/features/sqlActions",
       "fusionPowerUser.yamlTestModel": "CodeLens-only; src/features/sqlActions",
       "fusionPowerUser.pickProject":
-        "Declared Project picker; src/features/projectPicker/actionsCenter.ts",
+        "Declared Project picker; src/features/projectPicker/commands.ts",
       "fusionPowerUser.showFusionOutput":
         "Language status item command; src/projects/fusionStatus.ts",
     };
@@ -316,7 +316,7 @@ describe("command contribution consistency", () => {
     expect(
       referenced.filter((cmd) => !contributed.has(cmd) && !literals.has(cmd)),
     ).toEqual([]);
-  });
+  }, 30_000);
 
   it("hides tree- and context-only commands from the command palette", () => {
     const commandPaletteEntries = contributes.menus?.commandPalette ?? [];

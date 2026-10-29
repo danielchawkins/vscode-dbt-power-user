@@ -1,12 +1,11 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import * as columnProposals from "@fusion-power-user/webview-contract/columnProposals";
 import { typedReducer } from "@modules/app/typedReducer";
 import type { ProposalChoices } from "../proposals/proposalsReducer";
 import { fromHostColumn, isStateDirty } from "../utils";
 import type { RenderMessage } from "./incomingDocs";
 import type {
-  DBTDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
+  EditorDocumentation,
   DocumentationStateProps,
   MetadataColumn,
 } from "./types";
@@ -34,9 +33,9 @@ const takeIncomingDocs = (
   state: S,
   payload:
     | {
-        docs?: DBTDocumentation | undefined;
-        tests?: DBTModelTest[] | undefined;
-        unitTests?: DBTUnitTest[] | undefined;
+        docs?: EditorDocumentation | undefined;
+        tests?: documentationEditor.ModelTest[] | undefined;
+        unitTests?: documentationEditor.UnitTest[] | undefined;
       }
     | undefined,
 ): S => {
@@ -57,7 +56,7 @@ const takeIncomingDocs = (
 
 const mergeCurrentDocs = (
   state: S,
-  payload: Partial<DBTDocumentation> | undefined,
+  payload: Partial<EditorDocumentation> | undefined,
 ): S => {
   // A YAML file sends `{}`.
   if (!payload || !Object.keys(payload).length) {
@@ -67,7 +66,7 @@ const mergeCurrentDocs = (
     return state;
   }
   if (state.currentDocsData?.name !== payload.name) {
-    return { ...state, currentDocsData: payload as DBTDocumentation };
+    return { ...state, currentDocsData: payload as EditorDocumentation };
   }
   return {
     ...state,
@@ -78,8 +77,8 @@ const mergeCurrentDocs = (
 const withColumns = (
   state: S,
   columns: (
-    current: DBTDocumentation["columns"],
-  ) => DBTDocumentation["columns"],
+    current: EditorDocumentation["columns"],
+  ) => EditorDocumentation["columns"],
 ): S =>
   state.currentDocsData
     ? {

@@ -1,0 +1,45 @@
+# The graph-layout tests share their fixtures: the layout options every stage test runs with, the random-graph
+# arbitrary, and the helpers that shuffle a graph into an order model and read its layers back sorted. Seven test
+# files declared the same `options` byte for byte, four the same `graphArb` and three the same `sortedRanks`, so a
+# change to the graph generator (a new edge kind, ports, clusters) had to be made in each copy. Declare a fixture once
+# in src/testing/ and import it.
+id: ts-graph-layout-shared-fixtures
+language: typescript
+severity: error
+message: >-
+  Import this fixture from packages/graph-layout/src/testing/ instead of declaring it in the test file; give a test its
+  own fixture only when it differs, under a name that says how.
+files:
+  - packages/graph-layout/src/**/*.test.ts
+utils:
+  top-level:
+    any:
+      - inside:
+          kind: lexical_declaration
+          inside:
+            kind: program
+      - inside:
+          kind: lexical_declaration
+          inside:
+            kind: export_statement
+rule:
+  any:
+    # const options = ...; const graphArb = ...; const randomModel = (...) => ...; const sortedRanks = ...;
+    # with or without a type annotation, exported or not.
+    - kind: variable_declarator
+      all:
+        - has:
+            field: name
+            regex: '^(options|graphArb|randomModel|sortedRanks)$'
+        - matches: top-level
+    # function randomModel(graph, seed) { ... }, exported or not.
+    - kind: function_declaration
+      all:
+        - has:
+            field: name
+            regex: '^(randomModel|sortedRanks)$'
+        - any:
+            - inside:
+                kind: program
+            - inside:
+                kind: export_statement

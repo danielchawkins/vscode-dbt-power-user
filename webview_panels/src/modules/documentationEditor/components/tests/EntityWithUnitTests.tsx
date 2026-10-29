@@ -1,6 +1,6 @@
 import { InfoCircleIcon } from "@assets/icons";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import type { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import type { DrawerRef } from "@uicore";
 import { Button, Drawer, Stack, Tag, Tooltip } from "@uicore";
@@ -10,7 +10,7 @@ import UnitTestDetails from "./UnitTestDetails";
 
 interface Props {
   title: string;
-  unitTests?: DBTUnitTest[] | undefined;
+  unitTests?: documentationEditor.UnitTest[] | undefined;
 }
 
 const MaxVisibleUnitTests = 3;
@@ -23,7 +23,8 @@ const EntityWithUnitTests = ({
     state: { currentDocsData },
   } = useDocumentationContext();
   const [showAllTests, setShowAllTests] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<DBTUnitTest | null>(null);
+  const [selectedTest, setSelectedTest] =
+    useState<documentationEditor.UnitTest | null>(null);
   const drawerRef = useRef<DrawerRef | null>(null);
 
   const handleClose = () => {
@@ -31,7 +32,7 @@ const EntityWithUnitTests = ({
     drawerRef.current?.close();
   };
 
-  const onSelect = (test: DBTUnitTest) => {
+  const onSelect = (test: documentationEditor.UnitTest) => {
     setSelectedTest(test);
     drawerRef.current?.open();
   };

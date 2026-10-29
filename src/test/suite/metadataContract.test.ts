@@ -91,8 +91,8 @@ function macroShapes(macros: Map<string, { unique_id: string; name: string }>) {
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function nodeShapes(event: ParsedManifest) {
-  return Array.from(event.nodeMetaMap.nodes(), (node) => ({
+function nodeShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.nodeMetaMap.nodes(), (node) => ({
     unique_id: node.unique_id,
     name: node.name,
     alias: node.alias,
@@ -103,8 +103,8 @@ function nodeShapes(event: ParsedManifest) {
   })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function sourceShapes(event: ParsedManifest) {
-  return Array.from(event.sourceMetaMap.values(), (source) => ({
+function sourceShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.sourceMetaMap.values(), (source) => ({
     unique_id: source.unique_id,
     name: source.name,
     database: source.database,
@@ -117,8 +117,8 @@ function sourceShapes(event: ParsedManifest) {
   })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function testShapes(event: ParsedManifest) {
-  return Array.from(event.testMetaMap.entries(), ([key, test]) => ({
+function testShapes(manifest: ParsedManifest) {
+  return Array.from(manifest.testMetaMap.entries(), ([key, test]) => ({
     key,
     unique_id: test.unique_id,
     alias: test.alias,
@@ -131,7 +131,7 @@ function testShapes(event: ParsedManifest) {
 describe("Metadata contract — shape and key set snapshot", () => {
   it("snapshots parser maps on Manifest", async () => {
     // parseManifest() passes records; published parser types incorrectly say arrays.
-    const manifest = loadManifestJson() as {
+    const manifestJson = loadManifestJson() as {
       nodes: any;
       macros: any;
       sources: any;
@@ -143,7 +143,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
     };
     const terminal = silentLog();
     const adapter = {
-      getProjectRoot: () => fixtureRoot,
+      root: { fsPath: fixtureRoot },
       getProjectName: () => "single_project",
       paths: () => ({
         packagesInstallPath: path.join(fixtureRoot, "dbt_packages"),
@@ -151,32 +151,32 @@ describe("Metadata contract — shape and key set snapshot", () => {
       }),
     } as unknown as ManifestProject;
     const nodeMetaMap = await new NodeParser(terminal).createNodeMetaMap(
-      manifest.nodes,
+      manifestJson.nodes,
       adapter,
     );
     const macroMetaMap = await new MacroParser(terminal).createMacroMetaMap(
-      manifest.macros,
+      manifestJson.macros,
       adapter,
     );
     const sourceMetaMap = await new SourceParser(terminal).createSourceMetaMap(
-      manifest.sources,
+      manifestJson.sources,
       adapter,
     );
     const testMetaMap = await new TestParser(terminal).createTestMetaMap(
-      manifest.nodes,
+      manifestJson.nodes,
       adapter,
     );
     const functionMetaMap = await new FunctionParser(
       terminal,
-    ).createFunctionMetaMap(manifest.functions, adapter);
+    ).createFunctionMetaMap(manifestJson.functions, adapter);
     const parentMaps =
       await new ChildrenParentParser().createChildrenParentMetaMap(
         {
-          ...manifest.nodes,
-          ...manifest.exposures,
-          ...manifest.functions,
+          ...manifestJson.nodes,
+          ...manifestJson.exposures,
+          ...manifestJson.functions,
         },
-        manifest.sources,
+        manifestJson.sources,
       );
     const graphMetaMap = new GraphParser(terminal).createGraphMetaMap({
       project: adapter,
@@ -191,37 +191,37 @@ describe("Metadata contract — shape and key set snapshot", () => {
     const modelDepthMap = new Map<string, number>();
     const manifestEvents = new EventEmitter<ParsedManifest>();
     const project = {
-      projectRoot: Uri.file(fixtureRoot),
+      root: Uri.file(fixtureRoot),
       getProjectName: () => "single_project",
       onDidParse: manifestEvents.event,
       rebuildManifest: async () => {},
     } as unknown as Project;
-    const event: ParsedManifest = {
+    const manifest: ParsedManifest = {
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(
-        manifest.semantic_models,
+        manifestJson.semantic_models,
         adapter,
       ),
       sourceMetaMap,
       graphMetaMap,
       testMetaMap,
       unitTestMetaMap: await new UnitTestParser(terminal).createUnitTestMetaMap(
-        manifest.unit_tests ?? {},
+        manifestJson.unit_tests ?? {},
         adapter,
       ),
       docMetaMap: await new DocParser(terminal).createDocMetaMap(
-        manifest.docs,
+        manifestJson.docs,
         adapter,
       ),
       exposureMetaMap: await new ExposureParser(terminal).createExposureMetaMap(
-        manifest.exposures,
+        manifestJson.exposures,
         adapter,
       ),
       functionMetaMap,
       semanticModelMetaMap: await new SemanticModelParser(
         terminal,
-      ).createSemanticModelMetaMap(manifest.semantic_models, adapter),
+      ).createSemanticModelMetaMap(manifestJson.semantic_models, adapter),
       modelDepthMap,
     };
     const declaredProject = {
@@ -235,11 +235,11 @@ describe("Metadata contract — shape and key set snapshot", () => {
     const source = new ManifestMetadataSource(declaredProject, project);
     const published: ParsedManifest[] = [];
     source.onDidParse((m) => published.push(m));
-    manifestEvents.fire(event);
-    manifestEvents.fire(event);
-    expect(published).toEqual([event, event]);
+    manifestEvents.fire(manifest);
+    manifestEvents.fire(manifest);
+    expect(published).toEqual([manifest, manifest]);
     const forwarded = source.current();
-    expect(forwarded).toBe(event);
+    expect(forwarded).toBe(manifest);
     if (!forwarded) {
       throw new Error("Expected metadata publication");
     }

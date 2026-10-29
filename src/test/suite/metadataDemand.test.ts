@@ -38,15 +38,12 @@ describe("QueryManifestService.freshManifest", () => {
   it("awaits a stale parse before returning the manifest", async () => {
     const order: string[] = [];
     const project = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       ensureParsed: vi.fn(async () => void order.push("parsed")),
     };
-    const service = new QueryManifestService(
-      { get: () => project } as never,
-      { debug: vi.fn() } as never,
-      { current: { root: { fsPath: "/p" } } } as never,
-    );
-    vi.spyOn(service, "getProject").mockReturnValue(project as never);
+    const service = new QueryManifestService({
+      forResource: () => project,
+    } as never);
     vi.spyOn(service, "manifestFor").mockImplementation(() => {
       order.push("read");
       return undefined;

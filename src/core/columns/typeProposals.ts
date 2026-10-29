@@ -1,3 +1,4 @@
+import type { TypeProposal } from "@fusion-power-user/webview-contract/columnProposals";
 import type { DBColumn } from "../types";
 
 /** Where a type answer came from. */
@@ -16,15 +17,6 @@ export interface AnsweredTypes {
   relation?: string;
   state?: string;
   columns: DBColumn[];
-}
-
-/** A change to one column's `data_type`: `fill` an empty one, `add` a missing column or `overwrite` a different one. */
-interface TypeProposal {
-  column: string;
-  type: string;
-  change: "fill" | "add" | "overwrite";
-  /** The YAML type that an `overwrite` replaces. */
-  current?: string;
 }
 
 export interface TypeProposals {

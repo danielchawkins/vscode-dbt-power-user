@@ -21,7 +21,7 @@ import type {
 } from "../../fusion/fusionClient";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type {
   NeedsStrict,
   StrictInputs,
@@ -84,8 +84,8 @@ export function describeNoLineage(reason: NoLineage): string {
   }
 }
 
-export class DbtLineageService {
-  private queryManifestService: QueryManifestService;
+export class LineageService {
+  private currentProject: CurrentProject;
   /** The Fusion Client of the Current Project. */
   private currentClient: () => FusionClient | undefined;
   /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
@@ -94,20 +94,20 @@ export class DbtLineageService {
   private currentStrict: () => StrictInputs;
 
   public constructor({
-    queryManifestService,
+    currentProject,
     currentClient = () => undefined,
     currentError = () => undefined,
     currentLsp,
     currentStrict = () => ({ strict: false }),
   }: {
-    queryManifestService: QueryManifestService;
+    currentProject: CurrentProject;
     currentClient?: () => FusionClient | undefined;
     currentError?: () => string | undefined;
     /** The Current Project's server commands, which schedule the lineage requests. */
     currentLsp: () => FusionCommands | undefined;
     currentStrict?: () => StrictInputs;
   }) {
-    this.queryManifestService = queryManifestService;
+    this.currentProject = currentProject;
     this.currentClient = currentClient;
     this.currentError = currentError;
     this.currentStrict = currentStrict;
@@ -250,12 +250,12 @@ export class DbtLineageService {
   getTableEdges({ tables }: { tables: readonly string[] }): {
     edges: [string, string][];
   } {
-    const event = this.queryManifestService.getEventByCurrentProject()?.event;
-    if (!event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return { edges: [] };
     }
     const ids = new Set(tables);
-    const children = event.graphMetaMap.children;
+    const children = manifest.graphMetaMap.children;
     const edges: [string, string][] = [];
     for (const parent of ids) {
       for (const child of children.get(parent)?.nodes ?? []) {
@@ -271,15 +271,11 @@ export class DbtLineageService {
     key: keyof GraphMetaMap,
     table: string,
   ): Table[] | undefined {
-    const _event = this.queryManifestService.getEventByCurrentProject();
-    if (!_event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return;
     }
-    const { event } = _event;
-    if (!event) {
-      return;
-    }
-    const { graphMetaMap } = event;
+    const { graphMetaMap } = manifest;
     const dependencyNodes = graphMetaMap[key];
     const node = dependencyNodes.get(table);
     if (!node) {
@@ -293,7 +289,7 @@ export class DbtLineageService {
       // analysis; only this data-flow lineage view drops it.
       .filter((n) => n.edgeType !== "constraint")
       .forEach(({ url, key }) => {
-        const _node = this.createTable(event, url, key);
+        const _node = this.createTable(manifest, url, key);
         if (!_node) {
           return;
         }
@@ -306,13 +302,13 @@ export class DbtLineageService {
 
   /** The lineage table for the node `key`; see {@link lineageTable}. */
   createTable(
-    event: Manifest,
+    manifest: Manifest,
     tableUrl: string | undefined,
     key: string,
   ): Table | undefined {
-    return lineageTable(event, key, {
+    return lineageTable(manifest, key, {
       url: tableUrl,
-      rootPackage: this.queryManifestService.getProject()?.getProjectName(),
+      rootPackage: this.currentProject.current?.getProjectName(),
       layer: {
         tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
         fromPath: readSetting("lineage.layer.inferFromPath") ?? true,

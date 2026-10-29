@@ -47,7 +47,7 @@ function harness({ draft }: { draft?: boolean } = {}) {
         documentation,
       })),
     },
-    dbtTestService: {
+    modelTests: {
       getTestsForCurrentModel: vi.fn(async () => YAML_TESTS),
     },
     drafts,

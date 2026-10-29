@@ -21,7 +21,7 @@ export class ExposureParser {
     project: ManifestProject,
   ): Promise<ExposureMetaMap> {
     return new Promise((resolve) => {
-      const projectRoot = project.getProjectRoot();
+      const projectRoot = project.root.fsPath;
       const projectName = project.getProjectName();
       this.terminal.debug(
         "ExposureParser",

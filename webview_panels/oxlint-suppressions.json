@@ -42,11 +42,6 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/components/tests/TestDetails.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/graph.ts": {
     "max-params": {
       "count": 2

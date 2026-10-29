@@ -1,4 +1,5 @@
 import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
+import useAppContext from "@modules/app/useAppContext";
 import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
 import type { QueryHistory } from "@modules/queryPanel/context/types";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
@@ -22,6 +23,9 @@ const QueryPanelHistory = (): React.JSX.Element => {
 
   const [activeHistory, setActiveHistory] = useState<QueryHistory | null>(null);
   const { queryHistory } = useQueryPanelState();
+  const {
+    state: { theme },
+  } = useAppContext();
 
   useEffect(() => {
     executeRequestInAsync("getQueryHistory");
@@ -141,6 +145,7 @@ const QueryPanelHistory = (): React.JSX.Element => {
           <CodeBlock
             code={activeHistory.rawSql}
             language="sql"
+            theme={theme}
             fileName="Code"
             showLineNumbers
             titleActions={

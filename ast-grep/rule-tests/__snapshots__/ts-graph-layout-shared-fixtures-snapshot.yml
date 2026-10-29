@@ -1,0 +1,156 @@
+id: ts-graph-layout-shared-fixtures
+snapshots:
+  'const graphArb = fc.integer().map(() => ({ nodes: [], edges: [] }));':
+    labels:
+    - source: 'graphArb = fc.integer().map(() => ({ nodes: [], edges: [] }))'
+      style: primary
+      start: 6
+      end: 67
+    - source: graphArb
+      style: secondary
+      start: 6
+      end: 14
+    - source: 'const graphArb = fc.integer().map(() => ({ nodes: [], edges: [] }));'
+      style: secondary
+      start: 0
+      end: 68
+    - source: 'const graphArb = fc.integer().map(() => ({ nodes: [], edges: [] }));'
+      style: secondary
+      start: 0
+      end: 68
+  'const graphArb: fc.Arbitrary<LayoutGraph> = fc.integer().map(() => ({ nodes: [], edges: [] }));':
+    labels:
+    - source: 'graphArb: fc.Arbitrary<LayoutGraph> = fc.integer().map(() => ({ nodes: [], edges: [] }))'
+      style: primary
+      start: 6
+      end: 94
+    - source: graphArb
+      style: secondary
+      start: 6
+      end: 14
+    - source: 'const graphArb: fc.Arbitrary<LayoutGraph> = fc.integer().map(() => ({ nodes: [], edges: [] }));'
+      style: secondary
+      start: 0
+      end: 95
+    - source: 'const graphArb: fc.Arbitrary<LayoutGraph> = fc.integer().map(() => ({ nodes: [], edges: [] }));'
+      style: secondary
+      start: 0
+      end: 95
+  'const options = { direction: "down", edgeKinds: {} } satisfies LayoutOptions;':
+    labels:
+    - source: 'options = { direction: "down", edgeKinds: {} } satisfies LayoutOptions'
+      style: primary
+      start: 6
+      end: 76
+    - source: options
+      style: secondary
+      start: 6
+      end: 13
+    - source: 'const options = { direction: "down", edgeKinds: {} } satisfies LayoutOptions;'
+      style: secondary
+      start: 0
+      end: 77
+    - source: 'const options = { direction: "down", edgeKinds: {} } satisfies LayoutOptions;'
+      style: secondary
+      start: 0
+      end: 77
+  'const options: LayoutOptions = { direction: "down", edgeKinds: {} };':
+    labels:
+    - source: 'options: LayoutOptions = { direction: "down", edgeKinds: {} }'
+      style: primary
+      start: 6
+      end: 67
+    - source: options
+      style: secondary
+      start: 6
+      end: 13
+    - source: 'const options: LayoutOptions = { direction: "down", edgeKinds: {} };'
+      style: secondary
+      start: 0
+      end: 68
+    - source: 'const options: LayoutOptions = { direction: "down", edgeKinds: {} };'
+      style: secondary
+      start: 0
+      end: 68
+  'const randomModel = (graph: LayoutGraph, seed: number) => createModel(graph, seed);':
+    labels:
+    - source: 'randomModel = (graph: LayoutGraph, seed: number) => createModel(graph, seed)'
+      style: primary
+      start: 6
+      end: 82
+    - source: randomModel
+      style: secondary
+      start: 6
+      end: 17
+    - source: 'const randomModel = (graph: LayoutGraph, seed: number) => createModel(graph, seed);'
+      style: secondary
+      start: 0
+      end: 83
+    - source: 'const randomModel = (graph: LayoutGraph, seed: number) => createModel(graph, seed);'
+      style: secondary
+      start: 0
+      end: 83
+  'const sortedRanks = (model: OrderModel) => model.layers.map((l) => l.toSorted((a, b) => a - b));':
+    labels:
+    - source: 'sortedRanks = (model: OrderModel) => model.layers.map((l) => l.toSorted((a, b) => a - b))'
+      style: primary
+      start: 6
+      end: 95
+    - source: sortedRanks
+      style: secondary
+      start: 6
+      end: 17
+    - source: 'const sortedRanks = (model: OrderModel) => model.layers.map((l) => l.toSorted((a, b) => a - b));'
+      style: secondary
+      start: 0
+      end: 96
+    - source: 'const sortedRanks = (model: OrderModel) => model.layers.map((l) => l.toSorted((a, b) => a - b));'
+      style: secondary
+      start: 0
+      end: 96
+  'export const sortedRanks = (model: OrderModel) => model.layers;':
+    labels:
+    - source: 'sortedRanks = (model: OrderModel) => model.layers'
+      style: primary
+      start: 13
+      end: 62
+    - source: sortedRanks
+      style: secondary
+      start: 13
+      end: 24
+    - source: 'export const sortedRanks = (model: OrderModel) => model.layers;'
+      style: secondary
+      start: 0
+      end: 63
+    - source: 'const sortedRanks = (model: OrderModel) => model.layers;'
+      style: secondary
+      start: 7
+      end: 63
+  'export function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }':
+    labels:
+    - source: 'function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'
+      style: primary
+      start: 7
+      end: 110
+    - source: randomModel
+      style: secondary
+      start: 16
+      end: 27
+    - source: 'export function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'
+      style: secondary
+      start: 0
+      end: 110
+  'function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }':
+    labels:
+    - source: 'function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'
+      style: primary
+      start: 0
+      end: 103
+    - source: randomModel
+      style: secondary
+      start: 9
+      end: 20
+    - source: 'function randomModel(graph: LayoutGraph, seed: number): OrderModel { return createModel(graph, seed); }'
+      style: secondary
+      start: 0
+      end: 103

@@ -18,8 +18,10 @@ import type { NodeMetaData } from "../../core/manifest/types";
 import { RunModel } from "../../features/run/runModel";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
-import { previewUriFor } from "../../projects/registry/previewUri";
-import type { DeclaredProject } from "../../projects/registry/projectRegistry";
+import {
+  activeModelUri,
+  previewUriFor,
+} from "../../projects/registry/previewUri";
 import { RecordingTasks } from "../recordingTasks";
 
 vi.mock("vscode", async (importOriginal) => ({
@@ -43,7 +45,7 @@ describe("RunModel SQL execution", () => {
   let projects: { get: Mock; ensureFresh: Mock };
   let context: Mocked<CurrentProject>;
   let runModel: RunModel;
-  let project: DeclaredProject;
+  let project: Project;
 
   /** A project whose manifest records `nodes`, looked up by base name and resource type as the real map is. */
   const projectWithNodes = (nodes: Partial<NodeMetaData>[]) => ({
@@ -58,7 +60,7 @@ describe("RunModel SQL execution", () => {
           ) as NodeMetaData | undefined,
       },
     },
-    projectRoot: Uri.file("/project"),
+    root: Uri.file("/project"),
   });
 
   beforeEach(() => {
@@ -79,13 +81,9 @@ describe("RunModel SQL execution", () => {
       },
     } as unknown as Project;
     project = {
+      queries: dbtProject.queries,
       root: Uri.file("/project"),
-      name: "project",
-      folder: { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
-      origin: "explicit",
-      contains: () => true,
-      dispose: vi.fn(),
-    };
+    } as unknown as Project;
     projects = {
       get: vi.fn((root: Uri) =>
         root === project.root ? dbtProject : undefined,
@@ -94,6 +92,16 @@ describe("RunModel SQL execution", () => {
     };
     context = {
       requireForCommand: vi.fn(),
+      activeEditor: () => {
+        const editor = window.activeTextEditor;
+        return (
+          editor && {
+            editor,
+            modelUri: activeModelUri(editor.document.uri),
+            project: undefined,
+          }
+        );
+      },
     } as unknown as Mocked<CurrentProject>;
     runModel = new RunModel(projects, context);
   });
@@ -125,7 +133,7 @@ describe("RunModel SQL execution", () => {
   });
 
   it("awaits project resolution from the active-editor command", async () => {
-    let resolveProject!: (project: DeclaredProject) => void;
+    let resolveProject!: (project: Project) => void;
     context.requireForCommand.mockReturnValue(
       new Promise((resolve) => {
         resolveProject = resolve;
@@ -334,9 +342,8 @@ describe("RunModel SQL execution", () => {
     ]);
   });
 
-  it("does nothing when no project owns the resolved root", async () => {
-    context.requireForCommand.mockResolvedValue(project);
-    projects.get.mockReturnValue(undefined);
+  it("does nothing when no project resolves for the command", async () => {
+    context.requireForCommand.mockResolvedValue(undefined);
 
     await runModel.executeSQL(untitledUri, "select 1", { modelName: "model" });
 

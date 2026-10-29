@@ -9,7 +9,7 @@ import {
   vi,
 } from "vitest";
 import { DiagnosticSeverity, Uri, window } from "vscode";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import type {
   ExecutableLifecycleHooks,
   FusionCommandIntegrationFactory,
@@ -140,7 +140,7 @@ describe("ExecutableLifecycle", () => {
       }),
       factory,
     );
-    const failures: Array<DBTDiagnosticData | undefined> = [];
+    const failures: Array<DiagnosticData | undefined> = [];
     lifecycle.onDidFailResolution((diagnostic) => failures.push(diagnostic));
 
     await lifecycle.initialize();
@@ -167,7 +167,7 @@ describe("ExecutableLifecycle", () => {
           : sampleExecutable(configuredPath),
       factory,
     );
-    const failures: Array<DBTDiagnosticData | undefined> = [];
+    const failures: Array<DiagnosticData | undefined> = [];
     lifecycle.onDidFailResolution((diagnostic) => failures.push(diagnostic));
 
     await lifecycle.initialize();

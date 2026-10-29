@@ -228,18 +228,19 @@ Goal: one typed protocol, one HTML and CSP generator, one entry per panel.
 - **Workspace and single lockfile.** The root `package.json` declares `"workspaces": ["packages/*", "webview_panels"]` and depends on the contract, as does `webview_panels/package.json`. Delete `webview_panels/package-lock.json` and the `check:lockfile:webviews` script. Merge the two `allowScripts` policies into one root policy, reviewing every entry rather than taking the union (today `@parcel/watcher` is denied at the root and allowed in `webview_panels`), then run `just sync` and `npm install-scripts prune`. `just update` and `just lint-lockfiles` become one root invocation. The package is `composite` with `declaration`; the root `tsconfig.json` references it and `compile` becomes `tsc -b`. Rsbuild bundles it (do not add it to `config.externals`); Vite gets it in `optimizeDeps.include` for the dev server. ESLint's `files` glob and the root `lint` scripts widen to `packages/`; `vitest.config.ts` includes the package's `src` and aliases the package name to `src/index.ts`, so contract tests need no build. `.vscodeignore` gains `packages/**`.
 - **Build order.** Every consumer path needs the contract's `dist` first, so each public npm script is self-sufficient and composites call internal `:app` variants, so one command never starts two contract watchers. `concurrently` is a root devDependency.
 
-  | Entrypoint                       | Factoring                                                                                                         |
-  | -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-  | root `build:contract`            | `npm run build --workspace @fusion-power-user/webview-contract`; `watch:contract` runs its `tsc -b --watch`       |
-  | root `build`, `build:dev`        | `build:contract`, then `build:app` / `build:dev:app`                                                              |
-  | root `watch:extension`           | `build:contract`, then `concurrently` over `watch:contract` and `watch:extension:app`                             |
-  | root `vscode:prepublish`         | `build:contract`, then the webview and host `:app` scripts                                                        |
-  | webview `build`                  | `npm run build --prefix ../packages/webview-contract`, then `build:app`; `--workspace` fails when nested          |
-  | webview `watch`, `dev`           | the same prebuild, then background contract watch and `watch:app` / `dev:app`, then `wait`                        |
-  | `just webviews::build/watch/dev` | delegate to those public scripts                                                                                  |
-  | `just build`, `build-dev`        | `just build-contract`, then the webview and host `:app` scripts                                                   |
-  | `just watch`                     | `just build-contract`, then background contract watch, webview `watch:app` and `watch:extension:app`, then `wait` |
-  | `just compile`                   | unchanged once `compile` is `tsc -b`                                                                              |
+  | Entrypoint                                     | Factoring                                                                                                                   |
+  | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+  | root `build:packages`, `watch:packages`        | `tsc -b packages/webview-contract packages/graph-layout`; `watch:packages` adds `--watch --preserveWatchOutput`             |
+  | root `build`, `build:dev`, `vscode:prepublish` | `build:packages`, then `build:app` / `build:dev:app`, or the webview and host `:app` scripts                                |
+  | root `compile:integration`                     | `build:packages`, then `tsc -p tsconfig.integration.json`                                                                   |
+  | webview `build`                                | `npm run build:packages --prefix ..`, then `build:app`; `--prefix ..` runs the root script, so no package is named          |
+  | webview `watch`, `dev`                         | the same prebuild, then `npm run watch:packages --prefix ..` and `watch:app` / `dev:app`, then `wait`                       |
+  | webview `fmt`, `lint`                          | `npm run build:packages --prefix ..`, then the tool command                                                                 |
+  | `just webviews::build/watch/dev`               | delegate to those public scripts                                                                                            |
+  | `just build`, `build-dev`                      | `just build-packages`, then the webview and host `:app` scripts                                                             |
+  | `just watch`                                   | `just build-packages`, then background `npm run watch:packages`, webview `watch:app` and `watch:extension:app`, then `wait` |
+  | `just watch-extension`                         | `just build-packages`, then background `npm run watch:packages` and `watch:extension:app`, then `wait`                      |
+  | `just compile`                                 | unchanged once `compile` is `tsc -b`                                                                                        |
 
 - **Revision order inside the PR:** (1) skeleton package plus all wiring above, exporting nothing; (2) the unions, guards and their tests; (3) host guards, one panel host at a time; (4) per-panel entries behind `PanelHost`, each replacing that panel's command strings; (5) confirm both ends speak only the union.
 - `PanelHost` replaces `AltimateWebviewProvider` and the documentation editor's duplicate `getHtml`: one CSP starting from `default-src 'none'`, adding per panel only what evidence requires. Test `wasm-unsafe-eval` in place of `unsafe-eval` for Perspective.

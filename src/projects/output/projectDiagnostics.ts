@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import type { Disposable } from "vscode";
 import { Diagnostic, DiagnosticSeverity, languages, Range, Uri } from "vscode";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import { isAtOrBelow } from "../../core/paths";
 import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../../fusion/executableLifecycle";
 
@@ -26,12 +26,12 @@ function toSeverity(severity: string): DiagnosticSeverity {
   }
 }
 
-function isExecutable(data: DBTDiagnosticData): boolean {
+function isExecutable(data: DiagnosticData): boolean {
   return data.source === EXECUTABLE_DIAGNOSTIC_SOURCE;
 }
 
 function toDiagnostic(
-  data: DBTDiagnosticData,
+  data: DiagnosticData,
   kind: ProjectDiagnosticKind,
 ): Diagnostic {
   const diagnostic = new Diagnostic(
@@ -65,7 +65,7 @@ export class ProjectDiagnostics implements Disposable {
     ["project-config", []],
     ["fusion-executable", []],
   ]);
-  private config: DBTDiagnosticData[] = [];
+  private config: DiagnosticData[] = [];
   private disposed = false;
   private readonly file: Uri;
 
@@ -74,7 +74,7 @@ export class ProjectDiagnostics implements Disposable {
   }
 
   /** Adds a project-config diagnostic; executable-resolution data publishes as `fusion-executable`. */
-  addConfig(data: DBTDiagnosticData): void {
+  addConfig(data: DiagnosticData): void {
     this.config.push(data);
     this.publishConfig();
   }
@@ -86,7 +86,7 @@ export class ProjectDiagnostics implements Disposable {
   }
 
   /** Replaces the executable-resolution diagnostics with `data`, or clears them. */
-  replaceExecutable(data: DBTDiagnosticData | undefined): void {
+  replaceExecutable(data: DiagnosticData | undefined): void {
     this.config = this.config.filter((entry) => !isExecutable(entry));
     if (data) {
       this.config.push(data);
@@ -103,10 +103,7 @@ export class ProjectDiagnostics implements Disposable {
   }
 
   /** Replaces one kind's diagnostics and publishes every kind. */
-  setKind(
-    kind: ProjectDiagnosticKind,
-    data: readonly DBTDiagnosticData[],
-  ): void {
+  setKind(kind: ProjectDiagnosticKind, data: readonly DiagnosticData[]): void {
     if (this.disposed) {
       return;
     }
@@ -130,7 +127,7 @@ export class ProjectDiagnostics implements Disposable {
     }
   }
 
-  private fileOf(data: DBTDiagnosticData): string {
+  private fileOf(data: DiagnosticData): string {
     const root = path.dirname(this.file.fsPath);
     return data.filePath && isAtOrBelow(root, data.filePath)
       ? data.filePath

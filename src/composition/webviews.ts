@@ -1,10 +1,10 @@
 import type { ColumnProposalRequests } from "../features/docs/columnProposals";
 import { ColumnProposalService } from "../features/docs/columnProposals";
-import { DbtTestService } from "../features/docs/dbtTestService";
 import { DocGenService } from "../features/docs/docGenService";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
-import type { DbtLineageService } from "../features/lineage/dbtLineageService";
+import { ModelTestService } from "../features/docs/modelTestService";
 import { LineagePanel } from "../features/lineage/lineagePanel";
+import type { LineageService } from "../features/lineage/lineageService";
 import { LineageViewProvider } from "../features/lineage/lineageViewProvider";
 import { WebviewViewProviders } from "../features/panels";
 import { QueryResultPanel } from "../features/queryResults/queryResultPanel";
@@ -13,7 +13,7 @@ import type { ProjectsGraph } from "./projects";
 
 export function composeWebviews(
   graph: ProjectsGraph,
-  dbtLineageService: DbtLineageService,
+  lineageService: LineageService,
   columnProposalRequests: ColumnProposalRequests,
 ): WebviewViewProviders {
   const {
@@ -26,9 +26,10 @@ export function composeWebviews(
   const lineagePanel = new LineagePanel({
     extensionContext: extensionContextStore,
     terminal,
-    dbtLineageService,
-    eventEmitterService: sharedState,
+    lineageService,
+    sharedState,
     queryManifestService,
+    currentProject: graph.currentProject,
     metadataDemand: graph.metadataDemand,
   });
   if (graph.clients.pool) {
@@ -39,22 +40,23 @@ export function composeWebviews(
   return new WebviewViewProviders(
     new QueryResultPanel({
       extensionContext: extensionContextStore,
-      eventEmitterService: sharedState,
-      dbtTerminal: terminal,
+      sharedState,
+      log: terminal,
       queryManifestService,
+      currentProject: graph.currentProject,
       onDidRemoveProject: projects.onDidRemoveProject,
     }),
     new DocsEditViewPanel({
       projects,
       extensionContext: extensionContextStore,
       services: {
-        docGenService: new DocGenService(projects, queryManifestService),
-        dbtTestService: new DbtTestService(queryManifestService),
+        docGenService: new DocGenService(projects, graph.currentProject),
+        modelTests: new ModelTestService(graph.currentProject),
         queryManifestService,
-        emitterService: sharedState,
+        sharedState,
         columnProposals: new ColumnProposalService({
           log: terminal,
-          columnsNeedStrict: () => dbtLineageService.columnsNeedStrict(),
+          columnsNeedStrict: () => lineageService.columnsNeedStrict(),
         }),
         columnProposalRequests,
       },

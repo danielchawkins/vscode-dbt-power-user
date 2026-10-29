@@ -18,14 +18,14 @@ import {
 } from "vitest";
 import { commands, extensions, Uri, window, workspace } from "vscode";
 import {
-  DBTPowerUserExtension,
-  type ExtensionServices,
-} from "../../dbtPowerUserExtension";
-import {
   CONNECTED_COLUMNS_COMMAND,
   PARENT_TABLES_COMMAND,
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
+import {
+  FusionPowerUserExtension,
+  type ExtensionServices,
+} from "../../fusionPowerUserExtension";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { StartupGate } from "../../startupGate";
@@ -38,7 +38,7 @@ const UNINSTALL_ACTION = "Uninstall Power User";
 function extensionWith(
   services: Partial<Record<keyof ExtensionServices, unknown>>,
   owned: { dispose(): unknown }[] = [],
-): DBTPowerUserExtension {
+): FusionPowerUserExtension {
   const inert = { dispose: vi.fn() };
   const defaults: Record<keyof ExtensionServices, unknown> = {
     projects: inert,
@@ -48,10 +48,10 @@ function extensionWith(
     fusionClientPool: inert,
     fusionStatus: inert,
     startupGate: new StartupGate(),
-    dbtLineageService: inert,
+    lineageService: inert,
     projectEnvironments: inert,
   };
-  return new DBTPowerUserExtension(
+  return new FusionPowerUserExtension(
     { ...defaults, ...services } as ExtensionServices,
     owned,
   );
@@ -124,8 +124,8 @@ const activationHarness = (enabled: boolean, registry?: ProjectRegistry) => {
   };
 };
 
-describe("DBTPowerUserExtension startup gate", () => {
-  const gatedCommand = (extension: DBTPowerUserExtension) => {
+describe("FusionPowerUserExtension startup gate", () => {
+  const gatedCommand = (extension: FusionPowerUserExtension) => {
     const asked: unknown[] = [];
     const requireForCommand = (uri: unknown) => {
       asked.push(uri);
@@ -215,7 +215,7 @@ describe("DBTPowerUserExtension startup gate", () => {
   });
 });
 
-describe("DBTPowerUserExtension.activate", () => {
+describe("FusionPowerUserExtension.activate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (extensions.getExtension as Mock).mockReturnValue(undefined);
@@ -412,7 +412,7 @@ describe("DBTPowerUserExtension.activate", () => {
   });
 });
 
-describe("DBTPowerUserExtension opened-file call sites", () => {
+describe("FusionPowerUserExtension opened-file call sites", () => {
   let tmpDir: string;
   let nestedDir: string;
   let modelPath: string;

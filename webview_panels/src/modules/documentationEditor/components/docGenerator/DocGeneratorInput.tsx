@@ -1,12 +1,12 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "@modules/documentationEditor/state/documentationReducer";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import type {
-  DBTDocumentation,
-  DBTDocumentationColumn,
-  DBTModelTest,
+  EditorDocumentation,
+  EditorDocumentationColumn,
   DocumentationStateProps,
 } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
@@ -19,11 +19,11 @@ import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.css";
 
 interface Props {
-  entity: DBTDocumentationColumn | DBTDocumentation;
+  entity: EditorDocumentationColumn | EditorDocumentation;
   placeholder?: string | undefined;
   type: EntityType;
   title: string;
-  tests?: DBTModelTest[] | undefined;
+  tests?: documentationEditor.ModelTest[] | undefined;
 }
 /** Whether an entity's description or tests differ from what the host last sent. */
 const dirtiness = (
@@ -160,8 +160,8 @@ const DocGeneratorInput = ({
       <Stack className="align-items-center mb-2">
         <h4 className="mb-0">{title}</h4>
         {type === EntityType.COLUMN &&
-        (entity as DBTDocumentationColumn).type ? (
-          <Tag type="rounded">{(entity as DBTDocumentationColumn).type}</Tag>
+        (entity as EditorDocumentationColumn).type ? (
+          <Tag type="rounded">{(entity as EditorDocumentationColumn).type}</Tag>
         ) : null}
         {isDirty ? (
           <Tag color="orange" type="rounded">

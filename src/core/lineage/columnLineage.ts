@@ -1,11 +1,8 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
+import type { ColumnRef } from "@fusion-power-user/webview-contract/columnProposals";
+
 /** How a child column derives from a parent column in Fusion's static analysis; `unknown` for any other `op`. */
 type LineageEvolution = "copy" | "mod" | "scan" | "unknown";
-
-/** One column of one node: `uniqueId` is the node's unique id and `column` its column name. */
-export interface ColumnRef {
-  uniqueId: string;
-  column: string;
-}
 
 /** One column-level edge: `child` is computed from `parent`. */
 export interface ColumnEdge {
@@ -23,15 +20,11 @@ type PanelViewsType =
   | "Not sure";
 
 /**
- * The `ColumnLineage` shape consumed by the vendored lineage component.
- * Defined here so the extension host does not import the webview package.
+ * The contract's `ColumnLineage`, with `viewsType` narrowed to the values Fusion edges map to.
  */
-export interface ColumnLineage {
-  source: [table: string, column: string];
-  target: [table: string, column: string];
-  type: "direct" | "indirect";
+export type ColumnLineage = Omit<lineage.ColumnLineage, "viewsType"> & {
   viewsType: PanelViewsType;
-}
+};
 
 /**
  * A `dbt.listNodes` result as Fusion 2.0.6 sends it, restricted to the fields read here. At column grain each

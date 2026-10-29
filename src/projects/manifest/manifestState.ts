@@ -12,7 +12,7 @@ import type { Manifest } from "./manifestTypes";
  * notice that explains an empty server-owned graph.
  */
 export class ManifestState<
-  P extends { projectRoot: { fsPath: string } },
+  P extends { root: { fsPath: string } },
 > implements Disposable {
   private current?: Manifest;
   private closed = false;

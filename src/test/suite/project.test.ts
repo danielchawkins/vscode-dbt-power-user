@@ -13,9 +13,9 @@ import {
 } from "vitest";
 import * as vscode from "vscode";
 import { MANIFEST_FILE, type ParsedManifest } from "../../core/dbt/domain";
-import type { DBTCommand } from "../../core/dbtCommand";
+import type { DbtCommand } from "../../core/dbtCommand";
 import { QueryExecution } from "../../core/dbtCommand";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
@@ -38,12 +38,10 @@ import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import { DbtTaskTerminal } from "../../projects/project/dbtTask";
-import {
-  type Project,
-  type ProjectOptions,
-} from "../../projects/project/project";
+import type { Project } from "../../projects/project/project";
 import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
 import { queueCli } from "../../projects/project/projectCommands";
+import type { ProjectOptions } from "../../projects/project/projectOptions";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
@@ -64,7 +62,7 @@ const commandDeps = (project: Project) =>
   (project as unknown as { commandDeps: ProjectCommandDeps }).commandDeps;
 const enqueueCommand = (
   deps: ProjectCommandDeps,
-  command: DBTCommand,
+  command: DbtCommand,
   terminal: DbtTaskTerminal,
 ) =>
   queueCli(
@@ -112,7 +110,7 @@ describe("Project Test Suite", () => {
       terminal: mockTerminal,
       sharedState: mockSharedStateService,
       runHistoryService: mockRunHistoryService,
-      projectRoot: projectUri,
+      root: projectUri,
     });
   }
 
@@ -224,7 +222,7 @@ describe("Project Test Suite", () => {
     });
 
     it("should get project root", () => {
-      expect(dbtProject.getProjectRoot()).toBe("/test/project");
+      expect(dbtProject.root.fsPath).toBe("/test/project");
     });
 
     it("should get DBT project file path", () => {
@@ -246,7 +244,7 @@ describe("Project Test Suite", () => {
     });
 
     it("should get all diagnostics", () => {
-      const mockDiagnosticData: DBTDiagnosticData = {
+      const mockDiagnosticData: DiagnosticData = {
         message: "Test diagnostic",
         severity: "error",
         filePath: "/test/file.sql",
@@ -281,7 +279,7 @@ describe("Project Test Suite", () => {
     });
 
     it("publishes every kind in one collection under dbt_project.yml", async () => {
-      const data = (message: string, source: string): DBTDiagnosticData => ({
+      const data = (message: string, source: string): DiagnosticData => ({
         message,
         severity: "warning",
         filePath: "/test/file.sql",
@@ -578,7 +576,7 @@ describe("Project Test Suite", () => {
 
       enqueueCommand(
         commandDeps(dbtProject),
-        mockCommand as unknown as DBTCommand,
+        mockCommand as unknown as DbtCommand,
         new DbtTaskTerminal(() => undefined),
       ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));
@@ -692,7 +690,7 @@ describe("Project Test Suite", () => {
 
       enqueueCommand(
         commandDeps(dbtProject),
-        mockCommand as unknown as DBTCommand,
+        mockCommand as unknown as DbtCommand,
         new DbtTaskTerminal(() => undefined),
       ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));
@@ -898,7 +896,7 @@ describe("Project Test Suite", () => {
       const definition = {
         type: "dbt",
         command: "deps",
-        project: dbtProject.projectRoot.fsPath,
+        project: dbtProject.root.fsPath,
       } as const;
       await vscode.tasks.executeTask(
         dbtProject.commands.task(definition, "deps"),
@@ -939,7 +937,7 @@ describe("Project Test Suite", () => {
         {
           type: "dbt",
           command: "build",
-          project: dbtProject.projectRoot.fsPath,
+          project: dbtProject.root.fsPath,
         },
         "build",
       );

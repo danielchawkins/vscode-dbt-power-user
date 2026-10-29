@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { initialState } from "./documentationReducer";
 import { incomingDecision, type RenderMessage } from "./incomingDocs";
-import type { DBTDocumentation, DocumentationStateProps } from "./types";
-import { Source } from "./types";
+import type { EditorDocumentation, DocumentationStateProps } from "./types";
 
-const docs = (description: string, name = "orders"): DBTDocumentation => ({
+const docs = (description: string, name = "orders"): EditorDocumentation => ({
   name,
   description,
   columns: [
@@ -12,7 +11,7 @@ const docs = (description: string, name = "orders"): DBTDocumentation => ({
       name: "id",
       description: "key",
       generated: false,
-      source: Source.YAML,
+      source: "YAML",
     },
   ],
   generated: false,

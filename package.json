@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/danielchawkins/vscode-dbt-power-user/issues"
   },
-  "version": "0.10.0-beta.0",
+  "version": "0.11.0-beta.0",
   "type": "module",
   "engines": {
     "vscode": "^1.128.0",
@@ -1075,17 +1075,16 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:contract && npm run build:graph-layout && npm run build:app --workspace webview_panels && npm run build:app",
-    "build:contract": "npm run build --workspace @fusion-power-user/webview-contract",
-    "build:graph-layout": "npm run build --workspace @fusion-power-user/graph-layout",
-    "watch:contract": "npm run watch --workspace @fusion-power-user/webview-contract",
-    "build": "npm run build:contract && npm run build:graph-layout && npm run build:app",
+    "vscode:prepublish": "npm run build:packages && npm run build:app --workspace webview_panels && npm run build:app",
+    "build:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout",
+    "watch:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout --watch --preserveWatchOutput",
+    "build": "npm run build:packages && npm run build:app",
     "build:app": "rsbuild build",
-    "build:dev": "npm run build:contract && npm run build:dev:app",
+    "build:dev": "npm run build:packages && npm run build:dev:app",
     "build:dev:app": "rsbuild build --mode development",
     "watch:extension:app": "rsbuild build --mode development --watch",
     "compile": "node node_modules/typescript-7/bin/tsc -b && node node_modules/typescript-7/bin/tsc -p src/test/tsconfig.json",
-    "compile:integration": "npm run build:contract && node node_modules/typescript-7/bin/tsc -p tsconfig.integration.json",
+    "compile:integration": "npm run build:packages && node node_modules/typescript-7/bin/tsc -p tsconfig.integration.json",
     "clean": "node -e \"for (const d of ['out','coverage','dist']) require('fs').rmSync(d,{recursive:true,force:true})\"",
     "format": "oxfmt \"**/*.{js,cjs,mjs,ts,tsx,css,html,json}\"",
     "lint:oxlint": "oxlint --deny-warnings --type-aware src scripts packages",
@@ -1101,7 +1100,7 @@
     "package:vsix": "vsce package",
     "prune:eslint": "eslint src scripts packages --prune-suppressions",
     "lint:unused": "knip --no-progress --no-tag-hints && knip --production --no-progress",
-    "lint:imports": "depcruise src packages/webview-contract/src packages/graph-layout/src --config .dependency-cruiser.cjs --output-type err"
+    "lint:imports": "depcruise src packages/*/src --config .dependency-cruiser.cjs --output-type err"
   },
   "workspaces": [
     "packages/*",

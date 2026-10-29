@@ -14,23 +14,16 @@ import {
 } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import { notifyError } from "../../projects/output/notifications";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { ProjectQueries } from "../../projects/project/projectQueries";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 /** What the details read from the current project. */
-type DetailsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
+type DetailsProject = Pick<Project, "root" | "getProjectName"> & {
   queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
 };
 
-/** The current project and its manifest, as the details read them. */
-type DetailsManifests = Pick<
-  QueryManifestService,
-  "getEventByCurrentProject"
-> & {
-  getProject(): DetailsProject | undefined;
-};
-import type { DbtLineageService } from "./dbtLineageService";
+import type { LineageService } from "./lineageService";
 
 /** What the lineage panel shows for one node's columns. */
 export interface ColumnsBody {
@@ -49,17 +42,17 @@ export interface ColumnsBody {
 
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
-  private readonly queryManifestService: DetailsManifests;
-  private readonly dbtLineageService: DbtLineageService;
+  private readonly currentProject: CurrentProject;
+  private readonly lineageService: LineageService;
   private readonly terminal: Log;
 
   constructor(
-    queryManifestService: DetailsManifests,
-    dbtLineageService: DbtLineageService,
+    currentProject: CurrentProject,
+    lineageService: LineageService,
     terminal: Log,
   ) {
-    this.queryManifestService = queryManifestService;
-    this.dbtLineageService = dbtLineageService;
+    this.currentProject = currentProject;
+    this.lineageService = lineageService;
     this.terminal = terminal;
   }
 
@@ -74,12 +67,12 @@ export class LineageDetails {
   getRelationships(params?: { includeSources?: boolean | undefined }): {
     refs: Ref[];
   } {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return { refs: [] };
     }
     const { testMetaMap, nodeMetaMap, sourceMetaMap, semanticModelMetaMap } =
-      event.event;
+      manifest;
     const parser = new RelationshipParser(this.terminal);
 
     const fromTests = parser.fromTests(testMetaMap);
@@ -115,16 +108,13 @@ export class LineageDetails {
   }: {
     name: string;
   }): Promise<ExposureMetaData | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
-      return;
-    }
-    const project = this.queryManifestService.getProject();
-    if (!project) {
+    const project = this.currentProject.current;
+    const manifest = project?.manifest;
+    if (!project || !manifest) {
       return;
     }
 
-    const { exposureMetaMap } = event.event;
+    const { exposureMetaMap } = manifest;
 
     // Node IDs use unique_id format (exposure.project.name), but
     // exposureMetaMap is keyed by simple exposure name.
@@ -138,11 +128,11 @@ export class LineageDetails {
   }: {
     name: string;
   }): Promise<FunctionMetaData | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    if (!event?.event) {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
       return;
     }
-    const { functionMetaMap } = event.event;
+    const { functionMetaMap } = manifest;
     // Node IDs use unique_id format (function.project.name), but
     // functionMetaMap is keyed by simple function name.
     const splits = name.split(".");
@@ -157,15 +147,15 @@ export class LineageDetails {
     table: string;
     refresh: boolean;
   }): Promise<ColumnsBody | undefined> {
-    const event = this.queryManifestService.getEventByCurrentProject();
-    const project = this.queryManifestService.getProject();
-    if (!event?.event || !project) {
+    const project = this.currentProject.current;
+    const manifest = project?.manifest;
+    if (!manifest || !project) {
       return;
     }
     const splits = table.split(".");
     if (splits[0] === RESOURCE_TYPE_SOURCE) {
       return this.sourceColumns({
-        event: event.event,
+        manifest,
         project,
         table,
         splits,
@@ -173,16 +163,16 @@ export class LineageDetails {
       });
     }
     if (splits[0] === RESOURCE_TYPE_FUNCTION) {
-      return this.functionColumns(event.event, table, splits[2] ?? "");
+      return this.functionColumns(manifest, table, splits[2] ?? "");
     }
-    const node = event.event.nodeMetaMap.lookupByUniqueId(table);
+    const node = manifest.nodeMetaMap.lookupByUniqueId(table);
     if (!node) {
       return;
     }
     // `refresh` is ignored: the language server already supplies model columns and types.
     const inferred = node.path
-      ? await this.dbtLineageService.getInferredColumns(
-          project.projectRoot.fsPath,
+      ? await this.lineageService.getInferredColumns(
+          project.root.fsPath,
           node.path,
         )
       : undefined;
@@ -195,19 +185,19 @@ export class LineageDetails {
   }
 
   private async sourceColumns({
-    event,
+    manifest,
     project,
     table,
     splits,
     refresh,
   }: {
-    event: Manifest;
+    manifest: Manifest;
     project: DetailsProject;
     table: string;
     splits: string[];
     refresh: boolean;
   }): Promise<ColumnsBody | undefined> {
-    const node = event.sourceMetaMap.get(splits[2] ?? "");
+    const node = manifest.sourceMetaMap.get(splits[2] ?? "");
     const sourceTable = node?.tables.find((t) => t.name === splits[3]);
     if (!node || !sourceTable) {
       return;
@@ -253,11 +243,11 @@ export class LineageDetails {
   }
 
   private functionColumns(
-    event: Manifest,
+    manifest: Manifest,
     table: string,
     functionName: string,
   ): ColumnsBody | undefined {
-    const fn = event.functionMetaMap.get(functionName);
+    const fn = manifest.functionMetaMap.get(functionName);
     if (!fn) {
       return;
     }

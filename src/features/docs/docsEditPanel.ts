@@ -21,7 +21,6 @@ import type { SharedStateService } from "../../projects/project/sharedStateServi
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
   ColumnProposalRequests,
@@ -31,13 +30,12 @@ import type {
 } from "./columnProposals";
 import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
-import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
-import type { DBTDocumentation } from "./docGenTypes";
 import { DocsDrafts } from "./docsDrafts";
 import { type DocsProject, DocsEditRequests } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { registerDocsHarnessCommands } from "./docsHarnessCommands";
+import type { ModelTestService } from "./modelTestService";
 import { withProgress } from "./progress";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
@@ -52,17 +50,21 @@ type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
-export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
+export class DocsEditViewPanel extends PanelHost<
+  HostMessage,
+  PanelMessage,
+  documentationEditor.ResponseBodies
+> {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
   public override viewType = DocsEditViewPanel.viewType;
   protected readonly entry = "documentationEditor";
   protected readonly csp = {};
   protected readonly guard = documentationEditor.isPanelMessage;
   protected override panelDescription = "Edit model documentation";
-  private documentation: DBTDocumentation | undefined;
+  private documentation: documentationEditor.Documentation | undefined;
   private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
-  private readonly dbtTestService: DbtTestService;
+  private readonly modelTests: ModelTestService;
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private projects: PanelProjects;
@@ -79,9 +81,9 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     extensionContext: ExtensionContextStore;
     services: {
       docGenService: DocGenService;
-      dbtTestService: DbtTestService;
+      modelTests: ModelTestService;
       queryManifestService: QueryManifestService;
-      emitterService: SharedStateService;
+      sharedState: SharedStateService;
       columnProposals: ColumnProposalService;
       columnProposalRequests: ColumnProposalRequests;
     };
@@ -90,19 +92,19 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   }) {
     super({
       extensionContext,
-      emitterService: services.emitterService,
-      dbtTerminal: terminal,
+      sharedState: services.sharedState,
+      log: terminal,
       queryManifestService: services.queryManifestService,
     });
     this.projects = projects;
     this.metadataDemand = metadataDemand;
     this.docGenService = services.docGenService;
-    this.dbtTestService = services.dbtTestService;
+    this.modelTests = services.modelTests;
     this.columnProposals = services.columnProposals;
     const harness = registerDocsHarnessCommands({
       columnProposals: this.columnProposals,
       docGenService: this.docGenService,
-      dbtTestService: this.dbtTestService,
+      modelTests: this.modelTests,
       drafts: this.drafts,
       proposalTarget: () => this.proposalTarget(),
       save: async (message) => {
@@ -190,8 +192,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
         command: "renderDocumentation",
         docs: this.documentation,
         missingDocumentationMessage: message,
-        tests: await this.dbtTestService.getTestsForCurrentModel(),
-        unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
+        tests: await this.modelTests.getTestsForCurrentModel(),
+        unitTests: await this.modelTests.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
         docBlocks: this.getDocBlocksForCurrentProject(),
         publication: publicationId(this.queryManifestService.manifestFor()),
@@ -233,11 +235,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
 
   private get requests(): DocsEditRequests {
     return new DocsEditRequests({
-      terminal: this.dbtTerminal,
+      terminal: this.log,
       queryManifestService: this.queryManifestService,
-      dbtTestService: this.dbtTestService,
+      modelTests: this.modelTests,
       getProject: (uri) => this.projectOf(uri),
-      post: (message) => this.post(message),
+      respond: (command, syncRequestId, body) =>
+        this.respond(command, syncRequestId, body),
+      respondError: (syncRequestId, error) =>
+        this.respondError(syncRequestId, error),
     });
   }
 
@@ -258,7 +263,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       runNoticeAction: () =>
         commands.executeCommand(
           USE_STRICT_ANALYSIS_COMMAND,
-          this.getProject()?.projectRoot,
+          this.getProject()?.root,
         ),
       saveDocumentation: requests.withProject((message, active) =>
         withProgress("Saving documentation", () =>
@@ -279,13 +284,9 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     if (!saved) {
       // The panel keeps its edits dirty until a save is confirmed.
       if (syncRequestId) {
-        await reply(
-          { reply: (response) => this.post(response) },
-          syncRequestId,
-          {
-            saved: false,
-          } satisfies documentationEditor.ResponseBodies["saveDocumentation"],
-        );
+        await this.respond("saveDocumentation", syncRequestId, {
+          saved: false,
+        });
       }
       return;
     }
@@ -294,9 +295,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     if (!syncRequestId) {
       return;
     }
-    await reply({ reply: (response) => this.post(response) }, syncRequestId, {
-      saved: true,
-    } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);
+    await this.respond("saveDocumentation", syncRequestId, { saved: true });
   }
 
   /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
@@ -351,10 +350,10 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       activeProject: project,
       deps: {
         projects: this.projects,
-        terminal: this.dbtTerminal,
+        terminal: this.log,
         testData: {
-          terminal: this.dbtTerminal,
-          dbtTestService: this.dbtTestService,
+          terminal: this.log,
+          modelTests: this.modelTests,
         },
       },
       onFailure: (error, patchPath) => {
@@ -364,7 +363,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
           `Could not save documentation to ${patchPath}`,
           error,
         );
-        this.dbtTerminal.error(
+        this.log.error(
           "saveDocumentationError",
           `Could not save documentation to ${patchPath}`,
           error,

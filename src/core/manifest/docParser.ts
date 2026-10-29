@@ -17,7 +17,7 @@ export class DocParser {
     docs: ManifestResources | null | undefined,
     project: ManifestProject,
   ): Promise<DocMetaMap> {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "DocParser",

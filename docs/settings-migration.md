@@ -16,7 +16,7 @@ The three contributed webview view IDs are `fusionPowerUser.PreviewResults`, `fu
 
 The build submenu ID is `fusionPowerUser.buildModel`. View container IDs (`dbt_view`, `dbt_preview_results`, `lineage_view`, `docs_edit_view`, `run_history_view`) and tree view IDs without the old prefix are unchanged; saved activity-bar and panel layout may reset after upgrade.
 
-Saved workspace state for the active Declared Project used the key `dbtPowerUser.projectSelected` and is now `fusionPowerUser.projectSelected` with no fallback read of the old key. Existing selections are reset; pick the project once after upgrade via the project picker or any command that prompts for a project.
+The project picked through the project picker is no longer saved in workspace state: `CurrentProject` holds it for the session, and neither `dbtPowerUser.projectSelected` nor `fusionPowerUser.projectSelected` is read or written. Pick the project again after a reload when a command needs one and cannot infer it.
 
 Keybindings bound to `dbtPowerUser.executeSQL` and `dbtPowerUser.sqlPreview` now target `fusionPowerUser.executeSQL` and `fusionPowerUser.sqlPreview`. User keybinding overrides in `keybindings.json` that reference the old command IDs must be updated manually.
 

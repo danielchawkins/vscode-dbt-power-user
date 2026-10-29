@@ -15,6 +15,14 @@ const strict = (name: string) => ({
   value: "strict",
 });
 
+/** The Project CurrentProject resolves for a Declared Project; only the fields these commands read. */
+const asProject = (declared: DeclaredProject) =>
+  ({
+    declared,
+    root: declared.root,
+    getProjectName: () => declared.name,
+  }) as never;
+
 describe("applyProjectConfigInsertion", () => {
   let dir = "";
   const terminal = { warn: vi.fn() } as any;
@@ -116,7 +124,9 @@ describe("applyProjectConfigInsertion", () => {
     const logFor = vi.fn(() => projectLog as never);
     const commandsDisposable = new ProjectConfigCommands(
       { whenSettled: () => Promise.resolve() },
-      { requireForCommand: () => Promise.resolve(declared) } as never,
+      {
+        requireForCommand: () => Promise.resolve(asProject(declared)),
+      } as never,
       logFor,
     );
     const registration = (commands.registerCommand as Mock).mock.calls.find(
@@ -165,7 +175,7 @@ describe("fusionPowerUser.useStrictAnalysis", () => {
   it("writes the folder-scoped setting for the given project root", async () => {
     const update = vi.fn(() => Promise.resolve());
     (workspace.getConfiguration as Mock).mockReturnValueOnce({ update });
-    const requireForCommand = vi.fn().mockResolvedValue(declared);
+    const requireForCommand = vi.fn().mockResolvedValue(asProject(declared));
 
     expect(await register(requireForCommand)(root)).toBe(true);
 
@@ -184,7 +194,7 @@ describe("fusionPowerUser.useStrictAnalysis", () => {
   it("resolves the project through requireForCommand from the Command Palette", async () => {
     const update = vi.fn(() => Promise.resolve());
     (workspace.getConfiguration as Mock).mockReturnValueOnce({ update });
-    const requireForCommand = vi.fn().mockResolvedValue(declared);
+    const requireForCommand = vi.fn().mockResolvedValue(asProject(declared));
 
     expect(await register(requireForCommand)()).toBe(true);
 
@@ -212,7 +222,10 @@ describe("fusionPowerUser.useStrictAnalysis", () => {
     (window.showErrorMessage as Mock).mockResolvedValueOnce("Show output");
 
     expect(
-      await register(vi.fn().mockResolvedValue(declared), projectLog)(),
+      await register(
+        vi.fn().mockResolvedValue(asProject(declared)),
+        projectLog,
+      )(),
     ).toBe(false);
     await flushAsync();
 

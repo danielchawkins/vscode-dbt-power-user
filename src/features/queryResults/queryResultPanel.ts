@@ -19,6 +19,7 @@ import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/output/notifications";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { QueryPanelPayload } from "../../projects/project/projectSql";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
@@ -27,8 +28,7 @@ import type {
 } from "../../projects/project/sharedStateService";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { reply } from "../../webview/messageRouter";
-import { PanelHost, postToWebview } from "../../webview/panelHost";
+import { type Page, PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";
 import { QueryHistoryStore } from "./queryHistory";
@@ -57,7 +57,11 @@ const QueryPanelViewType = {
 type QueryPanelViewType =
   (typeof QueryPanelViewType)[keyof typeof QueryPanelViewType];
 
-export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
+export class QueryResultPanel extends PanelHost<
+  HostMessage,
+  PanelMessage,
+  queryResults.ResponseBodies
+> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
   public override viewType = QueryResultPanel.viewType;
   protected readonly entry = "queryResults";
@@ -66,6 +70,8 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
   protected override panelDescription = "Preview dbt SQL Results";
   private _queryTabData: queryResults.QueryTabData | undefined;
   private _bottomPanel: WebviewView | undefined;
+  /** The tab data each results tab is bound to; the tab asks for it again after each rebuild. */
+  private readonly tabDataByPage = new Map<Page, queryResults.QueryTabData>();
 
   private queryExecution: QueryExecution | undefined;
   /** Loading messages queued while the page is not ready; flushed when it reports ready. */
@@ -77,32 +83,39 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
   declare protected extensionContext: ExtensionContextStore;
-  declare protected dbtTerminal: Log;
+  declare protected log: Log;
   declare protected queryManifestService: QueryManifestService;
+  private readonly currentProject: CurrentProject;
   private readonly history: QueryHistoryStore;
 
   public constructor({
     extensionContext,
-    eventEmitterService,
-    dbtTerminal,
+    sharedState,
+    log,
     queryManifestService,
+    currentProject,
     onDidRemoveProject,
   }: {
     extensionContext: ExtensionContextStore;
-    eventEmitterService: SharedStateService;
-    dbtTerminal: Log;
+    sharedState: SharedStateService;
+    log: Log;
     queryManifestService: QueryManifestService;
+    currentProject: CurrentProject;
     onDidRemoveProject: Event<Uri>;
   }) {
     super({
       extensionContext,
-      emitterService: eventEmitterService,
-      dbtTerminal,
+      sharedState,
+      log,
       queryManifestService,
     });
-    this.history = new QueryHistoryStore(dbtTerminal);
+    this.currentProject = currentProject;
+    this.history = new QueryHistoryStore(log);
     this._disposables.push(
-      onDidRemoveProject(() => this.replay.clear()),
+      onDidRemoveProject(() => {
+        this.replay.clear();
+        this.tabDataByPage.clear();
+      }),
       // Resets the limit on editor change.
       window.onDidChangeActiveTextEditor(() =>
         this.sendUpdatedContextToWebview(),
@@ -136,6 +149,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
     const subscription = webviewPanel.onDidDispose(() => {
       subscription.dispose();
       this.replay.delete(webviewPanel);
+      this.tabDataByPage.delete(webviewPanel);
     });
     this.renderWebviewView(webviewPanel.webview);
     this.listen(webviewPanel);
@@ -183,7 +197,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
   }
 
   private getProject(projectName?: string) {
-    return resolveQueryProject(this.queryManifestService, projectName);
+    return resolveQueryProject(this.currentProject, projectName);
   }
 
   private async executeIncomingQuery(
@@ -200,11 +214,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
       await runOnQueryPanel(project.queries, message);
     } catch (error) {
       void notifyErrorWithoutProject("Unable to execute query", error);
-      this.dbtTerminal.error(
-        "ExecuteSqlError",
-        "Unable to execute query",
-        error,
-      );
+      this.log.error("ExecuteSqlError", "Unable to execute query", error);
     }
   }
 
@@ -226,18 +236,10 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
   ) {
     const page = this.pageOf(panel);
     if (this._queryTabData && page !== "bottom") {
-      this.replay.setTabData(page, this._queryTabData);
+      this.tabDataByPage.set(page, this._queryTabData);
     }
-    const body =
-      this._queryTabData ??
-      (this.replay.tabDataFor(
-        page,
-      ) as queryResults.ResponseBodies["getQueryTabData"]);
-    void reply(
-      { reply: (response) => this.postTo(panel, response) },
-      syncRequestId,
-      body satisfies queryResults.ResponseBodies["getQueryTabData"],
-    );
+    const body = this._queryTabData ?? this.tabDataByPage.get(page);
+    void this.respondOn(panel).respond("getQueryTabData", syncRequestId, body);
     // A tab opened through "Open in Tab" reads its data once; later messages target the bottom panel.
     if (this._queryTabData) {
       this._panel = this._bottomPanel;
@@ -255,10 +257,10 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
         this.history.clear();
-        return reply(
-          { reply: (response) => this.post(response) },
+        return this.respondOn(panel).respond(
+          "clearQueryHistory",
           syncRequestId,
-          {} satisfies queryResults.ResponseBodies["clearQueryHistory"],
+          {},
         );
       },
       openCodeInEditor: ({ code }) => openSqlInEditor(code),
@@ -268,8 +270,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
         executeActiveEditorQuery(
           limit,
           async () =>
-            (await this.queryManifestService.getOrPickProjectFromWorkspace())
-              ?.queries,
+            (await this.currentProject.requireForActiveEditor())?.queries,
         ),
       executeQuery: (message) => this.executeIncomingQuery(message),
       switchPreview: (message) => switchModelPreview(message),
@@ -345,8 +346,8 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
       const result = await this.transmitDataWrapper(output, query, preview);
       recordResult({
         history: this.history,
-        queryManifestService: this.queryManifestService,
-        log: this.dbtTerminal,
+        currentProject: this.currentProject,
+        log: this.log,
         run: {
           result,
           projectName,
@@ -358,11 +359,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
       return result;
     } catch (exc: unknown) {
       if (exc instanceof ExecuteSQLError) {
-        void notifyError(
-          this.queryManifestService.getProject(),
-          "Query failed",
-          exc,
-        );
+        void notifyError(this.currentProject.current, "Query failed", exc);
       }
       const failure = failureOf(exc, query);
       await this.post({
@@ -384,7 +381,7 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
     const replay = this.replay.messagesFor(this.pageOf(panel));
     this.onWebviewReady(panel);
     for (const message of replay) {
-      void postToWebview(panel, message, this.dbtTerminal);
+      void postToWebview(panel, message, this.log);
     }
   }
 

@@ -22,11 +22,8 @@ import {
   toCliArgs,
   toCliEnvironment,
 } from "../core/cli";
-import { DBTCommand, QueryExecution } from "../core/dbtCommand";
-import type {
-  DBTDiagnosticData,
-  DBTDiagnosticResult,
-} from "../core/diagnostics";
+import { DbtCommand, QueryExecution } from "../core/dbtCommand";
+import type { DiagnosticData, DiagnosticResult } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import type { ProjectPaths, ProjectSnapshot } from "../core/snapshot";
 import { dbtProjectFilePath, deferSettingsKey } from "../core/snapshot";
@@ -104,7 +101,7 @@ const REBUILD_RANGE = {
 export class FusionCli {
   private readonly warnedDeferPaths = new Set<string>();
   private config: ProjectSnapshot | undefined;
-  private rebuildManifestDiagnostics: DBTDiagnosticData[] = [];
+  private rebuildManifestDiagnostics: DiagnosticData[] = [];
   private rebuildAbort: AbortController | undefined;
   private readonly executable: FusionCliExecutable;
   private readonly snapshot: () => ProjectSnapshot;
@@ -227,7 +224,7 @@ export class FusionCli {
     return this.projectConfig().name;
   }
 
-  getDiagnostics(): DBTDiagnosticResult {
+  getDiagnostics(): DiagnosticResult {
     return {
       rebuildManifestDiagnostics: this.rebuildManifestDiagnostics,
       projectConfigDiagnostics: [],
@@ -369,8 +366,8 @@ export class FusionCli {
    * Its output streams to the log channel as well as to the caller's `onOutput`.
    * The argv is computed again when the command runs, so it can differ from the argv shown when it was queued.
    */
-  prepare(cli: QueuedCliCommand): DBTCommand {
-    const command = new DBTCommand(
+  prepare(cli: QueuedCliCommand): DbtCommand {
+    const command = new DbtCommand(
       queuedStatus(cli),
       toCliArgs(this.snapshot(), cli, diskProbe),
     );
@@ -418,7 +415,7 @@ function locate(
   root: string,
   fallback: string,
   message: string,
-): Pick<DBTDiagnosticData, "filePath" | "range"> {
+): Pick<DiagnosticData, "filePath" | "range"> {
   const location = logLocation(message);
   if (!location) {
     return { filePath: fallback, range: REBUILD_RANGE };

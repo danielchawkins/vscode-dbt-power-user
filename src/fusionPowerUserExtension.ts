@@ -3,7 +3,7 @@ import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import type { Log } from "./core/log";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
-import type { DbtLineageService } from "./features/lineage/dbtLineageService";
+import type { LineageService } from "./features/lineage/lineageService";
 import type { StatusBars } from "./features/statusBars";
 import { registerFusionClientDiagnostics } from "./projects/clients/fusionClientDiagnostics";
 import type { FusionClientPool } from "./projects/clients/fusionClientPool";
@@ -26,21 +26,21 @@ export interface ExtensionServices {
   fusionClientPool: FusionClientPool;
   fusionStatus: FusionStatus;
   startupGate: StartupGate;
-  dbtLineageService: DbtLineageService;
+  lineageService: LineageService;
   projectEnvironments: ProjectEnvironments;
 }
 
-export class DBTPowerUserExtension implements Disposable {
+export class FusionPowerUserExtension implements Disposable {
   private disposables: Disposable[] = [];
   private disposed = false;
   private projects: Projects;
   private statusBars: StatusBars;
-  private dbtTerminal: Log;
+  private log: Log;
   private projectRegistry: ProjectRegistry;
   private fusionClientPool: FusionClientPool;
   private fusionStatus: FusionStatus;
   private startupGate: StartupGate;
-  private dbtLineageService: DbtLineageService;
+  private lineageService: LineageService;
   private projectEnvironments: ProjectEnvironments;
 
   /**
@@ -50,12 +50,12 @@ export class DBTPowerUserExtension implements Disposable {
   constructor(services: ExtensionServices, owned: readonly Disposable[]) {
     this.projects = services.projects;
     this.statusBars = services.statusBars;
-    this.dbtTerminal = services.log;
+    this.log = services.log;
     this.projectRegistry = services.projectRegistry;
     this.fusionClientPool = services.fusionClientPool;
     this.fusionStatus = services.fusionStatus;
     this.startupGate = services.startupGate;
-    this.dbtLineageService = services.dbtLineageService;
+    this.lineageService = services.lineageService;
     this.projectEnvironments = services.projectEnvironments;
     this.disposables.push(...owned);
   }
@@ -96,7 +96,7 @@ export class DBTPowerUserExtension implements Disposable {
         status: this.fusionStatus,
       }),
     );
-    this.own(registerConnectedColumnsCommand(this.dbtLineageService));
+    this.own(registerConnectedColumnsCommand(this.lineageService));
     return this.start();
   }
 
@@ -134,7 +134,7 @@ export class DBTPowerUserExtension implements Disposable {
       }
       await this.startServices();
     } catch (error) {
-      this.dbtTerminal.error(
+      this.log.error(
         "extensionActivationError",
         "Unable to activate Fusion Power User",
         error,
@@ -183,7 +183,7 @@ export class DBTPowerUserExtension implements Disposable {
       }
       subscription.dispose();
       this.startServices().catch((error) =>
-        this.dbtTerminal.error(
+        this.log.error(
           "extensionActivationError",
           "Unable to activate Fusion Power User",
           error,

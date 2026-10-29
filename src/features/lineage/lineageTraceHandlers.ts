@@ -1,9 +1,9 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Handlers } from "../../webview/messageRouter";
 import type { ColumnTraceRequests } from "./columnTraceRequests";
-import type { DbtLineageService } from "./dbtLineageService";
 import { connectedColumnsBody } from "./lineageBodies";
 import type { Respond } from "./lineageDetailHandlers";
+import type { LineageService } from "./lineageService";
 
 type PanelMessage = lineage.PanelMessage;
 
@@ -12,16 +12,16 @@ type PanelMessage = lineage.PanelMessage;
  * stopped answers `cancelled` with no columns.
  */
 export function columnTraceHandlers(deps: {
-  dbtLineageService: DbtLineageService;
+  lineageService: LineageService;
   traces: ColumnTraceRequests;
   respond: Respond;
 }): Pick<Handlers<PanelMessage>, "getConnectedColumns" | "cancelColumnTrace"> {
-  const { dbtLineageService, traces, respond } = deps;
+  const { lineageService, traces, respond } = deps;
   return {
     getConnectedColumns: async ({ args, syncRequestId }) => {
       const { targets, upstreamExpansion, trace } = args.params;
       const token = traces.token(trace);
-      const result = await dbtLineageService.getConnectedColumns(
+      const result = await lineageService.getConnectedColumns(
         { targets, upstreamExpansion },
         token,
       );

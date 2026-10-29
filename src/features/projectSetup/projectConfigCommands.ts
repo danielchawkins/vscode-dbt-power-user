@@ -92,7 +92,7 @@ export class ProjectConfigCommands implements Disposable {
       );
       void notifyError(
         project,
-        `Could not set fusionPowerUser.staticAnalysis for the folder ${project.folder.name}`,
+        `Could not set fusionPowerUser.staticAnalysis for the folder ${project.declared.folder.name}`,
         error,
       );
       return false;
@@ -109,7 +109,7 @@ export class ProjectConfigCommands implements Disposable {
       return false;
     }
     return applyProjectConfigInsertion(
-      project,
+      project.declared,
       insertion,
       this.logFor(project.root),
     );

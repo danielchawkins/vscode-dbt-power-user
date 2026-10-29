@@ -1,20 +1,20 @@
-import type { PanelNotice } from "@fusion-power-user/webview-contract";
+import type {
+  documentationEditor,
+  PanelNotice,
+} from "@fusion-power-user/webview-contract";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 import { parse as parseYaml } from "yaml";
 import type { NodeMetaData } from "../../core/manifest/types";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { errorText, removeProtocol } from "../../core/text";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
 import type { Projects } from "../../projects/project/projects";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import { activeModelUri } from "../../projects/registry/previewUri";
-import type { DBTDocumentation } from "./docGenTypes";
-import { Source } from "./docGenTypes";
 
-interface DBTDocumentationMessage {
-  documentation: DBTDocumentation | undefined;
+interface DocumentationMessage {
+  documentation: documentationEditor.Documentation | undefined;
   message?: PanelNotice;
 }
 
@@ -48,21 +48,18 @@ interface OpenModel {
 
 export class DocGenService {
   protected projects: Projects;
-  private queryManifestService: QueryManifestService;
+  private currentProject: CurrentProject;
 
-  public constructor(
-    projects: Projects,
-    queryManifestService: QueryManifestService,
-  ) {
+  public constructor(projects: Projects, currentProject: CurrentProject) {
     this.projects = projects;
-    this.queryManifestService = queryManifestService;
+    this.currentProject = currentProject;
   }
 
   private getCompiledDocumentationFromNode(
     currentNode: NodeMetaData | undefined,
     modelName: string,
     filePath: string,
-  ): DBTDocumentation | undefined {
+  ): documentationEditor.Documentation | undefined {
     if (!currentNode) {
       return;
     }
@@ -78,24 +75,28 @@ export class DocGenService {
         name: column.name,
         description: column.description,
         generated: false,
-        source: Source.YAML,
+        source: "YAML",
         type: column.data_type?.toLowerCase(),
       })),
     };
   }
 
+  private activeModelPath(): string | undefined {
+    return this.currentProject.activeEditor()?.modelUri.fsPath;
+  }
+
   private getCurrentNode(modelName: string): NodeMetaData | undefined {
-    return this.queryManifestService
-      .getEventByCurrentProject()
-      ?.event?.nodeMetaMap.lookupByBaseName(modelName);
+    return this.currentProject
+      .activeEditor()
+      ?.project?.manifest?.nodeMetaMap.lookupByBaseName(modelName);
   }
 
   public async getCompiledDocumentationForCurrentActiveFile() {
-    return this.getCompiledDocumentation(activeModelPath());
+    return this.getCompiledDocumentation(this.activeModelPath());
   }
 
   public async getUncompiledDocumentationForCurrentActiveFile() {
-    return this.getUncompiledDocumentation(activeModelPath());
+    return this.getUncompiledDocumentation(this.activeModelPath());
   }
 
   private getDocumentationValidationMessage(
@@ -111,8 +112,8 @@ export class DocGenService {
     }
 
     try {
-      this.queryManifestService
-        .getProjectByUri(Uri.file(filePath))
+      this.currentProject
+        .forResource(Uri.file(filePath))
         ?.throwDiagnosticsErrorIfAvailable();
     } catch (err) {
       return { message: (err as Error).message, type: "error" };
@@ -152,7 +153,7 @@ export class DocGenService {
    */
   private documentationGate(
     filePath?: string,
-  ): { stop: DBTDocumentationMessage } | { model: OpenModel } {
+  ): { stop: DocumentationMessage } | { model: OpenModel } {
     const initialValidation = this.getDocumentationValidationMessage(filePath);
     if (initialValidation.type === "error" || !filePath) {
       return { stop: { documentation: undefined, message: initialValidation } };
@@ -160,7 +161,7 @@ export class DocGenService {
 
     const modelName = path.basename(filePath, ".sql");
     const project = this.projects.get(Uri.file(filePath));
-    if (!project?.projectRoot) {
+    if (!project?.root) {
       return {
         stop: {
           documentation: undefined,
@@ -216,7 +217,7 @@ export class DocGenService {
   private async getDocumentation(
     filePath?: string,
     compiled = true,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     const gate = this.documentationGate(filePath);
     if ("stop" in gate) {
       return gate.stop;
@@ -233,7 +234,7 @@ export class DocGenService {
       };
     }
 
-    const emptyDocumentation: DBTDocumentation = {
+    const emptyDocumentation: documentationEditor.Documentation = {
       name: modelName,
       description: "",
       uniqueId: node.unique_id,
@@ -248,7 +249,7 @@ export class DocGenService {
 
     try {
       const yamlPath = path.join(
-        project.projectRoot.fsPath,
+        project.root.fsPath,
         removeProtocol(node.patch_path),
       );
       const content = await readFile(yamlPath, "utf8");
@@ -275,13 +276,13 @@ export class DocGenService {
 
   public async getCompiledDocumentation(
     filePath?: string,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     return this.getDocumentation(filePath, true);
   }
 
   public async getUncompiledDocumentation(
     filePath?: string,
-  ): Promise<DBTDocumentationMessage> {
+  ): Promise<DocumentationMessage> {
     return this.getDocumentation(filePath, false);
   }
 }
@@ -291,10 +292,10 @@ export class DocGenService {
  * with no entry keeps `empty`.
  */
 function fromYamlModel(
-  empty: DBTDocumentation,
+  empty: documentationEditor.Documentation,
   patchPath: string,
   modelDef: DocumentationSchemaModel | undefined,
-): DBTDocumentation {
+): documentationEditor.Documentation {
   if (!modelDef) {
     return empty;
   }
@@ -306,14 +307,8 @@ function fromYamlModel(
       name: column.name,
       description: column.description ?? "",
       generated: false,
-      source: Source.YAML,
+      source: "YAML",
       type: column.data_type?.toLowerCase(),
     })),
   };
-}
-
-/** The active editor model path; a focused compiled preview resolves to its model. */
-function activeModelPath(): string | undefined {
-  const uri = window.activeTextEditor?.document?.uri;
-  return uri && activeModelUri(uri).fsPath;
 }

@@ -11,11 +11,11 @@ export class DeferToProductionStatusBar implements Disposable {
   );
   private disposables: Disposable[] = [];
   private projects: Projects;
-  private dbtTerminal: Log;
+  private log: Log;
 
-  constructor(projects: Projects, dbtTerminal: Log) {
+  constructor(projects: Projects, log: Log) {
     this.projects = projects;
-    this.dbtTerminal = dbtTerminal;
+    this.log = log;
     this.disposables.push(
       onDidChangeSettings(["defer.perProject"], (change) => {
         if (change.affects()) {
@@ -66,7 +66,7 @@ export class DeferToProductionStatusBar implements Disposable {
       this.statusBar.show();
     } catch (err) {
       this.statusBar.hide();
-      this.dbtTerminal.debug(
+      this.log.debug(
         "DeferToProductionStatusBar",
         "Unable to update defer status bar",
         err,

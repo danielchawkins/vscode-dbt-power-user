@@ -7,7 +7,7 @@ import type { Project } from "../../projects/project/project";
 import type { ProjectLookup } from "../../projects/project/projects";
 
 /** What saving reads from the project that owns the documented file. */
-type SaveProject = Pick<Project, "projectRoot" | "getAdapterType">;
+type SaveProject = Pick<Project, "root" | "getAdapterType">;
 import { writeUserFile } from "../../projects/project/userFiles";
 import type { MessageOf } from "../../webview/messageRouter";
 import type { TestDataDeps } from "./docsTestData";
@@ -31,10 +31,7 @@ async function chooseSchemaFile(
 ): Promise<string | undefined> {
   if (message.patchPath) {
     // the location comes from the manifest, parse it
-    return path.join(
-      project.projectRoot.fsPath,
-      removeProtocol(message.patchPath),
-    );
+    return path.join(project.root.fsPath, removeProtocol(message.patchPath));
   }
   switch (message.dialogType) {
     case "Existing file": {

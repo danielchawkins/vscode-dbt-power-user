@@ -16,26 +16,28 @@ const makeService = (root: string, setup: Setup = {}) => {
   const project = setup.noProject
     ? undefined
     : {
-        projectRoot: Uri.file(root),
+        root: Uri.file(root),
+        manifest: { nodeMetaMap: { lookupByBaseName: () => setup.node } },
         paths: () => ({
           modelPaths: setup.modelPaths ?? [path.join(root, "models")],
         }),
         log: { error: vi.fn() },
+        throwDiagnosticsErrorIfAvailable: () => {
+          if (setup.diagnostics) {
+            throw setup.diagnostics;
+          }
+        },
       };
   const projects = { get: () => project };
-  const queryManifestService = {
-    getEventByCurrentProject: () => ({
-      event: { nodeMetaMap: { lookupByBaseName: () => setup.node } },
-    }),
-    getProjectByUri: () => ({
-      throwDiagnosticsErrorIfAvailable: () => {
-        if (setup.diagnostics) {
-          throw setup.diagnostics;
-        }
+  const currentProject = {
+    activeEditor: () =>
+      project && {
+        modelUri: Uri.file(path.join(root, "models", "orders.sql")),
+        project,
       },
-    }),
+    forResource: () => project,
   };
-  return new DocGenService(projects as never, queryManifestService as never);
+  return new DocGenService(projects as never, currentProject as never);
 };
 
 const node = (overrides: Record<string, unknown> = {}) => ({

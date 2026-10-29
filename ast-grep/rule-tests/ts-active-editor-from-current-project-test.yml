@@ -1,0 +1,12 @@
+id: ts-active-editor-from-current-project
+valid:
+  - 'const project = this.currentProject.current;'
+  - 'const text = window.activeTextEditor?.document.getText();'
+  - 'const cursor = window.activeTextEditor.selection;'
+  - 'const uri = editor.document.uri;'
+invalid:
+  - 'const uri = window.activeTextEditor?.document.uri;'
+  - 'const fullPath = activeModelUri(window.activeTextEditor.document.uri);'
+  - 'return this.projectOf(window.activeTextEditor.document.uri);'
+  - 'this.propose(kind, window.activeTextEditor?.document.uri);'
+  - 'const uri = window.activeTextEditor?.document?.uri;'

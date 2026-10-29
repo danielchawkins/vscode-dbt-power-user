@@ -1,15 +1,13 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import type {
-  DBTDocumentationColumn,
-  DBTModelTest,
-} from "@modules/documentationEditor/state/types";
+import type { EditorDocumentationColumn } from "@modules/documentationEditor/state/types";
 import EntityWithTests from "../tests/EntityWithTests";
 import ColumnProposal from "./ColumnProposal";
 import DocGeneratorInput from "./DocGeneratorInput";
 
 interface Props {
-  column: DBTDocumentationColumn;
-  tests: DBTModelTest[];
+  column: EditorDocumentationColumn;
+  tests: documentationEditor.ModelTest[];
 }
 const DocGeneratorColumn = ({ column, tests }: Props): React.JSX.Element => {
   return (

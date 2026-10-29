@@ -4,7 +4,7 @@ import { commands, window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { errorText } from "../../core/text";
-import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type { CurrentProject } from "../../projects/project/currentProject";
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { writeSetting } from "../../settings";
 import type { QueryHistoryStore } from "./queryHistory";
@@ -82,12 +82,12 @@ interface QueryPanelProject {
 
 /** The named project, or the one picked from the workspace when there is no name. */
 export async function resolveQueryProject(
-  queryManifestService: QueryManifestService,
+  currentProject: CurrentProject,
   projectName?: string,
 ) {
   const project = projectName
-    ? queryManifestService.getProjectByName(projectName)
-    : await queryManifestService.getOrPickProjectFromWorkspace();
+    ? currentProject.byName(projectName)
+    : await currentProject.requireForActiveEditor();
   if (!project) {
     throw new Error("Unable to find project to execute query");
   }
@@ -131,12 +131,12 @@ export async function runOnQueryPanel(
  */
 export function recordResult({
   history,
-  queryManifestService,
+  currentProject,
   log,
   run,
 }: {
   history: QueryHistoryStore;
-  queryManifestService: QueryManifestService;
+  currentProject: CurrentProject;
   log: Pick<Log, "debug">;
   run: {
     result: {
@@ -152,8 +152,8 @@ export function recordResult({
   };
 }): void {
   const project = run.projectName
-    ? queryManifestService.getProjectByName(run.projectName)
-    : queryManifestService.getProject();
+    ? currentProject.byName(run.projectName)
+    : currentProject.current;
   if (!project) {
     log.debug(
       "updateQueryHistory",

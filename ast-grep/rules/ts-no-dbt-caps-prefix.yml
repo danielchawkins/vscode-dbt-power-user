@@ -1,0 +1,25 @@
+# `dbt` is written in lower case; an all-caps `DBT`/`Dbt…` prefix on a type is a namespace left from the upstream
+# extension, not the dbt concept (rearchitecture-plan.md, "Naming and code conventions"). Name the type for what it is:
+# dbt's command is `DbtCommand`; the contract's documentation type is `Documentation`.
+id: ts-no-dbt-caps-prefix
+language: typescript
+severity: error
+message: >-
+  Do not prefix a type with `DBT`; name it for what it is in dbt or VS Code terms (CONTEXT.md), e.g. `Documentation`,
+  `ModelTest`, `FusionPowerUserExtension`.
+files:
+  - src/**
+  - webview_panels/src/**
+  - packages/*/src/**
+  - scripts/**
+rule:
+  all:
+    - any:
+        - kind: class_declaration
+        - kind: abstract_class_declaration
+        - kind: interface_declaration
+        - kind: type_alias_declaration
+        - kind: enum_declaration
+    - has:
+        field: name
+        regex: '^DBT[A-Z]'

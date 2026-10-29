@@ -109,7 +109,7 @@ export class NodeParser {
     nodesMap: ManifestResources | null | undefined,
     project: ManifestProject,
   ): Promise<NodeMetaMap> {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "NodeParser",

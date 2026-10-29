@@ -50,7 +50,7 @@ afterEach(() => {
 
 /** A lineage panel built as the extension builds it, with stubbed services; `postMessage` collects what it posts. */
 function lineageHarness() {
-  const dbtLineageService = {
+  const lineageService = {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
     getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
@@ -62,10 +62,9 @@ function lineageHarness() {
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
   };
   const queryManifestService = {
-    getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-    getProject: vi.fn().mockReturnValue(undefined),
     manifestFor: vi.fn().mockReturnValue(undefined),
   };
+  const currentProject = { current: undefined };
   const globalState = new Map<string, unknown>();
   const extensionContext = {
     extensionUri: Uri.file("/ext"),
@@ -75,8 +74,9 @@ function lineageHarness() {
   };
   const panel = lineagePanel(silentLog(), {
     extensionContext,
-    dbtLineageService,
+    lineageService,
     queryManifestService,
+    currentProject,
   }) as any;
   // `details` is a getter that builds a LineageDetails on each read; shadow it with one stub.
   Object.defineProperty(panel, "details", {
@@ -116,12 +116,12 @@ describe("lineage panel messages", () => {
     },
     runNoticeAction: async () => {
       const h = lineageHarness();
-      const projectRoot = Uri.file("/p");
-      h.panel.queryManifestService.getProject = () => ({ projectRoot });
+      const root = Uri.file("/p");
+      h.panel.currentProject.current = { root };
       await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.useStrictAnalysis",
-        projectRoot,
+        root,
       );
     },
     init: async () => {
@@ -150,7 +150,7 @@ describe("lineage panel messages", () => {
         args: { params: { table: "model.p.a" } },
         syncRequestId: "c1",
       });
-      expect(h.panel.dbtLineageService.getChildTables).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getChildTables).toHaveBeenCalledWith({
         table: "model.p.a",
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe("lineage panel messages", () => {
         args: { params: { table: "model.p.a" } },
         syncRequestId: "p1",
       });
-      expect(h.panel.dbtLineageService.getParentTables).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getParentTables).toHaveBeenCalledWith({
         table: "model.p.a",
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -178,7 +178,7 @@ describe("lineage panel messages", () => {
         args: { params: { tables: ["model.p.a", "model.p.z"] } },
         syncRequestId: "e1",
       });
-      expect(h.panel.dbtLineageService.getTableEdges).toHaveBeenCalledWith({
+      expect(h.panel.lineageService.getTableEdges).toHaveBeenCalledWith({
         tables: ["model.p.a", "model.p.z"],
       });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -252,9 +252,7 @@ describe("lineage panel messages", () => {
         },
         syncRequestId: "k1",
       });
-      expect(
-        h.panel.dbtLineageService.getConnectedColumns,
-      ).toHaveBeenCalledWith(
+      expect(h.panel.lineageService.getConnectedColumns).toHaveBeenCalledWith(
         { targets, upstreamExpansion: true },
         expect.anything(),
       );
@@ -265,7 +263,7 @@ describe("lineage panel messages", () => {
     cancelColumnTrace: async () => {
       const h = lineageHarness();
       let finish: (value: unknown) => void = () => undefined;
-      h.panel.dbtLineageService.getConnectedColumns.mockImplementationOnce(
+      h.panel.lineageService.getConnectedColumns.mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             finish = resolve;
@@ -339,13 +337,16 @@ function queryHarness(ready = true) {
       executeSQLWithLimitOnQueryPanel: vi.fn(),
     },
   };
-  const service = {
-    manifestFor: () => undefined,
-    getProject: () => project,
-    getProjectByName: () => project,
-    getOrPickProjectFromWorkspace: async () => project,
+  const currentProject = {
+    current: project,
+    byName: () => project,
+    requireForActiveEditor: async () => project,
   };
-  const panel = queryResultPanel(silentLog(), service) as any;
+  const panel = queryResultPanel(
+    silentLog(),
+    { manifestFor: () => undefined },
+    currentProject,
+  ) as any;
   const page = openPage(panel, fakeView(), ready);
   return {
     panel,
@@ -577,7 +578,7 @@ function docsHarness() {
     ),
   };
   const project = {
-    projectRoot: Uri.file("/p"),
+    root: Uri.file("/p"),
     getProjectName: () => "jaffle",
     getAdapterType: () => "duckdb",
     queries: {
@@ -601,7 +602,7 @@ function docsHarness() {
       documentation: docs,
     })),
   };
-  const dbtTestService = {
+  const modelTests = {
     getTestsForCurrentModel: vi.fn(async () => []),
     getUnitTestsForCurrentModel: vi.fn(async () => []),
     getConfigByTest: vi.fn(() => ({ severity: "warn" })),
@@ -616,9 +617,9 @@ function docsHarness() {
     silentLog(),
     {
       docGenService,
-      dbtTestService,
+      modelTests,
       queryManifestService,
-      emitterService: { eventEmitter: { event: vi.fn() } },
+      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposals,
       columnProposalRequests,
     },
@@ -639,7 +640,7 @@ function docsHarness() {
     payload,
     columnProposals,
     columnProposalRequests,
-    dbtTestService,
+    modelTests,
     docGenService,
     queryManifestService,
     send: page.send,
@@ -712,7 +713,7 @@ describe("documentation editor messages", () => {
       const h = docsHarness();
       const test = { key: "not_null_orders_id", column_name: "id" };
       // The editor moves on while the request runs; the test config still comes from the model the request resolved.
-      h.dbtTestService.getConfigByTest.mockImplementationOnce(() => {
+      h.modelTests.getConfigByTest.mockImplementationOnce(() => {
         window.activeTextEditor = {
           document: { uri: Uri.file("/p/models/customers.sql") },
         } as never;
@@ -724,7 +725,7 @@ describe("documentation editor messages", () => {
         model: "orders",
         syncRequestId: "g1",
       });
-      expect(h.dbtTestService.getConfigByTest).toHaveBeenCalledWith(
+      expect(h.modelTests.getConfigByTest).toHaveBeenCalledWith(
         test,
         "orders",
         {

@@ -93,7 +93,7 @@ describe("Projects", () => {
 
     // Mock Project instances
     mockProject1 = {
-      projectRoot: Uri.file("/project1"),
+      root: Uri.file("/project1"),
       getProjectName: vi.fn().mockReturnValue("project1"),
       getAdapterType: vi.fn().mockReturnValue("snowflake"),
       initialize: vi.fn(() => {
@@ -116,7 +116,7 @@ describe("Projects", () => {
     } as unknown as Mocked<Project>;
 
     mockProject2 = {
-      projectRoot: Uri.file("/project2"),
+      root: Uri.file("/project2"),
       getProjectName: vi.fn().mockReturnValue("project2"),
       getAdapterType: vi.fn().mockReturnValue("snowflake"),
       initialize: vi.fn(() => {
@@ -209,6 +209,17 @@ describe("Projects", () => {
       expect(lifecycle).toHaveLength(2);
     });
 
+    it("fires onDidChangeProjects once the projects follow a registry change", async () => {
+      await projects.initialize();
+      const changed = vi.fn();
+      projects.onDidChangeProjects(changed);
+
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(changed).toHaveBeenCalledTimes(1);
+    });
+
     it("re-parses only the projects whose target or profilesDir changed", async () => {
       await projects.initialize();
       const calls = vi.mocked(workspace.onDidChangeConfiguration).mock.calls;
@@ -295,7 +306,7 @@ describe("Projects", () => {
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(removed).toEqual([mockProject2.projectRoot]);
+      expect(removed).toEqual([mockProject2.root]);
     });
 
     it("aggregates onDidChangeManifest across projects and stops after removal", async () => {
@@ -417,8 +428,8 @@ describe("Projects", () => {
       projects.dispose();
 
       expect(roots.sort()).toEqual([
-        mockProject1.projectRoot.fsPath,
-        mockProject2.projectRoot.fsPath,
+        mockProject1.root.fsPath,
+        mockProject2.root.fsPath,
       ]);
     });
   });

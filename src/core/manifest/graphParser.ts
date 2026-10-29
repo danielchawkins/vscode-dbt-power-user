@@ -22,7 +22,7 @@ const notEmpty = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;
 };
 
-export type DBTGraphType = {
+export type DependencyGraph = {
   [name: string]: string[];
 };
 
@@ -35,7 +35,7 @@ const PARSE_GRAPH_TYPES = new Set(["analysis"]);
 
 /** For each node, its neighbours in `graph` that are of `resourceType`. */
 function graphOfType(
-  graph: DBTGraphType,
+  graph: DependencyGraph,
   resolve: (name: string) => NodeData | undefined,
   resourceType: string,
 ): NodeGraphMap {
@@ -53,9 +53,9 @@ function graphOfType(
 
 /** The resource maps one manifest parse produces. */
 export interface ParsedResourceMaps {
-  parentMetaMap: DBTGraphType;
-  childMetaMap: DBTGraphType;
-  constraintOnlyParents: DBTGraphType;
+  parentMetaMap: DependencyGraph;
+  childMetaMap: DependencyGraph;
+  constraintOnlyParents: DependencyGraph;
   nodeMetaMap: NodeMetaMap;
   macroMetaMap: MacroMetaMap;
   metricMetaMap: MetricMetaMap;
@@ -207,7 +207,7 @@ export class GraphParser {
     testMetaMap,
     functionMetaMap,
   }: GraphInput): GraphMetaMap {
-    const projectRoot = project.getProjectRoot();
+    const projectRoot = project.root.fsPath;
     const projectName = project.getProjectName();
     this.terminal.debug(
       "GraphParser",

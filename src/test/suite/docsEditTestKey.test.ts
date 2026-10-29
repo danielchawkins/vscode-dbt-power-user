@@ -10,20 +10,20 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { parse } from "yaml";
-import { DbtTestService } from "../../features/docs/dbtTestService";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import {
   getTestDataByColumn,
   getTestDataByModel,
 } from "../../features/docs/docsTestData";
+import { ModelTestService } from "../../features/docs/modelTestService";
 import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 const deps = {
   terminal: { debug: vi.fn(), error: vi.fn() },
-  dbtTestService: Object.create(DbtTestService.prototype),
+  modelTests: Object.create(ModelTestService.prototype),
 } as never as {
   terminal: never;
-  dbtTestService: never;
+  modelTests: never;
 };
 
 const modelTest = {
@@ -37,12 +37,12 @@ const columnTest = {
 /** A panel for the project at `root`, built without its constructor's collaborators. */
 function savePanel(root: string): SavePanel {
   const project = {
-    projectRoot: Uri.file(root),
+    root: Uri.file(root),
     getAdapterType: () => "duckdb",
   };
   return Object.assign(Object.create(DocsEditViewPanel.prototype), {
-    dbtTestService: deps.dbtTestService,
-    dbtTerminal: deps.terminal,
+    modelTests: deps.modelTests,
+    log: deps.terminal,
     projects: { get: () => project },
     getProject: () => project,
   });

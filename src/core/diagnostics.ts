@@ -1,4 +1,4 @@
-export interface DBTDiagnosticData {
+export interface DiagnosticData {
   filePath: string;
   message: string;
   severity: "error" | "warning" | "info" | "hint";
@@ -12,7 +12,7 @@ export interface DBTDiagnosticData {
   category: string;
 }
 
-export interface DBTDiagnosticResult {
-  rebuildManifestDiagnostics: DBTDiagnosticData[];
-  projectConfigDiagnostics: DBTDiagnosticData[];
+export interface DiagnosticResult {
+  rebuildManifestDiagnostics: DiagnosticData[];
+  projectConfigDiagnostics: DiagnosticData[];
 }

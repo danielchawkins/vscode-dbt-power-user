@@ -8,7 +8,7 @@ import {
   isConfigError,
   textLogErrors,
 } from "../../core/cli/index";
-import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
 import type { ProjectSnapshot } from "../../core/snapshot/index";
 import { resolveProfilesDir } from "../../core/snapshot/index";
@@ -155,7 +155,7 @@ export class ProjectErrors implements Disposable {
   }
 
   /** Replaces the parse errors with the error-severity `diagnostics`. */
-  reportParse(diagnostics: readonly DBTDiagnosticData[]): void {
+  reportParse(diagnostics: readonly DiagnosticData[]): void {
     this.report(
       "parse",
       diagnostics

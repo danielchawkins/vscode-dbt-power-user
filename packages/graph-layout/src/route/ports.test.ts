@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { caseArb, routeGraph, routeOptions } from "../testing/routeGraphs.js";
 import type { LayoutEdge, LayoutNode, Point, Side } from "../types.js";
-import { caseArb, options, routeGraph } from "./testGraphs.js";
 
 /** A node and its centre in the drawing. */
 interface Placed {
@@ -88,7 +88,11 @@ describe("route ports", () => {
   it("draws each routed edge as an orthogonal polyline from its source node to its target node", () => {
     fc.assert(
       fc.property(caseArb, ({ graph, direction, effort }) => {
-        const routing = routeGraph(graph, { ...options, direction, effort });
+        const routing = routeGraph(graph, {
+          ...routeOptions,
+          direction,
+          effort,
+        });
         const down = direction === "down";
         const placed = (id: string): Placed | undefined => {
           const node = graph.nodes.find((n) => n.id === id);

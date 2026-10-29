@@ -9,9 +9,9 @@ import type {
   ProposalKind,
   ProposalTarget,
 } from "./columnProposals";
-import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DocsDrafts } from "./docsDrafts";
+import type { ModelTestService } from "./modelTestService";
 
 /** Test-only: answers with the column proposals for the active documentation after opening `file`. */
 const DOCS_COLUMN_PROPOSALS_COMMAND = "fusionPowerUser.test.columnProposals";
@@ -32,7 +32,7 @@ export interface DocsHarnessDeps {
     DocGenService,
     "getUncompiledDocumentationForCurrentActiveFile"
   >;
-  dbtTestService: Pick<DbtTestService, "getTestsForCurrentModel">;
+  modelTests: Pick<ModelTestService, "getTestsForCurrentModel">;
   drafts: DocsDrafts;
   proposalTarget(): Promise<ProposalTarget | undefined>;
   save(message: SaveMessage): Promise<void>;
@@ -70,7 +70,7 @@ async function acceptAllProposals(
         ? columnProposals.applyProposals(columns, payload.proposals)
         : columnProposals.applyDescriptionProposals(columns, payload.proposals),
     updatedTests:
-      draft?.tests ?? (await deps.dbtTestService.getTestsForCurrentModel()),
+      draft?.tests ?? (await deps.modelTests.getTestsForCurrentModel()),
   });
   return "saved";
 }

@@ -1,5 +1,6 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
+import useAppContext from "@modules/app/useAppContext";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
-import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock } from "@uicore";
@@ -12,7 +13,7 @@ interface GetTestCodeResponse {
 const DbtTestCode = ({
   test,
 }: {
-  test: DBTModelTest;
+  test: documentationEditor.ModelTest;
 }): React.JSX.Element | null => {
   const {
     state: { currentDocsData },
@@ -30,6 +31,9 @@ const DbtTestCode = ({
   );
 
   const model = currentDocsData?.name;
+  const {
+    state: { theme },
+  } = useAppContext();
   useEffect(() => {
     if (!model) {
       return;
@@ -56,13 +60,28 @@ const DbtTestCode = ({
   return (
     <>
       {testCode.config ? (
-        <CodeBlock code={testCode.config} language="yaml" fileName="Config" />
+        <CodeBlock
+          code={testCode.config}
+          language="yaml"
+          fileName="Config"
+          theme={theme}
+        />
       ) : null}
       {testCode.sql ? (
-        <CodeBlock code={testCode.sql} language="sql" fileName="Source" />
+        <CodeBlock
+          code={testCode.sql}
+          language="sql"
+          fileName="Source"
+          theme={theme}
+        />
       ) : null}
       {testCode.error ? (
-        <CodeBlock code={testCode.error} language="yaml" fileName="Source" />
+        <CodeBlock
+          code={testCode.error}
+          language="yaml"
+          fileName="Source"
+          theme={theme}
+        />
       ) : null}
     </>
   );

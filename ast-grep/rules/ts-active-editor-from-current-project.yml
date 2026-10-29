@@ -1,0 +1,46 @@
+# Which Project the active editor belongs to is decided in one place, `CurrentProject` (src/projects/project/
+# currentProject.ts): it maps a compiled-preview URI to its model (`activeModelUri`), falls back to the folder's only
+# project, then to the picked or sole project. A feature that reads `window.activeTextEditor.document.uri` and looks
+# the project up itself skips some of those steps, so two features can answer differently for the same editor.
+# Reading the active editor's text or selection is not this rule's concern.
+# The ignores are the baseline: the files that still read the URI themselves. Remove each as it moves to CurrentProject.
+id: ts-active-editor-from-current-project
+language: typescript
+severity: error
+message: >-
+  Ask CurrentProject (src/projects/project/currentProject.ts) for the active editor's project or model URI instead of
+  reading `window.activeTextEditor.document.uri` here.
+files:
+  - src/**
+ignores:
+  - src/test/**
+  - "**/*.test.ts"
+  - src/projects/project/currentProject.ts
+  - src/features/compiledSql/commands.ts
+  - src/features/cte/commands.ts
+  - src/features/defer/deferToProductionStatusBar.ts
+  - src/features/docs/commands.ts
+  - src/features/docs/docGenService.ts
+  - src/features/docs/docsEditHandlers.ts
+  - src/features/docs/docsEditPanel.ts
+  - src/features/modelTree/modelTreeviewProvider.ts
+  - src/features/run/commands.ts
+  - src/features/run/runModel.ts
+  - src/features/run/runTest.ts
+  - src/projects/project/queryManifestService.ts
+rule:
+  kind: member_expression
+  all:
+    - has:
+        field: property
+        regex: '^uri$'
+    - has:
+        field: object
+        kind: member_expression
+        all:
+          - has:
+              field: property
+              regex: '^document$'
+          - has:
+              field: object
+              regex: '^window\.activeTextEditor$'

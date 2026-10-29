@@ -1,7 +1,7 @@
-import CommonActionButtons from "@modules/commonActionButtons/CommonActionButtons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { Stack } from "@uicore";
 import { useMemo, useState } from "react";
+import CommonActionButtons from "./components/actionButtons/CommonActionButtons";
 import DocGeneratorColumnsList from "./components/docGenerator/DocGeneratorColumnsList";
 import DocGeneratorInput from "./components/docGenerator/DocGeneratorInput";
 import DocumentationHelpContent from "./components/help/DocumentationHelpContent";

@@ -1,7 +1,9 @@
 import type { OrderResult } from "../order/index.js";
-import type { LayoutGraph, LayoutOptions, Point } from "../types.js";
+import { boxRects } from "../place/boxRects.js";
+import type { LayoutGraph, LayoutOptions, Point, Rect } from "../types.js";
 import { routeChannel } from "./channel.js";
 import type { ChannelPiece } from "./channelTypes.js";
+import { routeLevels } from "./levelRoutes.js";
 import { membersOf, type Phases, type Run } from "./pieces.js";
 import { framePoint, type Geometry, polylinesOf } from "./polylines.js";
 import { stubCrossings } from "./stubs.js";
@@ -44,6 +46,8 @@ export interface Routing {
    * and self-loops (which layering leaves out of the bands), have no entry: self-loops are not drawn yet.
    */
   edges: ReadonlyMap<string, Point[]>;
+  /** The rectangle of each cluster box, recomputed for the re-stacked ranks. Empty when there are no clusters. */
+  clusters: ReadonlyMap<string, Rect>;
   work: RouteWork;
 }
 
@@ -57,6 +61,9 @@ export function route(
   options: LayoutOptions,
   phases: Phases,
 ): Routing {
+  if (options.ranks === "levels") {
+    return routeLevels(graph, options, phases);
+  }
   const { ordering, placement } = phases;
   const spacing = { ...DEFAULT_SPACING, ...options.spacing };
   const effort: Effort = options.effort ?? "balanced";
@@ -87,7 +94,11 @@ export function route(
       0,
     ),
   );
-  const centres = stackRanks(halves, widths, anchorRank(ordering, options));
+  // Each rank gap also holds the margins of the boxes it separates, as placement's does.
+  const gaps = widths.map((w, r) =>
+    Math.max(w, placement.boxes.plan.rankGap[r] ?? 0),
+  );
+  const centres = stackRanks(halves, gaps, anchorRank(ordering, options));
   const geometry: Geometry = {
     down,
     edge: spacing.edge,
@@ -116,7 +127,13 @@ export function route(
     }
   });
   work.crossings += stubCrossings(layered, inRank, geometry.portAcross);
-  return { nodes, edges: polylinesOf(members, geometry), work };
+  const clusters = boxRects(placement.boxes, centres, halves);
+  return {
+    nodes,
+    edges: polylinesOf(members, geometry),
+    clusters,
+    work,
+  };
 }
 
 /**

@@ -153,12 +153,14 @@ const extensionContext = { extensionUri: Uri.file("/ext") } as never;
 export function queryResultPanel(
   terminal: Log = spyLog(),
   queryManifestService: unknown = {},
+  currentProject: unknown = {},
 ): QueryResultPanel {
   return new QueryResultPanel({
     extensionContext,
-    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
-    dbtTerminal: terminal,
+    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
+    log: terminal,
     queryManifestService: queryManifestService as never,
+    currentProject: currentProject as never,
     onDidRemoveProject: new EventEmitter<Uri>().event,
   });
 }
@@ -185,12 +187,12 @@ export function docsEditPanel(
           documentation: undefined,
         })),
       },
-      dbtTestService: {
+      modelTests: {
         getTestsForCurrentModel: vi.fn(async () => []),
         getUnitTestsForCurrentModel: vi.fn(async () => []),
       },
       queryManifestService: { manifestFor: () => undefined },
-      emitterService: { eventEmitter: { event: vi.fn() } },
+      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposalRequests: new ColumnProposalRequests(),
       ...services,
     } as never,
@@ -205,15 +207,17 @@ export function lineagePanel(
   terminal: Log = spyLog(),
   services: {
     extensionContext?: unknown;
-    dbtLineageService?: unknown;
+    lineageService?: unknown;
     queryManifestService?: unknown;
+    currentProject?: unknown;
   } = {},
 ): LineagePanel {
   return new LineagePanel({
     extensionContext: (services.extensionContext ?? extensionContext) as never,
     terminal,
-    dbtLineageService: (services.dbtLineageService ?? {}) as never,
-    eventEmitterService: { eventEmitter: new EventEmitter<unknown>() } as never,
+    lineageService: (services.lineageService ?? {}) as never,
+    currentProject: (services.currentProject ?? {}) as never,
+    sharedState: { eventEmitter: new EventEmitter<unknown>() } as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
   });
 }

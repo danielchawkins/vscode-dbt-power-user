@@ -49,14 +49,18 @@ export class Projects implements Disposable {
   private _onDidChangeErrors = new EventEmitter<Project>();
   /** Fires when a project's current configuration error changes. */
   readonly onDidChangeErrors: Event<Project> = this._onDidChangeErrors.event;
+  private _onDidChangeProjects = new EventEmitter<void>();
+  /** Fires once the set of Projects follows a registry change, before the new ones finish initializing. */
+  readonly onDidChangeProjects: Event<void> = this._onDidChangeProjects.event;
   private disposables: Disposable[] = [
     this._onDidInitialize,
     this._onDidChangeManifest,
     this._onDidRemoveProject,
     this._onDidChangeErrors,
+    this._onDidChangeProjects,
     onDidChangeSettings(["target", "profilesDir", "perProject"], (change) => {
       for (const { project } of this.projectsByRoot.values()) {
-        if (change.affects(project.projectRoot)) {
+        if (change.affects(project.root)) {
           void project.rebuildManifest();
         }
       }
@@ -71,7 +75,7 @@ export class Projects implements Disposable {
   private projectRegistry: ProjectRegistry;
   private projectFactory: (project: DeclaredProject) => Project;
   private metadataSourceFactory: MetadataSourceFactory;
-  private dbtTerminal: Log;
+  private log: Log;
 
   constructor(
     projectRegistry: ProjectRegistry,
@@ -79,12 +83,12 @@ export class Projects implements Disposable {
       project: (project: DeclaredProject) => Project;
       metadataSource: MetadataSourceFactory;
     },
-    dbtTerminal: Log,
+    log: Log,
   ) {
     this.projectRegistry = projectRegistry;
     this.projectFactory = factories.project;
     this.metadataSourceFactory = factories.metadataSource;
-    this.dbtTerminal = dbtTerminal;
+    this.log = log;
   }
 
   async initialize(): Promise<void> {
@@ -97,11 +101,7 @@ export class Projects implements Disposable {
     }
     this.registrySubscription = this.projectRegistry.onDidChangeProjects(() => {
       void this.enqueueSync().catch((error) => {
-        this.dbtTerminal.error(
-          "Projects",
-          "Project synchronization failed",
-          error,
-        );
+        this.log.error("Projects", "Project synchronization failed", error);
       });
     });
     this._onDidInitialize.fire();
@@ -148,7 +148,7 @@ export class Projects implements Disposable {
     }
     for (const [rootPath, entry] of this.projectsByRoot) {
       this.projectsByRoot.delete(rootPath);
-      this._onDidRemoveProject.fire(entry.project.projectRoot);
+      this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
@@ -204,9 +204,10 @@ export class Projects implements Disposable {
         this.projectsByRoot.delete(rootPath);
       }
     }
+    this._onDidChangeProjects.fire();
 
     for (const entry of removed) {
-      this._onDidRemoveProject.fire(entry.project.projectRoot);
+      this._onDidRemoveProject.fire(entry.project.root);
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();

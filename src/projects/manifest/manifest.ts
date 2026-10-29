@@ -74,10 +74,11 @@ export function publicationId(
 }
 
 /** Stamps `parsed` as the next manifest publication for `project`'s root, advancing that root's epoch. */
-export function nextManifestPublication<
-  P extends { projectRoot: { fsPath: string } },
->(project: P, parsed: ParsedManifest) {
-  const projectKey = project.projectRoot.fsPath;
+export function nextManifestPublication<P extends { root: { fsPath: string } }>(
+  project: P,
+  parsed: ParsedManifest,
+) {
+  const projectKey = project.root.fsPath;
   const publicationEpoch = (publicationEpochs.get(projectKey) ?? 0) + 1;
   publicationEpochs.set(projectKey, publicationEpoch);
   return {
@@ -115,7 +116,7 @@ export async function buildManifest({
   terminal: Log;
   readFailures: ManifestReadFailures;
 }): Promise<BuiltManifest | undefined> {
-  const projectRoot = project.getProjectRoot();
+  const projectRoot = project.root.fsPath;
   terminal.debug(
     "Manifest",
     `Going to parse manifest for project at ${projectRoot}`,

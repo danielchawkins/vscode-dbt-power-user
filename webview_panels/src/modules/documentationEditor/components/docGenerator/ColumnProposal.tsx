@@ -7,7 +7,7 @@ import {
 } from "@modules/documentationEditor/proposals/proposalsReducer";
 import { sourceLabel } from "@modules/documentationEditor/proposals/sourceLabel";
 import { useProposalActions } from "@modules/documentationEditor/proposals/useProposalActions";
-import type { DBTDocumentationColumn } from "@modules/documentationEditor/state/types";
+import type { EditorDocumentationColumn } from "@modules/documentationEditor/state/types";
 import { Button, Stack } from "@uicore";
 
 const sourcesOf = (candidate: columnProposals.DescriptionCandidate): string =>
@@ -126,7 +126,7 @@ const DescriptionRow = ({
 const ColumnProposal = ({
   column,
 }: {
-  column: DBTDocumentationColumn;
+  column: EditorDocumentationColumn;
 }): React.JSX.Element | null => {
   const { state } = useProposals();
   const same = (proposed: string): boolean =>

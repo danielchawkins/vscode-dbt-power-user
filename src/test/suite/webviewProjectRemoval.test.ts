@@ -48,7 +48,7 @@ describe("webview panels on project removal", () => {
       projects: value,
       extensionContext: {} as any,
       services: {
-        emitterService: { eventEmitter: { event: vi.fn() } },
+        sharedState: { eventEmitter: { event: vi.fn() } },
         columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,

@@ -1,11 +1,13 @@
+import type {
+  ColumnRef,
+  DescriptionCandidate,
+} from "@fusion-power-user/webview-contract/columnProposals";
 import { CancellationTokenSource } from "vscode";
 import {
-  type ColumnRef,
   columnEdges,
   columnLineageArgs,
 } from "../../core/lineage/columnLineage";
 import {
-  type DescriptionCandidate,
   declaredDescription,
   descriptionCandidates,
   toDescriptionProposal,

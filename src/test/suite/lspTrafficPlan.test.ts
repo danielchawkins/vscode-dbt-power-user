@@ -22,7 +22,7 @@ function harness() {
   subscribeToCompileState(client as never, client.compileState);
   const reportErrors = vi.fn();
   const state = new ManifestState(
-    { projectRoot: { fsPath: "/p" } },
+    { root: { fsPath: "/p" } },
     () => client as unknown as FusionClient,
     {
       follow: (listener) =>

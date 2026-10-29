@@ -1,0 +1,112 @@
+id: ts-active-editor-from-current-project
+snapshots:
+  const fullPath = activeModelUri(window.activeTextEditor.document.uri);:
+    labels:
+    - source: window.activeTextEditor.document.uri
+      style: primary
+      start: 32
+      end: 68
+    - source: uri
+      style: secondary
+      start: 65
+      end: 68
+    - source: document
+      style: secondary
+      start: 56
+      end: 64
+    - source: window.activeTextEditor
+      style: secondary
+      start: 32
+      end: 55
+    - source: window.activeTextEditor.document
+      style: secondary
+      start: 32
+      end: 64
+  const uri = window.activeTextEditor?.document.uri;:
+    labels:
+    - source: window.activeTextEditor?.document.uri
+      style: primary
+      start: 12
+      end: 49
+    - source: uri
+      style: secondary
+      start: 46
+      end: 49
+    - source: document
+      style: secondary
+      start: 37
+      end: 45
+    - source: window.activeTextEditor
+      style: secondary
+      start: 12
+      end: 35
+    - source: window.activeTextEditor?.document
+      style: secondary
+      start: 12
+      end: 45
+  const uri = window.activeTextEditor?.document?.uri;:
+    labels:
+    - source: window.activeTextEditor?.document?.uri
+      style: primary
+      start: 12
+      end: 50
+    - source: uri
+      style: secondary
+      start: 47
+      end: 50
+    - source: document
+      style: secondary
+      start: 37
+      end: 45
+    - source: window.activeTextEditor
+      style: secondary
+      start: 12
+      end: 35
+    - source: window.activeTextEditor?.document
+      style: secondary
+      start: 12
+      end: 45
+  return this.projectOf(window.activeTextEditor.document.uri);:
+    labels:
+    - source: window.activeTextEditor.document.uri
+      style: primary
+      start: 22
+      end: 58
+    - source: uri
+      style: secondary
+      start: 55
+      end: 58
+    - source: document
+      style: secondary
+      start: 46
+      end: 54
+    - source: window.activeTextEditor
+      style: secondary
+      start: 22
+      end: 45
+    - source: window.activeTextEditor.document
+      style: secondary
+      start: 22
+      end: 54
+  this.propose(kind, window.activeTextEditor?.document.uri);:
+    labels:
+    - source: window.activeTextEditor?.document.uri
+      style: primary
+      start: 19
+      end: 56
+    - source: uri
+      style: secondary
+      start: 53
+      end: 56
+    - source: document
+      style: secondary
+      start: 44
+      end: 52
+    - source: window.activeTextEditor
+      style: secondary
+      start: 19
+      end: 42
+    - source: window.activeTextEditor?.document
+      style: secondary
+      start: 19
+      end: 52

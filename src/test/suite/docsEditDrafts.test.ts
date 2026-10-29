@@ -32,7 +32,7 @@ async function draftPanel() {
       documentation: docs("/p/models/orders.sql", "saved"),
     })),
   };
-  const dbtTestService = {
+  const modelTests = {
     getTestsForCurrentModel: vi.fn(async () => []),
     getUnitTestsForCurrentModel: vi.fn(async () => []),
   };
@@ -41,9 +41,9 @@ async function draftPanel() {
     extensionContext: { extensionUri: Uri.file("/ext") } as any,
     services: {
       docGenService,
-      dbtTestService,
+      modelTests,
       queryManifestService: { manifestFor: () => undefined },
-      emitterService: { eventEmitter: { event: vi.fn() } },
+      sharedState: { eventEmitter: { event: vi.fn() } },
       columnProposalRequests: new ColumnProposalRequests(),
     } as any,
     terminal,
@@ -124,9 +124,9 @@ describe("documentation editor view resolution", () => {
       extensionContext: { extensionUri: Uri.file("/ext") } as any,
       services: {
         docGenService: {},
-        dbtTestService: {},
+        modelTests: {},
         queryManifestService: { manifestFor: () => undefined },
-        emitterService: { eventEmitter: { event: vi.fn() } },
+        sharedState: { eventEmitter: { event: vi.fn() } },
         columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,

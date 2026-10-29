@@ -1,8 +1,4 @@
-import type {
-  DBTModelTest,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
-} from "@modules/documentationEditor/state/types";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
 import type { SaveRequest } from "./types";
 
@@ -14,7 +10,7 @@ export const TestOperation = {
 export type TestOperation = (typeof TestOperation)[keyof typeof TestOperation];
 
 interface EditTestsArgs {
-  tests: DBTModelTest[];
+  tests: documentationEditor.ModelTest[];
   column: string;
   model: string;
   request: SaveRequest;
@@ -29,16 +25,14 @@ const updateTests = ({
   type,
   column,
 }: {
-  testsData: DBTModelTest[];
-  data:
-    | Partial<TestMetadataAcceptedValuesKwArgs>
-    | Partial<TestMetadataRelationshipsKwArgs>;
+  testsData: documentationEditor.ModelTest[];
+  data: Partial<documentationEditor.TestKwargs>;
   type: DbtGenericTests;
   column: string;
-}): DBTModelTest[] => {
+}): documentationEditor.ModelTest[] => {
   const temp = [...testsData];
   const currentIndex = temp.findIndex(
-    (test: DBTModelTest) =>
+    (test: documentationEditor.ModelTest) =>
       test.test_metadata?.name === type &&
       test.test_metadata.kwargs.column_name === column,
   );
@@ -69,11 +63,11 @@ export const editTests = ({
   request,
   operation,
   key,
-}: EditTestsArgs): DBTModelTest[] => {
+}: EditTestsArgs): documentationEditor.ModelTest[] => {
   const testsData = [...tests];
   const newValues = request.accepted_values?.map((s) => s.trim());
   if (operation === TestOperation.DELETE) {
-    return testsData.filter((test: DBTModelTest) => {
+    return testsData.filter((test: documentationEditor.ModelTest) => {
       if (test.test_metadata?.kwargs.column_name !== column) {
         return true;
       }

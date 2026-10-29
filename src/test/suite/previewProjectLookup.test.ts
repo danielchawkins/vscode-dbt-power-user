@@ -41,7 +41,7 @@ describe("compiled preview project lookup", () => {
 
   const stubProject = ({ root }: { root: Uri }) =>
     ({
-      projectRoot: root,
+      root: root,
       initialize: vi.fn(),
       dispose: vi.fn(),
       onDidParse: new EventEmitter<unknown>().event,
@@ -82,6 +82,7 @@ describe("compiled preview project lookup", () => {
     await projects.initialize();
     currentProject = new CurrentProject(
       registry,
+      projects,
       picker as unknown as ProjectQuickPick,
     );
   });
@@ -96,9 +97,7 @@ describe("compiled preview project lookup", () => {
   });
 
   it("resolves a preview URI to its model's project", () => {
-    expect(projects.get(previewUriFor(soxModel))?.projectRoot.fsPath).toBe(
-      soxRoot,
-    );
+    expect(projects.get(previewUriFor(soxModel))?.root.fsPath).toBe(soxRoot);
   });
 
   it("resolves the current project through a focused preview", async () => {
@@ -106,7 +105,9 @@ describe("compiled preview project lookup", () => {
     (window.activeTextEditor as unknown) = { document: { uri: preview } };
 
     expect(currentProject.current?.root.fsPath).toBe(soxRoot);
-    expect((await currentProject.requireForCommand(preview))?.name).toBe("sox");
+    expect((await currentProject.requireForCommand(preview))?.root.fsPath).toBe(
+      soxRoot,
+    );
     expect(picker.declaredProjectPicker).not.toHaveBeenCalled();
   });
 });

@@ -71,7 +71,7 @@ function projectWithParse(
         processes,
         terminal: log,
       }),
-    { terminal: log, projectRoot: Uri.file(root) },
+    { terminal: log, root: Uri.file(root) },
   );
   return { project, log };
 }

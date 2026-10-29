@@ -51,7 +51,7 @@ export class ProjectQueries {
   }
 
   showRunSQL(modelPath: Uri) {
-    const root = this.project.projectRoot.fsPath;
+    const root = this.project.root.fsPath;
     void findModelInTargetfolder({
       projectRoot: root,
       targetPath: this.project.paths()?.targetPath,
@@ -150,7 +150,7 @@ export class ProjectQueries {
   /** The column lookups codegen reads, with the project it names in notifications. */
   private get codegen() {
     return {
-      projectRoot: this.project.projectRoot,
+      root: this.project.root,
       getProjectName: () => this.project.getProjectName(),
       getColumnsOfModel: (modelName: string) =>
         this.getColumnsOfModel(modelName),

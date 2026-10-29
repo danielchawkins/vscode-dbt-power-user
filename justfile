@@ -58,18 +58,18 @@ verify-setup:
 ####################
 
 [group("development")]
-build-contract:
-    npm run build:contract
+build-packages:
+    npm run build:packages
 
 [group("development")]
 build:
-    just build-contract
+    just build-packages
     npm run build:app --workspace webview_panels
     npm run build:app
 
 [group("development")]
 build-dev:
-    just build-contract
+    just build-packages
     npm run build:app --workspace webview_panels
     npm run build:dev:app
 
@@ -77,9 +77,9 @@ build-dev:
 watch:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-contract
+    just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
-    npm run watch:contract &
+    npm run watch:packages &
     npm run watch:app --workspace webview_panels &
     npm run watch:extension:app &
     wait
@@ -88,9 +88,9 @@ watch:
 watch-extension:
     #!/usr/bin/env bash
     set -euo pipefail
-    just build-contract
+    just build-packages
     trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
-    npm run watch:contract &
+    npm run watch:packages &
     npm run watch:extension:app &
     wait
 
@@ -116,26 +116,35 @@ fmt:
 
 [group("quality")]
 lint:
-    just lint-just
-    just lint-mise-lock
-    just lint-code
-    just lint-ast-grep
-    just lint-unused
-    just lint-ratchet
-    just webviews::lint
-    just lint-format
-    just lint-lockfiles
-    just lint-deps
-    just lint-markdown
-    just lint-shell
+    #!/usr/bin/env bash
+    set -uo pipefail
+    failed=()
+    for step in lint-just lint-mise-lock lint-code lint-ast-grep lint-unused lint-ratchet webviews::lint \
+        lint-format lint-lockfiles lint-deps lint-markdown lint-shell; do
+        just "$step" || failed+=("$step")
+    done
+    if ((${#failed[@]})); then
+        echo "lint failed: ${failed[*]}" >&2
+        exit 1
+    fi
 
 [group("quality")]
 check:
-    just compile
-    just lint
-    just test
-    just webviews::typecheck
-    just webviews::test
+    #!/usr/bin/env bash
+    set -uo pipefail
+    want=$(sed -n 's/^node = "\(.*\)"/\1/p' mise.toml)
+    have=$(node -p 'process.versions.node' 2>/dev/null || echo none)
+    if [[ "$have" != "$want"* ]]; then
+        echo "check: Node $have, but mise.toml pins $want; run 'just setup' or 'mise install'" >&2
+        exit 1
+    fi
+    for step in compile lint test webviews::typecheck webviews::test; do
+        if ! just "$step"; then
+            echo "check failed at: $step" >&2
+            exit 1
+        fi
+    done
+    echo "check passed"
 
 [group("quality")]
 fmt-just:

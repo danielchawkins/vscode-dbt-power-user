@@ -1,9 +1,9 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import { CancellationTokenSource, workspace } from "vscode";
 import {
-  DbtLineageService,
+  LineageService,
   describeNoLineage,
-} from "../../features/lineage/dbtLineageService";
+} from "../../features/lineage/lineageService";
 import { lineageTable } from "../../features/lineage/lineageTables";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { fakeFusionCommands } from "../fusionCommandsFake";
@@ -14,12 +14,12 @@ function node(key: string, edgeType?: "data" | "constraint") {
   return { label: key, key, resourceType: "model", edgeType };
 }
 
-// Builds a DbtLineageService with the DI bypassed, a stubbed event carrying the
+// Builds a LineageService with the DI bypassed, a stubbed event carrying the
 // given graphMetaMap, and createTable stubbed to a minimal { table: key }.
-function makeService(graphMetaMap: any): DbtLineageService {
-  const svc = Object.create(DbtLineageService.prototype) as DbtLineageService;
-  (svc as any).queryManifestService = {
-    getEventByCurrentProject: () => ({ event: { graphMetaMap } }),
+function makeService(graphMetaMap: any): LineageService {
+  const svc = Object.create(LineageService.prototype) as LineageService;
+  (svc as any).currentProject = {
+    current: { manifest: { graphMetaMap } },
   };
   (svc as any).createTable = (
     _e: unknown,
@@ -31,7 +31,7 @@ function makeService(graphMetaMap: any): DbtLineageService {
   return svc;
 }
 
-describe("DbtLineageService — foreign-key-only edge hiding", () => {
+describe("LineageService — foreign-key-only edge hiding", () => {
   it("getChildTables hides constraint edges and keeps data edges", () => {
     const children = new Map([
       [
@@ -131,7 +131,7 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
   });
 });
 
-describe("DbtLineageService.getConnectedColumns", () => {
+describe("LineageService.getConnectedColumns", () => {
   const listNodes = (...nodes: [string, string[], string?][]) => ({
     error: null,
     nodes: nodes.map(([uniqueId, parents, op = "copy"]) => ({
@@ -160,14 +160,14 @@ describe("DbtLineageService.getConnectedColumns", () => {
   }
 
   const service = (client: unknown) => {
-    const lineage = new DbtLineageService({
-      queryManifestService: {} as any,
+    const lineage = new LineageService({
+      currentProject: {} as any,
       currentClient: () => client as any,
       currentLsp: () => fakeFusionCommands(() => client as any),
     });
     return {
       getConnectedColumns: (
-        request: Parameters<DbtLineageService["getConnectedColumns"]>[0],
+        request: Parameters<LineageService["getConnectedColumns"]>[0],
       ) =>
         lineage.getConnectedColumns(
           request,
@@ -280,8 +280,8 @@ describe("DbtLineageService.getConnectedColumns", () => {
   it("passes the caller's token to each listNodes", async () => {
     const { token } = manualToken();
     const listNodes = vi.fn((..._args: unknown[]) => new Promise(() => {}));
-    const service = new DbtLineageService({
-      queryManifestService: {} as any,
+    const service = new LineageService({
+      currentProject: {} as any,
       currentClient: () => fakeClient(vi.fn()),
       currentLsp: () => ({ state: "running", listNodes }) as any,
     });
@@ -312,8 +312,8 @@ describe("DbtLineageService.getConnectedColumns", () => {
     const { token, cancel } = manualToken();
     const request = vi.fn((..._args: unknown[]) => new Promise(() => {}));
     const client = fakeClient(request);
-    const service = new DbtLineageService({
-      queryManifestService: {} as any,
+    const service = new LineageService({
+      currentProject: {} as any,
       currentClient: () => client,
       currentLsp: () => createFusionCommands(() => client),
     });
@@ -410,8 +410,8 @@ describe("DbtLineageService.getConnectedColumns", () => {
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ error: null, nodes: [] });
       const client = fakeClient(request, { staticAnalysis: setting });
-      const result = await new DbtLineageService({
-        queryManifestService: {} as any,
+      const result = await new LineageService({
+        currentProject: {} as any,
         currentClient: () => client,
         currentError: undefined,
         currentLsp: () => fakeFusionCommands(() => client),
@@ -456,8 +456,8 @@ describe("DbtLineageService.getConnectedColumns", () => {
 
   it("reports columnsNeedStrict only for a running client outside strict", () => {
     const needs = (client: unknown, strict = false) =>
-      new DbtLineageService({
-        queryManifestService: {} as any,
+      new LineageService({
+        currentProject: {} as any,
         currentClient: () => client as any,
         currentError: undefined,
         currentLsp: () => fakeFusionCommands(() => client as any),
@@ -525,14 +525,14 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 });
 
-describe("DbtLineageService.getInferredColumns", () => {
+describe("LineageService.getInferredColumns", () => {
   const node = {
     node: { columns: { customer_id: { data_type: "integer" } } },
   };
   const client = (request: Mock<(...args: any[]) => Promise<any>>) => {
     const running = { state: "running", request } as any;
-    return new DbtLineageService({
-      queryManifestService: {} as any,
+    return new LineageService({
+      currentProject: {} as any,
       currentClient: () => running,
       currentLsp: () => fakeFusionCommands(() => running),
     });
@@ -570,8 +570,8 @@ describe("DbtLineageService.getInferredColumns", () => {
 
   it("is undefined when the client is not running or the request fails", async () => {
     expect(
-      await new DbtLineageService({
-        queryManifestService: {} as any,
+      await new LineageService({
+        currentProject: {} as any,
         currentClient: () => undefined,
         currentLsp: () => fakeFusionCommands(() => undefined),
       }).getInferredColumns("/p", "/p/a.sql"),
@@ -585,7 +585,7 @@ describe("DbtLineageService.getInferredColumns", () => {
   });
 });
 
-describe("DbtLineageService — merged value", () => {
+describe("LineageService — merged value", () => {
   it("fills a model card's relation, ref name, layer and package ownership", () => {
     const node = (over: Record<string, unknown>) => ({
       unique_id: "model.fg.int__x",
@@ -644,8 +644,8 @@ describe("DbtLineageService — merged value", () => {
   });
 
   it("draws a server node the parse lacks with no tests", () => {
-    const svc = new DbtLineageService({
-      queryManifestService: { getProject: () => undefined } as any,
+    const svc = new LineageService({
+      currentProject: { current: undefined } as any,
       currentLsp: () => undefined,
     });
     const added = {

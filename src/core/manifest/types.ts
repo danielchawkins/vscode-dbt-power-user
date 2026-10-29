@@ -1,3 +1,5 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
+
 export type MacroMetaMap = Map<string, MacroMetaData>;
 export type MetricMetaMap = Map<string, MetricMetaData>;
 export type SourceMetaMap = Map<string, SourceMetaData>;
@@ -390,16 +392,6 @@ export interface GraphMetaMap {
   metrics: NodeGraphMap;
 }
 
-/**
- * Source of a relationship ref.
- * - `test`: derived from a dbt `relationships` data test
- * - `contract`: derived from a `foreign_key` model contract constraint
- * - `meta`: declared in `meta.relationships` on a node or source table
- * - `semantic`: derived from paired semantic-layer primary/foreign entities
- * - `inferred`: derived from naming-convention inference
- */
-type RefSource = "test" | "contract" | "meta" | "semantic" | "inferred";
-
 export type Cardinality =
   | "one-to-one"
   | "one-to-many"
@@ -426,7 +418,7 @@ export interface Ref {
   from: RefEndpoint;
   to: RefEndpoint;
   cardinality: Cardinality;
-  source: RefSource;
+  source: lineage.RefSource;
   /** Optional edge label supplied by the user (e.g. dbterd's `relationship_label`). */
   label?: string | undefined;
   /** Confidence score in [0, 1]. Set only for `source: "inferred"`. */

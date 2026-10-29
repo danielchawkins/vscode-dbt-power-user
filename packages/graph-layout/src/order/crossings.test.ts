@@ -1,21 +1,11 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { layer } from "../layering.js";
-import { seededRandom, shuffled } from "../random.js";
-import { rank } from "../rank/index.js";
-import type { LayoutEdge, LayoutGraph, LayoutOptions } from "../types.js";
+import { randomModel } from "../testing/graphs.js";
+import type { LayoutEdge, LayoutGraph } from "../types.js";
 import { totalCrossings } from "./crossings.js";
-import { createModel, type OrderModel, slot } from "./model.js";
+import { slot } from "./model.js";
 
 type Link = readonly [upper: number, lower: number, weight: number];
-
-const options: LayoutOptions = {
-  direction: "down",
-  edgeKinds: {
-    dependency: { ranks: true, weight: 1 },
-    column: { ranks: false, weight: 0.5 },
-  },
-};
 
 /** Two links cross when their order differs strictly at both ranks; the weight of a crossing is the two weights' product. */
 function bruteForce(links: readonly Link[]): number {
@@ -35,7 +25,7 @@ function bruteForce(links: readonly Link[]): number {
 describe("totalCrossings", () => {
   it("equals a brute-force count over the segments of each pair of adjacent ranks", () => {
     fc.assert(
-      fc.property(graphArb, fc.integer(), (graph, seed) => {
+      fc.property(portedGraphArb, fc.integer(), (graph, seed) => {
         const model = randomModel(graph, seed);
         const { segments } = model.graph;
         const byRank = new Map<number, Link[]>();
@@ -61,7 +51,7 @@ describe("totalCrossings", () => {
 });
 
 /** Random graphs of the two kinds, with ports on some edges, on up to nine nodes. */
-const graphArb: fc.Arbitrary<LayoutGraph> = fc
+const portedGraphArb: fc.Arbitrary<LayoutGraph> = fc
   .integer({ min: 1, max: 9 })
   .chain((count) =>
     fc
@@ -85,16 +75,3 @@ const graphArb: fc.Arbitrary<LayoutGraph> = fc
         })),
       })),
   );
-
-/** A model of `graph` with each rank's order shuffled by `seed`. */
-function randomModel(graph: LayoutGraph, seed: number): OrderModel {
-  const ranked = rank(graph, options);
-  const laid = layer(graph, options, ranked);
-  const random = seededRandom(seed);
-  const layers: number[][] = Array.from({ length: laid.ranks }, () => []);
-  laid.nodes.forEach((node, i) => layers[node.rank].push(i));
-  return createModel(
-    laid,
-    layers.map((layerNodes) => shuffled(layerNodes, random)),
-  );
-}

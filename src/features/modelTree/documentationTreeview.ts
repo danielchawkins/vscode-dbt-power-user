@@ -56,16 +56,19 @@ export class DocumentationTreeview
     }
     const editor = window.activeTextEditor;
     const project = editor && this.projects.get(editor.document.uri);
-    const event = project?.manifest;
-    if (!editor || !project || !event) {
+    const manifest = project?.manifest;
+    if (!editor || !project || !manifest) {
       return [];
     }
-    const node = lookupModelByEditorContent(event.nodeMetaMap, editor.document);
+    const node = lookupModelByEditorContent(
+      manifest.nodeMetaMap,
+      editor.document,
+    );
     if (!node || Object.keys(node.columns).length === 0) {
       return [];
     }
     const url = node.patch_path
-      ? path.join(project.projectRoot.fsPath, removeProtocol(node.patch_path))
+      ? path.join(project.root.fsPath, removeProtocol(node.patch_path))
       : " ";
     const description = `[ ${(node.config.materialized ?? "").toUpperCase()} ]  -  schema : ${node.schema}`;
     const treeItem = new DocTreeItem(

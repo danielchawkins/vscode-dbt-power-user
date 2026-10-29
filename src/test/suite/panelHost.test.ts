@@ -12,7 +12,11 @@ const isReadyMessage = (message: unknown): message is Ready =>
   message !== null &&
   (message as { command?: unknown }).command === "webview:ready";
 
-class TestPanel extends PanelHost<lineage.HostMessage, Ready> {
+class TestPanel extends PanelHost<
+  lineage.HostMessage,
+  Ready,
+  lineage.ResponseBodies
+> {
   protected readonly entry = "lineage" as never;
   protected readonly csp = {} as never;
   protected readonly guard = isReadyMessage;
@@ -56,7 +60,7 @@ const make = () => {
     extensionContext: {
       extensionUri: { fsPath: "/ext", path: "/ext", scheme: "file" },
     } as never,
-    emitterService: {
+    sharedState: {
       eventEmitter: {
         event: (l: typeof listener) => {
           listener = l;
@@ -64,7 +68,7 @@ const make = () => {
         },
       },
     } as never,
-    dbtTerminal: { debug: vi.fn() } as never,
+    log: { debug: vi.fn() } as never,
     queryManifestService: {} as never,
   });
   return { panel, emit: (command: string) => listener?.({ command }) };

@@ -1,0 +1,11 @@
+id: ts-no-dbt-caps-prefix
+valid:
+  - 'export interface Documentation { name: string }'
+  - 'export class DbtTaskProvider {}'
+  - 'export type ModelTest = documentationEditor.ModelTest;'
+  - 'const DBT_PROJECT_FILE = "dbt_project.yml";'
+invalid:
+  - 'export interface DBTColumnProposal { column: string }'
+  - 'export class DBTClientPool {}'
+  - 'type DBTRunResult = { ok: boolean };'
+  - 'export enum DBTLayer { Staging }'

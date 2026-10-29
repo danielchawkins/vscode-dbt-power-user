@@ -16,10 +16,10 @@ function connectedNodeCount(g: NodeGraphMap, key: string): number {
 }
 
 /** The tests on `key`, as the lineage table lists them. */
-function testsOf(event: Manifest, key: string): Table["tests"] {
-  return (event.graphMetaMap.tests.get(key)?.nodes ?? []).map((n) => {
+function testsOf(manifest: Manifest, key: string): Table["tests"] {
+  return (manifest.graphMetaMap.tests.get(key)?.nodes ?? []).map((n) => {
     const testKey = n.label.split(".")[0] ?? "";
-    return { ...event.testMetaMap.get(testKey), key: testKey };
+    return { ...manifest.testMetaMap.get(testKey), key: testKey };
   });
 }
 
@@ -53,7 +53,7 @@ const NO_LAYERS: CardOptions = { layer: { tagPrefix: "", fromPath: false } };
 
 /** The lineage table for the node `key` (a dbt unique id), or undefined when the manifest does not know it. */
 export function lineageTable(
-  event: Manifest,
+  manifest: Manifest,
   key: string,
   options: CardOptions = NO_LAYERS,
 ): Table | undefined {
@@ -63,13 +63,13 @@ export function lineageTable(
   const base = {
     table: key,
     url: options.url,
-    childCount: connectedNodeCount(event.graphMetaMap.children, key),
-    parentCount: connectedNodeCount(event.graphMetaMap.parents, key),
+    childCount: connectedNodeCount(manifest.graphMetaMap.children, key),
+    parentCount: connectedNodeCount(manifest.graphMetaMap.parents, key),
     nodeType,
   };
   switch (nodeType) {
     case RESOURCE_TYPE_SOURCE:
-      return sourceTable(event, { ...base, options }, [at(2), at(3)]);
+      return sourceTable(manifest, { ...base, options }, [at(2), at(3)]);
     case RESOURCE_TYPE_SEMANTIC_MODEL:
       return {
         ...base,
@@ -79,7 +79,7 @@ export function lineageTable(
         columns: {},
       };
     case RESOURCE_TYPE_EXPOSURE: {
-      const exposure = event.exposureMetaMap.get(at(2));
+      const exposure = manifest.exposureMetaMap.get(at(2));
       return {
         ...base,
         label: at(2),
@@ -90,7 +90,7 @@ export function lineageTable(
       };
     }
     case RESOURCE_TYPE_FUNCTION: {
-      const fn = event.functionMetaMap.get(at(2));
+      const fn = manifest.functionMetaMap.get(at(2));
       const fnType = fn?.config?.type;
       return {
         ...base,
@@ -102,7 +102,7 @@ export function lineageTable(
       };
     }
     default:
-      return nodeTable(event, { ...base, options }, key);
+      return nodeTable(manifest, { ...base, options }, key);
   }
 }
 
@@ -112,11 +112,11 @@ type TableBase = Pick<
 > & { options: CardOptions };
 
 function sourceTable(
-  event: Manifest,
+  manifest: Manifest,
   { options, ...base }: TableBase,
   [sourceName, tableName]: [string, string],
 ): Table | undefined {
-  const source = event.sourceMetaMap.get(sourceName);
+  const source = manifest.sourceMetaMap.get(sourceName);
   const table = source?.tables.find((t) => t.name === tableName);
   if (!source || !table) {
     return undefined;
@@ -124,7 +124,7 @@ function sourceTable(
   return {
     ...base,
     label: tableName,
-    tests: testsOf(event, base.table),
+    tests: testsOf(manifest, base.table),
     columns: table.columns,
     description: table.description,
     packageName: source.package_name,
@@ -142,11 +142,11 @@ function sourceTable(
 }
 
 function nodeTable(
-  event: Manifest,
+  manifest: Manifest,
   { options, ...base }: TableBase,
   key: string,
 ): Table | undefined {
-  const node = event.nodeMetaMap.lookupByUniqueId(key);
+  const node = manifest.nodeMetaMap.lookupByUniqueId(key);
   if (!node) {
     return undefined;
   }
@@ -159,7 +159,7 @@ function nodeTable(
     columns: node.columns,
     patchPath: node.patch_path ?? "",
     path: node.original_file_path,
-    tests: testsOf(event, key),
+    tests: testsOf(manifest, key),
     packageName: node.package_name,
     rootPackage: node.package_name === options.rootPackage,
     meta: node.meta,

@@ -1,14 +1,8 @@
 import { window } from "vscode";
-import type { ExtensionContextStore } from "../../extensionContext";
 import { notifyError } from "../../projects/output/notifications";
 import type { OutputChannels } from "../../projects/output/outputChannels";
 import type { Project } from "../../projects/project/project";
 import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
-import type {
-  ProjectQuickPick,
-  ProjectQuickPickItem,
-} from "../../projects/project/projectQuickPick";
-import type { ProjectList } from "../../projects/project/projects";
 
 const PromptAnswer = {
   YES: "Yes",
@@ -17,56 +11,23 @@ const PromptAnswer = {
 type PromptAnswer = (typeof PromptAnswer)[keyof typeof PromptAnswer];
 
 /** What project setup reads from each project. */
-type SetupProject = Pick<Project, "getProjectName" | "projectRoot"> & {
+type SetupProject = Pick<Project, "getProjectName" | "root"> & {
   commands: Pick<ProjectDbtCommands, "debug" | "installDeps">;
 };
 
 export class ProjectSetupCommands {
-  private projects: ProjectList<SetupProject>;
-  private extensionContext: ExtensionContextStore;
-  private projectQuickPick: ProjectQuickPick;
   private outputChannels: Pick<OutputChannels, "logFor">;
 
   constructor({
-    projects,
-    extensionContext,
-    projectQuickPick,
     outputChannels,
   }: {
-    projects: ProjectList<SetupProject>;
-    extensionContext: ExtensionContextStore;
-    projectQuickPick: ProjectQuickPick;
     outputChannels: Pick<OutputChannels, "logFor">;
   }) {
-    this.projects = projects;
-    this.extensionContext = extensionContext;
-    this.projectQuickPick = projectQuickPick;
     this.outputChannels = outputChannels;
   }
 
-  private async resolveProject(
-    projectContext: ProjectQuickPickItem | undefined,
-  ): Promise<ProjectQuickPickItem | undefined> {
-    if (projectContext !== undefined) {
-      return projectContext;
-    }
-
-    const pickedProject = await this.projectQuickPick.projectPicker(
-      this.projects.all(),
-    );
-    if (!pickedProject) {
-      return undefined;
-    }
-
-    this.extensionContext.setToWorkspaceState(
-      "fusionPowerUser.projectSelected",
-      pickedProject,
-    );
-    return pickedProject;
-  }
-
   private async runSetup(
-    projectContext: ProjectQuickPickItem | undefined,
+    project: SetupProject | undefined,
     skipConfirmation: boolean,
     step: {
       prompt: (label: string) => string;
@@ -76,13 +37,13 @@ export class ProjectSetupCommands {
       notice: string;
     },
   ) {
-    const resolved = await this.resolveProject(projectContext);
-    if (resolved === undefined) {
+    if (project === undefined) {
       return;
     }
+    const label = project.getProjectName();
     if (!skipConfirmation) {
       const answer = await window.showInformationMessage(
-        step.prompt(resolved.label),
+        step.prompt(label),
         PromptAnswer.YES,
         PromptAnswer.NO,
       );
@@ -91,29 +52,21 @@ export class ProjectSetupCommands {
       }
     }
     try {
-      const project = this.projects.get(resolved.uri);
-      if (project === undefined) {
-        throw new Error(`Project ${resolved.label} was not found`);
-      }
       await step.run(project);
     } catch (err) {
       this.outputChannels
-        .logFor(resolved.uri)
-        .error(step.logKey, step.logMessage(resolved.label), err);
-      void notifyError(
-        { root: resolved.uri, name: resolved.label },
-        step.notice,
-        err,
-      );
+        .logFor(project.root)
+        .error(step.logKey, step.logMessage(label), err);
+      void notifyError({ root: project.root, name: label }, step.notice, err);
       throw err;
     }
   }
 
   validateProjects(
-    projectContext: ProjectQuickPickItem | undefined,
+    project: SetupProject | undefined,
     skipConfirmation = false,
   ) {
-    return this.runSetup(projectContext, skipConfirmation, {
+    return this.runSetup(project, skipConfirmation, {
       prompt: (label) =>
         `Do you want to validate the project: ${label}? ` +
         "This will run the command 'dbt debug' inside this project. " +
@@ -130,11 +83,8 @@ export class ProjectSetupCommands {
     });
   }
 
-  installDeps(
-    projectContext: ProjectQuickPickItem | undefined,
-    skipConfirmation = false,
-  ) {
-    return this.runSetup(projectContext, skipConfirmation, {
+  installDeps(project: SetupProject | undefined, skipConfirmation = false) {
+    return this.runSetup(project, skipConfirmation, {
       prompt: (label) =>
         `Do you want to install packages for the project: ${label}? ` +
         "This will run the command 'dbt deps' inside this project. " +

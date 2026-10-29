@@ -885,7 +885,7 @@ describe("onCurrentClientChange", () => {
       onDidChangeClients: clientsChanged.event,
     };
     const current = {
-      current: first as DeclaredProject | undefined,
+      current: { declared: first } as { declared: DeclaredProject } | undefined,
       onDidChangeCurrent: switched.event,
     };
     const listener = vi.fn();
@@ -908,7 +908,7 @@ describe("onCurrentClientChange", () => {
   it("fires on a Current Project switch and follows the new project", () => {
     const { second, switched, states, current, listener } = setup();
 
-    current.current = second;
+    current.current = { declared: second };
     switched.fire();
     expect(listener).toHaveBeenCalledTimes(1);
 
@@ -919,7 +919,7 @@ describe("onCurrentClientChange", () => {
   it("stops following the previous project after a switch", () => {
     const { first, second, switched, states, current, listener } = setup();
 
-    current.current = second;
+    current.current = { declared: second };
     switched.fire();
     listener.mockClear();
 

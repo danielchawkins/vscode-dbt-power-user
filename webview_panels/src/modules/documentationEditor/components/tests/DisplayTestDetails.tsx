@@ -1,10 +1,6 @@
 import { DeleteIcon, EditIcon } from "@assets/icons";
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import type {
-  DBTModelTest,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
-} from "@modules/documentationEditor/state/types";
 import {
   DbtGenericTests,
   DbtTestTypes,
@@ -34,7 +30,7 @@ import { findDbtTestType } from "./utils";
 
 interface Props {
   onClose: () => void;
-  test: DBTModelTest;
+  test: documentationEditor.ModelTest;
   column: string;
   type: EntityType;
 }
@@ -76,20 +72,14 @@ const DisplayTestDetails = ({
     if (test.test_metadata?.name === DbtGenericTests.ACCEPTED_VALUES) {
       setValue(
         "accepted_values",
-        (test.test_metadata.kwargs as TestMetadataAcceptedValuesKwArgs).values,
+        test.test_metadata.kwargs.values?.map(String),
       );
       return;
     }
 
     if (test.test_metadata?.name === DbtGenericTests.RELATIONSHIPS) {
-      setValue(
-        "to",
-        (test.test_metadata.kwargs as TestMetadataRelationshipsKwArgs).to,
-      );
-      setValue(
-        "field",
-        (test.test_metadata.kwargs as TestMetadataRelationshipsKwArgs).field,
-      );
+      setValue("to", test.test_metadata.kwargs.to);
+      setValue("field", test.test_metadata.kwargs.field);
       return;
     }
   };

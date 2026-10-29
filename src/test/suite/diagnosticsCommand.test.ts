@@ -88,7 +88,7 @@ describe("fusionPowerUser.diagnostics", () => {
 
     new VSCodeCommands({
       projects: { all: () => [failedProject, healthyProject] } as never,
-      extensionContext: {} as never,
+      currentProject: {} as never,
       runModel: {} as never,
       runTest: {} as never,
       projectSetupCommands: {} as never,

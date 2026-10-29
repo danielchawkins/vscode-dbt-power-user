@@ -23,6 +23,7 @@ describe("LineagePanel", () => {
   let panel: LineagePanel;
   let mockPostMessage: Mock;
   let queryManifestService: Record<string, Mock>;
+  let currentProject: { current?: unknown };
   let send: (message: unknown) => Promise<unknown>;
   let closePage: () => void;
 
@@ -38,10 +39,9 @@ describe("LineagePanel", () => {
     mockPostMessage = vi.fn();
 
     queryManifestService = {
-      getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-      getProject: vi.fn().mockReturnValue(undefined),
       manifestFor: vi.fn().mockReturnValue(undefined),
     };
+    currentProject = { current: undefined };
     const globalState = new Map<string, unknown>();
     const extensionContext = {
       extensionUri: Uri.file("/ext"),
@@ -51,10 +51,11 @@ describe("LineagePanel", () => {
     };
     panel = lineagePanel(silentLog(), {
       extensionContext,
-      dbtLineageService: {
+      lineageService: {
         columnsNeedStrict: vi.fn().mockReturnValue(undefined),
       },
       queryManifestService,
+      currentProject,
     });
     const view = fakeView();
     const page = openPage(panel, view, false);
@@ -65,7 +66,7 @@ describe("LineagePanel", () => {
 
   describe("manifestChanged", () => {
     it("offers one action, naming an explicit setting that overrides the project", () => {
-      (panel as any).dbtLineageService.columnsNeedStrict = vi
+      (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "baseline" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
@@ -86,7 +87,7 @@ describe("LineagePanel", () => {
     });
 
     it("offers the same action, naming the project default under project mode", () => {
-      (panel as any).dbtLineageService.columnsNeedStrict = vi
+      (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "project" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
@@ -114,15 +115,15 @@ describe("LineagePanel", () => {
     });
 
     it("runs the strict-analysis command for the current project's root", async () => {
-      const projectRoot = { fsPath: "/w/p" };
-      (panel as any).queryManifestService.getProject = () => ({ projectRoot });
+      const root = { fsPath: "/w/p" };
+      currentProject.current = { root };
       await send({
         command: "runNoticeAction",
         action: "useStrictAnalysis",
       });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.useStrictAnalysis",
-        projectRoot,
+        root,
       );
     });
 
@@ -151,7 +152,10 @@ describe("LineagePanel", () => {
     });
 
     it("should not throw when panel is not visible", () => {
-      const unresolved = lineagePanel(silentLog(), { queryManifestService });
+      const unresolved = lineagePanel(silentLog(), {
+        queryManifestService,
+        currentProject,
+      });
 
       expect(() => unresolved.manifestChanged(undefined)).not.toThrow();
     });
@@ -225,11 +229,11 @@ describe("LineagePanel", () => {
       columns: { id: { name: "id", description: "Key", data_type: "" } },
       meta: {},
     };
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
-      }),
-      getProject: () => ({ projectRoot: { fsPath: "/p" } }),
+    (panel as any).currentProject = {
+      current: {
+        manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
+        root: { fsPath: "/p" },
+      },
     };
     const getInferredColumns = vi
       .fn<(...args: any[]) => Promise<any>>()
@@ -237,7 +241,7 @@ describe("LineagePanel", () => {
         { name: "id", datatype: "integer" },
         { name: "total", datatype: "bigint" },
       ]);
-    (panel as any).dbtLineageService = { getInferredColumns };
+    (panel as any).lineageService = { getInferredColumns };
 
     const body = await ask({
       command: "getColumns",
@@ -270,16 +274,14 @@ describe("LineagePanel", () => {
     };
     const getColumnsOfModel = vi.fn();
     const mergeColumnsFromDB = vi.fn();
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
-      }),
-      getProject: () => ({
-        projectRoot: { fsPath: "/p" },
+    (panel as any).currentProject = {
+      current: {
+        manifest: { nodeMetaMap: { lookupByUniqueId: () => node } },
+        root: { fsPath: "/p" },
         queries: { getColumnsOfModel, mergeColumnsFromDB },
-      }),
+      },
     };
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getInferredColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue([{ name: "id", datatype: "integer" }]),
@@ -317,15 +319,13 @@ describe("LineagePanel", () => {
       t.columns.id = { name: "id", data_type: "INTEGER", description: "" };
       return true;
     });
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: () => ({
-        event: {
+    (panel as any).currentProject = {
+      current: {
+        manifest: {
           sourceMetaMap: new Map([["raw", { name: "raw", tables: [table] }]]),
         },
-      }),
-      getProject: () => ({
         queries: { getColumnsOfSource, mergeColumnsFromDB },
-      }),
+      },
     };
     (window.withProgress as Mock).mockImplementation(
       async (_opts: any, task: any) => task(),
@@ -540,7 +540,7 @@ describe("LineagePanel", () => {
       "Could not read column lineage: boom",
     ],
   ])("explains %j on each target table", async (reason, expected) => {
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ kind: "noLineage", reason }),
@@ -565,7 +565,7 @@ describe("LineagePanel", () => {
   });
 
   it("keeps lineage and reports each failed column", async () => {
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({
@@ -614,7 +614,7 @@ describe("LineagePanel", () => {
 
     it("answers a trace that a new trace supersedes as cancelled, with no columns", async () => {
       let finish: (value: unknown) => void = () => undefined;
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi
           .fn<(...args: any[]) => Promise<any>>()
           .mockImplementationOnce(
@@ -641,7 +641,7 @@ describe("LineagePanel", () => {
     it("cancels only the trace that cancelColumnTrace names", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
       let finish: (value: unknown) => void = () => undefined;
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise((resolve) => {
@@ -666,7 +666,7 @@ describe("LineagePanel", () => {
 
     it("cancels the trace's requests when the panel is disposed", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise(() => undefined);
@@ -682,7 +682,7 @@ describe("LineagePanel", () => {
 
     it("cancels the trace's requests when its page closes", async () => {
       const tokens: { isCancellationRequested: boolean }[] = [];
-      (panel as any).dbtLineageService = {
+      (panel as any).lineageService = {
         getConnectedColumns: vi.fn((_request, token) => {
           tokens.push(token);
           return new Promise(() => undefined);
@@ -708,18 +708,17 @@ function resolvedLineage() {
 describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
     const { panel, postMessage } = resolvedLineage();
-    panel.dbtLineageService = { columnsNeedStrict: () => undefined };
+    panel.lineageService = { columnsNeedStrict: () => undefined };
     const current = {
-      projectRoot: { fsPath: "/p" },
+      root: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
       graphNotice: () => undefined,
       manifest: { publicationEpoch: 1 } as any,
     };
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
+    panel.currentProject = { current };
     panel.queryManifestService = {
-      getProject: () => current,
       manifestFor: () => current?.manifest,
-      getEventByCurrentProject: () => undefined,
     };
 
     panel.manifestChanged(current as any);
@@ -743,9 +742,9 @@ describe("LineagePanel — after a save", () => {
     "re-renders on a project switch with %s epochs",
     (_label, epochA, epochB) => {
       const { panel, postMessage } = resolvedLineage();
-      panel.dbtLineageService = { columnsNeedStrict: () => undefined };
+      panel.lineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
-        projectRoot: { fsPath: root },
+        root: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
         graphNotice: () => undefined,
         manifest: { publicationEpoch } as any,
@@ -753,10 +752,13 @@ describe("LineagePanel — after a save", () => {
       const a = project("/a", epochA);
       const b = project("/b", epochB);
       let current: any = a;
+      panel.currentProject = {
+        get current() {
+          return current;
+        },
+      };
       panel.queryManifestService = {
-        getProject: () => current,
         manifestFor: () => current?.manifest,
-        getEventByCurrentProject: () => undefined,
       };
 
       panel.manifestChanged(a as any);
@@ -807,15 +809,24 @@ describe("LineagePanel — source YAML rooting", () => {
       functionMetaMap: new Map(),
     },
   });
+  const projectWith = (manifest: unknown) => ({
+    manifest,
+    graphNotice: () => undefined,
+    throwDiagnosticsErrorIfAvailable: () => undefined,
+  });
 
   beforeEach(() => {
     panel = lineagePanel(silentLog(), {
-      dbtLineageService: {
+      lineageService: {
         columnsNeedStrict: () => undefined,
         createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
           table: key,
         })),
       },
+      queryManifestService: {
+        manifestFor: vi.fn().mockReturnValue(undefined),
+      },
+      currentProject: { current: undefined },
     });
     postMessage = openPage(panel, fakeView(), false).page.webview.postMessage;
     (window as any).activeTextEditor = undefined;
@@ -862,12 +873,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -879,7 +886,7 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
     });
-    expect((panel as any).dbtLineageService.createTable).toHaveBeenCalledWith(
+    expect((panel as any).lineageService.createTable).toHaveBeenCalledWith(
       expect.anything(),
       filePath,
       "source.proj.segment_website_production.identifies",
@@ -900,12 +907,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -917,7 +920,7 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
     });
-    expect((panel as any).dbtLineageService.createTable).toHaveBeenCalledWith(
+    expect((panel as any).lineageService.createTable).toHaveBeenCalledWith(
       expect.anything(),
       filePath,
       "source.proj.segment_website_production.identifies",
@@ -948,12 +951,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 4 → the "tracks" table.
     (window as any).activeTextEditor = makeEditor(filePath, body, 4);
@@ -985,12 +984,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 0 (the `sources:` line), above any table name.
     (window as any).activeTextEditor = makeEditor(filePath, body, 0);
@@ -1028,12 +1023,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(filePath, body, 2);
 
@@ -1071,12 +1062,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     // Cursor on line 6 → ga's "events", not seg's (a name-only lookup
     // would find seg's declaration line for both candidates).
@@ -1099,14 +1086,10 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
-    (panel as any).dbtLineageService = {
+    (panel as any).lineageService = {
       createTable: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
@@ -1136,12 +1119,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     const editor = makeEditor(
       filePath,
@@ -1182,12 +1161,8 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi
-        .fn()
-        .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: vi.fn().mockReturnValue(undefined),
-      manifestFor: vi.fn().mockReturnValue(undefined),
+    (panel as any).currentProject = {
+      current: projectWith(makeEvent(sourceMetaMap).event),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -1200,6 +1175,6 @@ describe("LineagePanel — source YAML rooting", () => {
     expect(result.missingLineageMessage).toEqual(
       expect.objectContaining({ type: "warning" }),
     );
-    expect((panel as any).dbtLineageService.createTable).not.toHaveBeenCalled();
+    expect((panel as any).lineageService.createTable).not.toHaveBeenCalled();
   });
 });
