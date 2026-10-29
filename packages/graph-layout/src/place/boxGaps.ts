@@ -15,12 +15,14 @@ interface Margins {
 }
 
 /**
- * The least gap between each pair of adjacent ranks that keeps the drawn boxes apart. A box is drawn past its first
- * rank by its padding and label, and past its last rank by its padding, so the gap below a rank must hold the bottom
- * margins of the boxes ending there, and the gap above the next rank the top margins of the boxes starting there.
- * Gap `r` lies between ranks `r` and `r + 1`.
+ * How far the boxes are drawn beyond each rank: `below[r]` past rank `r`'s bottom by the boxes ending there, and
+ * `above[r]` before its top by the boxes starting there. A box is drawn past its first rank by its padding and label,
+ * and past its last rank by its padding.
  */
-export function rankGaps(boxes: readonly MarginBox[], ranks: number): number[] {
+export function rankMargins(
+  boxes: readonly MarginBox[],
+  ranks: number,
+): { below: number[]; above: number[] } {
   const below = Array.from({ length: ranks }, () => 0);
   const above = Array.from({ length: ranks }, () => 0);
   boxes.forEach((box, i) => {
@@ -28,6 +30,15 @@ export function rankGaps(boxes: readonly MarginBox[], ranks: number): number[] {
     below[box.bottom] = Math.max(below[box.bottom]!, margins.below);
     above[box.top] = Math.max(above[box.top]!, margins.above);
   });
+  return { below, above };
+}
+
+/**
+ * The least gap between each pair of adjacent ranks that keeps the drawn boxes apart: the bottom margins of the boxes
+ * ending at rank `r` and the top margins of those starting at `r + 1`. Gap `r` lies between ranks `r` and `r + 1`.
+ */
+export function rankGaps(boxes: readonly MarginBox[], ranks: number): number[] {
+  const { below, above } = rankMargins(boxes, ranks);
   return Array.from(
     { length: Math.max(0, ranks - 1) },
     (_, r) => below[r]! + above[r + 1]!,

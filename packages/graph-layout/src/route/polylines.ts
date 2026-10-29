@@ -10,6 +10,8 @@ export interface Geometry {
   centres: readonly number[];
   /** Half the across extent of each rank's tallest node. */
   halves: readonly number[];
+  /** Space between each rank's bottom and its band's first track: the margin of the boxes drawn below the rank. */
+  trackMargin: readonly number[];
   /** Half the across extent of each layered node; zero for a dummy. */
   nodeHalves: readonly number[];
   /**
@@ -77,7 +79,10 @@ function pathOf(member: Member, geometry: Geometry): Point[] {
   const points: Point[] = [];
   for (const run of member.runs) {
     const band = geometry.centres[run.rank] ?? 0;
-    const bandTop = band + (geometry.halves[run.rank] ?? 0);
+    const bandTop =
+      band +
+      (geometry.halves[run.rank] ?? 0) +
+      (geometry.trackMargin[run.rank] ?? 0);
     if (run.upperStub !== undefined) {
       points.push(
         framePoint(

@@ -8,8 +8,8 @@ import type { Routing } from "./index.js";
 // change to rows output changes it, so a refactor that is meant to keep rows must keep this value. The value is FNV-1a
 // over the JSON text below; a deliberate change to rows output updates it.
 
-const ROWS_FINGERPRINT = "79cf507f";
-const ROWS_CHARACTERS = 194767;
+const ROWS_FINGERPRINT = "a96a9b5a";
+const ROWS_CHARACTERS = 194012;
 
 function sorted<T>(map: ReadonlyMap<string, T>): [string, T][] {
   return [...map.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
