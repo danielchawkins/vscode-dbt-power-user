@@ -109,8 +109,8 @@ clean:
 [group("quality")]
 fmt:
     just fmt-just
-    just fmt-code
     just webviews::fmt
+    just fmt-code
     just fmt-markdown
     just fmt-shell
 
@@ -161,11 +161,13 @@ lint-just:
 lint-mise-lock:
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT; MISE_IGNORED_CONFIG_PATHS="${XDG_CONFIG_HOME:-$HOME/.config}/mise" MISE_DATA_DIR="$tmp" mise install --locked --dry-run
 
+# The lint fixes run before the formatter, here and in `webviews::fmt` before this, since their rewrites are not
+# formatted; the formatter has the last word.
 [group("quality")]
 fmt-code:
-    npm run format
     npm run fix:oxlint
     npm run fix:eslint
+    npm run format
 
 [group("quality")]
 lint-code:
