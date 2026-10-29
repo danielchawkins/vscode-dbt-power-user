@@ -13,12 +13,14 @@ import type { DiagnosticData } from "../../core/diagnostics";
 import type {
   ExecutableLifecycleHooks,
   FusionCommandIntegrationFactory,
+  ProjectSettingsSubscription,
 } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import { SHOW_OUTPUT } from "../../projects/output/projectErrors";
 import type { Project } from "../../projects/project/project";
+import { onDidChangeSettings } from "../../settings";
 import { flushAsync, waitFor } from "../async";
 import { createdFileSystemWatchers } from "../mock/vscode";
 import {
@@ -36,6 +38,15 @@ import { silentLog } from "../testLog";
 
 const ROOT = "/workspace/project";
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
+
+/** The stream's executable stage for ROOT, fed by the mocked configuration events the tests fire. */
+const subscribeSettings: ProjectSettingsSubscription = (listener) =>
+  onDidChangeSettings(["dbtPath", "perProject"], (change) => {
+    const changedFields = change.changed(Uri.file(ROOT));
+    if (changedFields.length > 0) {
+      void listener({ root: Uri.file(ROOT), changedFields });
+    }
+  });
 
 interface StubCli {
   path: string;
@@ -68,6 +79,7 @@ function build(
     factory,
     projectRoot: ROOT,
     terminal: silentLog(),
+    subscribeSettings,
     hooks: {
       activate: hooks.activate ?? (async () => undefined),
       deactivate: hooks.deactivate ?? (() => undefined),
@@ -114,6 +126,7 @@ describe("ExecutableLifecycle", () => {
       factory,
       projectRoot: ROOT,
       terminal: silentLog(),
+      subscribeSettings,
       hooks: {
         activate: async () => undefined,
         deactivate: () => undefined,

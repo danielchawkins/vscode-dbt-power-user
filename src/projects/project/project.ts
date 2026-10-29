@@ -204,6 +204,13 @@ export class Project implements Disposable, ManifestProject {
           this.manifestRebuild.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
       },
+      subscribeSettings: (listener) =>
+        options.settings.onDidChangeSnapshot("executable", (change) =>
+          listener({
+            root: change.project.root,
+            changedFields: change.changedFields,
+          }),
+        ),
     });
   }
 

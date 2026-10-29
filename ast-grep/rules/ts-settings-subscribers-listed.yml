@@ -16,14 +16,9 @@ ignores:
   - src/settings/**
   # Window-wide: activation follows `enabled` for every folder.
   - src/fusionPowerUserExtension.ts
-  # projects/: the registry, the client pool, the Project set and the tool environments.
+  # projects/: the registry and the project-settings stream, the one subscriber of project-scoped settings.
   - src/projects/registry/projectRegistry.ts
-  - src/projects/clients/fusionClientPool.ts
-  - src/projects/project/projects.ts
-  - src/projects/clients/projectEnvironments.ts
-  # Baseline: subscribers outside projects/ that the change-stream refactor moves onto the snapshot stream.
-  - src/fusion/executableLifecycle.ts
-  - src/features/defer/deferToProductionStatusBar.ts
+  - src/projects/project/projectSettingsStream.ts
 rule:
   pattern: onDidChangeSettings($$$ARGS)
   not:

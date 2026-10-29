@@ -19,6 +19,7 @@ import {
 import { MetadataDemand } from "../../projects/manifest/metadataDemand";
 import type { Project } from "../../projects/project/project";
 import { Projects } from "../../projects/project/projects";
+import { ProjectSettingsStream } from "../../projects/project/projectSettingsStream";
 
 let epoch = 0;
 
@@ -39,6 +40,7 @@ function publish(
 
 describe("Projects", () => {
   let projects: Projects;
+  let settings: ProjectSettingsStream;
   let mockDbtTerminal: Mocked<Log>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: Mock;
@@ -174,6 +176,7 @@ describe("Projects", () => {
       },
     };
 
+    settings = new ProjectSettingsStream(mockProjectRegistry, mockDbtTerminal);
     projects = new Projects(
       mockProjectRegistry,
       {
@@ -183,6 +186,7 @@ describe("Projects", () => {
             demand: new MetadataDemand(),
             log: mockDbtTerminal,
           }),
+        settings,
       },
       mockDbtTerminal,
     );
@@ -228,6 +232,7 @@ describe("Projects", () => {
         affectsConfiguration: (key: string, scope?: Uri) =>
           key === "fusionPowerUser.target" && scope?.fsPath === "/project1",
       });
+      await new Promise((resolve) => setImmediate(resolve));
 
       expect(rebuilt).toEqual(["project1"]);
     });
@@ -243,6 +248,7 @@ describe("Projects", () => {
               demand: new MetadataDemand(),
               log: mockDbtTerminal,
             }),
+          settings,
         },
         mockDbtTerminal,
       );

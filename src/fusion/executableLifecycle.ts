@@ -3,9 +3,8 @@ import { EventEmitter, Uri } from "vscode";
 import { type DiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import { dbtProjectFilePath } from "../core/snapshot";
-import type { SettingsChange } from "../settings";
-import { onDidChangeSettings } from "../settings";
 import type { FusionCli } from "./fusionCli";
+
 import type {
   FusionExecutable,
   FusionExecutableResolver,
@@ -25,6 +24,22 @@ export type FusionCommandIntegrationFactory = (
 
 export const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
 const LOG_SOURCE = "Project";
+/** The project-scoped settings the executable is resolved from. */
+const EXECUTABLE_SETTINGS: ReadonlySet<string> = new Set([
+  DBT_PATH_SETTING,
+  "perProject",
+]);
+
+/** A project's setting change: the Declared Project's root and the keys that changed for it. */
+export interface ProjectSettingsChange {
+  readonly root: Uri;
+  readonly changedFields: readonly string[];
+}
+
+/** Subscribes `listener` to a project's setting changes; the publisher awaits the listener before its next stage. */
+export type ProjectSettingsSubscription = (
+  listener: (change: ProjectSettingsChange) => Promise<void>,
+) => Disposable;
 
 export interface ExecutableLifecycleHooks {
   /** The project's resolved environment, which the executable is looked up on; the host's when absent. */
@@ -69,6 +84,7 @@ export class ExecutableLifecycle {
   private readonly projectRoot: string;
   private readonly terminal: Log;
   private readonly hooks: ExecutableLifecycleHooks;
+  private readonly subscribeSettings: ProjectSettingsSubscription;
 
   constructor({
     resolver,
@@ -76,18 +92,21 @@ export class ExecutableLifecycle {
     projectRoot,
     terminal,
     hooks,
+    subscribeSettings,
   }: {
     resolver: FusionExecutableResolver;
     factory: FusionCommandIntegrationFactory;
     projectRoot: string;
     terminal: Log;
     hooks: ExecutableLifecycleHooks;
+    subscribeSettings: ProjectSettingsSubscription;
   }) {
     this.resolver = resolver;
     this.factory = factory;
     this.projectRoot = projectRoot;
     this.terminal = terminal;
     this.hooks = hooks;
+    this.subscribeSettings = subscribeSettings;
   }
 
   /** The committed CLI, if any. */
@@ -247,19 +266,18 @@ export class ExecutableLifecycle {
     if (this.configurationSubscription) {
       return;
     }
-    this.configurationSubscription = onDidChangeSettings(
-      [DBT_PATH_SETTING, "perProject"],
-      (change) => {
-        void this.enqueueExecutableRefresh(change).catch(() => undefined);
-      },
+    this.configurationSubscription = this.subscribeSettings((change) =>
+      this.enqueueExecutableRefresh(change).catch(() => undefined),
     );
   }
 
-  private enqueueExecutableRefresh(change: SettingsChange): Promise<void> {
-    if (!change.affects(Uri.file(this.projectRoot))) {
-      return this.refreshChain;
-    }
-    if (this.disposed) {
+  private enqueueExecutableRefresh(
+    change: ProjectSettingsChange,
+  ): Promise<void> {
+    const affected =
+      change.root.fsPath === this.projectRoot &&
+      change.changedFields.some((key) => EXECUTABLE_SETTINGS.has(key));
+    if (!affected || this.disposed) {
       return Promise.resolve();
     }
     const generation = ++this.refreshGeneration;
