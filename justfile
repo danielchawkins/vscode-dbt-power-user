@@ -305,6 +305,19 @@ smoke-visual out="out/smoke-visual" *args:
     FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
     @echo "visual evidence: {{ out }}/<host>/<fixture>/index.json"
 
+# On demand: draws several lineage views with each layered engine (classic, balanced, thorough) in Linux containers,
+# then writes a side-by-side contact sheet per view under `out`.
+[group("tests")]
+smoke-engines out="out/smoke-engines":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    rm -rf "{{ out }}"
+    for fixture in lineage-layers lineage-groups; do
+      FPU_SMOKE_EXTRA_SUITES=lineageEngines bash scripts/smoke/docker-smoke.sh "{{ out }}/$fixture" \
+        --fixture "src/test/fixtures/$fixture"
+    done
+    node scripts/smoke/engine-sheet.mjs "{{ out }}"
+
 # The same packaged-VSIX smoke on both hosts in Linux arm64 containers under Xvfb; no windows open on this machine.
 [group("tests")]
 smoke-docker out="out/smoke-docker" *args:
