@@ -1,9 +1,9 @@
+import { projectAxis } from "../constraints/axis.js";
 import type { Problem } from "./problem.js";
-import { solveSeparations } from "./vpsc.js";
 
 /**
  * Projects `x` onto the problem's separations in the metric of `weight`. Without cluster boxes these are the rank chains,
- * and the per-rank projection is exact; with boxes, every separation, boxes included, is solved as one problem.
+ * and the per-rank projection is exact; with boxes, every separation, boxes included, is solved as one axis problem.
  */
 export function project(
   problem: Problem,
@@ -14,7 +14,11 @@ export function project(
     projectRanks(problem, x, weight);
     return;
   }
-  const solved = solveSeparations(x, [...weight], problem.extra.separations);
+  const solved = projectAxis({
+    desired: x,
+    weight,
+    separations: problem.extra.separations,
+  });
   solved.forEach((value, i) => {
     x[i] = value;
   });
