@@ -26,14 +26,17 @@ pub(super) struct Extension {
 /// one mediator that costs `SOFT_PARTITION_WEIGHT` per rank the node sits above the gate. The mediator sits at the
 /// larger of the node's rank and one more than the gate's rank, so the cost is the hinge `max(0, gate + 1 - rank)`.
 pub(super) fn partition_constraints(partitions: &[Option<f64>], mode: PartitionMode) -> Extension {
-    let mut bands: Vec<f64> = partitions.iter().flatten().copied().collect();
+    // TypeScript keys bands by SameValueZero, so -0 and +0 are one band. Normalise before the bands are deduplicated
+    // and looked up, which compare by value and by bits respectively.
+    let normal = |band: f64| if band == 0.0 { 0.0 } else { band };
+    let mut bands: Vec<f64> = partitions.iter().flatten().map(|&b| normal(b)).collect();
     bands.sort_by(f64::total_cmp);
     bands.dedup();
     let gate_of = |k: usize| partitions.len() + k;
     let mut count = partitions.len() + bands.len().saturating_sub(1);
     let mut edges = Vec::new();
     for (node, band) in partitions.iter().enumerate() {
-        let Some(band) = *band else {
+        let Some(band) = band.map(normal) else {
             continue;
         };
         let Some(k) = bands.iter().position(|&b| b.to_bits() == band.to_bits()) else {

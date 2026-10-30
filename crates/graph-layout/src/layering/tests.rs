@@ -5,7 +5,8 @@
 use proptest::prelude::*;
 
 use super::acyclic::reversed_arcs;
-use super::{ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Ranks, layer, rank};
+use super::constraints::partition_constraints;
+use super::{ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Ranks, Scratch, layer, rank};
 use crate::budget::Budget;
 use crate::index::Indexed;
 
@@ -294,12 +295,6 @@ fn rules_of(edges: &[(usize, usize, usize)]) -> Vec<EdgeRule> {
     edges.iter().map(|&(_, _, k)| ranking_rule(k)).collect()
 }
 
-/// The band of each node as ranking reads it: an absent band counts as 0 under strict partitions only, and the caller
-/// passes `None` for a free node.
-fn strict_bands(bands: &[Option<f64>]) -> Vec<Option<f64>> {
-    bands.iter().map(|b| Some(b.unwrap_or(0.0))).collect()
-}
-
 /// The whole number of a rank, which the ranking produces as an integer.
 fn whole(rank: f64) -> u32 {
     (0u32..=10_000)
@@ -317,7 +312,7 @@ proptest! {
         let budget = balanced();
         let no_bands = vec![None; c.count];
         let graph = indexed(c.count, &pairs_of(&edges));
-        let result = rank(&graph, &options(PartitionMode::None, &no_bands, &rules, &budget))
+        let result = rank(&graph, &options(PartitionMode::None, &no_bands, &rules, &budget), &mut Scratch::default())
             .expect("a DAG ranks");
         let arcs: Vec<(usize, usize, f64)> = edges
             .iter()
@@ -339,7 +334,7 @@ proptest! {
         let rules = rules_of(&c.edges);
         let budget = balanced();
         let graph = indexed(c.count, &pairs_of(&c.edges));
-        let result = rank(&graph, &options(m, &c.bands, &rules, &budget)).expect("ranks");
+        let result = rank(&graph, &options(m, &c.bands, &rules, &budget), &mut Scratch::default()).expect("ranks");
         for (i, (&(s, t), rule)) in pairs_of(&c.edges).iter().zip(&rules).enumerate() {
             if !rule.ranks || s == t {
                 continue;
@@ -353,13 +348,14 @@ proptest! {
     fn lower_strict_partitions_sit_in_earlier_ranks(c in case()) {
         let rules = rules_of(&c.edges);
         let budget = balanced();
-        let bands = strict_bands(&c.bands);
+        // A free node (`None`) counts as band 0 under strict partitions, as ranking reads it.
+        let band = |u: usize| c.bands[u].unwrap_or(0.0);
         let graph = indexed(c.count, &pairs_of(&c.edges));
-        let result = rank(&graph, &options(PartitionMode::Strict, &bands, &rules, &budget))
+        let result = rank(&graph, &options(PartitionMode::Strict, &c.bands, &rules, &budget), &mut Scratch::default())
             .expect("ranks");
         for u in 0..c.count {
             for v in 0..c.count {
-                if bands[u] < bands[v] {
+                if band(u) < band(v) {
                     prop_assert!(result.ranks[u] < result.ranks[v]);
                 }
             }
@@ -372,9 +368,17 @@ proptest! {
         let budget = balanced();
         let graph = indexed(c.count, &pairs_of(&c.edges));
         let opts = options(m, &c.bands, &rules, &budget);
-        let first = rank(&graph, &opts).expect("ranks");
-        let second = rank(&graph, &opts).expect("ranks");
-        prop_assert_eq!(first, second);
+        let fresh = rank(&graph, &opts, &mut Scratch::default()).expect("ranks");
+        let mut scratch = Scratch::default();
+        let first = rank(&graph, &opts, &mut scratch).expect("ranks");
+        let second = rank(&graph, &opts, &mut scratch).expect("ranks");
+        prop_assert_eq!(&first, &second);
+        prop_assert_eq!(first, fresh);
+        // The scratch of another graph (the same edges, reversed) must not change the result.
+        let flipped: Vec<(usize, usize)> = pairs_of(&c.edges).iter().map(|&(a, b)| (b, a)).collect();
+        rank(&indexed(c.count, &flipped), &opts, &mut scratch).expect("ranks");
+        let third = rank(&graph, &opts, &mut scratch).expect("ranks");
+        prop_assert_eq!(third, second);
     }
 
     #[test]
@@ -382,11 +386,11 @@ proptest! {
         let budget = balanced();
         let with_info = indexed(c.count, &pairs_of(&c.edges));
         let info_rules = rules_of(&c.edges);
-        let all = rank(&with_info, &options(m, &c.bands, &info_rules, &budget)).expect("ranks");
+        let all = rank(&with_info, &options(m, &c.bands, &info_rules, &budget), &mut Scratch::default()).expect("ranks");
         let kept: Vec<(usize, usize, usize)> = c.edges.iter().copied().filter(|&(_, _, k)| k != 4).collect();
         let ranking_only = indexed(c.count, &pairs_of(&kept));
         let rules = rules_of(&kept);
-        let only = rank(&ranking_only, &options(m, &c.bands, &rules, &budget)).expect("ranks");
+        let only = rank(&ranking_only, &options(m, &c.bands, &rules, &budget), &mut Scratch::default()).expect("ranks");
         prop_assert_eq!(all.ranks, only.ranks);
     }
 }
@@ -401,7 +405,7 @@ proptest! {
         let budget = balanced();
         let no_bands = vec![None; c.count];
         let graph = indexed(c.count, &pairs_of(&edges));
-        let before = rank(&graph, &options(PartitionMode::None, &no_bands, &rules, &budget))
+        let before = rank(&graph, &options(PartitionMode::None, &no_bands, &rules, &budget), &mut Scratch::default())
             .expect("ranks");
         let mut hints: Vec<Option<u32>> = before.ranks.iter().map(|&r| Some(whole(r))).collect();
         hints.push(None);
@@ -414,9 +418,20 @@ proptest! {
             hints: &hints,
             ..options(PartitionMode::None, &grown_bands, &grown_rules, &budget)
         };
-        let after = rank(&grown, &opts).expect("ranks");
+        let after = rank(&grown, &opts, &mut Scratch::default()).expect("ranks");
         prop_assert_eq!(&after.ranks[..c.count], &before.ranks[..]);
     }
+}
+
+#[test]
+fn negative_zero_is_the_band_of_zero() {
+    // TypeScript keys bands by SameValueZero, so -0 and +0 are one band: the constraints must match with either sign.
+    let with_negative =
+        partition_constraints(&[Some(-0.0), Some(0.0), Some(1.0)], PartitionMode::Strict);
+    let with_positive =
+        partition_constraints(&[Some(0.0), Some(0.0), Some(1.0)], PartitionMode::Strict);
+    assert_eq!(with_negative.count, with_positive.count);
+    assert_eq!(with_negative.edges, with_positive.edges);
 }
 
 #[test]
@@ -426,7 +441,12 @@ fn a_free_node_is_ranked_by_its_edges_alone_under_soft_partitions() {
     let bands = [Some(2.0), Some(2.0), None];
     let budget = balanced();
     let graph = indexed(3, &[]);
-    let result = rank(&graph, &options(PartitionMode::Soft, &bands, &[], &budget)).expect("ranks");
+    let result = rank(
+        &graph,
+        &options(PartitionMode::Soft, &bands, &[], &budget),
+        &mut Scratch::default(),
+    )
+    .expect("ranks");
     assert_eq!(result.ranks, vec![0.0, 0.0, 0.0]);
 }
 
@@ -458,7 +478,7 @@ proptest! {
         let budget = balanced();
         let no_bands = vec![None; count];
         let graph = indexed(count, &pairs_of(&edges));
-        let result = rank(&graph, &options(PartitionMode::Soft, &no_bands, &rules, &budget))
+        let result = rank(&graph, &options(PartitionMode::Soft, &no_bands, &rules, &budget), &mut Scratch::default())
             .expect("ranks");
         let layers = layer(&graph, &rules, &result.ranks);
         for (i, (&(s, t), rule)) in pairs_of(&edges).iter().zip(&rules).enumerate() {

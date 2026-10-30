@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 use proptest::prelude::*;
 
 use super::tests::{balanced, indexed, layering_rule, options};
-use super::{ChainNode, EdgeRule, Layers, PartitionMode, layer, rank};
+use super::{ChainNode, EdgeRule, Layers, PartitionMode, Scratch, layer, rank};
 
 /// A random graph of 2 to 14 nodes whose edges have the three kinds of the layering tests. Self-loops, parallel edges
 /// and cycles are allowed, as in the TypeScript generator.
@@ -31,6 +31,7 @@ fn layered(count: usize, edges: &[(usize, usize, usize)]) -> Layers {
     let ranking = rank(
         &graph,
         &options(PartitionMode::Soft, &no_bands, &rules, &budget),
+        &mut Scratch::default(),
     )
     .expect("the graph ranks");
     layer(&graph, &rules, &ranking.ranks)
