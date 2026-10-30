@@ -17,6 +17,19 @@ export interface PortDummy {
   runs: number;
 }
 
+/**
+ * The stable key of a dummy: the edge (or cluster) it stands for, its rank, and its position in the chain it belongs
+ * to, counted from the upper end. A bundle's chain is keyed by its first member edge, a cluster spine by its cluster.
+ * No two dummies share a key, and a key does not change when an unrelated edge is added.
+ */
+export interface DummyKey {
+  /** Whether `owner` is an edge id or a cluster id. */
+  kind: "edge" | "cluster";
+  owner: string;
+  rank: number;
+  position: number;
+}
+
 /** A node of the layered graph: a real node, or a dummy that carries one bundle across an intermediate rank. */
 export interface LayeredNode {
   /** The node's id, or `undefined` for a dummy. */
@@ -26,6 +39,8 @@ export interface LayeredNode {
   breadth: number;
   /** Set on the dummy of a lateral port; absent for every other dummy and real node. */
   port?: PortDummy;
+  /** Set on every dummy; absent on a real node. */
+  key?: DummyKey;
 }
 
 /** The edges of one kind between one ordered pair of nodes, drawn as one chain of dummies. */

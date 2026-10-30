@@ -1,5 +1,6 @@
 import { chainOf } from "./clusters.js";
 import { byThenIndex } from "./comparators.js";
+import type { DummyKey } from "./layeredGraph.js";
 import type { LayoutGraph } from "./types.js";
 
 /**
@@ -7,6 +8,8 @@ import type { LayoutGraph } from "./types.js";
  * the ranks between. A dummy goes in each of those ranks, so that the cluster has a member in every rank it spans.
  */
 export interface Spine {
+  /** The cluster whose spine this is. */
+  cluster: string;
   /** Layered index of the member in the upper rank, and of the member in the lower one. */
   upper: number;
   lower: number;
@@ -21,6 +24,7 @@ interface PlacedNode {
   id: string | undefined;
   rank: number;
   breadth: number;
+  key?: DummyKey;
 }
 
 /**
@@ -43,6 +47,7 @@ export function spinesOf(
       return gap > 1
         ? [
             {
+              cluster: cluster.id,
               upper,
               lower,
               ranks: Array.from({ length: gap - 1 }, (_, i) => top + 1 + i),
@@ -65,10 +70,16 @@ export function addSpineDummies(
   const paths: number[][] = [];
   const runs = spines.map((spine) => {
     const run = [spine.upper];
-    for (const rank of spine.ranks) {
-      run.push(nodes.push({ id: undefined, rank, breadth: 0 }) - 1);
+    spine.ranks.forEach((rank, k) => {
+      const key: DummyKey = {
+        kind: "cluster",
+        owner: spine.cluster,
+        rank,
+        position: k + 1,
+      };
+      run.push(nodes.push({ id: undefined, rank, breadth: 0, key }) - 1);
       paths.push(spine.chain);
-    }
+    });
     return [...run, spine.lower];
   });
   return { spines: runs, paths };
