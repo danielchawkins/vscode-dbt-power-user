@@ -209,6 +209,57 @@ fn random_outputs_are_written_for_the_parity_comparison() {
 }
 
 /// Two blocks whose merge closes a cycle of blocks: a<b and c<d merge first, then a<d and c<b cross the two blocks.
+/// The finance graph's placement solves, dumped from the TypeScript layout (`GRAPH_LAYOUT_FINANCE_SOLVES` names the
+/// dump). Every separation must hold; the count of solves that differ from TypeScript in any bit goes to the report.
+/// Without the variable it does nothing.
+#[test]
+fn finance_placement_solves_meet_every_separation() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_FINANCE_SOLVES") else {
+        return;
+    };
+    let solves = crate::testkit::solve::finance_solves(&path);
+    assert!(!solves.is_empty(), "the finance dump has no solves");
+    let mut projector = Projector::new();
+    let mut bit_identical = 0;
+    let mut differing = Vec::new();
+    let mut differing_values = 0;
+    let mut largest = 0.0_f64;
+    for (i, s) in solves.iter().enumerate() {
+        let x = projector
+            .solve(&Problem {
+                x0: &s.x0,
+                weight: &s.weight,
+                separations: &s.seps,
+            })
+            .unwrap_or_else(|e| panic!("finance solve {i} ({}): {e}", s.effort))
+            .to_vec();
+        assert!(
+            feasible(&s.seps, &x, TOLERANCE),
+            "finance solve {i} ({}): a separation does not hold",
+            s.effort
+        );
+        if same_bits(&x, &s.ts) {
+            bit_identical += 1;
+        } else {
+            differing.push(i);
+            for (a, b) in x.iter().zip(&s.ts) {
+                if a.to_bits() != b.to_bits() {
+                    differing_values += 1;
+                    largest = largest.max((a - b).abs());
+                }
+            }
+        }
+    }
+    println!(
+        "finance placement solves: {} of {} bit-identical to TypeScript; {} differ, {} values, largest difference {:e}",
+        bit_identical,
+        solves.len(),
+        differing.len(),
+        differing_values,
+        largest
+    );
+}
+
 #[test]
 fn crossing_blocks_are_solved_to_the_exact_optimum() {
     let x0 = [0.0; 4];

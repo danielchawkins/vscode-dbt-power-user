@@ -71,6 +71,47 @@ fn seps(field: &str) -> Vec<Separation> {
         .collect()
 }
 
+/// One placement solve of the finance graph, as the TypeScript layout made it.
+pub(crate) struct FinanceSolve {
+    pub(crate) effort: String,
+    pub(crate) x0: Vec<f64>,
+    pub(crate) weight: Vec<f64>,
+    pub(crate) seps: Vec<Separation>,
+    pub(crate) ts: Vec<f64>,
+}
+
+/// Reads the finance dump written by `scratch`'s recorder: one solve per line, `effort TAB x0 TAB weight TAB seps TAB
+/// outputs`, with every value as the hex of its IEEE bits and separations as `from:to:gap` joined by `;`.
+pub(crate) fn finance_solves(path: &std::ffi::OsStr) -> Vec<FinanceSolve> {
+    let text = std::fs::read_to_string(path).expect("the finance dump is readable");
+    text.lines()
+        .map(|line| {
+            let f: Vec<&str> = line.split('\t').collect();
+            assert_eq!(f.len(), 5, "a finance dump line has five fields");
+            let separations = f[3]
+                .split(';')
+                .filter(|s| !s.is_empty())
+                .map(|s| {
+                    let mut parts = s.split(':');
+                    let mut next = || parts.next().expect("from:to:gap");
+                    Separation {
+                        from: next().parse().expect("from"),
+                        to: next().parse().expect("to"),
+                        gap: f64::from_bits(u64::from_str_radix(next(), 16).expect("gap bits")),
+                    }
+                })
+                .collect();
+            FinanceSolve {
+                effort: f[0].to_owned(),
+                x0: bits_list(f[1]),
+                weight: bits_list(f[2]),
+                seps: separations,
+                ts: bits_list(f[4]),
+            }
+        })
+        .collect()
+}
+
 /// The data lines of a fixture, `#` comments skipped, with their fields split on tabs, keeping those whose first field
 /// is `kind`.
 fn records(source: &'static str, kind: &str) -> Vec<Vec<&'static str>> {
