@@ -1,3 +1,13 @@
+/** Scratch arrays for one traversal, each indexed by variable except `queue`, which holds the order. */
+export interface Traversal {
+  /** Whether each variable has been reached. */
+  readonly seen: Uint8Array;
+  /** The separation each variable was reached by, -1 at a root. */
+  readonly parentEdge: Int32Array;
+  /** The variables in traversal order. */
+  readonly queue: Int32Array;
+}
+
 /** The active separations as a forest over the variables, given by their endpoints. */
 export class Forest {
   private readonly from: readonly number[];
@@ -8,7 +18,12 @@ export class Forest {
   /** Bumped by every link and unlink, so a cached traversal can be checked against the forest it was made from. */
   private version = 0;
   private cached:
-    | { version: number; first: number; order: number[]; parentEdge: number[] }
+    | {
+        version: number;
+        first: number;
+        order: Int32Array;
+        parentEdge: Int32Array;
+      }
     | undefined;
 
   constructor(from: readonly number[], to: readonly number[], n: number) {
@@ -43,46 +58,55 @@ export class Forest {
    * its children, so reversing the order visits children first. The component of `first` is searched first and
    * rooted at `first`. The result is cached until the forest changes, so its arrays must not be modified.
    */
-  spanningOrder(first = 0): { order: number[]; parentEdge: number[] } {
+  spanningOrder(first = 0): { order: Int32Array; parentEdge: Int32Array } {
     if (this.cached?.version === this.version && this.cached.first === first) {
       return this.cached;
     }
-    const seen = Array.from({ length: this.n }, () => false);
-    const parentEdge = Array.from({ length: this.n }, () => -1);
-    const order: number[] = [];
+    const buffers: Traversal = {
+      seen: new Uint8Array(this.n),
+      parentEdge: new Int32Array(this.n).fill(-1),
+      queue: new Int32Array(this.n),
+    };
+    let end = 0;
     for (let k = 0; k < this.n; k++) {
       const root = (first + k) % this.n;
-      if (seen[root]) {
+      if (buffers.seen[root]) {
         continue;
       }
-      order.push(...this.componentOrder(root, seen, parentEdge));
+      end = this.componentOrder(root, buffers, end);
     }
-    this.cached = { version: this.version, first, order, parentEdge };
+    this.cached = {
+      version: this.version,
+      first,
+      order: buffers.queue,
+      parentEdge: buffers.parentEdge,
+    };
     return this.cached;
   }
 
   /**
-   * Breadth-first order of the component of `root`, rooted there. Its members are marked in `seen`, and each member
-   * other than the root gets its parent separation in `parentEdge`. Both arrays are indexed by variable.
+   * Breadth-first traversal of the component of `root`, rooted there, written into `buffers.queue` from index `start`.
+   * Its members are marked in `buffers.seen`, and each member other than the root gets its parent separation in
+   * `buffers.parentEdge`. Returns the index after the last member written.
    */
-  componentOrder(
-    root: number,
-    seen: boolean[],
-    parentEdge: number[],
-  ): number[] {
-    seen[root] = true;
-    const component = [root];
-    for (const v of component) {
+  componentOrder(root: number, buffers: Traversal, start: number): number {
+    const { seen, parentEdge, queue } = buffers;
+    seen[root] = 1;
+    queue[start] = root;
+    let end = start + 1;
+    for (let i = start; i < end; i++) {
+      const v = queue[i]!;
       for (const e of this.tree[v]!) {
         const u = this.other(e, v);
-        if (!seen[u]!) {
-          seen[u] = true;
+        if (!seen[u]) {
+          seen[u] = 1;
           parentEdge[u] = e;
-          component.push(u);
+          queue[end] = u;
+          end += 1;
         }
       }
     }
-    return component;
+    return end;
   }
 
   /** The separations on the forest path from variable a to variable b, which must be connected. */
