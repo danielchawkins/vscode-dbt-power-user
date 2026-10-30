@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createLayouter, type Layouter } from "./engine/layoutCache";
 import { cappedCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
 import { toFlow } from "./flow";
@@ -72,11 +73,13 @@ const flowOf = ({
   settings,
   refs,
   columnsNeedStrict,
+  layouter,
 }: {
   graph: GraphState;
   settings: ResolvedSettings;
   refs: lineage.LineageRef[];
   columnsNeedStrict: boolean;
+  layouter: Layouter;
 }) => {
   const data = lineageData(graph, {
     direct: settings.showSelectEdges,
@@ -109,6 +112,7 @@ const flowOf = ({
       columnsNeedStrict,
       layerColors: settings.layerColors,
     },
+    layouter,
   );
 };
 
@@ -171,9 +175,11 @@ export const useGraphModel = (
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
   const refs = useRefs(settings, drawnKey);
+  // One layouter for the panel: its cache and the result on screen seed each layout.
+  const [layouter] = useState(() => createLayouter());
   const { nodes, edges } = useMemo(
-    () => flowOf({ graph, settings, refs, columnsNeedStrict }),
-    [graph, settings, refs, columnsNeedStrict],
+    () => flowOf({ graph, settings, refs, columnsNeedStrict, layouter }),
+    [graph, settings, refs, columnsNeedStrict, layouter],
   );
   const details = detailsTable ? graph.known[detailsTable] : undefined;
   // The drawn nodes by id, and the engine and Connections: the fit refits when either changes.
