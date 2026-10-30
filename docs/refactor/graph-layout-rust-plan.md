@@ -116,7 +116,7 @@ Phase 1 starts with the tooling, before any engine code, so the first Rust line 
    - `test`: nextest, plus `cargo test --doc`;
    - `deny` and `boundaries`;
    - `wasm`: build, wasm-bindgen, wasm-opt, and the size into `ceilings.json`;
-   - `napi`: through the `@napi-rs/cli` devDependency;
+   - `napi`: `cargo build --release -p graph-layout-napi`, copied to `dist/graph-layout/` as the platform `.node` file. No `@napi-rs/cli`: the crate has no JavaScript side, and the CLI would add an npm dependency for one copy;
    - `parity`: the committed goldens through the native and WASM builds, byte-compared;
    - `check`: every recipe except `wasm`, `napi` and `parity`, which CI runs.
 
@@ -126,7 +126,32 @@ Phase 1 starts with the tooling, before any engine code, so the first Rust line 
 11. **CI:** Swatinem/rust-cache keyed on `Cargo.lock`, and a matrix job per napi OS that runs `crates::napi` and `crates::parity`. Check: a planted divergence between native and WASM fails parity.
 12. **knip, dependency-cruiser and the VSIX:** knip gets a workspace for the WASM crate's JS wrapper, and dependency-cruiser a scope for it. The `.wasm` and `.node` outputs go to `dist/`. Check: `just lint-unused` is clean, and a planted file under `crates/` is rejected by `vsix-contents.mjs`.
 
-Left out of Phase 1: Miri (a core that forbids unsafe and has no dependencies gives it nothing to check), cargo-semver-checks (until publishing), cargo-mutants, benchmarks and cargo-udeps (on demand). The coverage floor (`coverage.rust`, through cargo-llvm-cov) is set after the first measurement. Open items the research could not settle are in its "Open questions": what `mise.lock` records for `stable`, the backend names, whether binding macros need `unsafe`, step timings, and the napi runners.
+Left out of Phase 1: Miri (a core that forbids unsafe and has no dependencies gives it nothing to check), cargo-semver-checks (until publishing), cargo-mutants, benchmarks and cargo-udeps (on demand). The coverage floor (`coverage.rust`, through cargo-llvm-cov) is set after the first measurement. Settled in step 1a (these replace the open items the research could not settle):
+
+- **Toolchain pin.** `mise.lock` records only the channel name for `stable`, so `rust-toolchain.toml` pins the concrete stable, 1.99.1. `just update` bumps that pin. `crates::lint-toolchain` checks the rustc that mise provides against it.
+- **CLI backends** (`mise.toml`): aqua for `taplo`, `cargo-deny`, `cargo-nextest`, `typos`, `binaryen`, `actionlint`, `ast-grep` and `shellcheck`; GitHub for `cargo-hack`, `cargo-machete` and `wasm-bindgen` (0.2.129, equal to the crate). Each has a checksum in `mise.lock`, so CI installs without compiling.
+- **`unsafe_code` is `deny` at the workspace, not `forbid`.** The napi-rs macros emit `#[allow(unsafe_code)]`, which a workspace-level `forbid` rejects (E0453). The core keeps `#![forbid(unsafe_code)]` in its own `lib.rs`.
+- **`cargo doc` in a jj secondary workspace.** Its git store is a bare `.bare` repository, and cargo cannot read a path package's file list there ("did not expect repo ... to be bare"). `GIT_CEILING_DIRECTORIES`, `GIT_DIR` and `cargo rustdoc` do not avoid it. `crates::lint` therefore runs `cargo doc --no-deps --workspace --locked` with `-D warnings`, and when that exact error appears it documents a copy of the crates outside any repository, with the same `Cargo.lock` and target directory. The whole workspace is documented in both layouts; a plain clone documents in place. The core-only rustdoc fallback is gone.
+
+Timings of each `crates::` recipe, in seconds, from `mise exec -- just crates::<recipe>` on this machine. Cold removes `crates/target` first; warm is an immediate rerun. The cargo registry stayed warm for both, so cold numbers exclude downloads.
+
+| Recipe           | Cold | Warm |
+| ---------------- | ---- | ---- |
+| `lint-toolchain` | 0    | 1    |
+| `fmt`            | 0    | 1    |
+| `fmt-check`      | 0    | 0    |
+| `boundaries`     | 0    | 1    |
+| `deny`           | 1    | 1    |
+| `lint`           | 8    | 1    |
+| `check-features` | 1    | 0    |
+| `test`           | 9    | 1    |
+| `wasm`           | 6    | 2    |
+| `napi`           | 7    | 1    |
+| `parity`         | 11   | 1    |
+| `parity-plant`   | 13   | 2    |
+| `check`          | 18   | 5    |
+
+Step 1a is done. The planted violations are in `src/test/suite/quality/` and pass. The macOS and Windows napi-parity jobs (`workflow_dispatch`) have not run yet.
 
 **Step 1b: the crates.**
 
