@@ -9,14 +9,15 @@ pub mod pack;
 
 mod across;
 mod budget;
-mod hash;
 mod index;
 mod layering;
 mod metrics;
 mod order;
 mod place;
-// `rand` is compiled for its fixture tests until the layout phases draw from it (Phase 2); a non-test build would
-// otherwise report its items as dead code.
+// `hash` and `rand` are compiled for their tests until the layout phases use them (Phase 2); a non-test build would
+// otherwise report their items as dead code.
+#[cfg(test)]
+mod hash;
 #[cfg(test)]
 mod rand;
 mod route;
