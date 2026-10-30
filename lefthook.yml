@@ -20,9 +20,10 @@ pre-commit:
     rust-format:
       glob: "crates/**/*.rs"
       run: mise exec -- just crates::fmt-check
-    # `**/` so that crates/*/Cargo.toml is checked too; a bare `*.toml` matches only the repository root.
+    # A bare `*.toml`: lefthook 2.1.17 matches it at the root and in subfolders (crates/*/Cargo.toml included), while
+    # `**/*.toml` matches only subfolders and would skip the root manifests. `rustEditorHooks.test.ts` pins this.
     toml:
-      glob: "**/*.toml"
+      glob: "*.toml"
       run: mise exec -- taplo fmt --check {staged_files}
 
 pre-push:
