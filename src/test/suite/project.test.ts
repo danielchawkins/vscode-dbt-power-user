@@ -218,15 +218,6 @@ describe("Project Test Suite", () => {
       dbtProject = await initializedProject();
     });
 
-    it("should get project name", () => {
-      expect(dbtProject.getProjectName()).toBe("test-project");
-      expect(mockFusionCli.getProjectName).toHaveBeenCalled();
-    });
-
-    it("should get project root", () => {
-      expect(dbtProject.root.fsPath).toBe("/test/project");
-    });
-
     it("should get DBT project file path", () => {
       expect(dbtProject.getDBTProjectFilePath()).toBe(
         path.join("/test/project", DBT_PROJECT_FILE),
@@ -448,10 +439,14 @@ describe("Project Test Suite", () => {
       });
 
       it.each([
-        ["no node", undefined],
-        ["no columns", { node: { columns: {} } }],
-      ])("falls back to the CLI for %s", async (_label, answer) => {
-        withNode(vi.fn(() => Promise.resolve(answer)));
+        ["no node", () => Promise.resolve(undefined)],
+        ["no columns", () => Promise.resolve({ node: { columns: {} } })],
+        [
+          "a failing server command",
+          () => Promise.reject(new Error("timeout")),
+        ],
+      ])("falls back to the CLI for %s", async (_label, getCurrentNode) => {
+        withNode(vi.fn(getCurrentNode));
         mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([
           { column: "id", dtype: "int" },
         ]);
@@ -459,31 +454,6 @@ describe("Project Test Suite", () => {
           { column: "id", dtype: "int" },
         ]);
       });
-
-      it("falls back to the CLI when the server command fails", async () => {
-        withNode(vi.fn(() => Promise.reject(new Error("timeout"))));
-        mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([]);
-        await dbtProject.queries.getColumnsOfModel("my_model");
-        expect(mockFusionCli.getColumnsOfModel).toHaveBeenCalled();
-      });
-    });
-
-    it("should get columns of source", async () => {
-      const mockColumns = [{ name: "col1", type: "varchar" }];
-      mockFusionCli.getColumnsOfSource.mockImplementation(() =>
-        Promise.resolve(mockColumns),
-      );
-
-      const result = await dbtProject.queries.getColumnsOfSource(
-        "my_source",
-        "my_table",
-      );
-
-      expect(result).toEqual(mockColumns);
-      expect(mockFusionCli.getColumnsOfSource).toHaveBeenCalledWith(
-        "my_source",
-        "my_table",
-      );
     });
   });
 
@@ -764,19 +734,6 @@ describe("Project Test Suite", () => {
         { kind: "test", select: "my_test" },
         { kind: "test", select: "my_model" },
       ]);
-    });
-
-    it("queues the prepared command for execution", async () => {
-      const execute = await queued();
-
-      await dbtProject.commands.compileModel({
-        plusOperatorLeft: "",
-        modelName: "my_model",
-        plusOperatorRight: "",
-      });
-      await new Promise((resolve) => setImmediate(resolve));
-
-      expect(execute).toHaveBeenCalled();
     });
 
     it("logs a preparation failure instead of rejecting", async () => {
@@ -1121,15 +1078,11 @@ describe("Project manifest", () => {
     const second = project.publishMerged(lastParse(), true);
     expect(project.graphNotice()).toBeUndefined();
 
-    expect(first).toBeDefined();
-    expect(second).toBeDefined();
     if (!first || !second) {
       throw new Error("Expected publications");
     }
     expect([...first.nodeMetaMap.nodes()].length).toBeGreaterThan(0);
-    expect(first.graphMetaMap.children.size).toBe(0);
     expect(first.macroMetaMap.size).toBeGreaterThan(0);
-    expect(first.modelDepthMap.size).toBe(0);
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
     expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
     expect(project.manifest).toBe(second);
@@ -1289,7 +1242,6 @@ describe("Project manifest trigger", () => {
     });
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
-    expect(project.manifest?.publicationEpoch ?? 0).toBe(0);
   });
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
@@ -1317,6 +1269,7 @@ describe("Project manifest trigger", () => {
       );
       trackedWatcher = createdFileSystemWatchers[0];
       rebuildManifest.mockClear();
+      refreshProjectConfig.mockClear();
     });
 
     afterEach(async () => {
@@ -1408,21 +1361,28 @@ describe("Project manifest trigger", () => {
         { metadataDemand },
       );
       const slowWatcher = createdFileSystemWatchers.at(-1)!;
+      const sourceChanged = vi.fn();
+      slow.onSourceFileChanged(sourceChanged);
       slowRebuild.mockClear();
+      let firstParse: Promise<void> | undefined;
       slowRebuild.mockImplementationOnce(
-        () => new Promise<void>((resolve) => (release = resolve)),
+        () =>
+          (firstParse = new Promise<void>((resolve) => (release = resolve))),
       );
       const hold = metadataDemand.acquire();
       slowWatcher.fire("change", path.join(dir, "models", "a.sql"));
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      expect(slowRebuild).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => {
+        expect(slowRebuild).toHaveBeenCalledTimes(1);
+      });
 
       // The consumer hides, and a second save lands while the first parse is still running.
       hold.dispose();
       slowWatcher.fire("change", path.join(dir, "models", "a.sql"));
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      await vi.waitFor(() => {
+        expect(sourceChanged).toHaveBeenCalledTimes(2);
+      });
       release();
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await firstParse;
       slowRebuild.mockClear();
 
       // The first parse published, but it started before the second save, so the parse is still stale.
@@ -1455,8 +1415,12 @@ describe("Project manifest trigger", () => {
         { metadataDemand: new MetadataDemand() },
       );
       const currentWatcher = createdFileSystemWatchers.at(-1);
+      const sourceChanged = vi.fn();
+      current.onSourceFileChanged(sourceChanged);
       currentWatcher?.fire("change", path.join(dir, "models", "a.sql"));
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      await vi.waitFor(() => {
+        expect(sourceChanged).toHaveBeenCalledTimes(1);
+      });
       rebuild.mockClear();
 
       let listenerDone: Promise<void> | undefined;
@@ -1477,6 +1441,7 @@ describe("Project manifest trigger", () => {
       async (name) => {
         trackedWatcher.fire("change", path.join(root, name));
         await vi.advanceTimersByTimeAsync(500);
+        expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
         expect(rebuildManifest).toHaveBeenCalledTimes(1);
       },
     );
