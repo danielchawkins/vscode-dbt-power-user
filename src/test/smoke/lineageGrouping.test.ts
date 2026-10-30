@@ -2,14 +2,7 @@ import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
-import type { ColumnState } from "./lineageProbes";
-import {
-  clickFirstColumn,
-  clickOnCard,
-  readColumns,
-  readDrawnCrossings,
-  tracedCardsListed,
-} from "./lineageProbes";
+import { readDrawnCrossings } from "./lineageProbes";
 import { evaluatePanel, waitForPanelGone } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -154,7 +147,7 @@ async function cardTitles(): Promise<Record<string, string>> {
   return match.value.titles;
 }
 
-/** The layer name of every layer band the layered layout draws, in draw order. */
+/** The layer name of every layer band the lineage layout draws, in draw order. */
 const BAND_LABELS = `(() => document.body.dataset.entry === "lineage" ? {
   entry: "lineage",
   bands: [...document.querySelectorAll(".react-flow__node-band [data-layer]")].map((el) => el.dataset.layer),
@@ -225,71 +218,6 @@ function waitForFanoutCard(
     describe: (last) =>
       `${what}; the last fanout card was ${JSON.stringify(last)}`,
   });
-}
-
-const readHub = () => readColumns(HUB);
-
-/** Polls the column state until `done` holds, and fails with the last state otherwise. */
-function waitForColumns(
-  what: string,
-  done: (current: ColumnState) => boolean,
-): Promise<ColumnState> {
-  return pollUntil(readHub, done, {
-    timeoutMs: 10_000,
-    intervalMs: 250,
-    describe: (last) => `${what}; the last state was ${JSON.stringify(last)}`,
-  });
-}
-
-/**
- * Opens the hub card's column list, clicking "Columns" only while the list is closed, then clicks its first column.
- * Returns the column state once the click has traced an edge.
- */
-async function traceHubColumn(): Promise<ColumnState> {
-  await pollUntil(
-    async () => {
-      const current = await readHub();
-      if (!current.columnTables.includes(HUB)) {
-        await evaluatePanel(
-          cdpPort(),
-          LINEAGE.entry,
-          clickOnCard(HUB, "Columns"),
-        );
-      }
-      return current;
-    },
-    (current) => current.columnTables.includes(HUB),
-    {
-      timeoutMs: 10_000,
-      intervalMs: 500,
-      describe: (last) =>
-        `the hub card's column list to open; the last state was ${JSON.stringify(last)}`,
-    },
-  );
-  await waitForColumns(
-    "the hub card should list its columns",
-    (current) => current.cardColumns > 0,
-  );
-  const clicked = await evaluatePanel<{ entry: string; clicked: boolean }>(
-    cdpPort(),
-    LINEAGE.entry,
-    clickFirstColumn(HUB),
-  );
-  assert.ok(clicked?.value.clicked, "the hub card has a column row to click");
-  // The baseline is the first pair of equal reads once every traced card lists its columns.
-  let previous: string | undefined;
-  return waitForColumns(
-    "clicking a hub column should trace column edges that hold still",
-    (current) => {
-      const key = JSON.stringify([current.traced, current.tableD]);
-      const stable =
-        current.traced.length > 0 &&
-        tracedCardsListed(current) &&
-        key === previous;
-      previous = key;
-      return stable;
-    },
-  );
 }
 
 /**
@@ -396,9 +324,9 @@ suite("Lineage grouping", function () {
     assert.ok(chip?.text.includes("3/3"), `chip text was ${chip?.text}`);
     assert.deepStrictEqual(opened.more, []);
     await expectWebviewDom(LINEAGE, { role: "button", name: "Open b" });
-    // The layered layout draws a band per layer behind the cards; the checkpoint records the band labels and titles.
+    // The lineage layout draws a band per layer behind the cards; the checkpoint records the band labels and titles.
     const bands = await bandLabels();
-    assert.ok(bands.length > 0, "the layered layout should draw layer bands");
+    assert.ok(bands.length > 0, "the lineage layout should draw layer bands");
     await evidence?.capture(LINEAGE, {
       name: "lineage-groups-opened",
       expect:
@@ -512,75 +440,6 @@ suite("Lineage grouping", function () {
     } finally {
       await config.update(
         "lineage.title",
-        undefined,
-        vscode.ConfigurationTarget.Workspace,
-      );
-    }
-  });
-
-  // In the leftToRight layout, a traced column's edges follow the zoom, the table edges do not.
-  test("traces hub.id to mart_summary in leftToRight, drops the column edges zoomed out, and redraws them zoomed in", async function () {
-    if (!runsHere()) {
-      this.skip();
-      return;
-    }
-    const evidence = interactionEvidence(host());
-    const config = vscode.workspace.getConfiguration("fusionPowerUser");
-    try {
-      await config.update(
-        "lineage.layout",
-        "leftToRight",
-        vscode.ConfigurationTarget.Workspace,
-      );
-      await reopenModel(HUB);
-      if (
-        (await waitForChildrenExpander(HUB_CHILDREN)) ===
-        `Show ${HUB_CHILDREN} children`
-      ) {
-        await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
-      }
-      await waitForSnapshot(
-        "the hub's children should draw the marts card",
-        (current) => current.cards.includes("mart_summary"),
-      );
-      // Column edges are only drawn from 50% zoom up, so start there.
-      await zoomPastHalf(LINEAGE, "in");
-      const traced = await traceHubColumn();
-      assert.ok(
-        traced.traced.some((id) => id.includes("mart_summary")),
-        `no traced edge reaches mart_summary: ${JSON.stringify(traced.traced)}`,
-      );
-      const tracedBefore = traced.traced.length;
-      const tableDBefore = traced.tableD;
-      assert.ok(tableDBefore.length > 0, "the canvas draws table edges");
-
-      await evidence?.capture(LINEAGE, {
-        name: "lineage-groups-ltr-trace",
-        expect:
-          "The leftToRight layout with the hub's Columns list open and its id column clicked: column edges run from " +
-          "that column to the marts card, alongside the table edges. The traced edge ids and table edge paths are in " +
-          "measured.",
-        measured: { traced: traced.traced, tableD: traced.tableD },
-      });
-
-      await zoomPastHalf(LINEAGE, "out");
-      const zoomedOut = await readHub();
-      assert.strictEqual(
-        zoomedOut.traced.length,
-        0,
-        `the zoomed-out canvas still draws column edges: ${JSON.stringify(zoomedOut.traced)}`,
-      );
-      assert.deepStrictEqual(zoomedOut.tableD, tableDBefore);
-
-      await zoomPastHalf(LINEAGE, "in");
-      const zoomedIn = await waitForColumns(
-        "zooming back in should draw the column edges again",
-        (current) => current.traced.length === tracedBefore,
-      );
-      assert.deepStrictEqual(zoomedIn.tableD, tableDBefore);
-    } finally {
-      await config.update(
-        "lineage.layout",
         undefined,
         vscode.ConfigurationTarget.Workspace,
       );

@@ -73,7 +73,7 @@ Fusion LSP wire commands (`dbt.listNodes`, `dbt.previewCte`, and the rest) are u
 
 ### Lineage layout
 
-`fusionPowerUser.lineage.layout` sets how lineage cards are placed. `"layered"` places parents above their children in layer bands (source, staging, intermediate, marts), with edges routed through the gaps between cards. `"leftToRight"` lays cards out left to right with dagre, parents to the left of their children, with bezier edges and no layer bands. The setting is read-only in the panel, like the other lineage settings.
+`fusionPowerUser.lineage.layout` is removed, with its `"leftToRight"` value (the dagre placement). Lineage cards are always placed in layer bands (source, staging, intermediate, marts), with parents above their children. `fusionPowerUser.lineage.engine` accepts `"balanced"` (the default) and `"thorough"`; its `"classic"` value is removed.
 
 ## Consumer manual migration
 

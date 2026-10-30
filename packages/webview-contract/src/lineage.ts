@@ -163,16 +163,10 @@ export interface LineageRef {
 }
 
 /**
- * How cards are placed: `layered` puts parents above and children below in layer bands with routed edges;
- * `leftToRight` is the dagre layout the panel used before.
+ * Which engine places and routes the lineage cards: `balanced` and `thorough` are @fusion-power-user/graph-layout
+ * with that ordering effort, `thorough` searching harder for fewer crossings.
  */
-export type LineageLayout = "layered" | "leftToRight";
-
-/**
- * Which engine places and routes the `layered` layout: `balanced` and `thorough` are @fusion-power-user/graph-layout
- * with that ordering effort, `thorough` searching harder for fewer crossings; `classic` is the earlier owned engine.
- */
-export type LineageEngine = "balanced" | "thorough" | "classic";
+export type LineageEngine = "balanced" | "thorough";
 
 /** The engine an unset `lineage.engine` gives. */
 export const DEFAULT_LINEAGE_ENGINE: LineageEngine = "balanced";
@@ -196,9 +190,7 @@ export interface LineageSettings {
   semanticZoom?: boolean | undefined;
   /** Titles cards by alias (`label`, the default) or by dbt name (`refName`). A user setting. */
   title?: "alias" | "name" | undefined;
-  /** The card placement; absent means `layered`. A user setting, read-only here. */
-  layout?: LineageLayout | undefined;
-  /** The engine of the `layered` layout; absent means `balanced`. A user setting, read-only here. */
+  /** The engine that places and routes the cards; absent means `balanced`. A user setting, read-only here. */
   engine?: LineageEngine | undefined;
   /**
    * A colour per layer tag (`source`, `staging`, `intermediate`, `marts`, `other`, or any custom layer) for its band
@@ -208,7 +200,7 @@ export interface LineageSettings {
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`, `layout`,
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`,
  * `engine` and `layerColors` are user settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
@@ -218,7 +210,6 @@ export type PersistedLineageSettings = Partial<
     | "groupBy"
     | "semanticZoom"
     | "title"
-    | "layout"
     | "engine"
     | "layerColors"
   >

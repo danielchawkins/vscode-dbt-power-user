@@ -1,7 +1,7 @@
 import type * as Fit from "../modules/lineage/fit";
 
-/** Each fit the panel made, by the focus it centres on and whether the layout is layered. */
-export const fits: { focusId: string | undefined; layered: boolean }[] = [];
+/** Each fit the panel made, by the focus it centres on. */
+export const fits: { focusId: string | undefined }[] = [];
 
 /**
  * A `vi.mock` factory for the lineage `fit` module that records each `fitGraph` call in `fits` and still runs the
@@ -15,7 +15,7 @@ export const recordingFit = async (
   return {
     ...actual,
     fitGraph: (request) => {
-      fits.push({ focusId: request.focusId, layered: request.layered });
+      fits.push({ focusId: request.focusId });
       return actual.fitGraph(request);
     },
   };

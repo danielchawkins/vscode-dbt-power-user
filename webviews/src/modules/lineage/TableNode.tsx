@@ -55,7 +55,6 @@ const Header = ({
   zoomedOut,
   mode,
   showRelation,
-  layered,
 }: {
   mode: TitleMode;
   table: lineage.LineageTable;
@@ -64,7 +63,6 @@ const Header = ({
   hiddenFromLineage: boolean;
   zoomedOut: boolean;
   showRelation: boolean;
-  layered: boolean;
 }) => (
   <div
     className={`${styles.header} ${showRelation ? styles.headerRelation : ""} ${
@@ -74,7 +72,7 @@ const Header = ({
   >
     <Handle
       type="target"
-      position={layered ? Position.Top : Position.Left}
+      position={Position.Top}
       id="in"
       className={`${styles.handle} ${styles.headerHandle}`}
       isConnectable={false}
@@ -107,15 +105,6 @@ const Header = ({
         {cardSubtitle(table, mode) || "\u00a0"}
       </span>
     ) : null}
-    {layered ? null : (
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="out"
-        className={`${styles.handle} ${styles.headerHandle}`}
-        isConnectable={false}
-      />
-    )}
   </div>
 );
 
@@ -165,60 +154,42 @@ const Actions = ({
   pending,
   hidden,
   listed,
-  layered,
 }: {
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
   pending: { parents: boolean; children: boolean };
   hidden: { parents: number; children: number };
   listed: boolean;
-  layered: boolean;
-}) => {
-  // A layered card shows its expanders as bubbles on its edges, outside the actions row.
-  const parents = (
+}) => (
+  <>
+    <div className={styles.actions}>
+      <MoreButton
+        table={table.table}
+        direction="parents"
+        hidden={hidden.parents}
+      />
+      <Tools table={table} listed={listed} />
+      <MoreButton
+        table={table.table}
+        direction="children"
+        hidden={hidden.children}
+      />
+    </div>
+    {/* The expanders are bubbles on the card's edges, outside the actions row. */}
     <ExpandButton
       table={table}
       direction="parents"
       expanded={expanded.parents}
       pending={pending.parents}
-      layered={layered}
     />
-  );
-  const children = (
     <ExpandButton
       table={table}
       direction="children"
       expanded={expanded.children}
       pending={pending.children}
-      layered={layered}
     />
-  );
-  return (
-    <>
-      <div className={styles.actions}>
-        {layered ? null : parents}
-        <MoreButton
-          table={table.table}
-          direction="parents"
-          hidden={hidden.parents}
-        />
-        <Tools table={table} listed={listed} />
-        <MoreButton
-          table={table.table}
-          direction="children"
-          hidden={hidden.children}
-        />
-        {layered ? null : children}
-      </div>
-      {layered ? (
-        <>
-          {parents}
-          {children}
-        </>
-      ) : null}
-    </>
-  );
-};
+  </>
+);
 
 const ColumnRow = ({
   table,
@@ -315,7 +286,6 @@ const TableNodeView = ({
   // The graph never hides the start table, so its card shows no hidden cue either.
   const hiddenFromLineage = data.table.hidden === true && !data.isStart;
   const zoomedOut = useZoomedOut();
-  const layered = data.layered === true;
   // The start and selected cards keep their relation line and actions row; other cards show the row on hover.
   const pinned = data.isStart || selected;
   return (
@@ -324,7 +294,7 @@ const TableNodeView = ({
         hiddenFromLineage ? styles.hidden : ""
       } ${zoomedOut ? styles.zoomedOut : ""} ${
         data.columns === undefined ? styles.noColumns : ""
-      } ${layered ? styles.layered : ""} ${pinned ? styles.pinned : ""}`}
+      } ${pinned ? styles.pinned : ""}`}
       style={{ "--layer-colour": data.layerColour } as React.CSSProperties}
       data-table={data.table.table}
       data-layer={data.table.layer}
@@ -337,7 +307,6 @@ const TableNodeView = ({
         zoomedOut={zoomedOut}
         mode={data.title}
         showRelation={pinned}
-        layered={layered}
       />
       <Actions
         table={data.table}
@@ -345,7 +314,6 @@ const TableNodeView = ({
         pending={data.pending}
         hidden={data.hidden}
         listed={data.columns !== undefined}
-        layered={layered}
       />
       <GroupChips chips={data.chips} />
       {data.columns ? (
@@ -358,15 +326,13 @@ const TableNodeView = ({
           columnsNeedStrict={data.columnsNeedStrict}
         />
       ) : null}
-      {layered ? (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="out"
-          className={`${styles.handle} ${styles.headerHandle}`}
-          isConnectable={false}
-        />
-      ) : null}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="out"
+        className={`${styles.handle} ${styles.headerHandle}`}
+        isConnectable={false}
+      />
     </div>
   );
 };

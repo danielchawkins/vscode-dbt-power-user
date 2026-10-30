@@ -26,7 +26,7 @@ import type {
   RoutedGeometry,
 } from "./layoutEngine";
 
-/** The classic engine's spacing, so the two engines' drawings compare card for card. */
+/** The card spacing the panel draws with: the band padding, the gap between cards and the gutter their edges route through. */
 const BAND_PAD = 22;
 const CARD_GAP = 28;
 const GUTTER = 36;

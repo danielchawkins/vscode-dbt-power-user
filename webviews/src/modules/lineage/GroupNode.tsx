@@ -13,15 +13,14 @@ const GroupNodeView = ({
 }: NodeProps<GroupNodeType>): React.JSX.Element => {
   const actions = use(TableActionsContext);
   const zoomedOut = useZoomedOut();
-  const layered = data.layered === true;
   return (
     <div
-      className={`${styles.node} ${styles.group} ${zoomedOut ? styles.zoomedOut : ""} ${layered ? styles.layered : ""}`}
+      className={`${styles.node} ${styles.group} ${zoomedOut ? styles.zoomedOut : ""}`}
       data-group={data.label}
     >
       <Handle
         type="target"
-        position={layered ? Position.Top : Position.Left}
+        position={Position.Top}
         id="in"
         className={`${styles.handle} ${styles.headerHandle}`}
         isConnectable={false}
@@ -42,24 +41,13 @@ const GroupNodeView = ({
       >
         Open
       </button>
-      {layered ? null : (
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="out"
-          className={`${styles.handle} ${styles.headerHandle}`}
-          isConnectable={false}
-        />
-      )}
-      {layered ? (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="out"
-          className={`${styles.handle} ${styles.headerHandle}`}
-          isConnectable={false}
-        />
-      ) : null}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="out"
+        className={`${styles.handle} ${styles.headerHandle}`}
+        isConnectable={false}
+      />
     </div>
   );
 };

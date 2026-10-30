@@ -1,8 +1,8 @@
 /**
  * The lineage panel's layout-engine port: what the panel asks of any engine, and what every engine answers. The
  * panel builds one `LayoutRequest` from its flow input (layoutRequest.ts), asks the engine `engines.ts` selects, and
- * draws the answer; it never imports an engine's modules. Adapters: ownedEngine.ts (the layered layout and gutter
- * router) and graphLayoutEngine.ts (@fusion-power-user/graph-layout).
+ * draws the answer; it never imports an engine's modules. The adapter is graphLayoutEngine.ts
+ * (@fusion-power-user/graph-layout).
  *
  * Plain data only, so the evaluation harness drives every engine the same way and compares their answers.
  */
@@ -92,7 +92,7 @@ export interface LayoutResponse {
   hints: LayoutHints;
 }
 
-type LayoutEngineId = "owned" | "graph-layout";
+type LayoutEngineId = "graph-layout";
 
 /** A layout engine: pure and synchronous, with no DOM, React or React Flow. */
 export interface LayoutEngine {

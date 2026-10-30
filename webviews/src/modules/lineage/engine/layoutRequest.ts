@@ -78,7 +78,7 @@ export function layoutRequest(
   };
 }
 
-/** The cards the layered layout places: each table with its listed column rows, then each open group. */
+/** The cards the layout places: each table with its listed column rows, then each open group. */
 function layoutCards(
   input: FlowInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
@@ -154,9 +154,7 @@ export interface FlowInput {
   refs: readonly lineage.LineageRef[];
   /** Empty column lists explain that strict static analysis is missing. */
   columnsNeedStrict?: boolean | undefined;
-  /** Card placement; absent means `layered`. */
-  layout?: lineage.LineageLayout | undefined;
-  /** The engine of the layered layout; absent means `balanced`. */
+  /** The engine that places and routes the cards; absent means `balanced`. */
   engine?: lineage.LineageEngine | undefined;
   /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
   layerColors?: Readonly<Record<string, string>> | undefined;
@@ -167,10 +165,10 @@ export const drawsTableEdges = (input: FlowInput): boolean =>
   input.connections !== "declared";
 
 /**
- * The `[parent, child]` pairs that rank the cards top-down or left to right. Under `declared` no table edge is drawn,
+ * The `[parent, child]` pairs that rank the cards top-down. Under `declared` no table edge is drawn,
  * so the relationships rank the cards, the referenced table upstream of the declaring one.
  */
-export function rankingEdges(input: FlowInput): [string, string][] {
+function rankingEdges(input: FlowInput): [string, string][] {
   return drawsTableEdges(input)
     ? [...input.data.edges, ...(input.groupEdges ?? [])]
     : input.refs.map((ref) => [ref.to.table, ref.from.table]);

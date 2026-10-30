@@ -158,7 +158,7 @@ Phase 6 is the point at which the Rust core is a complete replacement for the Ty
 - `graph-layout-wasm`: wasm-bindgen entry with the columnar frame (ADR Decision 6) and JSON options; result copied out of linear memory (S1).
 - `graph-layout-napi`: napi-rs v3 entry with the same frame. Measured against WASM in S6; ship only if S6 meets the margin in ADR "Consequences" (about 1.5x), which decides O-2.
 - Host path (O-1, recommended): the WASM engine runs in a `worker_threads` Worker in the extension host; napi when present. Webview option C (webview Worker) is only adopted if S8 passes.
-- Async panel port (O-9): `LayoutEngine.layout` returns a Promise carrying a generation; `placeLayered` becomes async. The webview cancels superseded generations.
+- Async panel port (O-9): `LayoutEngine.layout` returns a Promise carrying a generation; `toFlow` becomes async. The webview cancels superseded generations.
 - Default engine switches to Rust; `graphLayout.engine` setting keeps TypeScript as a fallback until Phase 10.
 - Propose the CSP change for the lineage panel only (ADR "Bindings"; `src/webview/panelHtml.ts`), and only after S8 results.
 

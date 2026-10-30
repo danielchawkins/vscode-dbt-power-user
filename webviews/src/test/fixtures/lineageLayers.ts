@@ -323,10 +323,6 @@ export const lineageLayersRefs: lineage.LineageRef[] = [
   relationship(REV_DAILY, "region", SEED, "code"),
 ];
 
-/** The table map `hiddenTables` reads, keyed by table ID. */
-export const lineageLayersKnown: Record<string, lineage.LineageTable> =
-  Object.fromEntries(lineageLayersTables.map((table) => [table.table, table]));
-
 /** The card ID of the start model, which the panel opens on. */
 export const lineageLayersStart = cardId(INT_ORDERS);
 

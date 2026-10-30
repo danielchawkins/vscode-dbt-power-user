@@ -101,7 +101,6 @@ const flowOf = ({
     columnsNeedStrict,
     connections: settings.connections,
     refs: visibleRefs(refs, settings, drawn),
-    layout: settings.layout,
     engine: settings.engine,
     layerColors: settings.layerColors,
   });
@@ -171,7 +170,7 @@ export const useGraphModel = (
     [graph, settings, refs, columnsNeedStrict],
   );
   const details = detailsTable ? graph.known[detailsTable] : undefined;
-  // The drawn nodes by id, and the layout and Connections: the fit refits when either changes.
+  // The drawn nodes by id, and the engine and Connections: the fit refits when either changes.
   const nodeKey = useMemo(
     () =>
       nodes
@@ -181,7 +180,7 @@ export const useGraphModel = (
         .join("\n"),
     [nodes],
   );
-  const shapeKey = `${settings.layout}|${settings.engine}|${settings.connections}`;
+  const shapeKey = `${settings.engine}|${settings.connections}`;
   return {
     settings,
     change,

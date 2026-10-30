@@ -36,7 +36,6 @@ const resolveUserSettings = (
   | "groupBy"
   | "semanticZoom"
   | "title"
-  | "layout"
   | "engine"
   | "layerColors"
 > => ({
@@ -44,7 +43,6 @@ const resolveUserSettings = (
   groupBy: settings?.groupBy ?? "folder",
   semanticZoom: settings?.semanticZoom ?? true,
   title: settings?.title ?? "alias",
-  layout: settings?.layout ?? "layered",
   engine: settings?.engine ?? lineage.DEFAULT_LINEAGE_ENGINE,
   layerColors: settings?.layerColors ?? {},
 });

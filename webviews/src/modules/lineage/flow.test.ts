@@ -45,20 +45,17 @@ const input = (groupEdges: [string, string][]) => ({
 
 describe("toFlow with groups", () => {
   it("lays group nodes out with the tables, and gives them the group size", () => {
-    const { nodes } = toFlow({
-      ...input([["hub", "g:1"]]),
-      layout: "leftToRight",
-    });
+    const { nodes } = toFlow(input([["hub", "g:1"]]));
     const hub = nodes.find((n) => n.id === "hub");
     const group = nodes.find((n) => n.id === "g:1");
     expect(group?.type).toBe("folderGroup");
-    expect(group?.data).toEqual({ label: "finance", count: 3, layered: false });
+    expect(group?.data).toEqual({ label: "finance", count: 3 });
     expect(group?.initialHeight).toBe(geometry.groupHeight);
     expect(group?.initialWidth).toBe(geometry.tableWidth);
     expect(Number.isFinite(group?.position.x)).toBe(true);
     expect(Number.isFinite(group?.position.y)).toBe(true);
-    // Children sit to the right of their parent in the left-to-right layout.
-    expect(group!.position.x).toBeGreaterThan(hub!.position.x);
+    // Children sit below their parent in the layered layout.
+    expect(group!.position.y).toBeGreaterThan(hub!.position.y);
   });
 
   it("gives a group node the card's width, not React Flow's built-in 150px group type", () => {
@@ -192,37 +189,6 @@ describe("toFlow with group chips", () => {
     );
   });
 
-  it("spaces a selected card by the height it is drawn at, relation line included", () => {
-    for (const selectedTable of ["a", "b"]) {
-      const { nodes } = toFlow({
-        layout: "leftToRight",
-        data: {
-          start: "hub",
-          tables: [table("hub"), table("a"), table("b")],
-          edges: [
-            ["hub", "a"],
-            ["hub", "b"],
-          ],
-          columnEdges: [],
-        },
-        columns: {},
-        columnTables: [],
-        expansions: [],
-        errors: {},
-        refs: [],
-        selectedTable,
-      });
-      const [upper, lower] = nodes
-        .filter((n) => n.id === "a" || n.id === "b")
-        .sort((x, y) => x.position.y - y.position.y);
-      expect(lower?.position.y ?? 0).toBe(
-        (upper?.position.y ?? 0) +
-          (upper?.initialHeight ?? 0) +
-          geometry.nodeGap,
-      );
-    }
-  });
-
   it("gives the table node the chips it is passed", () => {
     expect(hubNode([chip(1)])?.data).toMatchObject({ chips: [chip(1)] });
   });
@@ -241,14 +207,13 @@ describe("toFlow title mode", () => {
   });
 });
 
-describe("toFlow layered layout", () => {
+describe("toFlow layout", () => {
   const tables: lineage.LineageTable[] = [
     { ...table("src"), nodeType: "source" },
     { ...table("stg"), layer: "staging" },
     { ...table("mart"), layer: "marts" },
   ];
-  const layeredInput = (layout?: lineage.LineageLayout): FlowInput => ({
-    layout,
+  const layeredInput = (): FlowInput => ({
     data: {
       start: "stg",
       tables,
@@ -267,12 +232,11 @@ describe("toFlow layered layout", () => {
   const at = (nodes: ReturnType<typeof toFlow>["nodes"], id: string) =>
     nodes.find((n) => n.id === id);
 
-  it("is the default: parents above their children, and cards keep the top and bottom bubbles", () => {
+  it("places parents above their children", () => {
     const { nodes } = toFlow(layeredInput());
     const y = (id: string) => at(nodes, id)?.position.y ?? NaN;
     expect(y("src")).toBeLessThan(y("stg"));
     expect(y("stg")).toBeLessThan(y("mart"));
-    expect(at(nodes, "stg")?.data).toMatchObject({ layered: true });
   });
 
   it("draws one band per layer behind the cards, and bands take no selection or drag", () => {
@@ -468,16 +432,6 @@ describe("toFlow layered layout", () => {
       );
     },
   );
-
-  it("with leftToRight keeps dagre's placement, bezier edges and no bands", () => {
-    const { nodes, edges } = toFlow(layeredInput("leftToRight"));
-    expect(nodes.some((n) => n.type === "band")).toBe(false);
-    expect(at(nodes, "stg")?.data).toMatchObject({ layered: false });
-    expect(edges.every((e) => e.type === undefined)).toBe(true);
-    expect(at(nodes, "mart")!.position.x).toBeGreaterThan(
-      at(nodes, "stg")!.position.x,
-    );
-  });
 });
 
 describe("toFlow connections", () => {
@@ -488,10 +442,7 @@ describe("toFlow connections", () => {
     cardinality: "many-to-one",
     source: "meta",
   };
-  const mixed = (
-    connections?: lineage.Connections,
-    layout?: lineage.LineageLayout,
-  ) => ({
+  const mixed = (connections?: lineage.Connections) => ({
     data: {
       start: "hub",
       tables: [table("hub"), table("child")],
@@ -520,7 +471,6 @@ describe("toFlow connections", () => {
     ],
     groupEdges: [["hub", "g:1"]] as [string, string][],
     connections,
-    layout,
   });
   const edgeIds = (connections?: lineage.Connections) =>
     toFlow(mixed(connections))
@@ -539,9 +489,9 @@ describe("toFlow connections", () => {
     expect(edgeIds(undefined)).toEqual(edgeIds("dbt"));
   });
 
-  it("gives each relationship edge type relationship, from the referenced side, left to right", () => {
+  it("gives each relationship edge type relationship, from the referenced side", () => {
     for (const connections of ["declared", "both"] as const) {
-      const rel = toFlow(mixed(connections, "leftToRight")).edges.find(
+      const rel = toFlow(mixed(connections)).edges.find(
         (e) => e.id === "r:ref1",
       );
       expect(rel).toMatchObject({
@@ -553,14 +503,7 @@ describe("toFlow connections", () => {
     }
   });
 
-  it("ranks the referenced table upstream of the declaring table under declared, left to right", () => {
-    const { nodes } = toFlow(mixed("declared", "leftToRight"));
-    const hub = nodes.find((n) => n.id === "hub");
-    const child = nodes.find((n) => n.id === "child");
-    expect(hub!.position.x).toBeLessThan(child!.position.x);
-  });
-
-  it("under layered and declared, draws only relationship and column edges, with the referenced table above", () => {
+  it("under declared, draws only relationship and column edges, with the referenced table above", () => {
     const { nodes, edges } = toFlow(mixed("declared"));
     expect(edges.map((e) => e.id).sort()).toEqual([
       "c:hub.id->child.hub_id",
@@ -571,7 +514,7 @@ describe("toFlow connections", () => {
     expect(y("hub")).toBeLessThan(y("child"));
   });
 
-  it("under layered and both, routes every kind of edge", () => {
+  it("under both, routes every kind of edge", () => {
     const { edges } = toFlow(mixed("both"));
     expect(edges.map((e) => e.id).sort()).toEqual([
       "c:hub.id->child.hub_id",
