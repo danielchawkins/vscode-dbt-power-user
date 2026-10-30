@@ -118,6 +118,12 @@ fn msagl_cases_hold_their_expected_positions_and_goals() {
         bit_identical,
         all.len()
     );
+    // Parity is on outcomes, but a new difference must be recorded in solve-discrepancies.md before this changes.
+    assert_eq!(
+        bit_identical,
+        all.len(),
+        "an MSAGL case now differs from TypeScript in its bits"
+    );
 }
 
 #[test]
@@ -179,6 +185,11 @@ fn random_problems_match_typescript() {
         differences.len(),
         differences
     );
+    // Parity is on outcomes, but a new difference must be recorded in solve-discrepancies.md before this changes.
+    assert!(
+        differences.is_empty(),
+        "random problems now differ from TypeScript in their bits: {differences:?}"
+    );
 }
 
 /// Writes the output of every random problem as the hex of its bits, one `seed<TAB>bits` line per seed, to the file named
@@ -208,7 +219,6 @@ fn random_outputs_are_written_for_the_parity_comparison() {
     std::fs::write(path, text).expect("the parity output file is writable");
 }
 
-/// Two blocks whose merge closes a cycle of blocks: a<b and c<d merge first, then a<d and c<b cross the two blocks.
 /// The finance graph's placement solves, dumped from the TypeScript layout (`GRAPH_LAYOUT_FINANCE_SOLVES` names the
 /// dump). Every separation must hold; the count of solves that differ from TypeScript in any bit goes to the report.
 /// Without the variable it does nothing.
@@ -260,6 +270,78 @@ fn finance_placement_solves_meet_every_separation() {
     );
 }
 
+/// The merging chain of the TypeScript spike (`scripts/spikes/graph-layout/vpsc-spike.mjs quadratic`): separations
+/// `i -> i+1` with gap 1 and unit weights. `collapse` puts every desired position at zero, so every link merges;
+/// `reverse` pulls the chain's ends the other way, so the merges propagate along it.
+fn spike_chain(n: u32, reverse: bool) -> Instance {
+    let x0 = (0..n)
+        .map(|i| {
+            if reverse {
+                f64::from(n - i) * 0.25
+            } else {
+                0.0
+            }
+        })
+        .collect();
+    Instance {
+        x0,
+        weight: vec![1.0; n as usize],
+        seps: (0..n - 1).map(|i| sep(i, i + 1, 1.0)).collect(),
+    }
+}
+
+/// The timing workloads, run by `scripts/bench/solve-timings.mjs` and by nothing else. The core reads no clock (ADR
+/// 0011), so the driver times the whole test process at two repeat counts and takes the slope. Without
+/// `GRAPH_LAYOUT_SOLVE_WORKLOAD` the test does nothing. The workload is `random` (one pass is the 2,000 random problems)
+/// or `chain:<collapse|reverse>:<n>`, and `GRAPH_LAYOUT_SOLVE_REPEATS` says how many times it is solved.
+#[test]
+fn timing_workload_runs() {
+    let Some(workload) = std::env::var_os("GRAPH_LAYOUT_SOLVE_WORKLOAD") else {
+        return;
+    };
+    let repeats: u32 = std::env::var("GRAPH_LAYOUT_SOLVE_REPEATS")
+        .expect("GRAPH_LAYOUT_SOLVE_REPEATS is set with the workload")
+        .parse()
+        .expect("GRAPH_LAYOUT_SOLVE_REPEATS is a count");
+    let workload = workload.to_str().expect("the workload is UTF-8");
+    let mut projector = Projector::new();
+    if workload == "random" {
+        let problems: Vec<Instance> = (0..crate::testkit::solve::RANDOM_PROBLEMS)
+            .map(random_problem)
+            .collect();
+        for _ in 0..repeats {
+            for Instance { x0, weight, seps } in &problems {
+                let x = projector
+                    .solve(&Problem {
+                        x0,
+                        weight,
+                        separations: seps,
+                    })
+                    .expect("the random problems solve");
+                std::hint::black_box(x);
+            }
+        }
+    } else {
+        let (shape, n) = workload
+            .strip_prefix("chain:")
+            .and_then(|rest| rest.split_once(':'))
+            .expect("the workload is random or chain:<shape>:<n>");
+        let n: u32 = n.parse().expect("the chain length is a count");
+        let Instance { x0, weight, seps } = spike_chain(n, shape == "reverse");
+        for _ in 0..repeats {
+            let x = projector
+                .solve(&Problem {
+                    x0: &x0,
+                    weight: &weight,
+                    separations: &seps,
+                })
+                .expect("the chain solves");
+            std::hint::black_box(x);
+        }
+    }
+}
+
+/// Two blocks whose merge closes a cycle of blocks: a<b and c<d merge first, then a<d and c<b cross the two blocks.
 #[test]
 fn crossing_blocks_are_solved_to_the_exact_optimum() {
     let x0 = [0.0; 4];
