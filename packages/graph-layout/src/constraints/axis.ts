@@ -1,4 +1,4 @@
-import { solveSeparations } from "../place/vpsc.js";
+import { solveSeparations } from "../solve/vpsc.js";
 import { reduceEqualities } from "./equalities.js";
 import type { AxisProblem } from "./types.js";
 

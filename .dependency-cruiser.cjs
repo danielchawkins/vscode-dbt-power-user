@@ -206,6 +206,14 @@ module.exports = {
       to: { pathNot: "^packages/graph-layout/src/" },
     },
     {
+      name: "solve-is-self-contained",
+      severity: "error",
+      comment:
+        "The separation solver (VPSC) imports only itself: it takes plain numbers and returns plain numbers, and it has no npm package, Node built-in or layout module to reach. Its Rust port copies the module as it stands.",
+      from: { path: "^packages/graph-layout/src/solve/" },
+      to: { pathNot: "^packages/graph-layout/src/solve/" },
+    },
+    {
       name: "nothing-reaches-into-graph-layout",
       severity: "error",
       comment:

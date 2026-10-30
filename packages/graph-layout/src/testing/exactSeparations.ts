@@ -1,4 +1,4 @@
-import type { Separation } from "../place/vpsc.js";
+import type { Separation } from "../solve/vpsc.js";
 
 // Test-only: the exact optimum of a small separation problem, as an oracle for the solver.
 

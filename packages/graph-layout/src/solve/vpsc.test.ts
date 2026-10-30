@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { projectRanks } from "../place/projection.js";
 import { exactSeparationOptimum } from "../testing/exactSeparations.js";
-import { projectRanks } from "./projection.js";
 import { type Separation, solveSeparations } from "./vpsc.js";
 
 /** Tolerance for feasibility. */

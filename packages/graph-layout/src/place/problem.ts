@@ -1,4 +1,4 @@
-import type { Separation } from "./vpsc.js";
+import type { Separation } from "../solve/vpsc.js";
 
 /** A segment between adjacent ranks, pulling its two ends together. */
 export interface Link {

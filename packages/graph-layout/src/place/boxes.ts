@@ -1,8 +1,8 @@
 import type { LayeredGraph } from "../layering.js";
+import type { Separation } from "../solve/vpsc.js";
 import type { LayoutCluster } from "../types.js";
 import { rankGaps, rankMargins } from "./boxGaps.js";
 import { siblingOrder, siblings } from "./boxOrder.js";
-import type { Separation } from "./vpsc.js";
 
 /** Space between a box and its outermost members when its cluster sets no padding. */
 const DEFAULT_PADDING = 8;
