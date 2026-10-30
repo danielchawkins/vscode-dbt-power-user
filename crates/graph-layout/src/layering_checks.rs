@@ -21,6 +21,10 @@ const FIXTURE: &str = include_str!("../fixtures/parity/layering-cases.txt");
 const KNOWN_DIFFERENCES: usize = 0;
 /// Cases of the finance dump that differ from TypeScript. The dump is read only when its variable is set.
 const FINANCE_DIFFERENCES: usize = 0;
+/// The size of the finance dump: its nodes and its edges, as `financeGraph(manifest)` gives them. The test fails when the
+/// dump has another size, so `layering-discrepancies.md` (which quotes these) cannot drift from it.
+const FINANCE_NODES: usize = 1126;
+const FINANCE_EDGES: usize = 1273;
 /// Relative rounding allowed in a total edge length.
 const ROUNDING: f64 = 1e-12;
 
@@ -245,6 +249,11 @@ fn ranks_and_chains_match_typescript_on_the_finance_graph() {
     let text = std::fs::read_to_string(&path).expect("the finance dump is readable");
     let cases = parse(&text);
     assert_eq!(cases.len(), 1, "the finance dump holds one case");
+    assert_eq!(
+        (cases[0].count, cases[0].ends.len()),
+        (FINANCE_NODES, FINANCE_EDGES),
+        "the finance dump does not have {FINANCE_NODES} nodes and {FINANCE_EDGES} edges; update layering-discrepancies.md"
+    );
     let differing = differences(&cases);
     assert_eq!(
         differing.len(),
