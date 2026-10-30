@@ -12,13 +12,13 @@ import {
   expand,
   expansionClick,
   hideColumns,
-  lineageData,
   linkDrawn,
   parseExpansion,
   showColumns,
 } from "./graph";
 import { groupNodeId } from "./grouping";
 import { columnHandle } from "./layout";
+import { lineageData } from "./visibility";
 
 const table = (
   id: string,

@@ -62,17 +62,17 @@ export const ExpandButton = ({
 export const MoreButton = ({
   table,
   direction,
-  hidden,
+  capped,
 }: {
   table: string;
   direction: Direction;
-  hidden: number;
+  capped: number;
 }): React.JSX.Element | null => {
   const actions = use(TableActionsContext);
-  if (hidden <= 0) {
+  if (capped <= 0) {
     return null;
   }
-  const title = `Show ${hidden} more ${direction}`;
+  const title = `Show ${capped} more ${direction}`;
   return (
     <button
       type="button"
@@ -81,7 +81,7 @@ export const MoreButton = ({
       title={title}
       onClick={() => actions.showMore(table, direction)}
     >
-      {`+${hidden}`}
+      {`+${capped}`}
     </button>
   );
 };

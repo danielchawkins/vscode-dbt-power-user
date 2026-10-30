@@ -35,20 +35,20 @@ export const GroupChips = ({
  */
 const ChipControls = ({ chip }: { chip: GroupChip }): React.JSX.Element => {
   const actions = use(TableActionsContext);
-  const hidden = chip.total - chip.drawn;
+  const undrawn = chip.total - chip.drawn;
   return (
     <span className={styles.chip} title={chip.label}>
       <span className={styles.chipLabel}>{chip.label}</span>
       <span>{`${chip.drawn}/${chip.total}`}</span>
-      {hidden > 0 && (
+      {undrawn > 0 && (
         <button
           type="button"
           className={`nodrag ${styles.more}`}
-          aria-label={`Show ${hidden} more in ${chip.label}`}
-          title={`Show ${hidden} more in ${chip.label}`}
+          aria-label={`Show ${undrawn} more in ${chip.label}`}
+          title={`Show ${undrawn} more in ${chip.label}`}
           onClick={() => actions.showMoreInGroup(chip.id)}
         >
-          {`+${hidden}`}
+          {`+${undrawn}`}
         </button>
       )}
       <button

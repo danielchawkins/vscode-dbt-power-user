@@ -1,6 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
 import { collapsedGroups } from "./expansionGroups";
+import { filteredOutTables } from "./filteredOut";
 import type { GraphState, GraphStore } from "./graph";
 import {
   addNeighbours,
@@ -12,16 +13,15 @@ import {
 } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
-import { hiddenTables } from "./hiddenNodes";
 
-const table = (id: string, hidden = false): lineage.LineageTable => ({
+const table = (id: string, filteredOut = false): lineage.LineageTable => ({
   table: id,
   label: id,
   nodeType: "model",
   childCount: 0,
   parentCount: 0,
   tests: [],
-  hidden,
+  hidden: filteredOut,
 });
 
 const GA = groupNodeId("c:hub", "models/a");
@@ -29,17 +29,17 @@ const GP = groupNodeId("p:hub", "pkg:macros");
 
 /**
  * `hub` drawn, with children x, y1 (bucket `models/a`), y2 (loose) and parents u1, u2 (bucket `pkg:macros`). Only y2
- * is drawn besides the hub; `hidden` lists tables to mark hidden.
+ * is drawn besides the hub; `filteredOut` lists tables to mark filtered out.
  */
 const scene = ({
-  hidden = [],
+  filteredOut = [],
   ...overrides
-}: Partial<GraphState> & { hidden?: string[] } = {}): GraphState => ({
+}: Partial<GraphState> & { filteredOut?: string[] } = {}): GraphState => ({
   ...emptyGraph(table("hub")),
   known: Object.fromEntries(
     ["hub", "x", "y1", "y2", "u1", "u2", "q", "r"].map((id) => [
       id,
-      table(id, hidden.includes(id)),
+      table(id, filteredOut.includes(id)),
     ]),
   ),
   expansions: ["c:hub", "p:hub"],
@@ -84,9 +84,9 @@ describe("combinedEdges", () => {
     expect(edgesOf(state)).toContainEqual([GA, GP]);
   });
 
-  it("draws no edge for a hidden member, though the group's other members still draw theirs", () => {
-    const hidden = scene({ hidden: ["x"], links: linkOf("y2", "x") });
-    const edges = edgesOf(hidden);
+  it("draws no edge for a filtered-out member, though the group's other members still draw theirs", () => {
+    const filtered = scene({ filteredOut: ["x"], links: linkOf("y2", "x") });
+    const edges = edgesOf(filtered);
     expect(edges).not.toContainEqual(["y2", GA]);
     expect(edges.flat()).not.toContain("x");
     expect(edges).toContainEqual(["hub", GA]);
@@ -95,9 +95,9 @@ describe("combinedEdges", () => {
     expect(edgesOf(visible)).toContainEqual(["y2", GA]);
   });
 
-  it("draws no edge for a group whose table is hidden", () => {
+  it("draws no edge for a group whose table is filtered out", () => {
     const state = scene({
-      hidden: ["y2"],
+      filteredOut: ["y2"],
       expansions: ["c:hub", "p:hub", "c:y2"],
       neighbours: {
         "c:hub": ["x", "y1", "y2"],
@@ -123,9 +123,9 @@ describe("combinedEdges", () => {
       },
       links: linkOf("q", "u1"),
     });
-    const hiddenGroup = groupNodeId("c:y2", "models/q");
-    expect(hiddenTables(state).has("y2")).toBe(true);
-    expect(edgesOf(state).flat()).not.toContain(hiddenGroup);
+    const filteredOutGroup = groupNodeId("c:y2", "models/q");
+    expect(filteredOutTables(state).has("y2")).toBe(true);
+    expect(edgesOf(state).flat()).not.toContain(filteredOutGroup);
   });
 
   it("draws no edge for a member that is drawn elsewhere, since its pairs are table edges", () => {
@@ -157,7 +157,7 @@ describe("combinedEdges", () => {
   });
 
   it("draws no group edge for a group that has no visible member", () => {
-    const state = scene({ hidden: ["x", "y1"] });
+    const state = scene({ filteredOut: ["x", "y1"] });
     expect(edgesOf(state).flat()).not.toContain(GA);
   });
 
@@ -179,12 +179,12 @@ describe("combinedEdges", () => {
       const edges = combinedEdges(state, groups);
       const pairs = knownPairs(state);
       const drawn = drawnIds(state);
-      const hidden = hiddenTables(state);
+      const filteredOut = filteredOutTables(state);
       total += edges.length;
       for (const [from, to] of edges) {
         expect(from).not.toBe(to);
         expect(drawn.has(from) && drawn.has(to)).toBe(false);
-        expect(hidden.has(from) || hidden.has(to)).toBe(false);
+        expect(filteredOut.has(from) || filteredOut.has(to)).toBe(false);
         expect(
           pairs.some(
             ([p, c]) => reaches(state, from, p) && reaches(state, to, c),
@@ -197,8 +197,8 @@ describe("combinedEdges", () => {
 
   it("draws a finance-shaped hub's folders as groups joined to each other, to a parent, and to hub", () => {
     const hub = table("fct_finance");
-    const child = (folder: string, id: string, hidden = false) => ({
-      ...table(id, hidden),
+    const child = (folder: string, id: string, filteredOut = false) => ({
+      ...table(id, filteredOut),
       path: `${folder}/${id}.sql`,
       rootPackage: true,
     });
@@ -292,7 +292,7 @@ function randomDag(seed: number) {
   const next = prng(seed);
   const names = Array.from({ length: 8 }, (_, i) => `t${i}`);
   const folders = ["models/a", "models/b", "models/c"];
-  const hiddenFlags = names.map((_, i) => i > 0 && next() < 0.15);
+  const filteredOutFlags = names.map((_, i) => i > 0 && next() < 0.15);
   const folderOf = names.map(
     () => folders[Math.floor(next() * folders.length)],
   );
@@ -306,7 +306,7 @@ function randomDag(seed: number) {
   }
   // Counts come from the pairs, so a table with neighbours offers an expansion.
   const tables = names.map((id, i) => ({
-    ...table(id, hiddenFlags[i]),
+    ...table(id, filteredOutFlags[i]),
     childCount: pairs.filter(([p]) => p === id).length,
     parentCount: pairs.filter(([, c]) => c === id).length,
     path: `${folderOf[i]}/${id}.sql`,

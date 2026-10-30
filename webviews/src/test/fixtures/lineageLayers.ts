@@ -101,7 +101,7 @@ const model = (id: string, path: string, facts: ModelFacts): FixtureTable => {
 
 /**
  * Every node the fixture draws, with the fields `lineageTable` gives it for the lineage-layers project. The start
- * table is `int_orders__enriched`, which the panel opens on, and `audit_log` is hidden by its meta.
+ * table is `int_orders__enriched`, which the panel opens on, and `audit_log` is filtered out by its meta.
  *
  * Left out: `url`, which depends on the workspace. `layer` comes from the folder, as `nodeTable` infers it.
  */
@@ -284,7 +284,7 @@ export const lineageLayersTables: FixtureTable[] = [
   }),
 ];
 
-/** Every dbt dependency edge as `[parent, child]`, the hidden `audit_log` edge included. */
+/** Every dbt dependency edge as `[parent, child]`, the filtered-out `audit_log` edge included. */
 export const lineageLayersEdges: [string, string][] = [
   [SOURCE, STG_ORDERS],
   [STG_ORDERS, INT_ORDERS],
@@ -326,7 +326,7 @@ export const lineageLayersRefs: lineage.LineageRef[] = [
 /** The card ID of the start model, which the panel opens on. */
 export const lineageLayersStart = cardId(INT_ORDERS);
 
-/** The card ID of every table the fixture draws, the hidden audit_log card included. */
+/** The card ID of every table the fixture draws, the filtered-out audit_log card included. */
 export const lineageLayersCardIds: string[] = lineageLayersTables.map((table) =>
   cardId(table.table),
 );
@@ -340,14 +340,15 @@ export const lineageLayersBands: string[] = [
   "other",
 ];
 
-const HIDDEN_IDS = new Set(
+const FILTERED_OUT_IDS = new Set(
   lineageLayersTables
     .filter((table) => table.hidden)
     .map((table) => table.table),
 );
 
-/** The dbt edges the panel draws: those that touch no hidden table. */
+/** The dbt edges the panel draws: those that touch no filtered-out table. */
 export const lineageLayersDrawnEdges: [string, string][] =
   lineageLayersEdges.filter(
-    ([parent, child]) => !HIDDEN_IDS.has(parent) && !HIDDEN_IDS.has(child),
+    ([parent, child]) =>
+      !FILTERED_OUT_IDS.has(parent) && !FILTERED_OUT_IDS.has(child),
   );

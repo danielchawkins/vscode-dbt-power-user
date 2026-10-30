@@ -35,7 +35,7 @@ const draw = (columnsNeedStrict: boolean) => {
       isStart: true,
       expanded: { parents: false, children: false },
       pending: { parents: false, children: false },
-      hidden: { parents: 0, children: 0 },
+      capped: { parents: 0, children: 0 },
       chips: [],
       traced: [],
       columnsNeedStrict,
@@ -62,8 +62,8 @@ describe("table node empty column list", () => {
   });
 });
 
-describe("table node hidden cue", () => {
-  const drawHidden = (hidden: boolean, isStart = false) => {
+describe("table node filtered-out cue", () => {
+  const drawFilteredOut = (filteredOut: boolean, isStart = false) => {
     const props = {
       id: "model.p.a",
       data: {
@@ -74,13 +74,13 @@ describe("table node hidden cue", () => {
           childCount: 0,
           parentCount: 0,
           tests: [],
-          hidden,
         },
         columns: undefined,
         isStart,
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
-        hidden: { parents: 0, children: 0 },
+        capped: { parents: 0, children: 0 },
+        filteredOut,
         chips: [],
         traced: [],
       },
@@ -92,33 +92,37 @@ describe("table node hidden cue", () => {
     );
   };
 
-  it("marks a hidden card with an eye icon and a title saying why", () => {
-    const { container } = drawHidden(true);
+  it("marks a filtered-out card with an eye icon and a title saying why", () => {
+    const { container } = drawFilteredOut(true);
     expect(
-      screen.getByTitle("Hidden from lineage by meta.lineage.hidden"),
+      screen.getByTitle(
+        "Filtered out by meta.lineage.hidden: its edges are not drawn",
+      ),
     ).toBeTruthy();
     expect(container.querySelector(".codicon-eye-closed")).not.toBeNull();
     expect(container.querySelector("[data-table]")?.className).toContain(
-      "hidden",
+      "filteredOut",
     );
   });
 
-  it("shows no cue on a card that is not hidden", () => {
-    const { container } = drawHidden(false);
+  it("shows no cue on a card that is not filtered out", () => {
+    const { container } = drawFilteredOut(false);
     expect(container.querySelector(".codicon-eye-closed")).toBeNull();
     expect(container.querySelector("[data-table]")?.className).not.toContain(
-      "hidden",
+      "filteredOut",
     );
   });
 
-  it("shows no cue on a hidden start card, which the graph never hides", () => {
-    const { container } = drawHidden(true, true);
+  it("shows no cue on the start card when the projection does not filter it out", () => {
+    const { container } = drawFilteredOut(false, true);
     expect(container.querySelector(".codicon-eye-closed")).toBeNull();
     expect(
-      screen.queryByText("Hidden from lineage by meta.lineage.hidden"),
+      screen.queryByText(
+        "Filtered out by meta.lineage.hidden: its edges are not drawn",
+      ),
     ).toBeNull();
     expect(container.querySelector("[data-table]")?.className).not.toContain(
-      "hidden",
+      "filteredOut",
     );
   });
 });
@@ -148,7 +152,7 @@ describe("table node semantic zoom", () => {
         isStart: false,
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
-        hidden: { parents: 0, children: 0 },
+        capped: { parents: 0, children: 0 },
         chips: [],
         traced: [],
       },
@@ -219,7 +223,7 @@ describe("table node name block", () => {
         title: "alias",
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
-        hidden: { parents: 0, children: 0 },
+        capped: { parents: 0, children: 0 },
         chips: [],
         traced: [],
       },
@@ -371,7 +375,7 @@ describe("table node expander bubbles", () => {
         isStart: false,
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
-        hidden: { parents: 0, children: 0 },
+        capped: { parents: 0, children: 0 },
         chips: [],
         traced: [],
       },
@@ -431,7 +435,7 @@ describe("table node column trace", () => {
         isStart: true,
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
-        hidden: { parents: 0, children: 0 },
+        capped: { parents: 0, children: 0 },
         chips: [],
         traced: [],
         selectedColumn: "id",

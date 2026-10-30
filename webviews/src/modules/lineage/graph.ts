@@ -1,8 +1,8 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { sameColumnName } from "./edgeIds";
+import { filteredOutTables } from "./filteredOut";
 import type { NeighbourGroups } from "./grouping";
 import { bucketNeighbours, groupedNeighbours } from "./grouping";
-import { hiddenTables } from "./hiddenNodes";
 
 type LineageTable = lineage.LineageTable;
 type LineageColumn = lineage.LineageColumn;
@@ -171,6 +171,39 @@ export const shownWithout = (
   Object.fromEntries(Object.entries(state.shown).filter(([k]) => k !== key));
 
 /**
+ * What the lineage view shows, decided once from the graph state. The cards and every edge (table, group and column)
+ * read this one projection, so a card and an edge cannot disagree about what is visible.
+ */
+export interface Visible {
+  /** The IDs of the drawn cards: the start table and each neighbour its expansions draw, filtered-out ones included. */
+  drawn: Set<string>;
+  /** The filtered-out cards: drawn as cards, with no edge. */
+  filteredOut: Set<string>;
+  /** Whether a drawn card takes part in edges: it is drawn and not filtered out. */
+  hasEdges: (id: string) => boolean;
+}
+
+/** The visible projection of `state`: see `Visible`. Nothing is drawn until the start table is known. */
+export function visibleOf(state: GraphState): Visible {
+  const drawn = new Set<string>();
+  if (state.start && state.known[state.start]) {
+    drawn.add(state.start);
+    for (const key of state.expansions) {
+      const table = parseExpansion(key)?.[1];
+      if (table && drawn.has(table)) {
+        drawnNeighbours(state, key).forEach((other) => drawn.add(other));
+      }
+    }
+  }
+  const filteredOut = filteredOutTables(state);
+  return {
+    drawn,
+    filteredOut,
+    hasEdges: (id) => drawn.has(id) && !filteredOut.has(id),
+  };
+}
+
+/**
  * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
  * tables is an edge, whichever expansion fetched it.
  */
@@ -178,19 +211,12 @@ export function drawnGraph(state: GraphState): {
   tables: LineageTable[];
   edges: [string, string][];
 } {
-  if (!state.start || !state.known[state.start]) {
-    return { tables: [], edges: [] };
-  }
-  const drawn = new Set([state.start]);
-  for (const key of state.expansions) {
-    const table = parseExpansion(key)?.[1];
-    if (table && drawn.has(table)) {
-      drawnNeighbours(state, key).forEach((other) => drawn.add(other));
-    }
-  }
+  const visible = visibleOf(state);
   return {
-    tables: [...drawn].flatMap((id) => state.known[id] ?? []),
-    edges: edgesAmong(state, drawn),
+    tables: [...visible.drawn].flatMap((id) => state.known[id] ?? []),
+    edges: knownPairs(state).filter(
+      ([parent, child]) => visible.hasEdges(parent) && visible.hasEdges(child),
+    ),
   };
 }
 
@@ -215,18 +241,6 @@ export function knownPairs(state: GraphState): [string, string][] {
     pairs.set(key, edge);
   }
   return [...pairs.values()];
-}
-
-/** Every known `[parent, child]` pair with both ends drawn and neither hidden. */
-function edgesAmong(
-  state: GraphState,
-  drawn: ReadonlySet<string>,
-): [string, string][] {
-  const hidden = hiddenTables(state);
-  const edgeable = (id: string) => drawn.has(id) && !hidden.has(id);
-  return knownPairs(state).filter(
-    ([parent, child]) => edgeable(parent) && edgeable(child),
-  );
 }
 
 /** The IDs of the drawn tables. */
@@ -470,23 +484,3 @@ export const clearColumn = (state: GraphState): GraphState => ({
   errors: {},
   tracing: undefined,
 });
-
-/** The data the renderer draws, with column edges filtered by the edge settings. */
-export function lineageData(
-  state: GraphState,
-  show: { direct: boolean; indirect: boolean },
-): lineage.LineageData {
-  const { tables, edges } = drawnGraph(state);
-  const hidden = hiddenTables(state);
-  return {
-    start: state.start,
-    tables,
-    edges,
-    columnEdges: state.columnEdges.filter(
-      (e) =>
-        !hidden.has(e.source[0]) &&
-        !hidden.has(e.target[0]) &&
-        (e.type === "indirect" ? show.indirect : show.direct),
-    ),
-  };
-}

@@ -23,7 +23,7 @@ import type {
  * not drawn is left out.
  */
 export function layoutRequest(
-  input: FlowInput,
+  input: LayoutInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
   heightOf: (id: string) => number,
 ): LayoutRequest {
@@ -80,7 +80,7 @@ export function layoutRequest(
 
 /** The cards the layout places: each table with its listed column rows, then each open group. */
 function layoutCards(
-  input: FlowInput,
+  input: LayoutInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
   heightOf: (id: string) => number,
 ): LayoutCard[] {
@@ -99,7 +99,7 @@ function layoutCards(
       return undefined;
     }
     const chips = input.chips?.filter((c) => c.table === table).length ?? 0;
-    const pinned = table === data.start || table === input.selectedTable;
+    const pinned = input.pinned.includes(table);
     return columns.map((column, index) => ({
       id: column.name,
       offset: columnRowOffset(index, chips, pinned),
@@ -125,50 +125,67 @@ function layoutCards(
   ];
 }
 
-/** What `toFlow` reads besides the drawn data. */
-export interface FlowInput {
-  /** How cards are titled; absent means by alias. */
-  title?: TitleMode | undefined;
+/**
+ * What the layout engine is asked for: the drawn graph, the card sizes and the options. The engine and the layout
+ * request read this and nothing else: no selection, highlight, colour or label. The start and the selected table
+ * are `pinned` here, because their cards are drawn taller, so the caller passes them in rather than the layout
+ * reading the selection.
+ */
+export interface LayoutInput {
   data: lineage.LineageData;
   columns: Record<string, lineage.LineageColumn[]>;
   columnTables: readonly string[];
-  expansions: readonly string[];
-  /** Expansion keys still loading. */
-  pending?: readonly string[] | undefined;
-  /** Neighbours each capped expansion does not draw yet, by expansion key. */
-  hidden?: Record<string, number> | undefined;
+  /** Tables whose cards are drawn with their relation line and actions row: the start table and the selected one. */
+  pinned: readonly string[];
   /** Closed groups of applied expansions, each drawn as one card. */
   groups?: readonly GroupView[] | undefined;
   /** The `[parent, child]` pairs joining each group to its table. */
   groupEdges?: readonly [string, string][] | undefined;
   /** The open groups to chip on their expanded tables. */
   chips?: readonly GroupChip[] | undefined;
+  /** Which connections are drawn: table and group edges under `dbt` and `both`; absent means dbt dependencies. */
+  connections?: lineage.Connections | undefined;
+  /** The relationships to draw, already filtered for the connections and the sources. */
+  refs: readonly lineage.LineageRef[];
+  /** The engine that places and routes the cards; absent means `balanced`. */
+  engine?: lineage.LineageEngine | undefined;
+}
+
+/**
+ * What the panel draws on top of the layout: how cards are titled and what the user has selected, opened, traced or
+ * filtered. None of it moves a card or an edge, so the layout never reads it.
+ */
+export interface FlowDecoration {
+  /** How cards are titled; absent means by alias. */
+  title?: TitleMode | undefined;
+  /** The applied expansion keys, which mark each card's expanders as open. */
+  expansions: readonly string[];
+  /** Expansion keys still loading. */
+  pending?: readonly string[] | undefined;
+  /** Neighbours each capped expansion does not draw yet, by expansion key. */
+  capped?: Record<string, number> | undefined;
+  /** The tables drawn as cards with no edge (dbt's `meta.lineage.hidden`); the start table is never among them. */
+  filteredOut?: ReadonlySet<string> | undefined;
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
   /** The column trace in flight, from which its table's pending badge is drawn. */
   tracing?: { column: [string, string]; since: number } | undefined;
-  /** Which connections are drawn: table and group edges under `dbt` and `both`; absent means dbt dependencies. */
-  connections?: lineage.Connections | undefined;
-  /** The relationships to draw, already filtered for the connections and the sources. */
-  refs: readonly lineage.LineageRef[];
   /** Empty column lists explain that strict static analysis is missing. */
   columnsNeedStrict?: boolean | undefined;
-  /** The engine that places and routes the cards; absent means `balanced`. */
-  engine?: lineage.LineageEngine | undefined;
   /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
   layerColors?: Readonly<Record<string, string>> | undefined;
 }
 
 /** Table and group edges are drawn under `dbt` and `both`; under `declared` only relationships and column edges are. */
-export const drawsTableEdges = (input: FlowInput): boolean =>
+export const drawsTableEdges = (input: LayoutInput): boolean =>
   input.connections !== "declared";
 
 /**
  * The `[parent, child]` pairs that rank the cards top-down. Under `declared` no table edge is drawn,
  * so the relationships rank the cards, the referenced table upstream of the declaring one.
  */
-function rankingEdges(input: FlowInput): [string, string][] {
+function rankingEdges(input: LayoutInput): [string, string][] {
   return drawsTableEdges(input)
     ? [...input.data.edges, ...(input.groupEdges ?? [])]
     : input.refs.map((ref) => [ref.to.table, ref.from.table]);

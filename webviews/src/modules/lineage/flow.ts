@@ -13,8 +13,9 @@ import { engineFor } from "./engine/engines";
 import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
   drawsTableEdges,
+  type FlowDecoration,
   layoutRequest,
-  type FlowInput,
+  type LayoutInput,
 } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { expansionKey } from "./graph";
@@ -23,7 +24,7 @@ import { columnHandle, geometry, tableHeight } from "./layout";
 import { relationshipPath } from "./relationshipRoute";
 import { drawLayout } from "./routeDrawing";
 
-/** What a table node draws; `columns` is undefined while the list is hidden. */
+/** What a table node draws; `columns` is undefined while its columns are unlisted. */
 interface TableNodeData extends Record<string, unknown> {
   table: lineage.LineageTable;
   columns?: lineage.LineageColumn[] | undefined;
@@ -34,7 +35,9 @@ interface TableNodeData extends Record<string, unknown> {
   /** Expansions still loading; a click on one cancels it. */
   pending: { parents: boolean; children: boolean };
   /** Neighbours a capped expansion does not draw yet. */
-  hidden: { parents: number; children: number };
+  capped: { parents: number; children: number };
+  /** Filtered out by `meta.lineage.hidden`: the card is drawn, but its table and column edges are not. */
+  filteredOut: boolean;
   /** The open groups this table's expansions drew, each with a chip to close it. */
   chips: GroupChip[];
   /** Lower-cased names of this table's columns the traced edges touch. */
@@ -92,10 +95,11 @@ function tracedColumns(
 
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
 function toEdges(
-  input: FlowInput,
+  input: LayoutInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
+  selectedTable: string | undefined,
 ): Edge[] {
-  const { data, selectedTable } = input;
+  const { data } = input;
   // Declared-only drawing shows no dbt table or group edges; column edges remain, present only under a column trace.
   const tableEdges = drawsTableEdges(input);
   const handle = (side: "in" | "out", [table, column]: [string, string]) => {
@@ -150,7 +154,7 @@ function toEdges(
 /** The React Flow band nodes: one per layer band; a band lets clicks pass through to the pane. */
 function bandNodes(
   bands: LayerBand[],
-  layerColors: FlowInput["layerColors"],
+  layerColors: FlowDecoration["layerColors"],
 ): BandNode[] {
   return bands.map((band, index) => ({
     id: `band:${index}`,
@@ -173,12 +177,12 @@ function bandNodes(
  * `toEdges` gives, so each edge finds its path by id.
  */
 function placeCards(
-  input: FlowInput,
+  input: LayoutInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
   heightOf: (id: string) => number,
 ): {
   positions: Map<string, Point>;
-  bands: BandNode[];
+  layerBands: LayerBand[];
   paths: Map<string, RoutedEdgeData>;
 } {
   const request = layoutRequest(input, listed, heightOf);
@@ -192,7 +196,7 @@ function placeCards(
   }
   return {
     positions: new Map(response.positions),
-    bands: bandNodes([...response.bands], input.layerColors),
+    layerBands: [...response.bands],
     paths,
   };
 }
@@ -217,37 +221,39 @@ function arrowColour(edge: Edge): string | undefined {
   return "var(--xy-edge-stroke)";
 }
 
-/** React Flow nodes and edges for the drawn lineage and its groups: the cards in their layer bands, and the routed edges. */
-export function toFlow(input: FlowInput): {
+/**
+ * React Flow nodes and edges for the drawn lineage and its groups: the cards in their layer bands, and the routed
+ * edges. The layout decides where things go; the decoration decides what they show.
+ */
+export function toFlow(
+  layout: LayoutInput,
+  decoration: FlowDecoration,
+): {
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
 } {
-  const { data, columns, columnTables } = input;
-  const groups = input.groups ?? [];
+  const { columns, columnTables, pinned } = layout;
+  const groups = layout.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
-  const chipsByTable = Map.groupBy(input.chips ?? [], (chip) => chip.table);
+  const chipsByTable = Map.groupBy(layout.chips ?? [], (chip) => chip.table);
   const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
   // One height per table, for the layout and for the initial size: the start card and the selected card show their
   // relation line and actions row.
   const heightOfTable = (table: string) =>
-    tableHeight(
-      listed(table),
-      chipsOf(table).length,
-      table === data.start || table === input.selectedTable,
-    );
+    tableHeight(listed(table), chipsOf(table).length, pinned.includes(table));
   const heightOf = (id: string) =>
     groupIds.has(id) ? geometry.groupHeight : heightOfTable(id);
-  const placed = placeCards(input, listed, heightOf);
-  const nodes = cardNodes(input, {
+  const placed = placeCards(layout, listed, heightOf);
+  const nodes = cardNodes(layout, decoration, {
     positions: placed.positions,
     listed,
     heightOfTable,
   });
-  const edges = toEdges(input, listed);
+  const edges = toEdges(layout, listed, decoration.selectedTable);
   return {
-    nodes: [...placed.bands, ...nodes],
+    nodes: [...bandNodes(placed.layerBands, decoration.layerColors), ...nodes],
     edges: routedEdges(edges, placed),
   };
 }
@@ -261,16 +267,18 @@ interface CardPlacement {
 
 /** The table and group nodes at their positions, each with the data its card draws. */
 function cardNodes(
-  input: FlowInput,
+  layout: LayoutInput,
+  decoration: FlowDecoration,
   { positions, listed, heightOfTable }: CardPlacement,
 ): (TableNode | GroupNode)[] {
-  const { data, expansions, errors } = input;
-  const pending = input.pending ?? [];
-  const groups = input.groups ?? [];
-  const chipsByTable = Map.groupBy(input.chips ?? [], (chip) => chip.table);
+  const { data } = layout;
+  const { expansions, errors, selectedTable } = decoration;
+  const pending = decoration.pending ?? [];
+  const groups = layout.groups ?? [];
+  const chipsByTable = Map.groupBy(layout.chips ?? [], (chip) => chip.table);
   const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
-  const hidden = (direction: "children" | "parents", table: string) =>
-    input.hidden?.[expansionKey(direction, table)] ?? 0;
+  const capped = (direction: "children" | "parents", table: string) =>
+    decoration.capped?.[expansionKey(direction, table)] ?? 0;
   const traced = tracedColumns(data.columnEdges);
   const tableNodes: TableNode[] = data.tables.map((t) => ({
     id: t.table,
@@ -279,12 +287,12 @@ function cardNodes(
     // A size before React Flow measures the node, so the minimap draws it at once; measurement still sets handles.
     initialWidth: geometry.tableWidth,
     initialHeight: heightOfTable(t.table),
-    selected: t.table === input.selectedTable,
+    selected: t.table === selectedTable,
     data: {
       table: t,
       columns: listed(t.table),
       isStart: t.table === data.start,
-      title: input.title ?? "alias",
+      title: decoration.title ?? "alias",
       expanded: {
         parents: expansions.includes(expansionKey("parents", t.table)),
         children: expansions.includes(expansionKey("children", t.table)),
@@ -293,28 +301,29 @@ function cardNodes(
         parents: pending.includes(expansionKey("parents", t.table)),
         children: pending.includes(expansionKey("children", t.table)),
       },
-      hidden: {
-        parents: hidden("parents", t.table),
-        children: hidden("children", t.table),
+      capped: {
+        parents: capped("parents", t.table),
+        children: capped("children", t.table),
       },
+      filteredOut: decoration.filteredOut?.has(t.table) ?? false,
       chips: chipsOf(t.table),
       traced: [...(traced.get(t.table) ?? [])],
       selectedColumn:
-        input.selectedColumn?.[0] === t.table
-          ? input.selectedColumn[1].toLowerCase()
+        decoration.selectedColumn?.[0] === t.table
+          ? decoration.selectedColumn[1].toLowerCase()
           : undefined,
       tracing:
-        input.tracing?.column[0] === t.table
+        decoration.tracing?.column[0] === t.table
           ? {
-              column: input.tracing.column[1].toLowerCase(),
-              since: input.tracing.since,
+              column: decoration.tracing.column[1].toLowerCase(),
+              since: decoration.tracing.since,
             }
           : undefined,
       errors: errors[t.table],
-      columnsNeedStrict: input.columnsNeedStrict,
+      columnsNeedStrict: decoration.columnsNeedStrict,
       layerColour: bandColour(
         layerTagOf(t.nodeType, t.layer),
-        input.layerColors,
+        decoration.layerColors,
       ),
     },
   }));

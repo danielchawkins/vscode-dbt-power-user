@@ -147,11 +147,20 @@ export const FANOUT = table("fanout", "model", 0, FANOUT_CHILDREN.length);
 /** The ids of the children of `FANOUT`, in folder order. */
 export const FANOUT_MEMBERS = FANOUT_CHILDREN.map((child) => child.table);
 
+/** `filter` feeds `kept` and `audit`; `audit` sets `meta.lineage.hidden`, so it is drawn with no edge to or from it. */
+export const FILTER = table("filter", "model", 0, 2);
+const KEPT = table("kept", "model", 1, 0);
+const AUDIT: lineage.LineageTable = {
+  ...table("audit", "model", 1, 0),
+  hidden: true,
+};
+
 const CHILDREN: Record<string, lineage.LineageTable[]> = {
   a: [TABLES.b],
   b: [TABLES.c],
   hub: HUB_CHILDREN,
   fanout: FANOUT_CHILDREN,
+  filter: [KEPT, AUDIT],
 };
 
 const PARENTS: Record<string, lineage.LineageTable[]> = {
@@ -161,6 +170,8 @@ const PARENTS: Record<string, lineage.LineageTable[]> = {
   ...Object.fromEntries(
     FANOUT_CHILDREN.map((child) => [child.table, [FANOUT]]),
   ),
+  kept: [FILTER],
+  audit: [FILTER],
 };
 
 type Params = Record<string, unknown>;

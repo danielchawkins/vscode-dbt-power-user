@@ -10,17 +10,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { hiddenCounts } from "./expansionCap";
+import { cappedCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
 import { toFlow } from "./flow";
 import type { GraphState } from "./graph";
-import { lineageData } from "./graph";
+import { visibleOf } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import type { ExpansionOptions } from "./useLineageGraph";
 import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, visibleRefs } from "./viewModel";
+import { lineageData } from "./visibility";
 
 /** The host's view settings, with `loaded` false until they arrive; a change is applied at once and persisted. */
 const useSettings = () => {
@@ -83,27 +84,36 @@ const flowOf = ({
   });
   const drawn = new Set(data.tables.map((t) => t.table));
   const groups = collapsedGroups(graph);
-  return toFlow({
-    data,
-    title: settings.title,
-    columns: graph.columns,
-    columnTables: graph.columnTables,
-    expansions: graph.expansions,
-    pending: graph.pending,
-    hidden: hiddenCounts(graph),
-    groups,
-    groupEdges: combinedEdges(graph, groups),
-    chips: groupChips(graph),
-    errors: graph.errors,
-    selectedTable: graph.selectedTable,
-    selectedColumn: graph.selectedColumn,
-    tracing: graph.tracing,
-    columnsNeedStrict,
-    connections: settings.connections,
-    refs: visibleRefs(refs, settings, drawn),
-    engine: settings.engine,
-    layerColors: settings.layerColors,
-  });
+  const pinned = [data.start, graph.selectedTable].filter(
+    (table): table is string => table !== undefined,
+  );
+  return toFlow(
+    {
+      data,
+      columns: graph.columns,
+      columnTables: graph.columnTables,
+      pinned,
+      groups,
+      groupEdges: combinedEdges(graph, groups),
+      chips: groupChips(graph),
+      connections: settings.connections,
+      refs: visibleRefs(refs, settings, drawn),
+      engine: settings.engine,
+    },
+    {
+      title: settings.title,
+      expansions: graph.expansions,
+      pending: graph.pending,
+      capped: cappedCounts(graph),
+      filteredOut: visibleOf(graph).filteredOut,
+      errors: graph.errors,
+      selectedTable: graph.selectedTable,
+      selectedColumn: graph.selectedColumn,
+      tracing: graph.tracing,
+      columnsNeedStrict,
+      layerColors: settings.layerColors,
+    },
+  );
 };
 
 type Lineage = ReturnType<typeof useLineageGraph>;
