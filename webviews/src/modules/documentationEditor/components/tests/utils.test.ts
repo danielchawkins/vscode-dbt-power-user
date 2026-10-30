@@ -1,5 +1,8 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
-import { DbtTestTypes } from "@modules/documentationEditor/state/types";
+import {
+  DbtGenericTests,
+  DbtTestTypes,
+} from "@modules/documentationEditor/state/types";
 import { describe, expect, it } from "vitest";
 import { findDbtTestType } from "./utils";
 
@@ -35,11 +38,14 @@ describe("findDbtTestType", () => {
     expect(findDbtTestType(modelTest(undefined))).toBe(DbtTestTypes.UNKNOWN);
   });
 
-  it.each(["not_null"])("reads the dbt generic test %s as generic", (name) => {
-    expect(
-      findDbtTestType(modelTest(metadata(name), "models/schema.yml")),
-    ).toBe(DbtTestTypes.GENERIC);
-  });
+  it.each(Object.values(DbtGenericTests))(
+    "reads the dbt generic test %s as generic",
+    (name) => {
+      expect(
+        findDbtTestType(modelTest(metadata(name), "models/schema.yml")),
+      ).toBe(DbtTestTypes.GENERIC);
+    },
+  );
 
   it("reads a generic test name as generic even when it has a namespace", () => {
     expect(findDbtTestType(modelTest(metadata("not_null", "dbt_utils")))).toBe(

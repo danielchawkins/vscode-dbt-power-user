@@ -185,28 +185,30 @@ describe("proposalsReducer", () => {
     });
 
     it("chooses a candidate by the lower-cased column name", () => {
-      const next = proposalsReducer(
+      const chosen = proposalsReducer(
         pendingState(),
         chose({ column: "Status", candidate: 1 }),
       );
-      expect(next.byKind.descriptions?.choices).toEqual({
-        status: { candidate: 1 },
-      });
+      const next = proposalsReducer(chosen, acceptedAll());
+      expect(next.byKind.descriptions?.payload.proposals).toEqual([]);
     });
 
     it("flips the overwrite tick on each toggle", () => {
+      const overwritePending = (state: ReturnType<typeof pendingState>) =>
+        proposalsReducer(
+          state,
+          acceptedAll(),
+        ).byKind.types?.payload.proposals.map((p) => p.column);
       const once = proposalsReducer(
         pendingState(),
         toggledOverwrite({ column: "amount" }),
       );
-      expect(once.byKind.types?.choices).toEqual({
-        amount: { overwrite: true },
-      });
+      expect(overwritePending(once)).toEqual([]);
       const twice = proposalsReducer(
         once,
         toggledOverwrite({ column: "amount" }),
       );
-      expect(twice.byKind.types?.choices.amount).toEqual({ overwrite: false });
+      expect(overwritePending(twice)).toEqual(["amount"]);
     });
 
     it("dismisses one kind and keeps the other", () => {

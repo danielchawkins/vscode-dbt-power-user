@@ -50,17 +50,17 @@ describe("DocGeneratorInput", () => {
     expect(rows()).toBe(1);
   });
 
-  it("renders a description, with at least one row when the width is unknown", () => {
+  it("renders a description, with one row when the width is unknown", () => {
     const [column] = orders("one line").columns;
     render(<Harness entity={column} />);
     expect(textarea().value).toBe("one line");
-    expect(rows()).toBeGreaterThanOrEqual(1);
+    expect(rows()).toBe(1);
   });
 
   it("adds a row for each line break", () => {
     const [column] = orders("a\nb\nc").columns;
     render(<Harness entity={column} />);
-    expect(rows()).toBeGreaterThanOrEqual(2);
+    expect(rows()).toBe(3);
   });
 
   it("takes a changed description from its entity", () => {
