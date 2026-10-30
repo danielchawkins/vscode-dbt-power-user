@@ -16,6 +16,14 @@ pre-commit:
     shell:
       glob: "scripts/**/*.sh"
       run: mise exec -- shfmt -d -i 2 -ci -sr {staged_files} && mise exec -- shellcheck {staged_files}
+    # Clippy stays out of pre-commit: it compiles the workspace, and `just check` runs it before every push.
+    rust-format:
+      glob: "crates/**/*.rs"
+      run: mise exec -- just crates::fmt-check
+    # `**/` so that crates/*/Cargo.toml is checked too; a bare `*.toml` matches only the repository root.
+    toml:
+      glob: "**/*.toml"
+      run: mise exec -- taplo fmt --check {staged_files}
 
 pre-push:
   commands:
