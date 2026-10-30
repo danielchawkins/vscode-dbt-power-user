@@ -48,6 +48,11 @@ const plants: Plant[] = [
     file: `crates/graph-layout/src/${group}/mod.rs`,
     code: `use crate::${forbidden}::Thing;\n`,
   })),
+  {
+    rule: "rust-core-layer-imports-model",
+    file: "crates/graph-layout/src/model/frame.rs",
+    code: "use crate::order::Thing;\n",
+  },
 ];
 
 type Run = { status: number | null; output: string };
