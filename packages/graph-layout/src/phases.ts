@@ -1,3 +1,4 @@
+import { budgetOf } from "./budget.js";
 import type { OrderResult } from "./order/index.js";
 import { order } from "./order/index.js";
 import { type Placement, place } from "./place/index.js";
@@ -14,14 +15,15 @@ export interface LayoutPhases {
 }
 
 /**
- * Runs rank, order, place and route in turn, each taking the previous phase's output. The input is not validated here;
- * `layout` validates it first.
+ * Runs rank, order, place and route in turn, each taking the previous phase's output. The run's budget is built once,
+ * here, and every phase reads its counts from it. The input is not validated here; `layout` validates it first.
  */
 export function runPhases(
   graph: LayoutGraph,
   options: LayoutOptions,
 ): LayoutPhases {
-  const ranking = rank(graph, options);
+  const budget = budgetOf(options);
+  const ranking = rank(graph, options, budget);
   const ordering = order(graph, options, ranking);
   const placement = place(graph, options, ordering);
   const routing = route(graph, options, { ordering, placement });

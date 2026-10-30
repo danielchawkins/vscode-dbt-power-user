@@ -1,3 +1,4 @@
+import type { Budget } from "../budget.js";
 import type { LayeredGraph } from "../layeredGraph.js";
 import type { OrderResult } from "../order/index.js";
 import type {
@@ -21,21 +22,12 @@ import { problemOf } from "./links.js";
 import type { Problem } from "./problem.js";
 import { solveQuadratic } from "./quadratic.js";
 
-type Effort = NonNullable<LayoutOptions["effort"]>;
-
 /** Spacing used when `LayoutOptions.spacing` leaves a field out; the circuit preset's values. */
 const DEFAULT_SPACING: Pick<Spacing, "node" | "rank" | "edge" | "cluster"> = {
   node: 12,
   rank: 28,
   edge: 4,
   cluster: 12,
-};
-
-/** Gradient-projection iterations by effort. At `fast` the Brandes and Köpf coordinates are the answer. */
-const ITERATION_CAP: Record<Effort, number> = {
-  fast: 0,
-  balanced: 100,
-  thorough: 500,
 };
 
 /** Where each node sits: real nodes by id, every layered node by index, and the work the solver did. */
@@ -65,8 +57,8 @@ export function place(
   ordering: OrderResult,
 ): Placement {
   const { layered, layers } = ordering;
+  const budget = ordering.budget;
   const spacing = { ...DEFAULT_SPACING, ...options.spacing };
-  const effort: Effort = options.effort ?? "balanced";
   const down = options.direction === "down";
   const problem = problemOf(ordering, options, spacing);
 
@@ -87,7 +79,7 @@ export function place(
     down,
     gaps,
   });
-  const solved = solveInRank({ problem, plan, effort, inRankHalf });
+  const solved = solveInRank({ problem, plan, budget, inRankHalf });
   const x = tightenBoxes(plan, solved.x, inRankHalf);
 
   const anchor = anchorIndex(layered.nodes, options.anchor);
@@ -142,12 +134,12 @@ export function place(
 function solveInRank({
   problem,
   plan,
-  effort,
+  budget,
   inRankHalf,
 }: {
   problem: Problem;
   plan: BoxPlan;
-  effort: Effort;
+  budget: Budget;
   inRankHalf: readonly number[];
 }): { x: number[]; iterations: number } {
   const boxed: Problem =
@@ -158,7 +150,7 @@ function solveInRank({
           extra: { count: plan.count, separations: plan.separations },
         };
   const warm = brandesKoepf(problem);
-  const cap = ITERATION_CAP[effort];
+  const cap = budget.placeIterations;
   const start =
     plan.count === 0
       ? warm
