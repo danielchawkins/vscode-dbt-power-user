@@ -1,3 +1,4 @@
+import type { Budget } from "../budget.js";
 import { type LayeredGraph, layer } from "../layering.js";
 import { seededRandom, shuffled } from "../random.js";
 import type { RankResult } from "../rank/index.js";
@@ -9,31 +10,12 @@ import { startingLayers } from "./seed.js";
 import { sift } from "./sifting.js";
 import { found, type Found, search } from "./sweeps.js";
 
-type Effort = NonNullable<LayoutOptions["effort"]>;
-
-/** Sweeps (each a median or barycentre pass with transposition) by effort. */
-const SWEEPS: Record<Effort, number> = { fast: 4, balanced: 12, thorough: 24 };
-
-/** Sifting passes by effort. Sifting is skipped at `fast`. */
-const SIFT_ROUNDS: Record<Effort, number> = {
-  fast: 0,
-  balanced: 3,
-  thorough: 3,
-};
-
-/** Seeded restarts from shuffled starting orders, beyond the hinted or depth-first start. */
-const RESTARTS: Record<Effort, number> = { fast: 0, balanced: 0, thorough: 8 };
-
-/** Passes of sifting over the dummies alone, before the search, so that each dummy starts in a good place. */
-const DUMMY_SIFT_ROUNDS = 3;
-
-/** Passes of dummy sifting for the hinted order; sifting stops early once a pass moves nothing. */
-const HINTED_DUMMY_SIFT_ROUNDS = 12;
-
 /** The layered graph, and the order of each rank including dummies, left to right. */
 export interface OrderResult {
   layered: LayeredGraph;
   layers: number[][];
+  /** The run's budget, which placement and routing read their counts from. */
+  budget: Budget;
   /** Weighted crossings of `layers`. */
   crossings: number;
 }
@@ -53,22 +35,22 @@ export function order(
   options: LayoutOptions,
   ranking: RankResult,
 ): OrderResult {
+  const budget = ranking.budget;
   const layered = layer(graph, options, ranking);
   const start = startingLayers(layered, options.hints);
-  let best = searchFrom(layered, start, options);
+  let best = searchFrom(layered, start, { budget, seed: options.seed ?? 0 });
   if (options.hints !== undefined) {
-    const fresh = searchFrom(
-      layered,
-      startingLayers(layered, undefined),
-      options,
-    );
+    const fresh = searchFrom(layered, startingLayers(layered, undefined), {
+      budget,
+      seed: options.seed ?? 0,
+    });
     if (fresh.crossings < best.crossings) {
       best = fresh;
     }
     // Dummies start where the seed put them, where the search did, or where the unhinted search did.
     const kept = [start, best.layers, fresh.layers]
       .map((found, i) => (i === 0 ? found : hintedOrder(layered, start, found)))
-      .map((layers) => keepHinted(layered, layers))
+      .map((layers) => keepHinted(layered, layers, budget))
       .reduce((a, b) => (b.crossings < a.crossings ? b : a));
     if (kept.crossings <= best.crossings) {
       best = kept;
@@ -78,6 +60,7 @@ export function order(
   return {
     layered,
     layers,
+    budget,
     crossings:
       layers === best.layers
         ? best.crossings
@@ -85,20 +68,19 @@ export function order(
   };
 }
 
-/** The search from one start, then from `RESTARTS` shuffles of it, keeping the order with the fewest crossings. */
+/** The search from one start, then from `budget.restarts` shuffles of it, keeping the order with the fewest crossings. */
 function searchFrom(
   layered: LayeredGraph,
   start: number[][],
-  options: LayoutOptions,
+  { budget, seed }: { budget: Budget; seed: number },
 ): Found {
-  const effort: Effort = options.effort ?? "balanced";
-  const random = seededRandom(options.seed ?? 0);
-  let best = refine(layered, start, effort);
-  for (let r = 0; r < RESTARTS[effort]; r++) {
+  const random = seededRandom(seed);
+  let best = refine(layered, start, budget);
+  for (let r = 0; r < budget.restarts; r++) {
     const restart = start.map((layer) =>
       shuffled(unitsOf(layer, layered.block), random).flat(),
     );
-    const candidate = refine(layered, restart, effort);
+    const candidate = refine(layered, restart, budget);
     if (candidate.crossings < best.crossings) {
       best = candidate;
     }
@@ -129,7 +111,11 @@ function hintedOrder(
  * The hinted order with its real nodes held in place and only the dummies sifted, so a layout fed its own hints keeps
  * its order whenever that order is no worse than what the search finds.
  */
-function keepHinted(layered: LayeredGraph, layers: number[][]): Found {
+function keepHinted(
+  layered: LayeredGraph,
+  layers: number[][],
+  budget: Budget,
+): Found {
   const model: OrderModel = createModel(
     layered,
     layers.map((layer) => [...layer]),
@@ -137,7 +123,7 @@ function keepHinted(layered: LayeredGraph, layers: number[][]): Found {
   gatherClusters(model);
   sift(
     model,
-    HINTED_DUMMY_SIFT_ROUNDS,
+    budget.hintedDummySiftRounds,
     (x) => layered.nodes[x]!.id === undefined,
   );
   return found(model);
@@ -147,15 +133,19 @@ function keepHinted(layered: LayeredGraph, layers: number[][]): Found {
 function refine(
   layered: LayeredGraph,
   layers: number[][],
-  effort: Effort,
+  budget: Budget,
 ): Found {
   const model: OrderModel = createModel(
     layered,
     layers.map((layer) => [...layer]),
   );
   gatherClusters(model);
-  sift(model, DUMMY_SIFT_ROUNDS, (x) => layered.nodes[x]!.id === undefined);
-  search(model, SWEEPS[effort]);
-  sift(model, SIFT_ROUNDS[effort]);
+  sift(
+    model,
+    budget.dummySiftRounds,
+    (x) => layered.nodes[x]!.id === undefined,
+  );
+  search(model, budget.sweeps);
+  sift(model, budget.siftRounds);
   return found(model);
 }

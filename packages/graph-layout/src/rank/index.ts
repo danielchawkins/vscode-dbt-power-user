@@ -1,4 +1,5 @@
 import { reversedEdges } from "../acyclic.js";
+import { type Budget, budgetOf } from "../budget.js";
 import type {
   LayoutGraph,
   LayoutHints,
@@ -16,16 +17,9 @@ import { type NetworkEdge, networkSimplex } from "./networkSimplex.js";
 export interface RankResult {
   ranks: ReadonlyMap<string, number>;
   reversed: readonly string[];
+  /** The run's budget, which the later phases read their counts from. */
+  budget: Budget;
 }
-
-/**
- * Pivot caps by effort. Every pivot keeps the ranks feasible, so reaching a cap only stops the search early.
- */
-const ITERATION_CAP: Record<NonNullable<LayoutOptions["effort"]>, number> = {
-  fast: 1_000,
-  balanced: 10_000,
-  thorough: 100_000,
-};
 
 /** A ranking edge in the direction it is ranked, which can differ from its source and target. */
 interface RankingEdge {
@@ -42,9 +36,13 @@ interface RankingEdge {
  * minimum length, and the partitions and the hints of `options` hold as far as they are asked to. Only edge kinds
  * whose policy ranks take part. Under strict partitions an edge that points back across bands is ranked backwards.
  */
-export function rank(graph: LayoutGraph, options: LayoutOptions): RankResult {
+export function rank(
+  graph: LayoutGraph,
+  options: LayoutOptions,
+  budget: Budget = budgetOf(options),
+): RankResult {
   if (graph.nodes.length === 0) {
-    return { ranks: new Map(), reversed: [] };
+    return { ranks: new Map(), reversed: [], budget };
   }
   const mode = options.partitions ?? "soft";
   const edges = rankingEdges(graph, options, mode === "strict");
@@ -72,13 +70,13 @@ export function rank(graph: LayoutGraph, options: LayoutOptions): RankResult {
     hintRanks(graph.nodes, options.hints, stability),
     stability,
   );
-  const cap = ITERATION_CAP[options.effort ?? "balanced"];
+  const cap = budget.rankPivots;
   const ranks = networkSimplex(
     hints.count,
     [...network, ...bands.edges, ...hints.edges],
     cap,
   );
-  return normalise(graph.nodes, edges, ranks);
+  return { ...normalise(graph.nodes, edges, ranks), budget };
 }
 
 /** The ranking edges, oriented: an edge of a kind that does not rank, or a self-loop, takes no part. */
@@ -145,7 +143,7 @@ function normalise(
   nodes: readonly LayoutNode[],
   edges: readonly RankingEdge[],
   ranks: readonly number[],
-): RankResult {
+): Omit<RankResult, "budget"> {
   const real = ranks.slice(0, nodes.length);
   const low = real.reduce((m, r) => Math.min(m, r), Infinity);
   const shifted = new Map<string, number>();

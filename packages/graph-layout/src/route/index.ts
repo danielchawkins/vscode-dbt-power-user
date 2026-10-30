@@ -8,24 +8,8 @@ import { membersOf, type Phases, type Run } from "./pieces.js";
 import { framePoint, type Geometry, polylinesOf } from "./polylines.js";
 import { stubCrossings } from "./stubs.js";
 
-type Effort = NonNullable<LayoutOptions["effort"]>;
-
 /** Spacing used when `LayoutOptions.spacing` leaves a field out; the same defaults as placement. */
 const DEFAULT_SPACING = { rank: 28, edge: 4 };
-
-/** Overlapping pairs of hyperedges examined in one routing, by effort. Past it, tracks keep left-edge order only. */
-const PAIR_BUDGET: Record<Effort, number> = {
-  fast: 100_000,
-  balanced: 1_000_000,
-  thorough: 4_000_000,
-};
-
-/** Piece pairs a band's doglegs may test, by effort. */
-const DOGLEG_WORK: Record<Effort, number> = {
-  fast: 20_000,
-  balanced: 200_000,
-  thorough: 1_000_000,
-};
 
 export interface RouteWork {
   /** Overlapping pairs of hyperedges examined, over every band. */
@@ -65,8 +49,8 @@ export function route(
     return routeLevels(graph, options, phases);
   }
   const { ordering, placement } = phases;
+  const budget = ordering.budget;
   const spacing = { ...DEFAULT_SPACING, ...options.spacing };
-  const effort: Effort = options.effort ?? "balanced";
   const down = options.direction === "down";
   const { layered } = ordering;
   const members = membersOf(graph, options, phases);
@@ -79,8 +63,8 @@ export function route(
   const { widths, work } = routeBands(bands, {
     edge: spacing.edge,
     rank: spacing.rank,
-    budget: PAIR_BUDGET[effort],
-    doglegWork: DOGLEG_WORK[effort],
+    budget: budget.routePairs,
+    doglegWork: budget.doglegWork,
   });
 
   const nodeHalves = layered.nodes.map((node, i) => {
