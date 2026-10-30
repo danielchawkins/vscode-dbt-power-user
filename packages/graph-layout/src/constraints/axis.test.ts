@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { solveSeparations } from "../place/vpsc.js";
+import { solveSeparations } from "../solve/vpsc.js";
 import { feasibleAxisArb } from "../testing/axisProblems.js";
 import { projectAxis } from "./axis.js";
 import { components } from "./components.js";

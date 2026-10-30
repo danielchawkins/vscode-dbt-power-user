@@ -8,7 +8,7 @@ message: >-
   Do not read arrays through the checked accessor `item()` in the separation solver: validate indices at the solver's
   entry and index plainly (`xs[i]!`) in its loops.
 files:
-  - packages/graph-layout/src/place/vpsc*.ts
+  - packages/graph-layout/src/solve/vpsc*.ts
 ignores:
   - "**/*.test.ts"
   - "**/*.bench.ts"

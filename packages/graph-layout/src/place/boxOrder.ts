@@ -1,4 +1,4 @@
-import type { Separation } from "./vpsc.js";
+import type { Separation } from "../solve/vpsc.js";
 
 /**
  * The parts of a cluster box that sibling ordering reads: its parent, its left and right edge variables, and the first
