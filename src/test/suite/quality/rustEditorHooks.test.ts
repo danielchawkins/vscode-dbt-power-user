@@ -34,8 +34,10 @@ describe("pre-commit hooks (checklist 10)", () => {
   });
 
   it("runs taplo on staged TOML files, crate manifests included", () => {
+    // `*.toml` matches at the root and below it in lefthook 2.1.17; `**/*.toml` does not match the root, so it would
+    // skip the root manifests. The comment in lefthook.yml gives the same reason.
     expect(commands.toml).toEqual({
-      glob: "**/*.toml",
+      glob: "*.toml",
       run: "mise exec -- taplo fmt --check {staged_files}",
     });
   });
