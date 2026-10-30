@@ -43,13 +43,39 @@ function rankCrossings(model: OrderModel, rank: number): number {
   return countCrossings(links);
 }
 
-/** The weighted crossings of the whole drawing, summed over every pair of adjacent ranks. */
+/**
+ * One term of the crossings objective: the weighted crossings between one rank and the rank below it. Only
+ * `totalCrossings` reads the terms. Its value is the reported `OrderResult.crossings` (through `found`), and the
+ * restarts in `index.ts` choose among orders by it. Transpose and sifting choose their swaps by `groupCrossings` and
+ * `pairCrossings`, and the barycentre sweeps read neither, so a term added here changes none of those swaps.
+ * Attraction is not a crossing and must not enter this list, or it would enter `crossings`. Whether ordering reads
+ * attraction at all is decision D-attr (ADR 0011, "Owner decisions"); if it does, it is a barycentre tie-break and a
+ * pair-gain term, added beside these, not here.
+ */
+type CrossingTerm = { readonly kind: "crossings"; readonly rank: number };
+
+/** The crossings terms: one per pair of adjacent ranks, from the top rank down. */
+function crossingTerms(model: OrderModel): CrossingTerm[] {
+  return Array.from(
+    { length: Math.max(0, model.layers.length - 1) },
+    (_, rank) => ({
+      kind: "crossings" as const,
+      rank,
+    }),
+  );
+}
+
+/** The value of one crossings term for `model`. */
+function termValue(model: OrderModel, term: CrossingTerm): number {
+  return rankCrossings(model, term.rank);
+}
+
+/** The weighted crossings of the whole drawing: the sum of the crossings terms over adjacent ranks, in rank order. */
 export function totalCrossings(model: OrderModel): number {
-  let total = 0;
-  for (let rank = 0; rank + 1 < model.layers.length; rank++) {
-    total += rankCrossings(model, rank);
-  }
-  return total;
+  return crossingTerms(model).reduce(
+    (total, term) => total + termValue(model, term),
+    0,
+  );
 }
 
 /**
