@@ -1,0 +1,4 @@
+# The solver fixtures are hexadecimal IEEE bit patterns, one per coordinate; `typos` reads runs such as `ba` as
+# misspelt words. Only those fixtures are excluded: every other file is checked as before.
+[files]
+extend-exclude = ["graph-layout/fixtures/parity/solve-*.txt"]

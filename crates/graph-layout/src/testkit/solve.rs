@@ -18,6 +18,7 @@ pub(crate) struct Case {
     pub(crate) seps: Vec<Separation>,
     pub(crate) expected: Vec<f64>,
     pub(crate) goal: Option<f64>,
+    /// The TypeScript output, as bits.
     pub(crate) ts: Vec<f64>,
 }
 
@@ -35,6 +36,20 @@ fn list(field: &str) -> Vec<f64> {
     field
         .split(',')
         .map(|v| v.parse().expect("a number in the fixture"))
+        .collect()
+}
+
+/// The TypeScript outputs: each value as the hex of its IEEE 754 bits, so -0 and every ulp are kept.
+fn bits_list(field: &str) -> Vec<f64> {
+    if field == "-" {
+        return Vec::new();
+    }
+    field
+        .split(',')
+        .map(|v| {
+            let bits = u64::from_str_radix(v, 16).expect("16 hex digits of bits in the fixture");
+            f64::from_bits(bits)
+        })
         .collect()
 }
 
@@ -78,12 +93,12 @@ pub(crate) fn cases() -> Vec<Case> {
             seps: seps(f[4]),
             expected: list(f[5]),
             goal: (f[6] != "-").then(|| f[6].parse().expect("goal")),
-            ts: list(f[7]),
+            ts: bits_list(f[7]),
         })
         .collect()
 }
 
-/// The TypeScript solutions of the random problems, indexed by seed.
+/// The TypeScript solutions of the random problems, as bits, indexed by seed.
 pub(crate) fn random_outputs() -> Vec<Vec<f64>> {
     let lines = records(RANDOM, "problem");
     assert_eq!(lines.len(), RANDOM_PROBLEMS as usize, "one line per seed");
@@ -92,7 +107,7 @@ pub(crate) fn random_outputs() -> Vec<Vec<f64>> {
         .enumerate()
         .map(|(seed, f)| {
             assert_eq!(f[1], seed.to_string(), "the seeds are in order");
-            list(f[2])
+            bits_list(f[2])
         })
         .collect()
 }

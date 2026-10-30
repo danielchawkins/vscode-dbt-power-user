@@ -117,6 +117,7 @@ napi: require-cargo
 [group("quality")]
 parity: wasm napi
     node graph-layout-wasm/js/parity.mjs ../dist/graph-layout
+    just solve-parity
 
 # The planted divergence for `parity`: a golden one byte off must make it exit 1, the mismatch status. Any other failure
 # (a missing build, a crash) fails this recipe too, so the plant cannot pass by accident. `check` runs it after `parity`.
@@ -137,6 +138,51 @@ parity-plant: wasm napi
     # Exit 1 alone is not enough: a crash (a module that fails to load) also exits 1. Require the mismatch report.
     if ! grep -qE '^parity: (native|wasm) returned ' <<<"$report"; then
         echo "parity-plant: parity exited 1 without a mismatch report; this is a crash, not a divergence" >&2
+        echo "$report" >&2
+        exit 1
+    fi
+    just solve-parity-plant
+
+# The solver (`solve`, private to the core) run natively and under WASI: the core's whole test suite runs in
+# WebAssembly through scripts/quality/wasi-run.mjs (Node's own WASI), and each run writes its 2,000 random outputs as
+# IEEE bits for the comparison. Both outputs go to the directory given.
+[private]
+solve-outputs dir: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    GRAPH_LAYOUT_SOLVE_OUT="$1/native.txt" cargo test --locked -p graph-layout random_outputs_are_written_for_the_parity_comparison
+    GRAPH_LAYOUT_SOLVE_OUT="$1/wasm.txt" cargo test --locked --target wasm32-wasip1 -p graph-layout
+
+# Native and WebAssembly solver outputs compared byte for byte (scripts/parity/compare-solve.mjs).
+[group("quality")]
+solve-parity: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    just solve-outputs "$tmp"
+    node ../scripts/parity/compare-solve.mjs "$tmp/native.txt" "$tmp/wasm.txt"
+
+# The planted divergence for `solve-parity`: one WebAssembly bit flipped on the first line must make the comparison
+# exit 1 with its report. A missing file or a malformed output (exit 2) fails this recipe too.
+[group("quality")]
+solve-parity-plant: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    just solve-outputs "$tmp"
+    awk 'NR==1{sub(/0,/,"1,")} 1' "$tmp/wasm.txt" > "$tmp/planted.txt"
+    cmp -s "$tmp/wasm.txt" "$tmp/planted.txt" && { echo "solve-parity-plant: the plant changed nothing" >&2; exit 1; }
+    status=0
+    report=$(node ../scripts/parity/compare-solve.mjs "$tmp/native.txt" "$tmp/planted.txt" 2>&1) || status=$?
+    if [[ "$status" -ne 1 ]]; then
+        echo "solve-parity-plant: comparison exited $status for a planted divergence; expected 1" >&2
+        echo "$report" >&2
+        exit 1
+    fi
+    if ! grep -qE '^solve-parity: [0-9]+ of [0-9]+ outputs differ' <<<"$report"; then
+        echo "solve-parity-plant: exit 1 without a difference report; this is a crash, not a divergence" >&2
         echo "$report" >&2
         exit 1
     fi
