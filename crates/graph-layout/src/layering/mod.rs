@@ -5,6 +5,10 @@
 //!
 //! Imports: `index`, `budget`, `rand` and `solve` only (ADR 0011). This phase needs none of `rand` and `solve`, since
 //! network simplex is deterministic and has no random tie-breaks.
+//!
+//! Allocation: [`Scratch`] reuses three outer buffers across calls. Four steps still allocate on every call (cycle
+//! breaking, the partition and hint constraints, and network simplex). Making them allocation-free is Phase 7's
+//! zero-allocation gate, and this module does not claim it before then.
 
 mod acyclic;
 mod constraints;
@@ -93,6 +97,11 @@ struct RankingEdge {
 /// The buffers that ranking reuses between calls. Keep one per thread and pass it to every [`rank`] call, as `solve`'s
 /// projector does: the buffers grow to the largest graph seen and are cleared, not reallocated, on the next call. The
 /// ranks and reversed edges are still allocated per call, since they are returned.
+///
+/// Three outer buffers are held here: `edges`, `partitions` and `network`. Not yet reused, and still allocated on every
+/// call: the arc list of [`break_cycles`] (and what `reversed_arcs` builds from it), the results of
+/// `partition_constraints` and `hint_constraints`, and the working vectors of `network_simplex`. Removing those is
+/// Phase 7's zero-allocation gate (S5), so this phase does not claim zero allocations.
 #[derive(Debug, Default)]
 pub(crate) struct Scratch {
     edges: Vec<RankingEdge>,
