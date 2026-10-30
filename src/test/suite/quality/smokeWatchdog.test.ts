@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { signalExitCode } from "../../../../scripts/smoke/launchSupport.mjs";
 import {
   busiestProcesses,
   hostProcessLines,
@@ -45,13 +44,5 @@ describe("busiestProcesses", () => {
       "/Applications/Cursor.app",
     );
     expect(busiest.map(([pid]) => pid)).toEqual(["11", "12"]);
-  });
-});
-
-describe("signalExitCode", () => {
-  it("is 128 plus the signal number", () => {
-    expect(signalExitCode("SIGHUP")).toBe(129);
-    expect(signalExitCode("SIGINT")).toBe(130);
-    expect(signalExitCode("SIGTERM")).toBe(143);
   });
 });

@@ -560,16 +560,38 @@ describe("Column proposal controls", () => {
       "Accept",
       within(screen.getByText(/Add column discount/).parentElement!),
     );
+    expect(screen.queryByText(/Add column discount/)).toBeNull();
+    await press(user, "button", "Save");
+    await expectPosted("saveDocumentation", {
+      columns: expect.arrayContaining([
+        expect.objectContaining({ name: "customer_id", type: "bigint" }),
+        expect.objectContaining({ name: "discount", type: "numeric" }),
+      ]),
+    });
   });
 
   it("accepts all the type proposals", async () => {
     const { user } = openDocumentation(DOCUMENTATION, TYPE_PROPOSALS);
     await press(user, "button", "Accept all");
+    // The overwrite has no tick, so accept-all leaves it pending; the fill and the added column are applied.
+    expect(screen.getByText(/Type integer → bigint/)).toBeInTheDocument();
+    expect(screen.queryByText(/Type varchar/)).toBeNull();
+    expect(screen.queryByText(/Add column discount/)).toBeNull();
+    await press(user, "button", "Save");
+    await expectPosted("saveDocumentation", {
+      columns: expect.arrayContaining([
+        expect.objectContaining({ name: "discount", type: "numeric" }),
+      ]),
+    });
   });
 
   it("dismisses the type proposals", async () => {
     const { user } = openDocumentation(DOCUMENTATION, TYPE_PROPOSALS);
     await press(user, "button", "Dismiss");
+    expect(screen.queryByRole("button", { name: "Accept all" })).toBeNull();
+    expect(screen.queryByText(/Type integer → bigint/)).toBeNull();
+    // Nothing was applied, so the document is not dirty and has nothing to save.
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
   it("uses the strict analysis action a notice carries", async () => {
@@ -588,6 +610,7 @@ describe("Column proposal controls", () => {
       "Accept",
       within(screen.getByText(/Customer key/).parentElement!),
     );
+    expect(screenTextarea("Describe customer_id").value).toBe("Customer key");
     await press(user, "radio", "Order status from model.demo.raw.status");
     await press(user, "radio", "Fulfilment state from model.demo.ship.state");
     await press(
@@ -602,16 +625,26 @@ describe("Column proposal controls", () => {
           .closest("fieldset")!.parentElement!,
       ),
     );
+    expect(screenTextarea("Describe status").value).toBe("Fulfilment state");
   });
 
   it("skips a description", async () => {
     const { user } = openDocumentation(DOCUMENTATION, DESCRIPTION_PROPOSALS);
+    expect(screen.getByText(/Customer key/)).toBeInTheDocument();
     await press(
       user,
       "button",
       "Skip",
       within(screen.getByText(/Customer key/).parentElement!),
     );
+    // Skip takes the proposal out of the pending list without applying it, and leaves the other one pending.
+    expect(screen.queryByText(/Customer key/)).toBeNull();
+    expect(screenTextarea("Describe customer_id").value).toBe("");
+    expect(
+      screen.getByRole("radio", {
+        name: "Order status from model.demo.raw.status",
+      }),
+    ).toBeInTheDocument();
   });
 });
 

@@ -460,39 +460,51 @@ async function oxlintRuleIds(): Promise<Set<string>> {
 
 describe("held typed rules (D11)", () => {
   for (const ws of WORKSPACES) {
-    const held = HELD_RULES[ws.name as keyof typeof HELD_RULES] as Record<
-      string,
-      HeldRule
-    >;
-    const heldInventory = Object.keys(inventory[ws.name] ?? {}).filter(
-      (rule) => inventory[ws.name]?.[rule]?.engine === "held",
-    );
-
-    it(`${ws.name}: the held inventory entries and HELD_RULES name the same rules`, () => {
-      expect(heldInventory.sort()).toEqual(Object.keys(held).sort());
-    });
-
-    it(`${ws.name}: every held rule has a non-empty unblock and watchFor`, () => {
-      const failures = Object.entries(held).flatMap(([rule, entry]) => [
-        ...(entry.unblock ? [] : [`${rule}: empty unblock`]),
-        ...(entry.watchFor.length > 0 ? [] : [`${rule}: empty watchFor`]),
+    it(`${ws.name}: each held rule has its inventory entry, a lint-expect-none any fixture, an unblock and a watchFor, and no config enables it`, async () => {
+      const held = HELD_RULES[ws.name as keyof typeof HELD_RULES] as Record<
+        string,
+        HeldRule
+      >;
+      const heldInventory = Object.keys(inventory[ws.name] ?? {}).filter(
+        (rule) => inventory[ws.name]?.[rule]?.engine === "held",
+      );
+      const none = (await fixtureHeaders(ws)).filter(
+        ({ header }) => header.kind === "none" && header.engine === "any",
+      );
+      const heldIds = Object.entries(held).flatMap(([rule, entry]) => [
+        rule,
+        ...entry.watchFor,
       ]);
+      const nativeIds = await oxlintRuleIds();
+      const resolved = [...(await resolvedEslint(ws)).values()];
+      const failures = [
+        ...heldInventory
+          .filter((rule) => held[rule] === undefined)
+          .map(
+            (rule) => `${rule}: held in the inventory, absent from HELD_RULES`,
+          ),
+        ...Object.keys(held)
+          .filter((rule) => !heldInventory.includes(rule))
+          .map((rule) => `${rule}: in HELD_RULES, not held in the inventory`),
+        ...heldInventory
+          .filter((rule) => !none.some(({ header }) => header.rule === rule))
+          .map((rule) => `${rule}: no lint-expect-none any fixture`),
+        ...Object.entries(held).flatMap(([rule, entry]) => [
+          ...(entry.unblock ? [] : [`${rule}: empty unblock`]),
+          ...(entry.watchFor.length > 0 ? [] : [`${rule}: empty watchFor`]),
+        ]),
+        ...heldIds
+          .filter((id) => isEnabled(ws.config, id))
+          .map((id) => `${id}: enabled in the oxlint config`),
+        ...Object.values(held)
+          .flatMap((entry) => entry.watchFor)
+          .filter((id) => nativeIds.has(id))
+          .map((id) => `${id}: native in the pinned oxlint --rules`),
+        ...heldIds
+          .filter((id) => resolved.some((config) => ruleOn(config.rules[id])))
+          .map((id) => `${id}: enabled in a resolved ESLint config`),
+      ];
       expect(failures).toEqual([]);
-    });
-
-    it(`${ws.name}: no held rule is enabled in the oxlint config under its from or watchFor id`, () => {
-      const enabled = Object.entries(held).flatMap(([rule, entry]) =>
-        [rule, ...entry.watchFor].filter((id) => isEnabled(ws.config, id)),
-      );
-      expect(enabled).toEqual([]);
-    });
-
-    it(`${ws.name}: no held rule's watchFor id is in the pinned oxlint --rules`, async () => {
-      const ids = await oxlintRuleIds();
-      const native = Object.values(held).flatMap((entry) =>
-        entry.watchFor.filter((id) => ids.has(id)),
-      );
-      expect(native).toEqual([]);
     });
   }
 });
@@ -513,84 +525,39 @@ describe("lint rules by engine (D10, D11)", () => {
   for (const ws of WORKSPACES) {
     const entries = Object.entries(inventory[ws.name] ?? {});
 
-    it(`${ws.name}: every inventory entry has a lint-expect from its own engine`, async () => {
-      const expects = (await fixtureHeaders(ws)).filter(
-        ({ header }) => header.kind === "expect",
-      );
-      const missing = entries
-        .filter(
-          ([rule, entry]) =>
-            entry.engine !== "held" &&
-            UNREACHABLE_ESLINT[rule] === undefined &&
-            !expects.some(
-              ({ header }) =>
-                header.rule === rule && header.engine === entry.engine,
-            ),
-        )
-        .map(([rule]) => rule);
-      expect(missing).toEqual([]);
-    });
-
-    it(`${ws.name}: every held entry has a lint-expect-none any fixture`, async () => {
-      const none = (await fixtureHeaders(ws)).filter(
-        ({ header }) => header.kind === "none" && header.engine === "any",
-      );
-      const missing = entries
-        .filter(([, entry]) => entry.engine === "held")
-        .filter(([rule]) => !none.some(({ header }) => header.rule === rule))
-        .map(([rule]) => rule);
-      expect(missing).toEqual([]);
-    });
-
-    it(`${ws.name}: every eslint entry is enabled in the config its fixture resolves to`, async () => {
+    it(`${ws.name}: each eslint entry has an eslint lint-expect, is enabled where its fixture resolves, and no other ESLint rule is enabled`, async () => {
       const headers = await fixtureHeaders(ws);
       const resolved = await resolvedEslint(ws);
+      const eslintIds = new Set(
+        entries
+          .filter(([, entry]) => entry.engine === "eslint")
+          .map(([, entry]) => entry.from),
+      );
       const failures = entries.flatMap(([rule, entry]) => {
+        if (entry.engine !== "eslint") {
+          return [];
+        }
         const fixture = headers.find(
           ({ header }) =>
             header.kind === "expect" &&
             header.engine === "eslint" &&
             header.rule === rule,
         );
-        if (entry.engine !== "eslint" || fixture === undefined) {
-          return [];
+        if (fixture === undefined) {
+          return UNREACHABLE_ESLINT[rule] === undefined
+            ? [`${rule}: no eslint lint-expect header`]
+            : [];
         }
-        const config = resolved.get(fixture.rel);
-        return ruleOn(config?.rules[entry.from])
+        return ruleOn(resolved.get(fixture.rel)?.rules[entry.from])
           ? []
           : [`${fixture.rel}: ${entry.from} is off`];
       });
-      expect(failures).toEqual([]);
-    });
-
-    it(`${ws.name}: no ESLint rule is enabled without an eslint inventory entry`, async () => {
-      const eslintIds = new Set(
-        entries
-          .filter(([, entry]) => entry.engine === "eslint")
-          .map(([, entry]) => entry.from),
+      const unexpected = [...resolved].flatMap(([rel, config]) =>
+        Object.entries(config.rules)
+          .filter(([id, value]) => ruleOn(value) && !eslintIds.has(id))
+          .map(([id]) => `${rel}: ${id} is enabled with no eslint entry`),
       );
-      const failures = [...(await resolvedEslint(ws))].flatMap(
-        ([rel, config]) =>
-          Object.entries(config.rules)
-            .filter(([id, value]) => ruleOn(value) && !eslintIds.has(id))
-            .map(([id]) => `${rel}: ${id} is enabled with no eslint entry`),
-      );
-      expect(failures).toEqual([]);
-    });
-
-    it(`${ws.name}: held rules are enabled in no resolved ESLint config`, async () => {
-      const held = Object.entries(
-        HELD_RULES[ws.name as keyof typeof HELD_RULES] as Record<
-          string,
-          HeldRule
-        >,
-      );
-      const ids = held.flatMap(([rule, entry]) => [rule, ...entry.watchFor]);
-      const configs = [...(await resolvedEslint(ws)).values()];
-      const enabled = ids.filter((id) =>
-        configs.some((config) => ruleOn(config.rules[id])),
-      );
-      expect(enabled).toEqual([]);
+      expect([...failures, ...unexpected]).toEqual([]);
     });
 
     it(`${ws.name}: no resolved ESLint config is type-aware (D10)`, async () => {

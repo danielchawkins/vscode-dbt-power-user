@@ -4,22 +4,19 @@ import type { ControlId } from "./controlCoverage";
 import { collectControls, expectControlsCovered } from "./controlCoverage";
 
 describe("control coverage helpers", () => {
-  it.each(["codicon-gear"])(
-    "collectControls throws on a button without an accessible name (%s)",
-    (icon) => {
-      const { container } = render(
-        <div>
-          <button type="button">Named</button>
-          <button type="button">
-            <span className={`codicon ${icon}`} />
-          </button>
-        </div>,
-      );
-      expect(() => collectControls(container)).toThrow(
-        new RegExp(`button.*no accessible name.*${icon}`, "s"),
-      );
-    },
-  );
+  it("collectControls throws on a button without an accessible name", () => {
+    const { container } = render(
+      <div>
+        <button type="button">Named</button>
+        <button type="button">
+          <span className="codicon codicon-gear" />
+        </button>
+      </div>,
+    );
+    expect(() => collectControls(container)).toThrow(
+      /button.*no accessible name.*codicon-gear/s,
+    );
+  });
 
   it("expectControlsCovered reports a control no test clicks", async () => {
     const state = () =>

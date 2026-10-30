@@ -27,21 +27,27 @@ const unreachableFixtures: [string, string][] = [
 ];
 
 describe("auditFindings", () => {
-  it("returns no entries for a report with zero findings", () => {
-    expect(auditFindings({ vulnerabilities: {} })).toEqual([]);
-  });
-
-  it("reports info and low findings", () => {
-    const report = {
-      vulnerabilities: {
-        a: { name: "a", severity: "info", via: [] },
-        b: { name: "b", severity: "low", via: ["a"] },
+  it.each([
+    {
+      name: "returns no entries for a report with zero findings",
+      report: { vulnerabilities: {} },
+      entries: [],
+    },
+    {
+      name: "reports info and low findings",
+      report: {
+        vulnerabilities: {
+          a: { name: "a", severity: "info", via: [] },
+          b: { name: "b", severity: "low", via: ["a"] },
+        },
       },
-    };
-    expect(auditFindings(report)).toEqual([
-      { name: "a", severity: "info", via: [] },
-      { name: "b", severity: "low", via: ["a"] },
-    ]);
+      entries: [
+        { name: "a", severity: "info", via: [] },
+        { name: "b", severity: "low", via: ["a"] },
+      ],
+    },
+  ])("$name", ({ report, entries }) => {
+    expect(auditFindings(report)).toEqual(entries);
   });
 });
 
