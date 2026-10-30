@@ -22,21 +22,12 @@ const table = (id: string): lineage.LineageTable => ({
 });
 
 /**
- * A test input: the layout input and the decoration in one object. `pinned` defaults to the start and the selected
- * table, which the panel pins.
+ * A test input: the layout input and the decoration in one object.
  */
-type TestInput = Omit<LayoutInput, "pinned"> &
-  FlowDecoration & { pinned?: readonly string[] };
+type TestInput = LayoutInput & FlowDecoration;
 
 /** `toFlow` for a test input, split into its layout input and its decoration. */
-const toFlowOf = (flat: TestInput) => {
-  const pinned =
-    flat.pinned ??
-    [flat.data.start, flat.selectedTable].filter(
-      (name): name is string => name !== undefined,
-    );
-  return toFlow({ ...flat, pinned }, flat);
-};
+const toFlowOf = (flat: TestInput) => toFlow(flat, flat);
 
 const input = (groupEdges: [string, string][]) => ({
   data: {
@@ -173,7 +164,7 @@ describe("toFlow with group chips", () => {
     }).nodes.find((n) => n.id === "hub");
 
   it("grows the card by one chip row per two chips, up to the two-row cap", () => {
-    const base = tableHeight(undefined, 0, true);
+    const base = tableHeight(undefined, 0);
     const height = (count: number) =>
       hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
     expect(height(0)).toBe(base);
@@ -185,12 +176,15 @@ describe("toFlow with group chips", () => {
     expect(height(8)).toBe(base + 2 * geometry.chipRowHeight);
   });
 
-  it("reserves the relation line and actions row only on the start card", () => {
-    const hub = toFlowOf({
+  it("sizes every card alike at the pre-strip height, and moves no card when one is selected", () => {
+    const flat: TestInput = {
       data: {
-        start: "other",
-        tables: [table("hub")],
-        edges: [],
+        start: "hub",
+        tables: [table("hub"), table("a"), table("b")],
+        edges: [
+          ["hub", "a"],
+          ["hub", "b"],
+        ] as [string, string][],
         columnEdges: [],
       },
       columns: {},
@@ -198,13 +192,70 @@ describe("toFlow with group chips", () => {
       expansions: [],
       errors: {},
       refs: [],
-    }).nodes.find((n) => n.id === "hub");
-    expect(hub?.initialHeight).toBe(tableHeight(undefined, 0));
-    expect(tableHeight(undefined, 0, true)).toBe(
-      tableHeight(undefined, 0) +
-        geometry.relationHeight +
-        geometry.actionsHeight,
-    );
+    };
+    const cards = (selectedTable?: string) =>
+      toFlowOf({ ...flat, selectedTable })
+        .nodes.filter((n) => n.type === "table")
+        .map((n) => [n.id, n.position, n.initialHeight])
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    const unselected = cards();
+    // A plain card is its 60px header and the 5px clearance: no relation line and no actions row.
+    expect(unselected.map((card) => card[2])).toEqual([65, 65, 65]);
+    expect(cards("a")).toEqual(unselected);
+    expect(cards("b")).toEqual(unselected);
+  });
+
+  it("sizes a start, a selected and a plain card with the same columns alike, and moves none", () => {
+    const columnsOf = (owner: string) =>
+      ["c1", "c2"].map((name) => ({ table: owner, name }));
+    const listed: TestInput = {
+      data: {
+        start: "hub",
+        tables: [table("hub"), table("a"), table("b")],
+        edges: [
+          ["hub", "a"],
+          ["hub", "b"],
+        ] as [string, string][],
+        columnEdges: [],
+      },
+      columns: { hub: columnsOf("hub"), a: columnsOf("a"), b: columnsOf("b") },
+      columnTables: ["hub", "a", "b"],
+      expansions: [],
+      errors: {},
+      refs: [],
+    };
+    const cards = (selectedTable?: string) =>
+      toFlowOf({ ...listed, selectedTable })
+        .nodes.filter((n) => n.type === "table")
+        .map((n) => [n.id, n.position, n.initialHeight])
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    const unselected = cards();
+    // 60px header, 8px list padding, and two 24px column rows.
+    expect(unselected.map((card) => card[2])).toEqual([116, 116, 116]);
+    expect(cards("a")).toEqual(unselected);
+    expect(cards("b")).toEqual(unselected);
+  });
+
+  it("keeps every card's size when the start card changes", () => {
+    const flat = (start: string): TestInput => ({
+      data: {
+        start,
+        tables: [table("hub"), table("a")],
+        edges: [["hub", "a"]] as [string, string][],
+        columnEdges: [],
+      },
+      columns: {},
+      columnTables: [],
+      expansions: [],
+      errors: {},
+      refs: [],
+    });
+    const sizes = (start: string) =>
+      toFlowOf(flat(start))
+        .nodes.filter((n) => n.type === "table")
+        .map((n) => [n.id, n.initialHeight])
+        .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    expect(sizes("a")).toEqual(sizes("hub"));
   });
 
   it("gives the table node the chips it is passed", () => {
@@ -387,7 +438,7 @@ describe("toFlow layout", () => {
 
   it(
     "ends a same-row relationship on its referenced card and its declaring card " +
-      "when the referenced card is selected and taller",
+      "when the referenced card is taller",
     () => {
       const base = layeredInput();
       const { nodes, edges } = toFlowOf({
@@ -402,7 +453,11 @@ describe("toFlow layout", () => {
           ],
           edges: [],
         },
-        selectedTable: "ref",
+        // Four listed columns make the referenced card taller than the declaring one, which has none.
+        columnTables: ["ref"],
+        columns: {
+          ref: ["c1", "c2", "c3", "c4"].map((name) => ({ table: "ref", name })),
+        },
         refs: [
           {
             id: "ref1",

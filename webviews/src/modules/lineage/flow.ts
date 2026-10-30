@@ -232,17 +232,16 @@ export function toFlow(
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
 } {
-  const { columns, columnTables, pinned } = layout;
+  const { columns, columnTables } = layout;
   const groups = layout.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
   const chipsByTable = Map.groupBy(layout.chips ?? [], (chip) => chip.table);
   const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
-  // One height per table, for the layout and for the initial size: the start card and the selected card show their
-  // relation line and actions row.
+  // One height per table, for the layout and for the initial size.
   const heightOfTable = (table: string) =>
-    tableHeight(listed(table), chipsOf(table).length, pinned.includes(table));
+    tableHeight(listed(table), chipsOf(table).length);
   const heightOf = (id: string) =>
     groupIds.has(id) ? geometry.groupHeight : heightOfTable(id);
   const placed = placeCards(layout, listed, heightOf);

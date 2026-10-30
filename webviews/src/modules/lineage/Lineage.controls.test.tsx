@@ -758,6 +758,52 @@ describe("Lineage overflow groups", () => {
   }, 30_000);
 });
 
+describe("Lineage card strip", () => {
+  // The strip hangs under the card's bottom edge and the bottom expander sits on that edge. The layout is not computed
+  // here, so the stacking order of the strip and the bubble is checked in TableNode.test.tsx.
+  it("clicks the strip's buttons and the bottom expander on the start card", async () => {
+    const { user, container } = await openLineage();
+    expect(
+      await press(user, "button", "Columns", node(container, "b")),
+    ).toHaveAttribute("aria-pressed", "true");
+    await press(user, "button", "Open file", node(container, "b"));
+    await expectPosted("openFile", {
+      args: { params: { url: "models/b.sql" } },
+    });
+    await press(user, "button", "Hide 1 children", node(container, "b"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b"]));
+  });
+
+  it("clicks the strip's buttons on a selected card", async () => {
+    const { user, container } = await openLineage();
+    await user.click(node(container, "a").getByText("a"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="a"]'),
+      ).toHaveClass("selected"),
+    );
+    await press(user, "button", "Open file", node(container, "a"));
+    await expectPosted("openFile", {
+      args: { params: { url: "models/schema.yml" } },
+    });
+    await press(user, "button", "Details", node(container, "a"));
+    await screen.findByRole("complementary", { name: "Details" });
+  });
+
+  it("reaches the strip's buttons from the keyboard and clicks them on a hovered card", async () => {
+    const { user, container } = await openLineage();
+    const columns = node(container, "c").getByRole("button", {
+      name: "Columns",
+    });
+    columns.focus();
+    expect(columns).toHaveFocus();
+    await user.hover(node(container, "c").getByText("c"));
+    expect(
+      await press(user, "button", "Columns", node(container, "c")),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("Lineage TESTED_CONTROLS", () => {
   it("lists exactly the controls the tests above clicked", () => {
     expect([...clicked].toSorted()).toEqual(TESTED_CONTROLS.toSorted());

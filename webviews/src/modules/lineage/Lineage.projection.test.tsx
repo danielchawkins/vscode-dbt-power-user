@@ -56,14 +56,16 @@ describe("lineage projection snapshot", () => {
     expect(projection(container)).toMatchSnapshot();
   });
 
-  it("draws the selected card taller, so its neighbours move", async () => {
+  it("moves no card when a card is selected", async () => {
     const { user, container } = await openLineage();
+    const before = projection(container).nodes;
     await user.click(node(container, "b").getByText("b"));
     await waitFor(() =>
       expect(
         container.querySelector('.react-flow__node[data-id="b"]'),
       ).toHaveClass("selected"),
     );
+    expect(projection(container).nodes).toEqual(before);
     expect(projection(container)).toMatchSnapshot();
   });
 

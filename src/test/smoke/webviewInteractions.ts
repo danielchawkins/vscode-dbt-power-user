@@ -306,7 +306,7 @@ const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
   ),
   cards: [...document.querySelectorAll("[data-table]")].map((card) => {
     const title = card.querySelector("[class*=label]");
-    const subtitle = card.querySelector(":scope > div:first-child > [class*=subtitle]");
+    const subtitle = card.querySelector("[class*=strip] > [class*=subtitle]");
     return {
       width: card.offsetWidth,
       height: card.offsetHeight,

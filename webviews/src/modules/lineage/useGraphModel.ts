@@ -84,15 +84,11 @@ const flowOf = ({
   });
   const drawn = new Set(data.tables.map((t) => t.table));
   const groups = collapsedGroups(graph);
-  const pinned = [data.start, graph.selectedTable].filter(
-    (table): table is string => table !== undefined,
-  );
   return toFlow(
     {
       data,
       columns: graph.columns,
       columnTables: graph.columnTables,
-      pinned,
       groups,
       groupEdges: combinedEdges(graph, groups),
       chips: groupChips(graph),
