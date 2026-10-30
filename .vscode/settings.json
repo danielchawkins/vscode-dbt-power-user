@@ -6,7 +6,7 @@
   "editor.rulers": [119],
 
   //////////////////////////////////////////////////////////////////////////////
-  // Formatters. Oxlint and ESLint lint code; oxfmt formats it; rumdl owns Markdown; taplo owns TOML.
+  // Formatters. Oxlint and ESLint lint code; oxfmt formats it; rumdl owns Markdown; taplo owns TOML; rust-analyzer owns Rust.
   // Naming one formatter per language stops the picker from asking.
   //////////////////////////////////////////////////////////////////////////////
   "[typescript]": {
@@ -30,6 +30,9 @@
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
   },
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
   "[markdown]": {
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 119,
@@ -37,6 +40,13 @@
       "source.fixAll.rumdl": "explicit"
     }
   },
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Rust (crates/). Check with clippy over every feature, as `just crates::lint` does; one workspace, so one linked project.
+  //////////////////////////////////////////////////////////////////////////////
+  "rust-analyzer.linkedProjects": ["crates/Cargo.toml"],
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.cargo.features": "all",
 
   //////////////////////////////////////////////////////////////////////////////
   // TypeScript. Build tasks are Just recipes, so tsc auto-detection adds noise.

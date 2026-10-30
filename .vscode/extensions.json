@@ -5,7 +5,8 @@
     "tamasfe.even-better-toml",
     "hverlin.mise-vscode",
     "rvben.rumdl",
-    "nefrob.vscode-just-syntax"
+    "nefrob.vscode-just-syntax",
+    "rust-lang.rust-analyzer"
   ],
   "unwantedRecommendations": ["innoverio.vscode-dbt-power-user"]
 }
