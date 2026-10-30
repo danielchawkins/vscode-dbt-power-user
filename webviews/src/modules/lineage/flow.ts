@@ -9,7 +9,7 @@ import {
   sameColumnName,
   tableEdgeId,
 } from "./edgeIds";
-import { engineFor } from "./engine/engines";
+import { freshLayouter, type Layouter } from "./engine/layoutCache";
 import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
   drawsTableEdges,
@@ -178,17 +178,21 @@ function bandNodes(
  */
 function placeCards(
   input: LayoutInput,
-  listed: (table: string) => lineage.LineageColumn[] | undefined,
-  heightOf: (id: string) => number,
+  sizes: {
+    listed: (table: string) => lineage.LineageColumn[] | undefined;
+    heightOf: (id: string) => number;
+  },
+  layouter: Layouter,
 ): {
   positions: Map<string, Point>;
   layerBands: LayerBand[];
   paths: Map<string, RoutedEdgeData>;
 } {
-  const request = layoutRequest(input, listed, heightOf);
-  const response = engineFor(
+  const request = layoutRequest(input, sizes.listed, sizes.heightOf);
+  const response = layouter(
+    request,
     input.engine ?? lineage.DEFAULT_LINEAGE_ENGINE,
-  ).layout(request);
+  );
   const { paths: drawn } = drawLayout(request, response);
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of drawn) {
@@ -228,6 +232,7 @@ function arrowColour(edge: Edge): string | undefined {
 export function toFlow(
   layout: LayoutInput,
   decoration: FlowDecoration,
+  layouter: Layouter = freshLayouter,
 ): {
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
@@ -244,7 +249,7 @@ export function toFlow(
     tableHeight(listed(table), chipsOf(table).length);
   const heightOf = (id: string) =>
     groupIds.has(id) ? geometry.groupHeight : heightOfTable(id);
-  const placed = placeCards(layout, listed, heightOf);
+  const placed = placeCards(layout, { listed, heightOf }, layouter);
   const nodes = cardNodes(layout, decoration, {
     positions: placed.positions,
     listed,
