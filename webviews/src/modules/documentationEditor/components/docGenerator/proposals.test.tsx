@@ -104,9 +104,8 @@ const typeRow = (text: string) =>
 describe("column proposal controls", () => {
   it("shows the source label and the columns not found in the target", () => {
     renderEditor(TYPES);
-    expect(
-      screen.getAllByText("Types from target dev, relation orders").length,
-    ).toBeGreaterThan(0);
+    // getAllByText throws when the label is missing, so the call is the presence check.
+    screen.getAllByText("Types from target dev, relation orders");
     expect(screen.getByText(/Not found in target/)).toBeInTheDocument();
     expect(screen.getByText("legacy_id")).toBeInTheDocument();
   });

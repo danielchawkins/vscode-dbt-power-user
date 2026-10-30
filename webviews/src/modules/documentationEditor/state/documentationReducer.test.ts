@@ -40,15 +40,27 @@ describe("documentationReducer", () => {
     expect(loaded.incomingDocsData?.docs?.description).toBe("first");
   });
 
-  it("keeps unsaved edits when new documentation arrives", () => {
+  it.each([
+    [
+      "new documentation arrives",
+      (incoming: EditorDocumentation) =>
+        setIncomingDocsData({ docs: incoming }),
+    ],
+    [
+      "a message renders",
+      (incoming: EditorDocumentation) =>
+        rendered({
+          command: "renderDocumentation",
+          docs: incoming,
+          docBlocks: [],
+        }),
+    ],
+  ])("keeps unsaved edits when %s", (_label, receive) => {
     const edited = documentationReducer(
       loaded,
       updateCurrentDocsData({ name: "orders", description: "edited" }),
     );
-    const next = documentationReducer(
-      edited,
-      setIncomingDocsData({ docs: docs("second") }),
-    );
+    const next = documentationReducer(edited, receive(docs("second")));
     expect(next.currentDocsData?.description).toBe("edited");
     expect(next.incomingDocsData?.docs?.description).toBe("second");
   });
@@ -128,23 +140,6 @@ describe("documentationReducer", () => {
     expect(next.project).toBe("jaffle");
     expect(next.docBlocks).toEqual([{ name: "d", path: "/d.md" }]);
     expect(next.publication).toBe("pub");
-  });
-
-  it("keeps unsaved edits when a message renders", () => {
-    const edited = documentationReducer(
-      loaded,
-      updateCurrentDocsData({ name: "orders", description: "edited" }),
-    );
-    const next = documentationReducer(
-      edited,
-      rendered({
-        command: "renderDocumentation",
-        docs: docs("second"),
-        docBlocks: [],
-      }),
-    );
-    expect(next.currentDocsData?.description).toBe("edited");
-    expect(next.incomingDocsData?.docs?.description).toBe("second");
   });
 
   it("applies the draft over the rendered documentation and tests", () => {

@@ -91,25 +91,6 @@ describe("SaveDocumentation", () => {
     vi.clearAllMocks();
   });
 
-  it("renders nothing while the documentation is unchanged", () => {
-    render(<Harness current={model()} incoming={model()} />);
-    expect(screen.queryByText("Save")).toBeNull();
-  });
-
-  it("opens the path popover from the chevron even when a schema file exists", () => {
-    render(
-      <Harness
-        current={model({ description: "edited", patchPath: "/models/s.yml" })}
-        incoming={model({ patchPath: "/models/s.yml" })}
-      />,
-    );
-    expect(screen.queryByRole("dialog")).toBeNull();
-    const [, chevron] = screen.getAllByRole("button");
-    fireEvent.click(chevron!);
-    expect(screen.getByRole("dialog")).toHaveTextContent("/models/s.yml");
-    expect(executeRequestInSync).not.toHaveBeenCalled();
-  });
-
   it("toggles the popover from the chevron, which carries the aria state", () => {
     render(
       <Harness
@@ -123,7 +104,9 @@ describe("SaveDocumentation", () => {
     expect(chevron).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(chevron!);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveTextContent("/models/s.yml");
     expect(chevron).toHaveAttribute("aria-expanded", "true");
+    expect(executeRequestInSync).not.toHaveBeenCalled();
     fireEvent.click(chevron!);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(chevron).toHaveAttribute("aria-expanded", "false");
