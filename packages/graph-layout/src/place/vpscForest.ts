@@ -1,12 +1,3 @@
-/** Reads element i. The solver only asks for indices it has validated, so a miss is a bug and throws. */
-export function item<T>(xs: readonly T[], i: number): T {
-  const x = xs[i];
-  if (x === undefined) {
-    throw new RangeError(`index ${i} is outside the array`);
-  }
-  return x;
-}
-
 /** The active separations as a forest over the variables, given by their endpoints. */
 export class Forest {
   private readonly from: readonly number[];
@@ -24,20 +15,20 @@ export class Forest {
 
   /** Makes separation e part of the forest. */
   link(e: number): void {
-    item(this.tree, item(this.from, e)).push(e);
-    item(this.tree, item(this.to, e)).push(e);
+    this.tree[this.from[e]!]!.push(e);
+    this.tree[this.to[e]!]!.push(e);
   }
 
   /** Removes separation e from the forest. */
   unlink(e: number): void {
-    drop(item(this.tree, item(this.from, e)), e);
-    drop(item(this.tree, item(this.to, e)), e);
+    drop(this.tree[this.from[e]!]!, e);
+    drop(this.tree[this.to[e]!]!, e);
   }
 
   /** The end of separation e that is not v. */
   other(e: number, v: number): number {
-    const f = item(this.from, e);
-    return f === v ? item(this.to, e) : f;
+    const f = this.from[e]!;
+    return f === v ? this.to[e]! : f;
   }
 
   /**
@@ -54,21 +45,33 @@ export class Forest {
       if (seen[root]) {
         continue;
       }
-      seen[root] = true;
-      const component = [root];
-      for (const v of component) {
-        for (const e of item(this.tree, v)) {
-          const u = this.other(e, v);
-          if (!item(seen, u)) {
-            seen[u] = true;
-            parentEdge[u] = e;
-            component.push(u);
-          }
-        }
-      }
-      order.push(...component);
+      order.push(...this.componentOrder(root, seen, parentEdge));
     }
     return { order, parentEdge };
+  }
+
+  /**
+   * Breadth-first order of the component of `root`, rooted there. Its members are marked in `seen`, and each member
+   * other than the root gets its parent separation in `parentEdge`. Both arrays are indexed by variable.
+   */
+  componentOrder(
+    root: number,
+    seen: boolean[],
+    parentEdge: number[],
+  ): number[] {
+    seen[root] = true;
+    const component = [root];
+    for (const v of component) {
+      for (const e of this.tree[v]!) {
+        const u = this.other(e, v);
+        if (!seen[u]!) {
+          seen[u] = true;
+          parentEdge[u] = e;
+          component.push(u);
+        }
+      }
+    }
+    return component;
   }
 
   /** The separations on the forest path from variable a to variable b, which must be connected. */
@@ -77,9 +80,9 @@ export class Forest {
     const seen = Array.from({ length: this.n }, (_, v) => v === a);
     const queue = [a];
     for (const v of queue) {
-      for (const e of item(this.tree, v)) {
+      for (const e of this.tree[v]!) {
         const u = this.other(e, v);
-        if (!item(seen, u)) {
+        if (!seen[u]!) {
           seen[u] = true;
           via[u] = e;
           queue.push(u);
@@ -89,7 +92,7 @@ export class Forest {
     const edges: number[] = [];
     let v = b;
     while (v !== a) {
-      const e = item(via, v);
+      const e = via[v]!;
       edges.push(e);
       v = this.other(e, v);
     }

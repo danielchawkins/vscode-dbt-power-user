@@ -1,5 +1,4 @@
 import { type BlockInput, Blocks } from "./vpscBlocks.js";
-import { item } from "./vpscForest.js";
 
 /** A separation: x[to] - x[from] >= gap. */
 export interface Separation {
@@ -49,7 +48,9 @@ function spend(budget: { steps: number }): void {
 
 /**
  * Merges blocks across violated separations until none is violated, releasing a violation inside a block first. After
- * each change, negative multipliers are split off at once, so the multipliers stay non-negative between steps.
+ * each change, negative multipliers are split off at once, so the multipliers stay non-negative between steps. After a
+ * join only the blocks of its ends can have a negative multiplier, so only they are checked; after a release the whole
+ * forest is.
  */
 function satisfy(blocks: Blocks, budget: { steps: number }): void {
   for (;;) {
@@ -57,16 +58,39 @@ function satisfy(blocks: Blocks, budget: { steps: number }): void {
     const across = mostViolated(blocks, false);
     if (across !== undefined) {
       blocks.join(across);
+      splitNegativeIn(blocks, blocks.ends(across), budget);
     } else {
       const within = mostViolated(blocks, true);
       if (within === undefined) {
         return;
       }
       blocks.resolveWithin(within);
+      while (splitNegative(blocks, budget)) {
+        // Each split leaves the multipliers of the remaining separations to be re-checked.
+      }
     }
-    while (splitNegative(blocks, budget)) {
-      // Each split leaves the multipliers of the remaining separations to be re-checked.
+  }
+}
+
+/**
+ * Splits off the active separations with negative multipliers in the blocks of `vertices`, then in the blocks of the
+ * ends of each split, until none is left. Other blocks keep the non-negative multipliers they had, so none of them can
+ * hold a negative one.
+ */
+function splitNegativeIn(
+  blocks: Blocks,
+  vertices: readonly number[],
+  budget: { steps: number },
+): void {
+  let dirty = vertices;
+  for (;;) {
+    const negative = blocks.negativeIn(dirty, MULTIPLIER_TOLERANCE);
+    if (negative.length === 0) {
+      return;
     }
+    spend(budget);
+    blocks.split(negative);
+    dirty = negative.flatMap((e) => blocks.ends(e));
   }
 }
 
@@ -95,7 +119,7 @@ function splitNegative(blocks: Blocks, budget: { steps: number }): boolean {
   const lam = blocks.multipliers();
   const negative: number[] = [];
   for (let e = 0; e < blocks.count; e++) {
-    if (blocks.active[e] && item(lam, e) < -MULTIPLIER_TOLERANCE) {
+    if (blocks.active[e] && lam[e]! < -MULTIPLIER_TOLERANCE) {
       negative.push(e);
     }
   }
@@ -154,15 +178,15 @@ function assertAcyclic(n: number, separations: readonly Separation[]): void {
   const succ = Array.from({ length: n }, (): number[] => []);
   const pred = Array.from({ length: n }, (): number[] => []);
   for (const { from, to } of separations) {
-    item(succ, from).push(to);
-    item(pred, to).push(from);
-    indegree[to] = item(indegree, to) + 1;
+    succ[from]!.push(to);
+    pred[to]!.push(from);
+    indegree[to] = indegree[to]! + 1;
   }
   const queue = indegree.flatMap((d, v) => (d === 0 ? [v] : []));
   for (const v of queue) {
-    for (const w of item(succ, v)) {
-      indegree[w] = item(indegree, w) - 1;
-      if (item(indegree, w) === 0) {
+    for (const w of succ[v]!) {
+      indegree[w] = indegree[w]! - 1;
+      if (indegree[w] === 0) {
         queue.push(w);
       }
     }
@@ -179,7 +203,7 @@ function assertAcyclic(n: number, separations: readonly Separation[]): void {
   while (!position.has(v)) {
     position.set(v, walk.length);
     walk.push(v);
-    const p = item(pred, v).find((u) => item(indegree, u) > 0);
+    const p = pred[v]!.find((u) => indegree[u]! > 0);
     if (p === undefined) {
       throw new Error("separations contain a directed cycle");
     }

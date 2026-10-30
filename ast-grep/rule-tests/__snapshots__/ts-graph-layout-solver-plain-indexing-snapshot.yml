@@ -1,0 +1,20 @@
+id: ts-graph-layout-solver-plain-indexing
+snapshots:
+  const pos = item(this.blocks, item(this.blockOf, v)).pos + item(this.off, v);:
+    labels:
+    - source: item(this.blocks, item(this.blockOf, v))
+      style: primary
+      start: 12
+      end: 52
+  const x = item(lam, e) < -MULTIPLIER_TOLERANCE;:
+    labels:
+    - source: item(lam, e)
+      style: primary
+      start: 10
+      end: 22
+  for (const w of item(succ, v)) { indegree[w] = item(indegree, w) - 1; }:
+    labels:
+    - source: item(succ, v)
+      style: primary
+      start: 16
+      end: 29

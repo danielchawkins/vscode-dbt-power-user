@@ -1,0 +1,16 @@
+# The separation solver (VPSC) reads its arrays in tight loops. A generic checked accessor `item(xs, i)` is called on
+# arrays of numbers, booleans, arrays and objects, so V8 cannot keep it monomorphic, and it was most of the solver's
+# self time. The solver validates its indices once in `checkedInput`, so its loops index plainly (`xs[i]!`).
+id: ts-graph-layout-solver-plain-indexing
+language: typescript
+severity: error
+message: >-
+  Do not read arrays through the checked accessor `item()` in the separation solver: validate indices at the solver's
+  entry and index plainly (`xs[i]!`) in its loops.
+files:
+  - packages/graph-layout/src/place/vpsc*.ts
+ignores:
+  - "**/*.test.ts"
+  - "**/*.bench.ts"
+rule:
+  pattern: item($XS, $I)
