@@ -12,6 +12,8 @@ mod network;
 mod tree;
 
 #[cfg(test)]
+mod key_tests;
+#[cfg(test)]
 mod network_tests;
 #[cfg(test)]
 mod tests;
