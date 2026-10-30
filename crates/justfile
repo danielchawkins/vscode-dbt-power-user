@@ -1,0 +1,42 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+set positional-arguments
+
+# Rust crates (contributor tooling, not shipped). The root justfile runs `crates::check` inside `just check`.
+
+# Fails with a message, not a skip, when mise has not installed cargo.
+[private]
+require-cargo:
+    @command -v cargo >/dev/null || { echo "crates: cargo not found; run 'mise install' in the repository root" >&2; exit 1; }
+
+[group("quality")]
+fmt: require-cargo
+    cargo fmt --all
+
+[group("quality")]
+fmt-check: require-cargo
+    cargo fmt --all -- --check
+
+[group("quality")]
+lint-toolchain: require-cargo
+    node ../scripts/quality/rust-toolchain.mjs
+
+# Clippy is pedantic with warnings denied; the lint table lives in crates/Cargo.toml.
+# `cargo doc` cannot run in a jj workspace whose parent holds a bare `.bare` repository: cargo's git discovery fails
+# ("did not expect repo ... to be bare"). rustdoc runs on the core directly; it has no dependencies to document.
+[group("quality")]
+lint: require-cargo
+    cargo clippy --workspace --all-targets --locked -- -D warnings
+    rustdoc --edition 2024 --crate-type lib -D warnings -D rustdoc::broken_intra_doc_links --out-dir "${CARGO_TARGET_DIR:-../target}/rustdoc" graph-layout/src/lib.rs
+
+[group("quality")]
+check:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    failed=()
+    for step in lint-toolchain fmt-check lint; do
+        just "$step" || failed+=("crates::$step")
+    done
+    if ((${#failed[@]})); then
+        echo "crates check failed: ${failed[*]}" >&2
+        exit 1
+    fi

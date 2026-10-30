@@ -6,6 +6,7 @@ export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
 
 scripts_dir := source_directory() / "scripts/workspace"
 
+mod crates
 mod webviews
 
 ####################
@@ -108,6 +109,7 @@ clean:
 [group("quality")]
 fmt:
     just fmt-just
+    just crates::fmt
     just webviews::fmt
     just fmt-code
     just fmt-markdown
@@ -137,7 +139,7 @@ check:
         echo "check: Node $have, but mise.toml pins $want; run 'just setup' or 'mise install'" >&2
         exit 1
     fi
-    for step in compile lint test webviews::typecheck webviews::test; do
+    for step in compile lint test crates::check webviews::typecheck webviews::test; do
         if ! just "$step"; then
             echo "check failed at: $step" >&2
             exit 1

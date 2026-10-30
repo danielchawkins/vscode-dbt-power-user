@@ -1,0 +1,17 @@
+[package]
+name = "graph-layout"
+description = "Deterministic graph layout core: model, index, layering, ordering, placement, routing and engine."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+version.workspace = true
+
+# Declared empty: the core has no dependencies. Phase 2 and later add optional serde and rayon dependencies here.
+[features]
+parallel = []
+serde = []
+
+[dependencies]
+
+[lints]
+workspace = true

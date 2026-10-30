@@ -19,6 +19,7 @@ const ROOT_DIRECTORIES = new Set([
   ".vscode", // shared editor settings and launch configurations
   "ast-grep", // ast-grep rules and their tests, read through sgconfig.yml
   "docker", // integration and smoke images
+  "crates", // Rust workspace: the graph-layout core and its bindings, checked by crates::check
   "docs", // ADRs, plans, research and reference docs
   "lint", // lint lists shared by Oxlint and ESLint, and the must-fire lint fixtures
   "media", // shipped icons

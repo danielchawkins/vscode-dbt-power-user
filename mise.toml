@@ -14,5 +14,18 @@ lefthook = "latest"
 "aqua:getdbt.com/dbt-fusion" = "2.0.6"
 "aqua:ast-grep/ast-grep" = "latest"
 
+# Rust tooling. The toolchain is rust-toolchain.toml, which mise reads through idiomatic_version_file_enable_tools.
+# Each CLI comes from an aqua or GitHub release with checksums; cargo: backends would compile it in CI.
+"aqua:tamasfe/taplo" = "latest"
+"aqua:EmbarkStudios/cargo-deny" = "latest"
+"aqua:nextest-rs/nextest/cargo-nextest" = "latest"
+"github:taiki-e/cargo-hack" = "latest"
+"github:bnjbvr/cargo-machete" = "latest"
+"aqua:crate-ci/typos" = "latest"
+# Equal to the wasm-bindgen crate version in crates/Cargo.toml; bump both together.
+"github:wasm-bindgen/wasm-bindgen" = "0.2.129"
+"aqua:WebAssembly/binaryen" = "latest"
+
 [settings]
 lockfile = true
+idiomatic_version_file_enable_tools = ["rust"]
