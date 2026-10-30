@@ -1,1 +1,12 @@
 graph-layout v0.0.0
+serde v1.0.229
+serde_core v1.0.229
+serde_derive v1.0.229
+proc-macro2 v1.0.107
+unicode-ident v1.0.27
+quote v1.0.47
+proc-macro2 v1.0.107
+syn v3.0.9
+proc-macro2 v1.0.107
+quote v1.0.47
+unicode-ident v1.0.27

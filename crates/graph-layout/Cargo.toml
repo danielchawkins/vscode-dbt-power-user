@@ -6,12 +6,15 @@ license.workspace = true
 publish.workspace = true
 version.workspace = true
 
-# Declared empty: the core has no dependencies. Phase 2 and later add optional serde and rayon dependencies here.
+# The core has no normal dependency by default. `serde` (JSON for options and fixtures) is the one optional dependency
+# the ADR allows now; `parallel` (rayon) arrives with Phase 6. There are no dev-dependencies: the TypeScript-exported
+# fixtures are plain text, so `cargo hack --no-dev-deps` keeps the lock file unchanged.
 [features]
 parallel = []
-serde = []
+serde = ["dep:serde"]
 
 [dependencies]
+serde = { version = "1", optional = true, features = ["derive"] }
 
 [lints]
 workspace = true
