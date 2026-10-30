@@ -42,6 +42,9 @@ export class Blocks {
   private readonly walkSeen: boolean[];
   private readonly walkParent: number[];
   private readonly walkSub: number[];
+  /** The inactive separations, ascending: the only ones the violation scan has to look at. */
+  private readonly candidates: Int32Array;
+  private candidateCount: number;
 
   constructor(input: BlockInput) {
     const n = input.x0.length;
@@ -55,6 +58,8 @@ export class Blocks {
     this.blockOf = new Int32Array(n);
     this.pos = new Float64Array(n);
     this.active = input.gap.map(() => false);
+    this.candidates = Int32Array.from({ length: this.count }, (_, e) => e);
+    this.candidateCount = this.count;
     this.walkSeen = Array.from({ length: n }, () => false);
     this.walkParent = Array.from({ length: n }, () => -1);
     this.walkSub = Array.from({ length: n }, () => 0);
@@ -71,13 +76,11 @@ export class Blocks {
    * tie. It is taken among those whose ends share a block when `within` is set, and among the others otherwise.
    */
   mostViolated(within: boolean, tolerance: number): number | undefined {
-    const { from, to, gap, blockOf, off, pos, active } = this;
+    const { from, to, gap, blockOf, off, pos, candidates } = this;
     let worst: number | undefined;
     let worstSlack = -tolerance;
-    for (let e = 0; e < this.count; e++) {
-      if (active[e]) {
-        continue;
-      }
+    for (let i = 0; i < this.candidateCount; i++) {
+      const e = candidates[i]!;
       const f = from[e]!;
       const t = to[e]!;
       const bf = blockOf[f]!;
@@ -125,6 +128,7 @@ export class Blocks {
     this.pos[keep] = into.weighted / into.weight;
     away.members = [];
     this.active[e] = true;
+    this.removeCandidate(e);
     this.forest.link(e);
   }
 
@@ -239,7 +243,36 @@ export class Blocks {
       this.active[e] = false;
       this.forest.unlink(e);
     }
+    this.refreshCandidates();
     this.rebuild();
+  }
+
+  /** Drops separation e, which has just become active, from the sorted candidates. */
+  private removeCandidate(e: number): void {
+    let lo = 0;
+    let hi = this.candidateCount;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (this.candidates[mid]! < e) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    this.candidates.copyWithin(lo, lo + 1, this.candidateCount);
+    this.candidateCount -= 1;
+  }
+
+  /** Lists the inactive separations again, ascending, after some have been deactivated. */
+  private refreshCandidates(): void {
+    let k = 0;
+    for (let e = 0; e < this.count; e++) {
+      if (!this.active[e]) {
+        this.candidates[k] = e;
+        k += 1;
+      }
+    }
+    this.candidateCount = k;
   }
 
   /** Recomputes the blocks from the active forest. Offsets are kept, since every kept separation still holds. */
