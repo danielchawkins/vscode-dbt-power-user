@@ -7,9 +7,9 @@ publish.workspace = true
 version.workspace = true
 
 # The core has no normal dependency by default. `serde` (JSON for options and fixtures) is the one optional dependency
-# the ADR allows now; `parallel` (rayon) arrives with Phase 6. The TypeScript-exported fixtures are plain text, and the
-# solver's property checks are seeded loops, so the crate has no dev-dependency: `cargo hack --no-dev-deps --locked`
-# (the `check-features` gate) needs a lock file that names none. `boundaries/` diffs the normal tree only.
+# the ADR allows now; `parallel` (rayon) arrives with Phase 6. `proptest` is a dev-dependency only, so `boundaries/`
+# (which diffs the normal tree) does not change. Its `std` feature alone: the fork and timeout features need processes
+# and threads, which `wasm32-wasip1` does not have.
 [features]
 parallel = []
 serde = ["dep:serde"]
@@ -19,3 +19,6 @@ serde = { version = "1", optional = true, features = ["derive"] }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+proptest = { version = "1.12.0", default-features = false, features = ["std"] }

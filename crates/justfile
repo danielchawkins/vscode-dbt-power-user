@@ -45,10 +45,11 @@ lint: require-cargo
     cargo machete
     typos
 
-# Every feature combination of the core, and the core for wasm32 (the wasm binding's target).
+# Every feature combination of the core, its tests included (`--all-targets`), and the core for wasm32 (the wasm
+# binding's target).
 [group("quality")]
 check-features: require-cargo
-    cargo hack check --feature-powerset --no-dev-deps --locked -p graph-layout
+    cargo hack check --feature-powerset --all-targets --locked -p graph-layout
     cargo check --locked -p graph-layout --target wasm32-unknown-unknown --all-features
 
 [group("tests")]
