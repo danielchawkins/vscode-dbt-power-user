@@ -5,6 +5,11 @@ export class Forest {
   private readonly n: number;
   /** Active separations at each variable. */
   private readonly tree: number[][];
+  /** Bumped by every link and unlink, so a cached traversal can be checked against the forest it was made from. */
+  private version = 0;
+  private cached:
+    | { version: number; first: number; order: number[]; parentEdge: number[] }
+    | undefined;
 
   constructor(from: readonly number[], to: readonly number[], n: number) {
     this.from = from;
@@ -17,12 +22,14 @@ export class Forest {
   link(e: number): void {
     this.tree[this.from[e]!]!.push(e);
     this.tree[this.to[e]!]!.push(e);
+    this.version += 1;
   }
 
   /** Removes separation e from the forest. */
   unlink(e: number): void {
     drop(this.tree[this.from[e]!]!, e);
     drop(this.tree[this.to[e]!]!, e);
+    this.version += 1;
   }
 
   /** The end of separation e that is not v. */
@@ -34,9 +41,12 @@ export class Forest {
   /**
    * Breadth-first order over the forest, with each variable's parent separation (-1 at a root). A parent comes before
    * its children, so reversing the order visits children first. The component of `first` is searched first and
-   * rooted at `first`.
+   * rooted at `first`. The result is cached until the forest changes, so its arrays must not be modified.
    */
   spanningOrder(first = 0): { order: number[]; parentEdge: number[] } {
+    if (this.cached?.version === this.version && this.cached.first === first) {
+      return this.cached;
+    }
     const seen = Array.from({ length: this.n }, () => false);
     const parentEdge = Array.from({ length: this.n }, () => -1);
     const order: number[] = [];
@@ -47,7 +57,8 @@ export class Forest {
       }
       order.push(...this.componentOrder(root, seen, parentEdge));
     }
-    return { order, parentEdge };
+    this.cached = { version: this.version, first, order, parentEdge };
+    return this.cached;
   }
 
   /**
