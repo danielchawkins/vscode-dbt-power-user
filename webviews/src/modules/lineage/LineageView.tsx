@@ -26,7 +26,14 @@ const Graph = (): React.JSX.Element => {
 
   return (
     <TableActionsContext value={model.actions}>
-      <div className={`${styles.view} lineage-view`}>
+      <div
+        className={`${styles.view} lineage-view`}
+        style={
+          {
+            "--lineage-edge-opacity": settings.edgeOpacity,
+          } as React.CSSProperties
+        }
+      >
         <div className={styles.topBar} ref={topBarRef}>
           <MissingLineageMessage missingLineageMessage={model.notice} />
           <Toolbar
@@ -40,6 +47,7 @@ const Graph = (): React.JSX.Element => {
             nodes={model.nodes}
             edges={model.edges}
             select={model.select}
+            hover={model.hover}
             openDetails={model.openDetails}
             drawnKey={model.drawnKey}
             nodeKey={model.nodeKey}

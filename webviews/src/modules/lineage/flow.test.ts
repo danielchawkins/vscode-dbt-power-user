@@ -1,10 +1,13 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { Position } from "@xyflow/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { tableEdgeId } from "./edgeIds";
+import { connectionCounts, emphasisOf } from "./emphasis";
+import { createLayouter, freshLayouter } from "./engine/layoutCache";
 import type { FlowDecoration, LayoutInput } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
-import { drawnEdges, toFlow } from "./flow";
+import { drawnEdges, drawnPairs, emphasize, toFlow } from "./flow";
 import { addNeighbours, emptyGraph } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
@@ -644,5 +647,114 @@ describe("drawnEdges", () => {
 
   it("returns the edges themselves when they are not zoomed out", () => {
     expect(drawnEdges(edges, false)).toBe(edges);
+  });
+});
+
+/** The `a -> b -> c` chain with `a -> d` beside it, `b` the start, with the relationships `refs`. */
+const chain = (refs: lineage.LineageRef[] = []): TestInput => ({
+  data: {
+    start: "b",
+    tables: ["a", "b", "c", "d"].map(table),
+    edges: [
+      ["a", "b"],
+      ["b", "c"],
+      ["a", "d"],
+    ],
+    columnEdges: [],
+  },
+  columns: {},
+  columnTables: [],
+  expansions: [],
+  errors: {},
+  refs,
+});
+
+const relationship = (from: string, to: string): lineage.LineageRef => ({
+  id: `${from}-${to}`,
+  from: { table: from, columns: [] },
+  to: { table: to, columns: [] },
+  cardinality: "many-to-one",
+  source: "contract",
+});
+
+describe("drawnPairs", () => {
+  it("lists the table edges, and the relationships as [referenced, declaring], when both are drawn", () => {
+    const layout = {
+      ...chain([relationship("c", "a")]),
+      connections: "both",
+    } as TestInput;
+    expect(drawnPairs(layout)).toEqual([
+      ["a", "b"],
+      ["b", "c"],
+      ["a", "d"],
+      ["a", "c"],
+    ]);
+  });
+
+  it("leaves the table edges out under declared relationships, and keeps the relationships", () => {
+    const layout = {
+      ...chain([relationship("c", "a")]),
+      connections: "declared",
+    } as TestInput;
+    expect(drawnPairs(layout)).toEqual([["a", "c"]]);
+  });
+});
+
+describe("emphasize", () => {
+  // Focus on `b`, path highlight only: `b`, `a` and `c` are on the path, and `d` and its edge are left alone.
+  const pathOn = (flat: TestInput, focus?: string) =>
+    emphasisOf(drawnPairs(flat), connectionCounts(drawnPairs(flat)), {
+      focus,
+      pathHighlight: true,
+      dimOffPath: false,
+      hubDeemphasis: false,
+      maxNeighbours: 20,
+    });
+  const nodeOf = (flow: ReturnType<typeof toFlow>, id: string) =>
+    flow.nodes.find((n) => n.id === id)!;
+  const edgeOf = (flow: ReturnType<typeof toFlow>, id: string) =>
+    flow.edges.find((e) => e.id === id)!;
+
+  it("restyles a built flow: the layouter is not called, and only the emphasised cards and edges are new objects", () => {
+    const flat = chain();
+    const layouter = vi.fn(freshLayouter);
+    const built = toFlow(flat, flat, layouter);
+    const laidOut = layouter.mock.calls.length;
+
+    const hovered = emphasize(built, pathOn(flat, "b"));
+
+    expect(layouter.mock.calls.length).toBe(laidOut);
+    expect(nodeOf(hovered, "b")).not.toBe(nodeOf(built, "b"));
+    expect(nodeOf(hovered, "b")).toHaveProperty("className", "lineage-path");
+    expect(nodeOf(hovered, "d")).toBe(nodeOf(built, "d"));
+    expect(edgeOf(hovered, tableEdgeId("a", "b"))).not.toBe(
+      edgeOf(built, tableEdgeId("a", "b")),
+    );
+    expect(edgeOf(hovered, tableEdgeId("a", "d"))).toBe(
+      edgeOf(built, tableEdgeId("a", "d")),
+    );
+  });
+
+  it("gives an edge on the path the path colour, and leaves the built flow as it was", () => {
+    const flat = chain();
+    const built = toFlow(flat, flat, createLayouter());
+    const before = built.edges.map((e) => e.className);
+    const hovered = emphasize(built, pathOn(flat, "b"));
+    expect(edgeOf(hovered, tableEdgeId("b", "c")).className).toContain(
+      "lineage-path-edge",
+    );
+    expect(edgeOf(hovered, tableEdgeId("b", "c")).markerEnd).toMatchObject({
+      color: "var(--lineage-selected-stroke)",
+    });
+    expect(built.edges.map((e) => e.className)).toEqual(before);
+  });
+
+  it("returns the built objects when nothing is emphasised", () => {
+    const flat = chain();
+    const built = toFlow(flat, flat, createLayouter());
+    const none = emphasize(built, pathOn(flat));
+    expect(none.nodes).toEqual(built.nodes);
+    expect(none.nodes.every((n, i) => n === built.nodes[i])).toBe(true);
+    expect(none.edges.every((e, i) => e === built.edges[i])).toBe(true);
   });
 });

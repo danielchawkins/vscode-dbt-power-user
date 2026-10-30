@@ -59,6 +59,32 @@ const EdgeSettings = ({
         }}
       />
     </label>
+    <Check
+      label="Highlight the paths of the hovered or selected card"
+      checked={settings.pathHighlight}
+      onChange={(pathHighlight) => change({ pathHighlight })}
+    />
+    <Check
+      label="Dim the cards and edges off the path"
+      checked={settings.dimOffPath}
+      onChange={(dimOffPath) => change({ dimOffPath })}
+    />
+    <Check
+      label="Thin the edges of hub cards"
+      checked={settings.hubDeemphasis}
+      onChange={(hubDeemphasis) => change({ hubDeemphasis })}
+    />
+    <label>
+      Edge opacity {settings.edgeOpacity.toFixed(2)}
+      <input
+        type="range"
+        min={0.1}
+        max={1}
+        step={0.05}
+        value={settings.edgeOpacity}
+        onChange={(e) => change({ edgeOpacity: Number(e.target.value) })}
+      />
+    </label>
   </div>
 );
 

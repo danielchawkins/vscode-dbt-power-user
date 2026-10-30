@@ -11,6 +11,7 @@ import {
   FANOUT,
   FANOUT_GROUPS,
   FANOUT_MEMBERS,
+  FILTER,
   flowNodes,
   HUB,
   node,
@@ -22,6 +23,8 @@ import {
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
+import { engineFor } from "./engine/engines";
+import { resolveSettings } from "./viewModel";
 
 vi.mock("./fit", async (importOriginal) =>
   (await import("../../test/fitRecorder")).recordingFit(importOriginal),
@@ -125,6 +128,164 @@ describe("Lineage Settings popover", () => {
     await expectPosted("persistLineageSettings", {
       args: { params: { defaultExpansion: 3 } },
     });
+  });
+});
+
+describe("Lineage emphasis controls", () => {
+  const card = (container: HTMLElement, id: string) =>
+    container
+      .querySelector<HTMLElement>(`[data-table="${id}"]`)!
+      .closest<HTMLElement>(".react-flow__node")!;
+
+  it("highlights the path of the hovered card, and posts the setting", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Settings");
+    const box = await press(
+      user,
+      "checkbox",
+      "Highlight the paths of the hovered or selected card",
+    );
+    expect(box).toBeChecked();
+    await expectPosted("persistLineageSettings", {
+      args: { params: { pathHighlight: true } },
+    });
+    expect(container.querySelectorAll(".lineage-path-edge")).toHaveLength(0);
+
+    // The start `b` sits between `a` and `c`: hovering `c` puts its upstream `b` and `a` on the path, and its edges.
+    await user.hover(container.querySelector('[data-table="c"]')!);
+    expect(
+      container.querySelectorAll(".react-flow__edge.lineage-path-edge"),
+    ).toHaveLength(2);
+    expect(card(container, "a")).toHaveClass("lineage-path");
+    expect(card(container, "c")).toHaveClass("lineage-path");
+
+    await user.unhover(container.querySelector('[data-table="c"]')!);
+    expect(container.querySelectorAll(".lineage-path-edge")).toHaveLength(0);
+  });
+
+  it("dims the cards and edges off the highlighted path", async () => {
+    const { user, container } = await openLineage({
+      node: FILTER,
+      publication: "s:1",
+    });
+    await press(user, "button", "Settings");
+    const box = await press(
+      user,
+      "checkbox",
+      "Dim the cards and edges off the path",
+    );
+    expect(box).toBeChecked();
+    await expectPosted("persistLineageSettings", {
+      args: { params: { dimOffPath: true } },
+    });
+    expect(card(container, "audit")).not.toHaveClass("lineage-dimmed");
+
+    // `audit` has no edge, so hovering `kept` leaves it off the path: it is dimmed; `filter` and `kept` are not.
+    await user.hover(container.querySelector('[data-table="kept"]')!);
+    expect(card(container, "audit")).toHaveClass("lineage-dimmed");
+    expect(card(container, "kept")).not.toHaveClass("lineage-dimmed");
+    expect(card(container, "filter")).not.toHaveClass("lineage-dimmed");
+  });
+
+  it("thins the edges of hub cards, which have more connections than lineage.maxNeighbours", async () => {
+    // With a cap of one connection, `b` (which has `a` and `c`) is a hub, so both of its edges are hub edges.
+    const { user, container } = await openLineage(undefined, {
+      settings: { maxNeighbours: 1 },
+    });
+    await press(user, "button", "Settings");
+    expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(0);
+    const box = await press(user, "checkbox", "Thin the edges of hub cards");
+    expect(box).toBeChecked();
+    await expectPosted("persistLineageSettings", {
+      args: { params: { hubDeemphasis: true } },
+    });
+    expect(
+      container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
+    ).toHaveLength(2);
+  });
+
+  it("thins the edges of a hub whose neighbours are capped, counted from the known neighbours", async () => {
+    // `hub` has six children, only two groups drawn at the cap of two: its drawn edges alone make it look like no hub.
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 }, flowNodes: 3 },
+    );
+    await press(user, "button", "Settings");
+    await press(user, "checkbox", "Thin the edges of hub cards");
+    expect(
+      container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
+    ).toHaveLength(2);
+  });
+
+  it("highlights a drawn relationship on the path, as a table edge is", async () => {
+    // `kept` declares a relationship to `audit`, which has no table edge: under `both` the relationship joins them.
+    const { user, container } = await openLineage(
+      { node: FILTER, publication: "s:1" },
+      {
+        settings: { connections: "both" },
+        refs: [
+          {
+            id: "kept-audit",
+            from: { table: "kept", columns: [] },
+            to: { table: "audit", columns: [] },
+            cardinality: "many-to-one",
+            source: "contract",
+          },
+        ],
+      },
+    );
+    await press(user, "button", "Settings");
+    await press(
+      user,
+      "checkbox",
+      "Highlight the paths of the hovered or selected card",
+    );
+    await press(user, "checkbox", "Dim the cards and edges off the path");
+    await user.hover(container.querySelector('[data-table="kept"]')!);
+    // The path is `filter -> kept` and the relationship `audit -> kept`: both edges are on it, and `audit` is not dimmed.
+    expect(
+      container.querySelectorAll(".react-flow__edge.lineage-path-edge"),
+    ).toHaveLength(2);
+    expect(card(container, "audit")).not.toHaveClass("lineage-dimmed");
+  });
+
+  it("sets the edge opacity from its slider, on the view", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Settings");
+    const slider = await press(user, "slider", "Edge opacity 1.00");
+    fireEvent.change(slider, { target: { value: "0.5" } });
+    expect(
+      screen.getByRole("slider", { name: "Edge opacity 0.50" }),
+    ).toBeInTheDocument();
+    await expectPosted("persistLineageSettings", {
+      args: { params: { edgeOpacity: 0.5 } },
+    });
+    expect(
+      container
+        .querySelector<HTMLElement>(".lineage-view")!
+        .style.getPropertyValue("--lineage-edge-opacity"),
+    ).toBe("0.5");
+  });
+
+  it("does not call the layout engine when an emphasis control changes", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage();
+    const laidOut = layout.mock.calls.length;
+    await press(user, "button", "Settings");
+    await press(
+      user,
+      "checkbox",
+      "Highlight the paths of the hovered or selected card",
+    );
+    await press(user, "checkbox", "Dim the cards and edges off the path");
+    await press(user, "checkbox", "Thin the edges of hub cards");
+    fireEvent.change(await press(user, "slider", "Edge opacity 1.00"), {
+      target: { value: "0.5" },
+    });
+    await user.hover(container.querySelector('[data-table="c"]')!);
+    expect(layout.mock.calls.length).toBe(laidOut);
+    layout.mockRestore();
   });
 });
 

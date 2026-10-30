@@ -27,9 +27,13 @@ const STORED_KEYS: Record<keyof StoredLineageSettings, true> = {
   enabledRefSources: true,
   inferenceConfidenceThreshold: true,
   includeSourcesInInference: true,
+  pathHighlight: true,
+  dimOffPath: true,
+  hubDeemphasis: true,
+  edgeOpacity: true,
 };
 
-/** The known view settings in `params`, with the confidence threshold clamped to 0..1; other keys are dropped. */
+/** The known view settings in `params`, with the confidence threshold clamped to 0..1 and edge opacity to 0.1..1; other keys are dropped. */
 function storedLineageSettings(
   params: Partial<lineage.LineageSettings>,
 ): StoredLineageSettings {
@@ -47,6 +51,14 @@ function storedLineageSettings(
       stored.inferenceConfidenceThreshold = Math.min(1, Math.max(0, threshold));
     } else {
       delete stored.inferenceConfidenceThreshold;
+    }
+  }
+  const opacity = params.edgeOpacity;
+  if (opacity !== undefined) {
+    if (Number.isFinite(opacity)) {
+      stored.edgeOpacity = Math.min(1, Math.max(0.1, opacity));
+    } else {
+      delete stored.edgeOpacity;
     }
   }
   return stored;

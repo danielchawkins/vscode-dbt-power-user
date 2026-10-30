@@ -699,6 +699,34 @@
   stroke-dasharray: 6 4;
 }
 
+/* Emphasis: restyle only. The view's edge opacity is a variable; a dimmed card or edge fades further. */
+.canvas :global(.react-flow__edge) {
+  opacity: var(--lineage-edge-opacity, 1);
+}
+
+.canvas :global(.react-flow__edge.lineage-dimmed) {
+  opacity: calc(var(--lineage-edge-opacity, 1) * 0.2);
+}
+
+.canvas :global(.react-flow__node.lineage-dimmed) {
+  opacity: 0.3;
+}
+
+.canvas :global(.react-flow__node.lineage-path) .node {
+  box-shadow: 0 0 0 1px var(--lineage-selected-stroke);
+}
+
+.canvas :global(.lineage-path-edge) path {
+  stroke: var(--lineage-selected-stroke);
+  stroke-width: 2.5;
+}
+
+/* A hub edge on a highlighted path keeps the path's stroke: the hub rule leaves path edges out, so the cascade never depends on order. */
+.canvas :global(.lineage-hub-edge:not(.lineage-path-edge)) path {
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
 .legend {
   position: absolute;
   bottom: 8px;

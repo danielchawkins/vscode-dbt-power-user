@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { workspace } from "vscode";
-import { readLineageSettings } from "../../features/lineage/lineageSettings";
+import {
+  persistLineageSettings,
+  readLineageSettings,
+} from "../../features/lineage/lineageSettings";
 
 /** A global-state store holding `stored` under the lineage settings key. */
 const storeWith = (stored: Record<string, unknown> | undefined) => {
@@ -73,5 +76,33 @@ describe("readLineageSettings layerColors", () => {
     expect(readLineageSettings(storeWith(undefined)).layerColors).toEqual({});
     withLayerColors("charts.red");
     expect(readLineageSettings(storeWith(undefined)).layerColors).toEqual({});
+  });
+});
+
+describe("persistLineageSettings edgeOpacity", () => {
+  /** Saves `edgeOpacity` and returns what the store was given for it; `undefined` when nothing was written. */
+  const savedOpacity = async (edgeOpacity: number) => {
+    const setToGlobalState = vi.fn();
+    const store = {
+      getFromGlobalState: () => undefined,
+      setToGlobalState,
+    } as unknown as Parameters<typeof persistLineageSettings>[0];
+    await persistLineageSettings(store, { edgeOpacity });
+    const [, saved] = setToGlobalState.mock.calls[0] ?? [];
+    return (saved as { edgeOpacity?: number } | undefined)?.edgeOpacity;
+  };
+
+  it("clamps an opacity below 0.1 up to 0.1 and one above 1 down to 1", async () => {
+    expect(await savedOpacity(0.02)).toBe(0.1);
+    expect(await savedOpacity(3)).toBe(1);
+  });
+
+  it("keeps an opacity inside 0.1..1 as it is", async () => {
+    expect(await savedOpacity(0.5)).toBe(0.5);
+  });
+
+  it("drops a non-finite opacity, so no value is written for it", async () => {
+    expect(await savedOpacity(Number.NaN)).toBeUndefined();
+    expect(await savedOpacity(Number.POSITIVE_INFINITY)).toBeUndefined();
   });
 });

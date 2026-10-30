@@ -197,6 +197,14 @@ export interface LineageSettings {
    * and card stripe: a theme colour id such as `charts.red`, or a CSS hex or colour function. A user setting.
    */
   layerColors?: Readonly<Record<string, string>> | undefined;
+  /** Highlights the upstream and downstream paths of the hovered or selected card. A view setting. */
+  pathHighlight?: boolean | undefined;
+  /** Fades the cards and edges that are not on the highlighted path. A view setting. */
+  dimOffPath?: boolean | undefined;
+  /** Draws the edges of a card with more connections than `lineage.maxNeighbours` thinner and lighter. A view setting. */
+  hubDeemphasis?: boolean | undefined;
+  /** The opacity of every edge, from 0.1 to 1. A view setting. */
+  edgeOpacity?: number | undefined;
 }
 
 /**
@@ -323,6 +331,10 @@ const panelFields: CommandFields<PanelMessage> = {
     enabledRefSources: optional(isRefSources),
     inferenceConfidenceThreshold: optional(isNumber),
     includeSourcesInInference: optionalBoolean,
+    pathHighlight: optionalBoolean,
+    dimOffPath: optionalBoolean,
+    hubDeemphasis: optionalBoolean,
+    edgeOpacity: optional(isNumber),
   }),
 };
 
