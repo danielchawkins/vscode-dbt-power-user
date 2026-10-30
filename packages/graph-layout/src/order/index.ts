@@ -4,6 +4,7 @@ import type { RankResult } from "../rank/index.js";
 import type { LayoutGraph, LayoutOptions } from "../types.js";
 import { gatherClusters } from "./clusters.js";
 import { createModel, type OrderModel, unitsOf } from "./model.js";
+import { keepOutside } from "./outside.js";
 import { startingLayers } from "./seed.js";
 import { sift } from "./sifting.js";
 import { found, type Found, search } from "./sweeps.js";
@@ -44,7 +45,8 @@ export interface OrderResult {
  * that order, with its dummies sifted, has no more crossings than the search found. With hints, the unhinted search
  * runs as well, so the order of the run that produced the hints is always among the candidates: the hints record no
  * dummy, and moving a long edge's dummies together across ranks is a step sifting cannot take. At `thorough`, seeded
- * restarts from shuffled starts are tried as well. The result is a pure function of the graph, options and seed.
+ * restarts from shuffled starts are tried as well. Last, each long edge is kept on one side of every opaque cluster
+ * box it may not enter (`keepOutside`). The result is a pure function of the graph, options and seed.
  */
 export function order(
   graph: LayoutGraph,
@@ -72,7 +74,15 @@ export function order(
       best = kept;
     }
   }
-  return { layered, layers: best.layers, crossings: best.crossings };
+  const layers = keepOutside(graph, layered, best.layers);
+  return {
+    layered,
+    layers,
+    crossings:
+      layers === best.layers
+        ? best.crossings
+        : found(createModel(layered, layers)).crossings,
+  };
 }
 
 /** The search from one start, then from `RESTARTS` shuffles of it, keeping the order with the fewest crossings. */

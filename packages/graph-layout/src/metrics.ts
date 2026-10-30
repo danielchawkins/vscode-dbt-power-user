@@ -5,6 +5,7 @@ import {
   type Segment,
 } from "./drawingSegments.js";
 import { Fenwick } from "./fenwick.js";
+import { breachesOf } from "./opaque.js";
 import type { LayoutMetrics, Point, Rect } from "./types.js";
 
 /** One edge as drawn: its polyline from the source end to the target end, and the two nodes it joins. */
@@ -25,6 +26,14 @@ export interface Drawing {
   trunkOf?: (edge: string) => string | undefined;
   /** Ranks by node id; `compareDrawings` counts rank changes when both drawings carry them. */
   ranks?: ReadonlyMap<string, number>;
+  /**
+   * The opaque boxes, by cluster id, and for each edge the boxes it may enter (those holding one of its ends). An edge
+   * with no entry may enter none. Without `opaque`, `opaqueBreaches` is zero.
+   */
+  opaque?: {
+    boxes: ReadonlyMap<string, Rect>;
+    allowed: ReadonlyMap<string, ReadonlySet<string>>;
+  };
 }
 
 export interface CompareOptions {
@@ -71,7 +80,28 @@ export function measureDrawing(drawing: Drawing): LayoutMetrics {
     area,
     density: area > 0 ? nodeArea / area : 0,
     overlaps: nodeOverlaps(drawing.boxes) + edgeNodeOverlaps(drawing, pieces),
+    opaqueBreaches: opaqueBreaches(drawing),
   };
+}
+
+/**
+ * Pairs of an edge and an opaque box it may not enter, where the edge runs through the box or within the clearance of
+ * its border (`breachesOf`).
+ */
+function opaqueBreaches(drawing: Drawing): number {
+  if (!drawing.opaque) {
+    return 0;
+  }
+  const { boxes, allowed } = drawing.opaque;
+  let count = 0;
+  for (const [id, path] of drawing.paths) {
+    count += breachesOf(
+      path.points,
+      boxes,
+      allowed.get(id) ?? new Set<string>(),
+    ).length;
+  }
+  return count;
 }
 
 /**

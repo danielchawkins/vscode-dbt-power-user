@@ -88,6 +88,17 @@ describe("relationship edge", () => {
     );
   });
 
+  it("draws an unrouted relationship dashed and straight between its handles, never as a curve", () => {
+    const { container } = render(
+      <svg>
+        <RelationshipEdgeView {...props} data={{ ref }} />
+      </svg>,
+    );
+    const line = container.querySelector('path[class*="line"]');
+    expect(line?.getAttribute("d")).toBe("M 0 0 L 300 0");
+    expect((line as SVGElement | null)?.style.strokeDasharray).toBe("6 4");
+  });
+
   it("shows its columns and declaring source when hovered", () => {
     const { container } = render(
       <svg>

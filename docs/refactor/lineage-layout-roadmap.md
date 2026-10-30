@@ -78,6 +78,13 @@ From the routing report's recommendation:
 
 **Check.** `measureDrawing` gains an edge-against-opaque-box count, using a strict-interior test plus a clearance test, measured on the drawn path after corner rounding and hops. Property tests run under rows and levels, both directions, nested clusters, ports and long edges. A test checks that every input edge is drawn or flagged. `rowsGolden` is unchanged for cluster-free graphs.
 
+**Status: partly done (scope cut, to finish before Phase C).**
+
+- Done: the per-box `opaque?: boolean` on a cluster (default transparent, so existing callers and `rowsGolden` are unchanged); the adapter opts in for folder/cluster boxes; item 3 (every edge drawn or `routeFailed`, self-loops included); a post-route opaque-breach check; the aggregate flagged-share ratchet (`FLAGGED_CEILING` in `opaque.test.ts`).
+- Done in ordering only: `order/outside.ts` keeps unclustered chain dummies and unclustered real ends on one side of each opaque box they span. Clustered real endpoints are not moved, because moving them can make the box separations cyclic, and placement then throws.
+- Not done: endpoint placement for clustered nodes (item 2), and blocking the box intervals in the gap channels of the router.
+- Measured on the 200 random clustered graphs (`scratch` harness, not product code): foreign-box entry 176 graphs before and with the transparent default, 0 with opaque boxes. With opaque boxes, 855 of 6,957 edges (12%) are flagged `routeFailed` and drawn dashed. The property suites flag about a third of edges with every cluster opaque at random, so the ratchet is set at that level.
+
 ### Phase C: engine preparation
 
 The Rust plan's Phase 0, without item 2 (done in #511):
