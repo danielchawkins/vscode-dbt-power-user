@@ -217,7 +217,7 @@ Phase 6 is the point at which the Rust core is a complete replacement for the Ty
 
 ## Phase 7: the `engine` handle
 
-**Scope.** `engine` module: `Engine`, `Progress`, `Generation`, `layout`. Phase caches keyed by FNV-1a 64 over canonical bytes of what each phase reads (ADR "Live tuning" key table); a change re-runs from the first phase whose key changed; `Budget` counts only, no clock; cancellation by generation; progressive results (a fast result, then refined). `layout(&Graph, &Options)` is a wrapper that runs the handle to its final stage. Invariant I1: the handle's final result equals the wrapper's.
+**Scope.** `engine` module: `Engine`, `Progress`, `Generation`, `layout`. Phase caches keyed by FNV-1a 64 over canonical bytes of what each phase reads (ADR "Live tuning" key table); a change re-runs from the first phase whose key changed; `Budget` counts only, no clock; cancellation by generation; progressive results (a fast result, then refined). `layout(&Graph, &Options)` is a wrapper that runs the handle to its final stage. Invariant I1: the handle's final result equals the wrapper's. Carried from Phase 3: the layering `Scratch` reuses its three outer buffers, but `break_cycles`, `partition_constraints`, `hint_constraints` and `network_simplex` still allocate on every call; making them allocation-free is in this phase's S5 gate, not done yet.
 
 **Check.**
 
