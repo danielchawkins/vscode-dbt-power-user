@@ -1,0 +1,9 @@
+id: ts-graph-layout-solver-plain-indexing
+valid:
+  - 'const lam = blocks.multipliers(); const x = lam[e]! < -MULTIPLIER_TOLERANCE;'
+  - 'const pos = this.blocks[this.blockOf[v]!]!.pos + this.off[v]!;'
+  - 'const seen = Array.from({ length: n }, () => false); const node = graph.item(i);'
+invalid:
+  - 'const x = item(lam, e) < -MULTIPLIER_TOLERANCE;'
+  - 'const pos = item(this.blocks, item(this.blockOf, v)).pos + item(this.off, v);'
+  - 'for (const w of item(succ, v)) { indegree[w] = item(indegree, w) - 1; }'
