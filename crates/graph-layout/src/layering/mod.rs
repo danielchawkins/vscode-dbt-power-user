@@ -90,10 +90,24 @@ struct RankingEdge {
     reversed: bool,
 }
 
+/// The buffers that ranking reuses between calls. Keep one per thread and pass it to every [`rank`] call, as `solve`'s
+/// projector does: the buffers grow to the largest graph seen and are cleared, not reallocated, on the next call. The
+/// ranks and reversed edges are still allocated per call, since they are returned.
+#[derive(Debug, Default)]
+pub(crate) struct Scratch {
+    edges: Vec<RankingEdge>,
+    partitions: Vec<Option<f64>>,
+    network: Vec<NetworkEdge>,
+}
+
 /// Chooses the ranks of the nodes: the weighted length of the ranking edges is least, every ranking edge spans its
 /// minimum length, and the partitions and the hints hold as far as they are asked to. Only edge kinds whose policy
 /// ranks take part. Under strict partitions an edge that points back across bands is ranked backwards.
-pub(crate) fn rank(graph: &Indexed, options: &RankOptions<'_>) -> Result<Ranks, RankError> {
+pub(crate) fn rank(
+    graph: &Indexed,
+    options: &RankOptions<'_>,
+    scratch: &mut Scratch,
+) -> Result<Ranks, RankError> {
     let nodes = graph.node_count();
     if nodes == 0 {
         return Ok(Ranks {
@@ -102,29 +116,31 @@ pub(crate) fn rank(graph: &Indexed, options: &RankOptions<'_>) -> Result<Ranks, 
         });
     }
     let strict = options.partitions == PartitionMode::Strict;
-    let mut edges = ranking_edges(graph, options, strict);
-    break_cycles(&mut edges);
-    let network: Vec<NetworkEdge> = edges
-        .iter()
-        .map(|e| NetworkEdge {
+    ranking_edges(graph, options, strict, &mut scratch.edges);
+    break_cycles(&mut scratch.edges);
+    scratch.network.clear();
+    scratch
+        .network
+        .extend(scratch.edges.iter().map(|e| NetworkEdge {
             tail: e.from,
             head: e.to,
             min_length: e.min_length,
             weight: e.weight,
-        })
-        .collect();
+        }));
     let bands = match options.partitions {
         PartitionMode::None => Extension {
             count: nodes,
             edges: Vec::new(),
         },
         mode => {
-            let partitions: Vec<Option<f64>> = options
-                .node_partition
-                .iter()
-                .map(|p| if strict { Some(p.unwrap_or(0.0)) } else { *p })
-                .collect();
-            partition_constraints(&partitions, mode)
+            scratch.partitions.clear();
+            scratch.partitions.extend(
+                options
+                    .node_partition
+                    .iter()
+                    .map(|p| if strict { Some(p.unwrap_or(0.0)) } else { *p }),
+            );
+            partition_constraints(&scratch.partitions, mode)
         }
     };
     let stability = options.stability;
@@ -134,23 +150,32 @@ pub(crate) fn rank(graph: &Indexed, options: &RankOptions<'_>) -> Result<Ranks, 
         options.hints
     };
     let hints = hint_constraints(bands.count, hint_ranks, stability);
-    let mut all = network;
-    all.extend(bands.edges);
-    all.extend(hints.edges);
-    let solved = network_simplex(hints.count, &all, options.budget.rank_pivots)?;
+    scratch.network.extend(bands.edges);
+    scratch.network.extend(hints.edges);
+    let solved = network_simplex(hints.count, &scratch.network, options.budget.rank_pivots)?;
     let real = &solved[..nodes];
     let low = real.iter().fold(f64::INFINITY, |least, &r| least.min(r));
     Ok(Ranks {
         ranks: real.iter().map(|&r| r - low).collect(),
-        reversed: edges.iter().filter(|e| e.reversed).map(|e| e.id).collect(),
+        reversed: scratch
+            .edges
+            .iter()
+            .filter(|e| e.reversed)
+            .map(|e| e.id)
+            .collect(),
     })
 }
 
 /// The ranking edges, oriented: an edge of a kind that does not rank, an edge with unknown ends, or a self-loop, takes
 /// no part.
-fn ranking_edges(graph: &Indexed, options: &RankOptions<'_>, strict: bool) -> Vec<RankingEdge> {
+fn ranking_edges(
+    graph: &Indexed,
+    options: &RankOptions<'_>,
+    strict: bool,
+    out: &mut Vec<RankingEdge>,
+) {
     let band = |node: usize| options.node_partition[node].unwrap_or(0.0);
-    let mut out = Vec::new();
+    out.clear();
     for (id, rule) in options.edges.iter().enumerate() {
         let Some((source, target)) = graph.ends(id) else {
             continue;
@@ -174,7 +199,6 @@ fn ranking_edges(graph: &Indexed, options: &RankOptions<'_>, strict: bool) -> Ve
             reversed: backward,
         });
     }
-    out
 }
 
 /// Flips the edges that the greedy order of `acyclic` reports, so the ranking graph has no cycle.

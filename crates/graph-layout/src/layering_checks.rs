@@ -12,7 +12,9 @@ use std::fmt::Write as _;
 
 use crate::budget::Budget;
 use crate::index::Indexed;
-use crate::layering::{ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, layer, rank};
+use crate::layering::{
+    ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Scratch, layer, rank,
+};
 
 const FIXTURE: &str = include_str!("../fixtures/parity/layering-cases.txt");
 /// Cases of the fixtures whose ranks or chains differ from TypeScript. See `layering-discrepancies.md`.
@@ -135,7 +137,7 @@ fn chains_text(layers: &Layers) -> String {
         .join(";")
 }
 
-fn run(case: &Case) -> Output {
+fn run(case: &Case, scratch: &mut Scratch) -> Output {
     let budget = Budget::for_effort(None).expect("the balanced budget exists");
     let graph = Indexed::from_ends(
         case.count,
@@ -158,7 +160,7 @@ fn run(case: &Case) -> Output {
         stability: 1.0,
         budget: &budget,
     };
-    let ranking = rank(&graph, &options).expect("the case ranks");
+    let ranking = rank(&graph, &options, scratch).expect("the case ranks");
     let layers = layer(&graph, &case.rules, &ranking.ranks);
     Output {
         ranks: ranking.ranks,
@@ -185,8 +187,9 @@ fn edge_length(case: &Case, ranks: &[f64]) -> f64 {
 /// The names of the cases that differ from TypeScript. A difference must not lengthen the total edge length.
 fn differences(cases: &[Case]) -> Vec<String> {
     let mut names = Vec::new();
+    let mut scratch = Scratch::default();
     for case in cases {
-        let got = run(case);
+        let got = run(case, &mut scratch);
         if same_bits(&got.ranks, &case.expected.ranks)
             && got.reversed == case.expected.reversed
             && got.chains == case.expected.chains
@@ -269,8 +272,9 @@ fn layering_outputs_are_written_for_the_parity_comparison() {
         return;
     };
     let mut text = String::new();
+    let mut scratch = Scratch::default();
     for case in parse(FIXTURE) {
-        let out = run(&case);
+        let out = run(&case, &mut scratch);
         writeln!(
             text,
             "{}\t{}\t{}\t{}",
