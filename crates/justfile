@@ -78,7 +78,8 @@ boundaries: require-cargo
     done
     exit "$status"
 
-# The WebAssembly binding: release build, wasm-bindgen nodejs glue, wasm-opt -O, and the sizes (S11).
+# The WebAssembly binding: release build, wasm-bindgen nodejs glue, wasm-opt -O, and the sizes (S11), checked against
+# the `dist/graph-layout` keys of `size` in ceilings.json.
 [group("quality")]
 wasm: require-cargo
     #!/usr/bin/env bash
@@ -94,6 +95,7 @@ wasm: require-cargo
     opt=$(wc -c < "$out/graph_layout_wasm_bg.wasm")
     gz=$(gzip -9c "$out/graph_layout_wasm_bg.wasm" | wc -c)
     echo "wasm size: raw $raw bytes, wasm-opt -O $opt bytes, gzip -9 $gz bytes"
+    node ../scripts/quality/size-budget.mjs --crates
 
 # The Node-API binding: a release cdylib, copied to dist/ as .node. Built with cargo, not @napi-rs/cli: the crate has
 # no JavaScript side of its own, and the CLI would add an npm dependency for one copy.
@@ -110,22 +112,22 @@ napi: require-cargo
     esac
     cp "${CARGO_TARGET_DIR:-target}/release/$lib" ../dist/graph-layout/graph_layout_napi.node
 
-# Native and WebAssembly outputs compared byte for byte with the golden. CI runs it; `check` does not.
+# Native and WebAssembly outputs compared byte for byte with the golden frame. `check` runs it, and CI runs it too.
 [group("quality")]
 parity: wasm napi
     node graph-layout-wasm/js/parity.mjs ../dist/graph-layout
 
 # The planted divergence for `parity`: a golden one byte off must make it exit 1, the mismatch status. Any other failure
-# (a missing build, a crash) fails this recipe too, so the plant cannot pass by accident. CI runs it after `parity`.
+# (a missing build, a crash) fails this recipe too, so the plant cannot pass by accident. `check` runs it after `parity`.
 [group("quality")]
 parity-plant: wasm napi
     #!/usr/bin/env bash
     set -euo pipefail
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
-    sed 's/"layout":0/"layout":1/' graph-layout-wasm/js/golden/layout.txt > "$tmp/layout.txt"
+    sed 's/^frame empty-layout 474c4652/frame empty-layout 474c4653/' graph-layout/fixtures/parity/frame.txt > "$tmp/frame.txt"
     status=0
-    report=$(node graph-layout-wasm/js/parity.mjs ../dist/graph-layout "$tmp/layout.txt" 2>&1) || status=$?
+    report=$(node graph-layout-wasm/js/parity.mjs ../dist/graph-layout "$tmp/frame.txt" 2>&1) || status=$?
     if [[ "$status" -ne 1 ]]; then
         echo "parity-plant: parity exited $status for a planted divergence; expected 1" >&2
         echo "$report" >&2
@@ -143,7 +145,7 @@ check:
     #!/usr/bin/env bash
     set -uo pipefail
     failed=()
-    for step in lint-toolchain fmt-check lint check-features test deny boundaries; do
+    for step in lint-toolchain fmt-check lint check-features test deny boundaries parity parity-plant; do
         just "$step" || failed+=("crates::$step")
     done
     if ((${#failed[@]})); then

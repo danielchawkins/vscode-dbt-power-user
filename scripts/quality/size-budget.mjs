@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Usage: node scripts/quality/size-budget.mjs   fail when a built artifact exceeds its `size` budget in ceilings.json
+// Usage: node scripts/quality/size-budget.mjs [--crates]   fail when a built artifact exceeds its `size` budget in ceilings.json
+// Without a flag it checks the package keys; `--crates` checks the `dist/graph-layout/` keys that `crates::wasm` builds.
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -22,6 +23,9 @@ export function overBudget(budgets, sizes) {
 
 const sizeOf = (file) => fs.statSync(path.join(root, file)).size;
 
+// The keys under this prefix are built by `crates::wasm`, not by `just package`, so each path checks its own group.
+const CRATES_PREFIX = "dist/graph-layout/";
+
 function measure(budgets) {
   const assets = "dist/webview/assets";
   const sizes = {};
@@ -36,11 +40,17 @@ function measure(budgets) {
   return sizes;
 }
 
-function main() {
+function main(args) {
   const { size } = JSON.parse(
     fs.readFileSync(path.join(root, "scripts/quality/ceilings.json"), "utf8"),
   );
-  const problems = overBudget(size, measure(size));
+  const crates = args.includes("--crates");
+  const budgets = Object.fromEntries(
+    Object.entries(size).filter(
+      ([key]) => key.startsWith(CRATES_PREFIX) === crates,
+    ),
+  );
+  const problems = overBudget(budgets, measure(budgets));
   for (const problem of problems) {
     console.error(problem);
   }
@@ -51,5 +61,5 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  process.exitCode = main();
+  process.exitCode = main(process.argv.slice(2));
 }
