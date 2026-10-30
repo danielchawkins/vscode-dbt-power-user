@@ -8,6 +8,8 @@
 //! if its total edge length is no worse than TypeScript's, and the count of such cases is pinned, so a new difference
 //! fails until it is recorded in `fixtures/parity/layering-discrepancies.md`.
 
+use std::fmt::Write as _;
+
 use crate::budget::Budget;
 use crate::index::Indexed;
 use crate::layering::{ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, layer, rank};
@@ -234,4 +236,50 @@ fn ranks_and_chains_match_typescript_on_the_finance_graph() {
         FINANCE_DIFFERENCES,
         "the finance graph now differs from TypeScript: {differing:?}"
     );
+}
+
+fn bits_text(values: &[f64]) -> String {
+    if values.is_empty() {
+        return "-".to_owned();
+    }
+    values
+        .iter()
+        .map(|v| format!("{:016x}", v.to_bits()))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn indices_text(values: &[usize]) -> String {
+    if values.is_empty() {
+        return "-".to_owned();
+    }
+    values
+        .iter()
+        .map(usize::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Writes what ranking and layering give for every fixture case, one line per case: the name, the ranks as IEEE bits,
+/// the reversed edges, and the chains with dummies by key. `just crates::layering-parity` runs it natively and under
+/// WASI and compares the two files byte for byte.
+#[test]
+fn layering_outputs_are_written_for_the_parity_comparison() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_LAYERING_OUT") else {
+        return;
+    };
+    let mut text = String::new();
+    for case in parse(FIXTURE) {
+        let out = run(&case);
+        writeln!(
+            text,
+            "{}\t{}\t{}\t{}",
+            case.name,
+            bits_text(&out.ranks),
+            indices_text(&out.reversed),
+            out.chains
+        )
+        .expect("writing to a string");
+    }
+    std::fs::write(&path, text).expect("the layering output is writable");
 }
