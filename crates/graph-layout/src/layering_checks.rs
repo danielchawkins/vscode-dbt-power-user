@@ -24,9 +24,20 @@ const FINANCE_DIFFERENCES: usize = 0;
 /// Relative rounding allowed in a total edge length.
 const ROUNDING: f64 = 1e-12;
 
-/// What ranking and layering give for one case: the ranks, the reversed ranking edges, and the chains as text.
+/// What ranking and layering give for one case: the ranks, the reversed ranking edges, and the chains as text. The
+/// chains are written twice: `chains` as TypeScript's fixture writes them (a dummy's rank by `Display`), for the
+/// comparison, and `chain_bits` with each dummy's rank as IEEE bits, for the native and WASI outputs.
 #[derive(Debug)]
 struct Output {
+    ranks: Vec<f64>,
+    reversed: Vec<usize>,
+    chains: String,
+    chain_bits: String,
+}
+
+/// What TypeScript gives for one case, as the fixture writes it: the ranks, the reversed edges and the chains.
+#[derive(Debug)]
+struct Expected {
     ranks: Vec<f64>,
     reversed: Vec<usize>,
     chains: String,
@@ -40,7 +51,7 @@ struct Case {
     count: usize,
     ends: Vec<(usize, usize)>,
     rules: Vec<EdgeRule>,
-    expected: Output,
+    expected: Expected,
 }
 
 fn bits_of(text: &str) -> Vec<f64> {
@@ -100,7 +111,7 @@ fn parse(text: &str) -> Vec<Case> {
                 bands,
                 ends,
                 rules,
-                expected: Output {
+                expected: Expected {
                     ranks: bits_of(f[5]),
                     reversed: indices_of(f[6]),
                     chains: f[7].to_owned(),
@@ -111,8 +122,8 @@ fn parse(text: &str) -> Vec<Case> {
 }
 
 /// The chains as text: bundles in order, separated by `;`; a bundle's nodes and dummies by `,`. A node is `n<index>`;
-/// a dummy is `d<owner>:<rank>:<position>`, the key the TypeScript dump prints.
-fn chains_text(layers: &Layers) -> String {
+/// a dummy is `d<owner>:<rank>:<position>`, the key the TypeScript dump prints, with the rank written by `dummy_rank`.
+fn chains_text(layers: &Layers, dummy_rank: fn(f64) -> String) -> String {
     if layers.bundles.is_empty() {
         return "-".to_owned();
     }
@@ -127,7 +138,7 @@ fn chains_text(layers: &Layers) -> String {
                     ChainNode::Node(i) => format!("n{i}"),
                     ChainNode::Dummy(d) => {
                         let key = layers.dummies[d];
-                        format!("d{}:{}:{}", key.owner, key.rank, key.position)
+                        format!("d{}:{}:{}", key.owner, dummy_rank(key.rank), key.position)
                     }
                 })
                 .collect::<Vec<_>>()
@@ -165,7 +176,8 @@ fn run(case: &Case, scratch: &mut Scratch) -> Output {
     Output {
         ranks: ranking.ranks,
         reversed: ranking.reversed,
-        chains: chains_text(&layers),
+        chains: chains_text(&layers, |rank| rank.to_string()),
+        chain_bits: chains_text(&layers, |rank| format!("{:016x}", rank.to_bits())),
     }
 }
 
@@ -264,8 +276,8 @@ fn indices_text(values: &[usize]) -> String {
 }
 
 /// Writes what ranking and layering give for every fixture case, one line per case: the name, the ranks as IEEE bits,
-/// the reversed edges, and the chains with dummies by key. `just crates::layering-parity` runs it natively and under
-/// WASI and compares the two files byte for byte.
+/// the reversed edges, and the chains with dummies by key, each dummy's rank as IEEE bits too. `just crates::layering-parity`
+/// runs it natively and under WASI and compares the two files byte for byte, so the dummy ranks are compared exactly.
 #[test]
 fn layering_outputs_are_written_for_the_parity_comparison() {
     let Some(path) = std::env::var_os("GRAPH_LAYOUT_LAYERING_OUT") else {
@@ -281,7 +293,7 @@ fn layering_outputs_are_written_for_the_parity_comparison() {
             case.name,
             bits_text(&out.ranks),
             indices_text(&out.reversed),
-            out.chains
+            out.chain_bits
         )
         .expect("writing to a string");
     }
