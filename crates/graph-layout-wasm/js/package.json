@@ -1,0 +1,7 @@
+{
+  "name": "@fusion-power-user/graph-layout-wasm-js",
+  "version": "0.0.0",
+  "description": "JavaScript wrapper and parity check for the graph-layout WebAssembly and Node-API builds. Contributor tooling, not shipped.",
+  "license": "MIT",
+  "private": true
+}

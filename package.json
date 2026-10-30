@@ -1109,7 +1109,7 @@
     "package:vsix": "vsce package",
     "prune:eslint": "eslint src scripts packages --prune-suppressions",
     "lint:unused": "knip --production --no-progress --no-tag-hints",
-    "lint:imports": "depcruise src packages/*/src --config .dependency-cruiser.cjs --output-type err"
+    "lint:imports": "depcruise src packages/*/src crates/graph-layout-wasm/js --config .dependency-cruiser.cjs --output-type err"
   },
   "workspaces": [
     "packages/*",

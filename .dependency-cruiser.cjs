@@ -225,6 +225,17 @@ module.exports = {
       },
     },
     {
+      name: "wasm-binding-js-is-self-contained",
+      severity: "error",
+      comment:
+        "The WebAssembly wrapper imports only Node built-ins and its own folder. The glue it loads is written into dist/graph-layout by `just crates::wasm` and is loaded by path, never imported.",
+      from: { path: "^crates/graph-layout-wasm/js/" },
+      to: {
+        pathNot: "^crates/graph-layout-wasm/js/",
+        dependencyTypesNot: ["core"],
+      },
+    },
+    {
       name: "no-orphans",
       severity: "error",
       comment:
@@ -236,6 +247,8 @@ module.exports = {
           "^src/extension\\.ts$",
           "^packages/webview-contract/src/index\\.ts$",
           "^packages/graph-layout/src/index\\.ts$",
+          // The parity script is run by `just crates::parity`; nothing imports it.
+          "^crates/graph-layout-wasm/js/parity\\.mjs$",
         ],
       },
       to: {},
