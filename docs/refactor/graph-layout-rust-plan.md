@@ -78,7 +78,57 @@ R7 (host data-flow adjacency), R8 (whole-project graph request) and R9 (view sta
 
 ## Phase 1: Rust scaffolding and the gates
 
-**Scope.**
+Phase 1 starts with the tooling, before any engine code, so the first Rust line is already formatted, linted and boundary-checked. The setup and its evidence are in [rust-tooling.md](../research/rust-tooling.md).
+
+**Step 1a: tooling, in this order. Each item has a planted violation that must fail.**
+
+1. **Toolchain.** `rust-toolchain.toml` is the one owner of the version: profile `minimal`, components `clippy` and `rustfmt`, target `wasm32-unknown-unknown`. `mise.toml` reads it (`idiomatic_version_file_enable_tools = ["rust"]`) and has no `rust` entry of its own. Run `mise lock` once. If `mise.lock` records only `stable`, the channel becomes the concrete newest stable, which `just update` bumps, so the version stays recorded while tracking stable (O-12). A `crates::lint-toolchain` step fails when `rustc --version` inside mise differs from the recorded version.
+2. **CLIs in `mise.toml`:** taplo, cargo-deny, cargo-nextest, cargo-hack, cargo-machete, typos, wasm-bindgen-cli (equal to the `wasm-bindgen` crate) and binaryen. Prefer aqua or GitHub backends with checksums over `cargo:`, so CI does not compile them. Check: `mise install --locked` and `just lint-mise-lock`.
+3. **Workspace `Cargo.toml`:** resolver 3, edition 2024 in `[workspace.package]`, and `[lints] workspace = true` in each crate. Lint levels:
+   - `[workspace.lints.rust]`: `unsafe_code` forbid (the bindings override it), and `unreachable_pub`, `missing_debug_implementations` and `missing_docs` at warn.
+   - `[workspace.lints.clippy]`: `pedantic` at warn, priority -1. `allow_attributes` and `allow_attributes_without_reason` at deny, so the only suppression is `#[expect(..., reason = "...")]`. In the core, `cast_possible_truncation` and `cast_sign_loss` at deny.
+   - `[workspace.lints.rustdoc]`: `broken_intra_doc_links` at deny.
+   - Recipes pass `-D warnings` and `--locked`, and `Cargo.lock` is committed.
+
+   Check: a planted `unsafe {}`, `#[allow(x)]` and `f64 as i32` in the core each fail `just crates::lint`.
+4. **`clippy.toml`:**
+   - `disallowed-types`: `HashMap` and `HashSet`.
+   - `disallowed-methods`: `Instant::now`, `SystemTime::now` and `f64::mul_add`, plus the platform float functions `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `exp2`, `ln`, `log2`, `log10`, `powf`, `powi`, `hypot` and `cbrt`, with the reason "use crate::fmath". Rust documents these as not deterministic across platforms; `sqrt` stays allowed.
+
+   Check: an aliased `HashMap`, `let f = Instant::now` and `x.sin()` each fail.
+5. **TOML has one formatter:** taplo owns every `*.toml` except `mise.lock`, through `.taplo.toml`. `just fmt` runs `taplo fmt`, `just lint` runs `taplo fmt --check`, and `.vscode/settings.json` sets the taplo extension for `[toml]`. Check: a misindented `Cargo.toml` fails `just lint`.
+6. **ast-grep rules** in `ast-grep/rules`, each with a test in `ast-grep/rule-tests`. The drafts are in the research, point 10.
+   - `rust-solve-no-crate-imports`
+   - `rust-core-layer-imports-<group>`, one per row of the module table in ADR 0011
+   - `rust-binding-imports-engine-only`
+   - `rust-graph-layout-deterministic`
+
+   The compiler also enforces the binding boundary: only `engine`, `model`, `overview` and `pack` are `pub mod`. Float-to-integer casts are left to clippy, which has the types. Check: `ast-grep test` passes, and a planted file per rule fails `just lint-ast-grep`.
+7. **Supply chain.**
+   - `deny.toml`: licences compatible with MIT, advisories denied, crates.io as the only source.
+   - `crates::boundaries`: runs `cargo tree -p graph-layout -e normal` with no features, with `serde` and with `parallel`, and diffs each against a committed allowlist.
+
+   Check: any new normal dependency in the core fails `crates::boundaries`, and a GPL crate fails `crates::deny`.
+8. **`crates/justfile`**, added as `mod crates` in the root justfile, with `crates::check` in the root `check` loop after `test`. Recipes:
+   - `fmt` and `fmt-check`;
+   - `lint`: clippy, `cargo doc` with `-D warnings`, machete and typos;
+   - `check-features`: the cargo-hack feature powerset, plus a `wasm32` check;
+   - `test`: nextest, plus `cargo test --doc`;
+   - `deny` and `boundaries`;
+   - `wasm`: build, wasm-bindgen, wasm-opt, and the size into `ceilings.json`;
+   - `napi`: through the `@napi-rs/cli` devDependency;
+   - `parity`: the committed goldens through the native and WASM builds, byte-compared;
+   - `check`: every recipe except `wasm`, `napi` and `parity`, which CI runs.
+
+   It fails, rather than skips, when cargo is missing. Check: a planted rustfmt violation fails `just check`.
+9. **Suppression ratchet:** `ceilings.json` gains `rustSuppressions.<crate>`, counted by `ratchet.mjs` from `#[expect(`. Check: one extra `#[expect]` fails `just lint-ratchet`.
+10. **lefthook:** pre-commit runs `crates::fmt-check` on staged `crates/**/*.rs` and `taplo fmt --check` on staged `*.toml`; clippy stays out of pre-commit. **Editor:** `.vscode/settings.json` sets `rust-analyzer.check.command` to `clippy`, `rust-analyzer.cargo.features` to `all`, and rust-analyzer as the `[rust]` formatter.
+11. **CI:** Swatinem/rust-cache keyed on `Cargo.lock`, and a matrix job per napi OS that runs `crates::napi` and `crates::parity`. Check: a planted divergence between native and WASM fails parity.
+12. **knip, dependency-cruiser and the VSIX:** knip gets a workspace for the WASM crate's JS wrapper, and dependency-cruiser a scope for it. The `.wasm` and `.node` outputs go to `dist/`. Check: `just lint-unused` is clean, and a planted file under `crates/` is rejected by `vsix-contents.mjs`.
+
+Left out of Phase 1: Miri (a core that forbids unsafe and has no dependencies gives it nothing to check), cargo-semver-checks (until publishing), cargo-mutants, benchmarks and cargo-udeps (on demand). The coverage floor (`coverage.rust`, through cargo-llvm-cov) is set after the first measurement. Open items the research could not settle are in its "Open questions": what `mise.lock` records for `stable`, the backend names, whether binding macros need `unsafe`, step timings, and the napi runners.
+
+**Step 1b: the crates.**
 
 - `crates/` workspace: `graph-layout` (core, no default dependencies; features `serde` and `parallel`), `graph-layout-wasm` (wasm-bindgen), `graph-layout-napi` (napi-rs v3). Both binding crates `publish = false` (ADR Decision 2 and 3).
 - Track stable Rust (O-12): `rust-toolchain.toml` on the `stable` channel, `rust` and the Rust CLIs at `latest` in `mise.toml`, resolved versions recorded in `mise.lock`. Check whether mise honours `rust-toolchain.toml`, and the mise backend names for `wasm-bindgen-cli`, `cargo-deny` and binaryen (ADR, not verified).
