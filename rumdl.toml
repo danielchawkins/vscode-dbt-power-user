@@ -2,6 +2,7 @@
 flavor = "github"
 respect-gitignore = true
 # Prose uses one physical line per paragraph and editor soft wrapping.
+line-length = 119
 disable = ["MD013", "MD029"]
 exclude = [
   "media/**",
@@ -12,3 +13,15 @@ exclude = [
   "scripts/spikes/lsp-capabilities/jaffle-shop-duckdb/**",
   "src/test/fixtures/**",
 ]
+
+# Asterisk emphasis, and tables aligned to the line width (MD060 compacts a table wider than max-width).
+[MD049]
+style = "asterisk"
+
+[MD050]
+style = "asterisk"
+
+[MD060]
+enabled = true
+style = "aligned"
+max-width = 119

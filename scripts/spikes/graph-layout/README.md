@@ -70,11 +70,11 @@ the largest phase.
 Stability, 300-node graph with relationships, no partitions, 20 expansions from a 1-hop start to 55 cards, measured
 relative to the focus card:
 
-| Hints | Mean displacement of retained cards per step | Same-rank order flips | Rank changes |
-| --- | --- | --- | --- |
-| none | 134 px | 395 | 24 |
-| weight 1 | 39 px | 108 | 1 |
-| weight 10 | 37 px | 112 | 1 |
+| Hints     | Mean displacement of retained cards per step | Same-rank order flips | Rank changes |
+| --------- | -------------------------------------------- | --------------------- | ------------ |
+| none      | 134 px                                       | 395                   | 24           |
+| weight 1  | 39 px                                        | 108                   | 1            |
+| weight 10 | 37 px                                        | 112                   | 1            |
 
 With strict partitions rank changes stay at 8 whatever the hint weight: a revealed upstream source forces every card
 below its gate down a rank.
