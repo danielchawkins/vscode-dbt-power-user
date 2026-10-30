@@ -1,5 +1,13 @@
 import type { Problem } from "./problem.js";
 import { project } from "./projection.js";
+import {
+  addDiagonal,
+  addGradient,
+  addHessian,
+  type Term,
+  termsOf,
+  termValue,
+} from "./terms.js";
 
 /** A step that lowers the objective by less than this fraction of its value ends the search. */
 const RELATIVE_TOLERANCE = 1e-6;
@@ -28,16 +36,17 @@ export function solveQuadratic(
   start: readonly number[],
   cap: number,
 ): Solution {
-  const scale = jacobiScale(problem);
+  const terms = termsOf(problem);
+  const scale = jacobiScale(problem, terms);
   const x = [...start];
   project(problem, x, scale);
-  let f = objective(problem, x);
+  let f = objective(terms, x);
   let iterations = 0;
   while (iterations < cap) {
-    const g = gradient(problem, x);
+    const g = gradient(terms, x);
     const s = g.map((gi, i) => gi / scale[i]!);
     const gs = dot(g, s);
-    const qs = dot(s, hessianVector(problem, s));
+    const qs = dot(s, hessianVector(terms, s));
     if (!(gs > 0 && qs > 0)) {
       break;
     }
@@ -48,7 +57,7 @@ export function solveQuadratic(
     if (gd >= 0 || Number.isNaN(gd)) {
       break;
     }
-    const qd = dot(d, hessianVector(problem, d));
+    const qd = dot(d, hessianVector(terms, d));
     const beta = qd > 0 ? Math.min(1, -gd / qd) : 1;
     const decrease = -(beta * gd) - (beta * beta * qd) / 2;
     x.forEach((xi, i) => (x[i] = xi + beta * d[i]!));
@@ -59,52 +68,32 @@ export function solveQuadratic(
       break;
     }
   }
-  return { x, iterations, objective: objective(problem, x) };
+  return { x, iterations, objective: objective(terms, x) };
 }
 
-/** The objective: squared link lengths with their port offsets, plus squared pulls to each target. */
-function objective(problem: Problem, x: readonly number[]): number {
+/** The objective: the sum of the terms, in the order `termsOf` lists them. */
+function objective(terms: readonly Term[], x: readonly number[]): number {
   let f = 0;
-  for (const link of problem.links) {
-    const diff =
-      x[link.top]! + link.topOffset - x[link.bottom]! - link.bottomOffset;
-    f += link.weight * diff * diff;
-  }
-  for (const pull of problem.pulls) {
-    const diff = x[pull.node]! - pull.target;
-    f += pull.weight * diff * diff;
+  for (const term of terms) {
+    f += termValue(term, x);
   }
   return f;
 }
 
 /** The gradient of the objective at `x`. */
-function gradient(problem: Problem, x: readonly number[]): number[] {
+function gradient(terms: readonly Term[], x: readonly number[]): number[] {
   const g = Array.from({ length: x.length }, () => 0);
-  for (const link of problem.links) {
-    const diff =
-      x[link.top]! + link.topOffset - x[link.bottom]! - link.bottomOffset;
-    g[link.top]! += 2 * link.weight * diff;
-    g[link.bottom]! -= 2 * link.weight * diff;
-  }
-  for (const pull of problem.pulls) {
-    g[pull.node]! += 2 * pull.weight * (x[pull.node]! - pull.target);
+  for (const term of terms) {
+    addGradient(term, x, g);
   }
   return g;
 }
 
-/**
- * The Hessian times `v`. The objective is quadratic, so this is exact; the offsets do not enter it. Each link adds
- * 2w(v_top - v_bottom) to its ends with opposite signs, and each pull adds 2w to its node's own term.
- */
-function hessianVector(problem: Problem, v: readonly number[]): number[] {
+/** The Hessian times `v`: the sum of the terms' Hessians times `v`. The objective is quadratic, so this is exact. */
+function hessianVector(terms: readonly Term[], v: readonly number[]): number[] {
   const out = Array.from({ length: v.length }, () => 0);
-  for (const link of problem.links) {
-    const t = 2 * link.weight * (v[link.top]! - v[link.bottom]!);
-    out[link.top]! += t;
-    out[link.bottom]! -= t;
-  }
-  for (const pull of problem.pulls) {
-    out[pull.node]! += 2 * pull.weight * v[pull.node]!;
+  for (const term of terms) {
+    addHessian(term, v, out);
   }
   return out;
 }
@@ -113,18 +102,14 @@ function hessianVector(problem: Problem, v: readonly number[]): number[] {
  * The Hessian's diagonal, with 1 where a node has no term, so that scaling never divides by zero. A box edge has no
  * term of its own; it takes the small weight `BOX_WEIGHT`, so that the projection moves boxes rather than nodes.
  */
-function jacobiScale(problem: Problem): number[] {
+function jacobiScale(problem: Problem, terms: readonly Term[]): number[] {
   const nodes = problem.dummy.length;
   const diag = Array.from(
     { length: nodes + (problem.extra?.count ?? 0) },
     () => 0,
   );
-  for (const link of problem.links) {
-    diag[link.top]! += 2 * link.weight;
-    diag[link.bottom]! += 2 * link.weight;
-  }
-  for (const pull of problem.pulls) {
-    diag[pull.node]! += 2 * pull.weight;
+  for (const term of terms) {
+    addDiagonal(term, diag);
   }
   return diag.map((d, i) => (d > 0 ? d : i < nodes ? 1 : BOX_WEIGHT));
 }
