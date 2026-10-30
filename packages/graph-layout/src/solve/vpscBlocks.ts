@@ -12,6 +12,8 @@ export interface BlockInput {
 /** A rigid group of variables. Its position, in `Blocks.pos`, is the weighted mean of x0 - offset over its members. */
 interface Block {
   members: number[];
+  /** The smallest member: the root that `multipliers()` reaches the block from. */
+  least: number;
   weight: number;
   /** Sum of weight * (x0 - offset) over the members. */
   weighted: number;
@@ -123,6 +125,7 @@ export class Blocks {
       this.blockOf[v] = keep;
       into.members.push(v);
     }
+    into.least = Math.min(into.least, away.least);
     into.weight += away.weight;
     into.weighted += away.weighted;
     this.pos[keep] = into.weighted / into.weight;
@@ -188,12 +191,13 @@ export class Blocks {
     const negative: number[] = [];
     const walked: number[] = [];
     for (const v of vertices) {
-      const members = this.blocks[this.blockOf[v]!]!.members;
-      const root = members.reduce((a, b) => (b < a ? b : a));
+      const root = this.blocks[this.blockOf[v]!]!.least;
       if (this.walkSeen[root]!) {
         continue;
       }
-      walked.push(...this.walkBlock(root, tolerance, negative));
+      for (const u of this.walkBlock(root, tolerance, negative)) {
+        walked.push(u);
+      }
     }
     for (const u of walked) {
       this.walkSeen[u] = false;
@@ -221,7 +225,8 @@ export class Blocks {
       this.walkSub[u] =
         this.input.weight[u]! * (this.value(u) - this.input.x0[u]!);
     }
-    for (const u of order.toReversed()) {
+    for (let i = order.length - 1; i >= 0; i--) {
+      const u = order[i]!;
       const e = this.walkParent[u]!;
       if (e < 0) {
         continue;
@@ -284,13 +289,14 @@ export class Blocks {
       const e = parentEdge[v]!;
       if (e < 0) {
         this.blockOf[v] = this.blocks.length;
-        this.blocks.push({ members: [], weight: 0, weighted: 0 });
+        this.blocks.push({ members: [], least: v, weight: 0, weighted: 0 });
       } else {
         this.blockOf[v] = this.blockOf[this.forest.other(e, v)]!;
       }
       const b = this.blocks[this.blockOf[v]]!;
       const w = weight[v]!;
       b.members.push(v);
+      b.least = Math.min(b.least, v);
       b.weight += w;
       b.weighted += w * (x0[v]! - this.off[v]!);
     }
