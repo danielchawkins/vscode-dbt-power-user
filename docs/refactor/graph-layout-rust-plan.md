@@ -187,7 +187,7 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 **Undo.** `solve` is not wired into any product path until Phase 8; reverting is deleting the module.
 
-**Done.** Phase 2 is done. The oracle passes; all 20 MSAGL cases and all 2,000 random problems are bit-identical to TypeScript (`to_bits`, native and under WASI), so every separation is met and the objective equals TypeScript's. The finance placement check is 102 of 102 solves bit-identical; its manifest is 1,126 nodes and 1,272 edges, not the 1,122 and 1,241 above, and the discrepancy report records that. S4 is not adopted, S5 is met and S6 is measured (all three in the spike list).
+**Done.** Phase 2 is done. The oracle passes; all 20 MSAGL cases and all 2,000 random problems are bit-identical to TypeScript (`to_bits`, native and under WASI), so every separation is met and the objective equals TypeScript's. The finance placement check is 102 of 102 solves bit-identical; its manifest is 1,126 nodes and 1,273 edges, not the 1,122 and 1,241 above, and the discrepancy report records that. S4 is not adopted, S5 is met and S6 is measured (all three in the spike list).
 
 ## Phase 3: `index` and `layering`
 
