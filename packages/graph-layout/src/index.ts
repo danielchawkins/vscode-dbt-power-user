@@ -14,3 +14,10 @@ export type {
   DrawnPath,
 } from "./metrics.js";
 export { compareDrawings, measureDrawing } from "./metrics.js";
+export {
+  decodeGraph,
+  decodeLayout,
+  encodeGraph,
+  encodeLayout,
+  FrameError,
+} from "./frame.js";

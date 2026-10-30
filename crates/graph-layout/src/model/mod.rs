@@ -4,11 +4,15 @@
 //! as they arrive, because `validate` has to see an unknown one to reject it. Serde derives sit behind the `serde`
 //! feature and use the camelCase names of `types.ts`.
 
+mod frame;
 mod graph;
 mod layout;
 mod options;
 mod validate;
 
+pub use frame::{
+    FrameError, MAGIC, VERSION, decode_graph, decode_layout, encode_graph, encode_layout,
+};
 pub use graph::{Clusters, Edges, Graph, Nodes, Ports};
 pub use layout::{ClusterRects, EdgeLayouts, Hints, Layout, Metrics, NodeLayouts, PartitionRects};
 pub use options::{Direction, EdgeKindPolicy, Options, PartialSpacing, Partitions, Ranks, Spacing};
