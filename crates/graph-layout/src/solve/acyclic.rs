@@ -1,7 +1,7 @@
 //! The directed-cycle check of `vpsc.ts` (`assertAcyclic`). Kahn's algorithm finds the variables that cannot be ordered;
 //! walking back through their stuck predecessors must revisit one, and that closes the cycle named in the error.
 
-use super::{NONE, SolveError, id};
+use super::{NONE, SolveError, id, reserve_to};
 
 /// Scratch for the cycle check, reused across calls.
 #[derive(Debug, Default)]
@@ -48,6 +48,12 @@ fn rows(
 }
 
 impl Acyclic {
+    /// Reserves the queue and the walk for `n` variables. Each variable is queued and walked at most once.
+    pub(super) fn reserve(&mut self, n: usize) {
+        reserve_to(&mut self.queue, n);
+        reserve_to(&mut self.walk, n);
+    }
+
     /// Checks that the separations `from[e] -> to[e]` over `n` variables form a DAG.
     ///
     /// # Errors
