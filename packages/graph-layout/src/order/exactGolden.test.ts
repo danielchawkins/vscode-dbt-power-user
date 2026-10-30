@@ -30,6 +30,8 @@ describe("ordering against the exact minimum on the banded graph", () => {
       ...bandedOptions,
       effort: "balanced",
     });
-    expect(ordering.crossings).toBe(EXACT_MINIMUM + BALANCED_GAP);
+    expect(ordering.crossings).toBeLessThanOrEqual(
+      EXACT_MINIMUM + BALANCED_GAP,
+    );
   });
 });

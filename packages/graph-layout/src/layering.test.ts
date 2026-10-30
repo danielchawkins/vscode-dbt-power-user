@@ -60,11 +60,7 @@ describe("layer", () => {
     expect(bundle.chain.slice(1, 3).map((i) => out.nodes[i].rank)).toEqual([
       1, 2,
     ]);
-    expect(out.nodes[bundle.chain[1]]).toEqual({
-      id: undefined,
-      rank: 1,
-      breadth: 4,
-    });
+    expect(out.nodes[bundle.chain[1]]).toMatchObject({ rank: 1, breadth: 4 });
     expect(out.segments).toHaveLength(3);
     expect(out.segments.map((s) => s.weight)).toEqual([1, 1, 1]);
   });

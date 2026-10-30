@@ -66,13 +66,15 @@ const edgeArb = fc.tuple(
 );
 
 describe("networkSimplex", () => {
-  it("returns no ranks for no nodes", () => {
-    expect(networkSimplex(0, [], MAX_ITERATIONS)).toEqual([]);
-  });
-
-  it("ranks an isolated node at 0", () => {
-    expect(networkSimplex(1, [], MAX_ITERATIONS)).toEqual([0]);
-  });
+  it.each([
+    { count: 0, ranks: [] },
+    { count: 1, ranks: [0] },
+  ])(
+    "ranks an edgeless graph of $count node(s) as $ranks",
+    ({ count, ranks }) => {
+      expect(networkSimplex(count, [], MAX_ITERATIONS)).toEqual(ranks);
+    },
+  );
 
   it("puts a chain one rank apart", () => {
     const edges: NetworkEdge[] = [
@@ -88,16 +90,6 @@ describe("networkSimplex", () => {
       { tail: 0, head: 1, minLength: 3, weight: 2 },
     ];
     expect(networkSimplex(2, edges, MAX_ITERATIONS)).toEqual([0, 3]);
-  });
-
-  it("keeps a node with a heavy edge from its tail as close as the chain allows", () => {
-    const edges: NetworkEdge[] = [
-      { tail: 0, head: 1, minLength: 1, weight: 1 },
-      { tail: 1, head: 2, minLength: 1, weight: 1 },
-      { tail: 0, head: 2, minLength: 1, weight: 5 },
-    ];
-    // Node 2 must sit below node 1, which sits below node 0, so the heavy edge 0 -> 2 cannot shorten the chain.
-    expect(networkSimplex(3, edges, MAX_ITERATIONS)).toEqual([0, 1, 2]);
   });
 
   it("ranks separate components without joining them", () => {

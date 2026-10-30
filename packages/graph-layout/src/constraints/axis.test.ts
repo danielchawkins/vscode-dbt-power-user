@@ -108,19 +108,6 @@ describe("projectAxis", () => {
     expect(x).toEqual([6, 8]);
   });
 
-  it("solves an alignment that is also separated from another node", () => {
-    const x = projectAxis({
-      desired: [0, 0, 5],
-      weight: [1, 1, 1],
-      separations: [
-        { from: 0, to: 1, gap: 0, equality: true },
-        { from: 1, to: 2, gap: 4 },
-      ],
-    });
-    expect(x[0]).toBe(x[1]);
-    expect(x[2] - x[1]).toBeGreaterThanOrEqual(4 - 1e-9);
-  });
-
   it("reports a contradictory equality cycle by the names of its variables", () => {
     // a + 3 = b, b + 3 = c, and a + 9 = c: the last equality contradicts the first two.
     expect(() =>

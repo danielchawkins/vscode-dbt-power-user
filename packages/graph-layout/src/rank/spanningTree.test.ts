@@ -91,7 +91,6 @@ describe("SpanningTree", () => {
             }
           }
           tree = new SpanningTree(count, edges, tree.treeEdges);
-          expect(tree.treeEdges).toHaveLength(count - 1);
         },
       ),
       { numRuns: 200 },

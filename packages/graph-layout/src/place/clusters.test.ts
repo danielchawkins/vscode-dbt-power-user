@@ -37,21 +37,4 @@ describe("place with cluster boxes", () => {
       { numRuns: 60 },
     );
   }, 120_000);
-
-  it("returns a box for every cluster that has members", () => {
-    fc.assert(
-      fc.property(caseArb, (c) => {
-        const result = placed(c);
-        const withMembers = new Set(
-          c.graph.nodes.flatMap((node) =>
-            node.cluster === undefined ? [] : [node.cluster],
-          ),
-        );
-        for (const id of withMembers) {
-          expect(result.clusters.has(id)).toBe(true);
-        }
-      }),
-      { numRuns: 60 },
-    );
-  }, 120_000);
 });

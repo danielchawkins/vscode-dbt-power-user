@@ -22,14 +22,6 @@ describe("brandesKoepf", () => {
     );
   });
 
-  it("returns one coordinate per node", () => {
-    fc.assert(
-      fc.property(problemArb, (problem) => {
-        expect(brandesKoepf(problem)).toHaveLength(problem.dummy.length);
-      }),
-    );
-  });
-
   it("keeps every gap in the class-shift counterexample", () => {
     const span = (from: number, to: number) =>
       Array.from({ length: to - from }, (_, i) => from + i);

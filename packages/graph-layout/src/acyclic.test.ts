@@ -66,7 +66,7 @@ describe("reversedEdges", () => {
     expect(reversedEdges(edges)).toEqual([]);
   });
 
-  it("returns ids in input order", () => {
+  it("reverses the first listed of two opposing edges", () => {
     const edges = [
       edge("first", "b", "a"),
       edge("ab", "a", "b"),
