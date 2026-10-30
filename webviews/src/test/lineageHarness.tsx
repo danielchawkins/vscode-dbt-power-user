@@ -121,7 +121,7 @@ const inFolder = (id: string, folder: string): lineage.LineageTable => ({
 });
 
 /** The six children of `hub`, three in each of two folders. */
-const HUB_CHILDREN = [
+export const HUB_CHILDREN = [
   inFolder("s1", "models/staging"),
   inFolder("s2", "models/staging"),
   inFolder("s3", "models/staging"),
@@ -150,6 +150,14 @@ export const FANOUT_MEMBERS = FANOUT_CHILDREN.map((child) => child.table);
 /** `filter` feeds `kept` and `audit`; `audit` sets `meta.lineage.hidden`, so it is drawn with no edge to or from it. */
 export const FILTER = table("filter", "model", 0, 2);
 const KEPT = table("kept", "model", 1, 0);
+/**
+ * `wide` feeds three cards, each in a folder of its own. Their folders make no bucket of two or more, so a cap draws
+ * them as ordinary cards, and withholds the rest as a count on `wide` rather than as a group.
+ */
+export const WIDE = table("wide", "model", 0, 3);
+const WIDE_CHILDREN = ["one", "two", "three"].map((folder) =>
+  inFolder(`w_${folder}`, `models/${folder}`),
+);
 const AUDIT: lineage.LineageTable = {
   ...table("audit", "model", 1, 0),
   hidden: true,
@@ -161,6 +169,7 @@ const CHILDREN: Record<string, lineage.LineageTable[]> = {
   hub: HUB_CHILDREN,
   fanout: FANOUT_CHILDREN,
   filter: [KEPT, AUDIT],
+  wide: WIDE_CHILDREN,
 };
 
 const PARENTS: Record<string, lineage.LineageTable[]> = {
@@ -172,6 +181,7 @@ const PARENTS: Record<string, lineage.LineageTable[]> = {
   ),
   kept: [FILTER],
   audit: [FILTER],
+  ...Object.fromEntries(WIDE_CHILDREN.map((child) => [child.table, [WIDE]])),
 };
 
 type Params = Record<string, unknown>;
@@ -190,7 +200,40 @@ export const setHostSettings = (settings: Partial<lineage.LineageSettings>) => {
   hostSettings = settings;
 };
 
+/**
+ * The whole project the host answers `getProjectGraph` with: every fixture table, and each parent-child pair the
+ * fixture lists, from either side.
+ */
+const PROJECT_TABLES: lineage.LineageTable[] = [
+  ...new Map(
+    [
+      ...Object.values(TABLES),
+      HUB,
+      FANOUT,
+      FILTER,
+      KEPT,
+      AUDIT,
+      ...Object.values(CHILDREN).flat(),
+      ...Object.values(PARENTS).flat(),
+    ].map((t) => [t.table, t]),
+  ).values(),
+];
+/** The IDs of every fixture table the whole project draws. */
+export const PROJECT_IDS: string[] = PROJECT_TABLES.map((t) => t.table);
+const PROJECT_EDGES: [string, string][] = Array.from(
+  new Set([
+    ...Object.entries(CHILDREN).flatMap(([parent, kids]) =>
+      kids.map((kid) => `${parent}\0${kid.table}`),
+    ),
+    ...Object.entries(PARENTS).flatMap(([child, parents]) =>
+      parents.map((parent) => `${parent.table}\0${child}`),
+    ),
+  ]),
+  (key) => key.split("\0") as [string, string],
+);
+
 const ANSWERS: Record<string, (params: Params) => unknown> = {
+  getProjectGraph: () => ({ tables: PROJECT_TABLES, edges: PROJECT_EDGES }),
   childTables: ({ table: t }) => ({ tables: CHILDREN[String(t)] ?? [] }),
   parentTables: ({ table: t }) => ({ tables: PARENTS[String(t)] ?? [] }),
   tableEdges: () => ({ edges: [] }),
@@ -268,14 +311,18 @@ export const openLineage = async (
     /** The hidden cards the host answers `getHiddenCards` with: hidden in this workspace. */
     hidden?: lineage.HiddenCard[];
     renderFirst?: boolean;
-    /** How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. */
+    /**
+     * How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. The whole
+     * project draws every fixture table, so it waits for all of them unless the test says otherwise.
+     */
     flowNodes?: number;
   } = {},
 ): Promise<{ user: User; container: HTMLElement }> => {
   const release = answerRequests(
     options.renderFirst ? ["getLineageSettings"] : [],
   );
-  hostSettings = options.settings ?? {};
+  // The neighbourhood is the view these tests were written for; a test that wants the whole project says so.
+  hostSettings = { viewMode: "neighbourhood", ...options.settings };
   hostRefs = options.refs ?? [];
   hostHidden = options.hidden ?? [];
   const user = userEvent.setup();
@@ -295,7 +342,10 @@ export const openLineage = async (
   if (args.node) {
     // Table cards and group cards are both React Flow nodes.
     await waitFor(() =>
-      expect(flowNodes(container)).toHaveLength(options.flowNodes ?? 3),
+      expect(flowNodes(container)).toHaveLength(
+        options.flowNodes ??
+          (hostSettings.viewMode === "whole" ? PROJECT_IDS.length : 3),
+      ),
     );
   }
   return { user, container };
@@ -373,6 +423,11 @@ afterEach(() => {
 export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Settings",
   "spinbutton:Default expansion",
+  "radio:Whole project",
+  "radio:Neighbourhood",
+  "spinbutton:Upstream depth",
+  "spinbutton:Downstream depth",
+  "spinbutton:Card budget",
   "checkbox:Highlight the paths of the hovered or selected card",
   "checkbox:Dim the cards and edges off the path",
   "checkbox:Thin the edges of hub cards",
@@ -412,6 +467,8 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table b/Show 1 parents",
   "button:table b/Hide 1 children",
   "button:table b/Show 1 children",
+  "button:table b/Show 1 more children",
+  "button:table wide/Show 2 more children",
   "button:table b/Open file",
   "button:table b/Columns",
   "button:table b/id",
@@ -489,6 +546,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table epsilon2/Columns",
   "button:table epsilon2/Details",
   "button:table epsilon2/Hide",
+  "button:table hub/Hide",
   "button:table hub/Hide 6 children",
   "button:table hub/Show 6 children",
   "button:table hub/Show 0 parents",

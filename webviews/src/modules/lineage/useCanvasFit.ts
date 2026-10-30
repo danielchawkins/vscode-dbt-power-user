@@ -29,6 +29,7 @@ export const useFit = ({
   notice,
   drawnKey,
   focusId,
+  frame,
   nodeKey,
   shapeKey,
 }: {
@@ -37,6 +38,8 @@ export const useFit = ({
   notice: number;
   drawnKey: number;
   focusId: string | undefined;
+  /** The cards the fit reads its zoom from, by id; undefined reads every drawn card. */
+  frame?: readonly string[] | undefined;
   /** The drawn nodes, by id: a change of them is a change of the graph. */
   nodeKey: string;
   /** The engine and Connections: a change of either is a change of the graph's shape. */
@@ -62,10 +65,11 @@ export const useFit = ({
         width,
         height,
         focusId,
+        frame,
       });
       fittedRef.current = { nodeKey: key, viewport: flow.getViewport() };
     },
-    [flow, options, padding, width, height, focusId],
+    [flow, options, padding, width, height, focusId, frame],
   );
   // The effects below read the latest fit and node key through these refs, so that only their own changes run them.
   const fitRef = useRef(fit);

@@ -205,7 +205,24 @@ export interface LineageSettings {
   hubDeemphasis?: boolean | undefined;
   /** The opacity of every edge, from 0.1 to 1. A view setting. */
   edgeOpacity?: number | undefined;
+  /** The whole project, centred on the open model, or the open model's neighbourhood. A view setting. */
+  viewMode?: ViewMode | undefined;
+  /** How many dbt parent steps a neighbourhood draws, 0 to `MAX_VIEW_DEPTH`. A view setting. */
+  upstreamDepth?: number | undefined;
+  /** How many dbt child steps a neighbourhood draws, 0 to `MAX_VIEW_DEPTH`. A view setting. */
+  downstreamDepth?: number | undefined;
+  /** The most cards a neighbourhood draws, the start card included, up to `MAX_CARD_BUDGET`. A view setting. */
+  cardBudget?: number | undefined;
 }
+
+/** The views the lineage panel draws: every table of the project, or the neighbourhood of the open model. */
+export type ViewMode = "whole" | "neighbourhood";
+
+/** The deepest a neighbourhood's upstream or downstream depth goes. */
+export const MAX_VIEW_DEPTH = 10;
+
+/** The most cards a neighbourhood's card budget allows. */
+export const MAX_CARD_BUDGET = 1000;
 
 /**
  * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`,
@@ -258,6 +275,8 @@ export type PanelMessage =
   /** Stops the column trace named by `trace`; its pending `getConnectedColumns` answers `cancelled`. */
   | { command: "cancelColumnTrace"; trace: string }
   | OptionalRequest<"getLineageSettings">
+  /** Every table of the project's lineage graph, and the data-flow pairs among them, for the whole-project view. */
+  | OptionalRequest<"getProjectGraph">
   | Request<"persistLineageSettings", PersistedLineageSettings>
   /** The unique IDs of the cards the user hid in this workspace, for every start model. */
   | OptionalRequest<"getHiddenCards">
@@ -289,6 +308,7 @@ export interface ResponseBodies {
   persistLineageSettings: { ok: true };
   getHiddenCards: { cards: HiddenCard[] };
   persistHiddenCards: { ok: true };
+  getProjectGraph: { tables: LineageTable[]; edges: [string, string][] };
 }
 
 const request = <P>(params: Fields<NoInfer<P>>) => ({
@@ -306,6 +326,8 @@ const optionalRequest = <P>(params: Fields<NoInfer<P>>) => ({
 const optionalBoolean = optional(isBoolean);
 
 const isConnections = oneOf("dbt", "declared", "both");
+
+const isViewMode = oneOf("whole", "neighbourhood");
 
 const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   test: optionalBoolean,
@@ -342,6 +364,7 @@ const panelFields: CommandFields<PanelMessage> = {
   }),
   cancelColumnTrace: { trace: isString },
   getLineageSettings: optionalRequest({}),
+  getProjectGraph: optionalRequest({}),
   persistLineageSettings: request<PersistedLineageSettings>({
     showSelectEdges: optionalBoolean,
     showNonSelectEdges: optionalBoolean,
@@ -354,6 +377,10 @@ const panelFields: CommandFields<PanelMessage> = {
     dimOffPath: optionalBoolean,
     hubDeemphasis: optionalBoolean,
     edgeOpacity: optional(isNumber),
+    viewMode: optional(isViewMode),
+    upstreamDepth: optional(isNumber),
+    downstreamDepth: optional(isNumber),
+    cardBudget: optional(isNumber),
   }),
   getHiddenCards: optionalRequest({}),
   persistHiddenCards: request<{ cards: HiddenCard[] }>({

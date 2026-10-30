@@ -223,7 +223,7 @@ describe("closeGroup", () => {
     const before = grouped(2);
     // `x` is drawn from the open group; expanding it adds `w`, and its columns are listed and selected.
     const expanded: GraphState = {
-      ...addNeighbours(opened, "children", "x", [table("w")]),
+      ...addNeighbours(opened, ["children", "x"], [table("w")]),
       columnTables: ["x"],
       columns: { x: [] },
       selectedTable: "x",

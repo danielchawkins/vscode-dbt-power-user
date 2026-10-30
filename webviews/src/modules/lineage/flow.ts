@@ -37,6 +37,8 @@ interface TableNodeData extends Record<string, unknown> {
   pending: { parents: boolean; children: boolean };
   /** Neighbours a capped expansion does not draw yet. */
   capped: { parents: number; children: number };
+  /** Whether the expanders open their neighbours; off in the whole project, where each shows only its count. */
+  expandable?: boolean;
   /** Filtered out by `meta.lineage.hidden`: the card is drawn, but its table and column edges are not. */
   filteredOut: boolean;
   /** The open groups this table's expansions drew, each with a chip to close it. */
@@ -387,6 +389,7 @@ function cardNodes(
         parents: capped("parents", t.table),
         children: capped("children", t.table),
       },
+      expandable: decoration.expandable ?? true,
       filteredOut: decoration.filteredOut?.has(t.table) ?? false,
       chips: chipsOf(t.table),
       traced: [...(traced.get(t.table) ?? [])],

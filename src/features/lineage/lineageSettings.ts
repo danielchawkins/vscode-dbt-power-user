@@ -31,6 +31,10 @@ const STORED_KEYS: Record<keyof StoredLineageSettings, true> = {
   dimOffPath: true,
   hubDeemphasis: true,
   edgeOpacity: true,
+  viewMode: true,
+  upstreamDepth: true,
+  downstreamDepth: true,
+  cardBudget: true,
 };
 
 /** The known view settings in `params`, with the confidence threshold clamped to 0..1 and edge opacity to 0.1..1; other keys are dropped. */
@@ -61,7 +65,63 @@ function storedLineageSettings(
       delete stored.edgeOpacity;
     }
   }
-  return stored;
+  for (const key of SCOPE_KEYS) {
+    delete stored[key];
+  }
+  return { ...stored, ...scopeSettings(params) };
+}
+
+/** The keys `scopeSettings` checks; a stored value under one of them is replaced by its checked form, or dropped. */
+const SCOPE_KEYS = [
+  "viewMode",
+  "upstreamDepth",
+  "downstreamDepth",
+  "cardBudget",
+] as const;
+
+/**
+ * The neighbourhood and whole-project view settings in `params`, checked: depths rounded and clamped to
+ * 0..`MAX_VIEW_DEPTH`, the card budget to 1..`MAX_CARD_BUDGET`; an unknown `viewMode` or a non-finite number is
+ * left out. The keys of `SCOPE_KEYS` are always absent from the result unless valid.
+ */
+function scopeSettings(
+  params: Partial<lineage.LineageSettings>,
+): Partial<lineage.LineageSettings> {
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Math.round(value)));
+  const depth = (value: number | undefined, out: "up" | "down") => {
+    if (value === undefined || !Number.isFinite(value)) {
+      return {};
+    }
+    return out === "up"
+      ? { upstreamDepth: clamp(value, 0, lineage.MAX_VIEW_DEPTH) }
+      : { downstreamDepth: clamp(value, 0, lineage.MAX_VIEW_DEPTH) };
+  };
+  const budget =
+    params.cardBudget !== undefined && Number.isFinite(params.cardBudget)
+      ? { cardBudget: clamp(params.cardBudget, 1, lineage.MAX_CARD_BUDGET) }
+      : {};
+  const mode =
+    params.viewMode === "whole" || params.viewMode === "neighbourhood"
+      ? { viewMode: params.viewMode }
+      : {};
+  return {
+    ...mode,
+    ...depth(params.upstreamDepth, "up"),
+    ...depth(params.downstreamDepth, "down"),
+    ...budget,
+  };
+}
+
+/** `settings` with the `SCOPE_KEYS` removed, so that `scopeSettings` decides what they are. */
+function withoutScopeKeys(
+  settings: Partial<lineage.LineageSettings>,
+): Partial<lineage.LineageSettings> {
+  const rest: Partial<lineage.LineageSettings> = { ...settings };
+  for (const key of SCOPE_KEYS) {
+    delete rest[key];
+  }
+  return rest;
 }
 
 type Store = Pick<
@@ -76,7 +136,8 @@ export function readLineageSettings(store: Store): lineage.LineageSettings {
   return {
     showSelectEdges: true,
     showNonSelectEdges: false,
-    ...stored,
+    ...withoutScopeKeys(stored),
+    ...scopeSettings(stored),
     // A store written before `connections` carries only the old overlay toggle: on means both, off means dbt.
     connections: stored.connections ?? (showRefs === true ? "both" : "dbt"),
     defaultExpansion: Math.min(readSetting("lineage.defaultExpansion"), 5),

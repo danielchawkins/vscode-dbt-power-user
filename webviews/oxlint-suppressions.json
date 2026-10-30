@@ -42,11 +42,6 @@
       "count": 1
     }
   },
-  "src/modules/lineage/graph.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
   "src/modules/lineage/relationshipMarks.ts": {
     "max-params": {
       "count": 1

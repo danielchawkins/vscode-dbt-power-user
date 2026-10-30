@@ -74,9 +74,11 @@ describe("lineage view model", () => {
   });
 
   it("replays the drawn expansions after a project save", () => {
-    const graph = addNeighbours(emptyGraph(table("a")), "children", "a", [
-      table("b"),
-    ]);
+    const graph = addNeighbours(
+      emptyGraph(table("a")),
+      ["children", "a"],
+      [table("b")],
+    );
     const plan = planRender({
       args: render("a", "s:2"),
       graph,
@@ -118,10 +120,11 @@ describe("lineage view model", () => {
   });
 
   it("persists an open group whose ID is too long by its short key", () => {
-    const drawn = addNeighbours(emptyGraph(table("a")), "children", "a", [
-      table("b"),
-      table("c"),
-    ]);
+    const drawn = addNeighbours(
+      emptyGraph(table("a")),
+      ["children", "a"],
+      [table("b"), table("c")],
+    );
     const kept = groupNodeId("c:a", "pkg:models/marts");
     const longKey = "k".repeat(
       MAX_VIEW_STATE_STRING + 1 - groupNodeId("c:a", "").length,
@@ -150,9 +153,11 @@ describe("lineage view model", () => {
     // The expansion key alone is 197 characters, so the group's short key is over 200 too.
     const start = "e".repeat(195);
     const key = "pkg:models/marts";
-    const drawn = addNeighbours(emptyGraph(table(start)), "children", start, [
-      table("b"),
-    ]);
+    const drawn = addNeighbours(
+      emptyGraph(table(start)),
+      ["children", start],
+      [table("b")],
+    );
     const state = viewStateOf(
       {
         ...drawn,

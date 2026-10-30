@@ -376,6 +376,7 @@ const lineagePanel: Fixture[] = [
     required: ["trace"],
   },
   { message: { command: "getLineageSettings", ...params({}) }, required: [] },
+  { message: { command: "getProjectGraph", ...params({}) }, required: [] },
   {
     message: {
       command: "persistLineageSettings",

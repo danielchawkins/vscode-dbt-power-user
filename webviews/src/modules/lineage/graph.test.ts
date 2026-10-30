@@ -2,7 +2,7 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { traceColumn } from "./columnTrace";
-import { expandLevels, replayExpansions } from "./expansionBatch";
+import { expandDepths, replayExpansions } from "./expansionBatch";
 import type { GraphState, GraphStore } from "./graph";
 import {
   addNeighbours,
@@ -78,7 +78,7 @@ describe("lineage graph", () => {
 
   it("expands one level of parents and children through childTables and parentTables", async () => {
     const store = storeOf(emptyGraph(TABLES.b));
-    await expandLevels(store, 1, fetchNeighbours);
+    await expandDepths(store, { parents: 1, children: 1 }, fetchNeighbours);
     expect(ids(store.get())).toEqual(["a", "b", "c", "d"]);
     expect(drawnGraph(store.get()).edges).toEqual(
       expect.arrayContaining([
@@ -93,14 +93,14 @@ describe("lineage graph", () => {
   it("does not ask for neighbours a count says do not exist", async () => {
     fetchNeighbours.mockClear();
     const store = storeOf(emptyGraph(TABLES.a));
-    expect(await expand(store, "parents", "a", fetchNeighbours)).toEqual([]);
+    expect(await expand(store, ["parents", "a"], fetchNeighbours)).toEqual([]);
     expect(fetchNeighbours).not.toHaveBeenCalled();
   });
 
   it("collapse removes tables drawn only through that expansion and their column state", async () => {
     const store = storeOf(emptyGraph(TABLES.a));
-    await expand(store, "children", "a", fetchNeighbours);
-    await expand(store, "children", "b", fetchNeighbours);
+    await expand(store, ["children", "a"], fetchNeighbours);
+    await expand(store, ["children", "b"], fetchNeighbours);
     await showColumns(store, ["c"], async () => [{ table: "c", name: "id" }]);
     store.update((s) => ({ ...s, selectedTable: "c" }));
     const collapsed = collapse(store.get(), "children", "a");
@@ -203,8 +203,8 @@ describe("lineage graph", () => {
 
   it("draws a known parent-child pair between drawn tables even when a different expansion fetched it", async () => {
     const store = storeOf(emptyGraph(TABLES.b));
-    await expandLevels(store, 1, fetchNeighbours);
-    await expand(store, "children", "a", fetchNeighbours);
+    await expandDepths(store, { parents: 1, children: 1 }, fetchNeighbours);
+    await expand(store, ["children", "a"], fetchNeighbours);
     const { edges } = drawnGraph(store.get());
     expect(edges.map((e) => e.join(">")).sort()).toEqual(["a>b", "b>c", "d>b"]);
   });
@@ -214,7 +214,7 @@ describe("lineage graph", () => {
     let release: (tables: lineage.LineageTable[]) => void = () => undefined;
     const slow = () =>
       new Promise<lineage.LineageTable[]>((r) => (release = r));
-    const pending = expand(store, "children", "a", slow);
+    const pending = expand(store, ["children", "a"], slow);
     store.update((s) => collapse(s, "children", "a"));
     release([TABLES.b]);
     expect(await pending).toEqual([]);
@@ -227,9 +227,9 @@ describe("lineage graph", () => {
     const slow = vi.fn(
       () => new Promise<lineage.LineageTable[]>((r) => (release = r)),
     );
-    const first = expand(store, "children", "a", slow);
+    const first = expand(store, ["children", "a"], slow);
     expect(store.get().pending).toEqual(["c:a"]);
-    expect(await expand(store, "children", "a", slow)).toEqual([]);
+    expect(await expand(store, ["children", "a"], slow)).toEqual([]);
     expect(slow).toHaveBeenCalledTimes(1);
 
     store.update((s) => collapse(s, "children", "a"));
@@ -244,9 +244,9 @@ describe("lineage graph", () => {
     const releases: ((tables: lineage.LineageTable[]) => void)[] = [];
     const slow = () =>
       new Promise<lineage.LineageTable[]>((r) => releases.push(r));
-    const first = expand(store, "children", "a", slow);
+    const first = expand(store, ["children", "a"], slow);
     store.update((s) => collapse(s, "children", "a"));
-    const second = expand(store, "children", "a", slow);
+    const second = expand(store, ["children", "a"], slow);
     releases[0]?.([TABLES.c]);
     releases[1]?.([TABLES.b]);
     expect(await first).toEqual([]);
@@ -257,7 +257,7 @@ describe("lineage graph", () => {
   it("clears the pending key when the fetch fails", async () => {
     const store = storeOf(emptyGraph(TABLES.a));
     await expect(
-      expand(store, "children", "a", () => Promise.reject(new Error("down"))),
+      expand(store, ["children", "a"], () => Promise.reject(new Error("down"))),
     ).rejects.toThrow("down");
     expect(store.get().pending).toEqual([]);
   });
@@ -265,7 +265,7 @@ describe("lineage graph", () => {
   it("draws a diamond's shortcut edge between drawn tables, which a collapse does not keep alive", async () => {
     // d -> b, b -> c, and the shortcut d -> c, drawn through b's expansions only.
     const store = storeOf(emptyGraph(TABLES.b));
-    await expandLevels(store, 1, fetchNeighbours);
+    await expandDepths(store, { parents: 1, children: 1 }, fetchNeighbours);
     expect(drawnGraph(store.get()).edges).not.toContainEqual(["d", "c"]);
 
     const fetchEdges = vi.fn(async () => [["d", "c"]] as [string, string][]);
@@ -284,7 +284,7 @@ describe("lineage graph", () => {
 
   it("traces a column through drawn tables in both directions, hop by hop", async () => {
     const store = storeOf(emptyGraph(TABLES.b));
-    await expandLevels(store, 2, fetchNeighbours);
+    await expandDepths(store, { parents: 2, children: 2 }, fetchNeighbours);
     const edges: lineage.ColumnLineage[] = [
       { source: ["a", "id"], target: ["b", "ID"], type: "direct" },
       { source: ["b", "id"], target: ["c", "id"], type: "direct" },
@@ -342,8 +342,7 @@ describe("folder grouping", () => {
   const hub = (cap: number, groupBy: "none" | "folder" = "folder") =>
     addNeighbours(
       emptyGraph(table("hub", 350), cap, groupBy),
-      "children",
-      "hub",
+      ["children", "hub"],
       HUB_CHILDREN,
     );
   const bucketsOf = (state: GraphState) => state.groups["c:hub"];
@@ -384,8 +383,7 @@ describe("folder grouping", () => {
     }));
     const state = addNeighbours(
       emptyGraph(table("hub", 5), 2, "folder"),
-      "children",
-      "hub",
+      ["children", "hub"],
       five,
     );
     expect(state.groups).toEqual({});
@@ -481,9 +479,9 @@ describe("hidden cards", () => {
   // which `z` still draws, and takes `y`, which only `hub` draws.
   const hubbed = () => {
     let state = emptyGraph(table("s"));
-    state = addNeighbours(state, "parents", "s", [table("hub"), table("z")]);
-    state = addNeighbours(state, "parents", "hub", [table("x"), table("y")]);
-    return addNeighbours(state, "parents", "z", [table("x")]);
+    state = addNeighbours(state, ["parents", "s"], [table("hub"), table("z")]);
+    state = addNeighbours(state, ["parents", "hub"], [table("x"), table("y")]);
+    return addNeighbours(state, ["parents", "z"], [table("x")]);
   };
   const drawnIds = (state: GraphState) =>
     [...visibleOf(state).drawn].toSorted();
@@ -522,10 +520,10 @@ describe("hidden cards", () => {
     // s draws h and j; h draws k, and k draws m; j draws k too. With h hidden, k is reached only through j, which was
     // expanded after k's own expansion, so the order the expansions were made in must not decide what is drawn.
     let state = emptyGraph(table("s"));
-    state = addNeighbours(state, "children", "s", [table("h"), table("j")]);
-    state = addNeighbours(state, "children", "h", [table("k")]);
-    state = addNeighbours(state, "children", "k", [table("m")]);
-    state = addNeighbours(state, "children", "j", [table("k")]);
+    state = addNeighbours(state, ["children", "s"], [table("h"), table("j")]);
+    state = addNeighbours(state, ["children", "h"], [table("k")]);
+    state = addNeighbours(state, ["children", "k"], [table("m")]);
+    state = addNeighbours(state, ["children", "j"], [table("k")]);
     expect(drawnIds(state)).toEqual(["h", "j", "k", "m", "s"]);
     expect(drawnIds(withHidden(state, [{ id: "h" }]))).toEqual([
       "j",
@@ -593,8 +591,7 @@ describe("hidden cards", () => {
           for (const s of steps) {
             state = addNeighbours(
               state,
-              s.direction,
-              s.owner,
+              [s.direction, s.owner],
               s.others.map((other) => table(other)),
             );
           }
