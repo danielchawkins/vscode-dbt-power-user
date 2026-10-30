@@ -7,8 +7,9 @@ publish.workspace = true
 version.workspace = true
 
 # The core has no normal dependency by default. `serde` (JSON for options and fixtures) is the one optional dependency
-# the ADR allows now; `parallel` (rayon) arrives with Phase 6. There are no dev-dependencies: the TypeScript-exported
-# fixtures are plain text, so `cargo hack --no-dev-deps` keeps the lock file unchanged.
+# the ADR allows now; `parallel` (rayon) arrives with Phase 6. The TypeScript-exported fixtures are plain text, and the
+# solver's property checks are seeded loops, so the crate has no dev-dependency: `cargo hack --no-dev-deps --locked`
+# (the `check-features` gate) needs a lock file that names none. `boundaries/` diffs the normal tree only.
 [features]
 parallel = []
 serde = ["dep:serde"]

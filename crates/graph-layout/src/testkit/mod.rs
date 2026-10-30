@@ -1,5 +1,7 @@
 //! Oracles and fixtures for the tests: exact crossings and separations, and the TypeScript frames.
 
+pub(crate) mod solve;
+
 /// The TypeScript encodings of the golden inputs, printed by `scripts/parity/print-fixtures.mjs frame`: one line per
 /// kind, `frame <kind> <hex>`.
 const FRAMES: &str = include_str!("../../fixtures/parity/frame.txt");
