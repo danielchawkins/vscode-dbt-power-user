@@ -9,13 +9,12 @@ export interface BlockInput {
   readonly gap: readonly number[];
 }
 
-/** A rigid group of variables. Its position is the weighted mean of x0 - offset over its members. */
+/** A rigid group of variables. Its position, in `Blocks.pos`, is the weighted mean of x0 - offset over its members. */
 interface Block {
   members: number[];
   weight: number;
   /** Sum of weight * (x0 - offset) over the members. */
   weighted: number;
-  pos: number;
 }
 
 /**
@@ -24,15 +23,21 @@ interface Block {
  */
 export class Blocks {
   /** Offset of each variable from its block's position. */
-  readonly off: number[];
+  readonly off: Float64Array;
   /** Whether each separation is active: tight, and joining two variables of one block. */
   readonly active: boolean[];
   readonly count: number;
   /** Block id of each variable, an index into `blocks`. */
-  blockOf: number[] = [];
+  readonly blockOf: Int32Array;
+  /** Position of each block, by block id. Ids past the number of blocks are unused. */
+  private readonly pos: Float64Array;
   private blocks: Block[] = [];
   private readonly input: BlockInput;
   private readonly forest: Forest;
+  /** The ends and gap of each separation, as typed arrays for the violation scan. */
+  private readonly from: Int32Array;
+  private readonly to: Int32Array;
+  private readonly gap: Float64Array;
   /** Scratch for negativeIn, sized once because it runs after every merge and split. */
   private readonly walkSeen: boolean[];
   private readonly walkParent: number[];
@@ -42,8 +47,13 @@ export class Blocks {
     const n = input.x0.length;
     this.input = input;
     this.count = input.gap.length;
+    this.from = Int32Array.from(input.from);
+    this.to = Int32Array.from(input.to);
+    this.gap = Float64Array.from(input.gap);
     this.forest = new Forest(input.from, input.to, n);
-    this.off = Array.from({ length: n }, () => 0);
+    this.off = new Float64Array(n);
+    this.blockOf = new Int32Array(n);
+    this.pos = new Float64Array(n);
     this.active = input.gap.map(() => false);
     this.walkSeen = Array.from({ length: n }, () => false);
     this.walkParent = Array.from({ length: n }, () => -1);
@@ -53,23 +63,35 @@ export class Blocks {
 
   /** Current coordinate of variable v. */
   value(v: number): number {
-    return this.blocks[this.blockOf[v]!]!.pos + this.off[v]!;
+    return this.pos[this.blockOf[v]!]! + this.off[v]!;
   }
 
-  /** Slack of separation e: negative when it is violated. */
-  slack(e: number): number {
-    return (
-      this.value(this.input.to[e]!) -
-      this.value(this.input.from[e]!) -
-      this.input.gap[e]!
-    );
-  }
-
-  /** Whether the two ends of separation e lie in one block. */
-  sameBlock(e: number): boolean {
-    return (
-      this.blockOf[this.input.from[e]!]! === this.blockOf[this.input.to[e]!]!
-    );
+  /**
+   * The inactive separation with the largest violation: the smallest slack below `-tolerance`, the lowest index on a
+   * tie. It is taken among those whose ends share a block when `within` is set, and among the others otherwise.
+   */
+  mostViolated(within: boolean, tolerance: number): number | undefined {
+    const { from, to, gap, blockOf, off, pos, active } = this;
+    let worst: number | undefined;
+    let worstSlack = -tolerance;
+    for (let e = 0; e < this.count; e++) {
+      if (active[e]) {
+        continue;
+      }
+      const f = from[e]!;
+      const t = to[e]!;
+      const bf = blockOf[f]!;
+      const bt = blockOf[t]!;
+      if ((bf === bt) !== within) {
+        continue;
+      }
+      const slack = pos[bt]! + off[t]! - (pos[bf]! + off[f]!) - gap[e]!;
+      if (slack < worstSlack) {
+        worst = e;
+        worstSlack = slack;
+      }
+    }
+    return worst;
   }
 
   /** The two variables separation e joins, its `from` end then its `to` end. */
@@ -100,7 +122,7 @@ export class Blocks {
     }
     into.weight += away.weight;
     into.weighted += away.weighted;
-    into.pos = into.weighted / into.weight;
+    this.pos[keep] = into.weighted / into.weight;
     away.members = [];
     this.active[e] = true;
     this.forest.link(e);
@@ -225,12 +247,11 @@ export class Blocks {
     const { order, parentEdge } = this.forest.spanningOrder();
     const { x0, weight } = this.input;
     this.blocks = [];
-    this.blockOf = Array.from({ length: x0.length }, () => 0);
     for (const v of order) {
       const e = parentEdge[v]!;
       if (e < 0) {
         this.blockOf[v] = this.blocks.length;
-        this.blocks.push({ members: [], weight: 0, weighted: 0, pos: 0 });
+        this.blocks.push({ members: [], weight: 0, weighted: 0 });
       } else {
         this.blockOf[v] = this.blockOf[this.forest.other(e, v)]!;
       }
@@ -240,9 +261,9 @@ export class Blocks {
       b.weight += w;
       b.weighted += w * (x0[v]! - this.off[v]!);
     }
-    for (const b of this.blocks) {
-      b.pos = b.weighted / b.weight;
-    }
+    this.blocks.forEach((b, id) => {
+      this.pos[id] = b.weighted / b.weight;
+    });
   }
 
   /** Moves every member of block `id` by `delta` in its offset. */

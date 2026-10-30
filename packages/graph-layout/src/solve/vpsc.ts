@@ -55,12 +55,12 @@ function spend(budget: { steps: number }): void {
 function satisfy(blocks: Blocks, budget: { steps: number }): void {
   for (;;) {
     spend(budget);
-    const across = mostViolated(blocks, false);
+    const across = blocks.mostViolated(false, VIOLATION_TOLERANCE);
     if (across !== undefined) {
       blocks.join(across);
       splitNegativeIn(blocks, blocks.ends(across), budget);
     } else {
-      const within = mostViolated(blocks, true);
+      const within = blocks.mostViolated(true, VIOLATION_TOLERANCE);
       if (within === undefined) {
         return;
       }
@@ -92,26 +92,6 @@ function splitNegativeIn(
     blocks.split(negative);
     dirty = negative.flatMap((e) => blocks.ends(e));
   }
-}
-
-/**
- * The inactive separation with the largest violation, among those whose ends share a block when `within` is set and
- * among the others otherwise.
- */
-function mostViolated(blocks: Blocks, within: boolean): number | undefined {
-  let worst: number | undefined;
-  let worstSlack = -VIOLATION_TOLERANCE;
-  for (let e = 0; e < blocks.count; e++) {
-    if (blocks.active[e] || blocks.sameBlock(e) !== within) {
-      continue;
-    }
-    const slack = blocks.slack(e);
-    if (slack < worstSlack) {
-      worst = e;
-      worstSlack = slack;
-    }
-  }
-  return worst;
 }
 
 /** Splits off every active separation with a negative multiplier. Returns false when there is none. */
