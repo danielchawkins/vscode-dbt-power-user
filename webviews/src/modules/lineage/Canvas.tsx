@@ -1,6 +1,5 @@
 import { panelLogger } from "@modules/logger";
 import {
-  Background,
   type FitViewOptions,
   ControlButton,
   Controls,
@@ -114,7 +113,6 @@ export const Canvas = ({
   select,
   openDetails,
   drawnKey,
-  layered,
   nodeKey,
   shapeKey,
   overlap,
@@ -124,8 +122,6 @@ export const Canvas = ({
   select: (table: string | undefined) => void;
   openDetails: (table: string) => void;
   drawnKey: number;
-  /** The layered layout draws its bands instead of the dotted background. */
-  layered: boolean;
   nodeKey: string;
   shapeKey: string;
   /** How far the notice covers the canvas's top edge, which the fit keeps clear of. */
@@ -143,7 +139,6 @@ export const Canvas = ({
     minimapShown: minimap.shown,
     notice: overlap,
     drawnKey,
-    layered,
     focusId,
     nodeKey,
     shapeKey,
@@ -166,7 +161,6 @@ export const Canvas = ({
         onNodeClick={onNodeClick}
         onPaneClick={() => select(undefined)}
       >
-        {layered ? null : <Background />}
         <CanvasControls options={options} refit={refit} minimap={minimap} />
         {minimap.shown ? (
           <MiniMap

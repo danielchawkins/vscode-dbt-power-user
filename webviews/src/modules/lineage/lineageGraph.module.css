@@ -581,11 +581,6 @@
   line-height: 24px;
 }
 
-/* A layered card is positioned for its top and bottom bubbles, which sit on its border. */
-.node.layered {
-  position: relative;
-}
-
 /* The expander bubbles: centred on the top or bottom border, sticking out by half their height. */
 .node .bubble {
   position: absolute;

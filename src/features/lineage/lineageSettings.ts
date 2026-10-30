@@ -10,7 +10,6 @@ type StoredLineageSettings = Omit<
   | "defaultExpansion"
   | "maxNeighbours"
   | "groupBy"
-  | "layout"
   | "engine"
   | "semanticZoom"
   | "title"
@@ -74,10 +73,6 @@ export function readLineageSettings(store: Store): lineage.LineageSettings {
       Math.trunc(readSetting("lineage.maxNeighbours") ?? 20),
     ),
     groupBy: readSetting("lineage.groupBy") === "none" ? "none" : "folder",
-    layout:
-      readSetting("lineage.layout") === "leftToRight"
-        ? "leftToRight"
-        : "layered",
     engine: lineageEngineSetting(),
     semanticZoom: readSetting("lineage.semanticZoom") !== false,
     title: readSetting("lineage.title") === "name" ? "name" : "alias",
@@ -116,11 +111,7 @@ export async function persistLineageSettings(
   }
 }
 
-const ENGINES: readonly lineage.LineageEngine[] = [
-  "balanced",
-  "thorough",
-  "classic",
-];
+const ENGINES: readonly lineage.LineageEngine[] = ["balanced", "thorough"];
 
 /** `lineage.engine` as a known engine; anything else is the default. */
 function lineageEngineSetting(): lineage.LineageEngine {

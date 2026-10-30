@@ -42,7 +42,6 @@ const Graph = (): React.JSX.Element => {
             select={model.select}
             openDetails={model.openDetails}
             drawnKey={model.drawnKey}
-            layered={settings.layout === "layered"}
             nodeKey={model.nodeKey}
             shapeKey={model.shapeKey}
             overlap={overlap}
@@ -58,7 +57,7 @@ const Graph = (): React.JSX.Element => {
   );
 };
 
-/** The lineage panel: tables, their columns and column lineage drawn with React Flow and laid out by dagre. */
+/** The lineage panel: tables, their columns and column lineage drawn with React Flow and laid out by the graph-layout engine. */
 const LineageView = (): React.JSX.Element => (
   <ReactFlowProvider>
     <Graph />

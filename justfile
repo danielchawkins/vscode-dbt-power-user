@@ -305,7 +305,7 @@ smoke-visual out="out/smoke-visual" *args:
     FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
     @echo "visual evidence: {{ out }}/<host>/<fixture>/index.json"
 
-# On demand: draws several lineage views with each layered engine (classic, balanced, thorough) in Linux containers,
+# On demand: draws several lineage views with each engine (balanced, thorough) in Linux containers,
 # then writes a side-by-side contact sheet per view under `out`.
 [group("tests")]
 smoke-engines out="out/smoke-engines":

@@ -81,9 +81,7 @@ describe("Lineage Settings popover", () => {
   });
 
   it("closes on a click on a layer band, which takes no pointer events", async () => {
-    const { user, container } = await openLineage(undefined, {
-      settings: { layout: "layered" },
-    });
+    const { user, container } = await openLineage();
     const gear = await activate(user, "button", "Settings");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     const band = container.querySelector<HTMLElement>(".react-flow__node-band");
@@ -313,7 +311,7 @@ describe("Lineage canvas controls", () => {
     fits.length = 0;
     await press(user, "button", "Fit View");
     await waitFor(() => expect(fits.length).toBeGreaterThan(0));
-    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table });
   });
 });
 
@@ -602,7 +600,7 @@ describe("Lineage group node", () => {
     );
     // Opening a group changes the drawn nodes, so the panel refits, centred on the start card.
     await waitFor(() => expect(fits.length).toBeGreaterThan(0));
-    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table });
     expect(container.querySelector('[data-group="staging"]')).toBeNull();
     expect(container.querySelector('[data-group="marts"]')).not.toBeNull();
     expect(flowNodes(container)).toHaveLength(4);

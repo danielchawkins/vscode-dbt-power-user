@@ -7,7 +7,7 @@ import styles from "./lineageGraph.module.css";
 type RoutedEdgeType = Edge<RoutedEdgeData, "routed">;
 
 /**
- * An edge of the layered layout: its path is the gutter router's, so React Flow's own handle geometry is not used.
+ * An edge of the layout: its path is the layout engine's routing, so React Flow's own handle geometry is not used.
  * The label, when there is one, sits at the middle of the path's longest run.
  */
 const RoutedEdgeView = ({

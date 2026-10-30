@@ -202,7 +202,7 @@ Each feature defaults off, so with it off the output stays bit-identical to the 
 
 **napi (`crates/graph-layout-napi`).** A `#[napi]` class wrapping `Arc<Mutex<Engine>>`. `run` returns a Promise through napi's async task, so it runs on the libuv pool and never on the JS thread. The generated loader is part of the crate's npm package. napi-rs v3 is chosen because `rust-dagre` uses it (its `napi` 3.5); elk-rs uses v2.
 
-**The panel's port.** `LayoutEngine.layout(request)` becomes `Promise<LayoutResponse>` carrying a generation, and `placeLayered` in `webviews/src/modules/lineage/flow.ts` becomes asynchronous. The owned engine can resolve immediately, so the change is contained. This is decision O-9 because it changes a port that today is documented as synchronous.
+**The panel's port.** `LayoutEngine.layout(request)` becomes `Promise<LayoutResponse>` carrying a generation, and `toFlow` in `webviews/src/modules/lineage/flow.ts`, which calls it, becomes asynchronous. This is decision O-9 because it changes a port that today is documented as synchronous.
 
 **Extension path (O-1).** The panel posts its layout request to the host through `PanelHost.post` (the `POST_MESSAGE` rule in `lint/boundaries.mjs` and the `ts-panel-reply-through-host` rule). The host runs the WASM build in a `worker_threads` Worker, or the napi addon if the platform's binary is present. This keeps the extension's host thread responsive, avoids the CSP question, and needs one universal VSIX. Structured-clone messages cost about 1 to 2 ms each way (the probe), which is small beside a relayout.
 
@@ -305,7 +305,7 @@ Answered 2026-10-29 (`docs/refactor/lineage-layout-decisions.md`). Where an answ
 - **O-6. Parity tier.** Recommended: bitwise for all phases, with every deliberate algorithm change made and re-baselined in TypeScript first. Alternative: a tolerance tier for placement only, with a documented bound.
 - **O-7. Do attraction edges join components?** Recommended: yes, so that packing does not separate two nodes the attraction is meant to pull together.
 - **O-8. Wrapped rows: a phase or a placement mode?** Recommended: decide after S9. Current design: a stage after ordering.
-- **O-9. Asynchronous panel port.** Approve the change of `LayoutEngine.layout` to a Promise with a generation, and of `placeLayered` to async.
+- **O-9. Asynchronous panel port.** Approve the change of `LayoutEngine.layout` to a Promise with a generation, and of `toFlow` to async.
 - **O-10. VSIX budget.** Raise the 800,000-byte `vsix` ceiling if S11 shows the WASM asset takes it over, or keep it and accept the host path only with a smaller build.
 - **O-11. Single-threaded WASM.** Accept single-threaded WASM in every browser and webview path if S3 shows no cross-origin isolation.
 - **O-12. Toolchain pin.** The exact Rust version and its update policy. elk-rs pins 1.97.1; the pin is chosen in Phase 1.

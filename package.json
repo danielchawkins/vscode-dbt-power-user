@@ -137,32 +137,17 @@
             "description": "How an expansion with more new neighbours than `maxNeighbours` is drawn.",
             "default": "folder"
           },
-          "fusionPowerUser.lineage.layout": {
-            "type": "string",
-            "enum": [
-              "layered",
-              "leftToRight"
-            ],
-            "enumDescriptions": [
-              "Parents above their children in layer bands (source, staging, intermediate, marts), with edges routed through the gaps between cards.",
-              "Cards laid out left to right by dagre, with parents to the left of their children, bezier edges and no layer bands."
-            ],
-            "description": "How lineage cards are placed. Read-only in the panel, like the other lineage settings.",
-            "default": "layered"
-          },
           "fusionPowerUser.lineage.engine": {
             "type": "string",
             "enum": [
               "balanced",
-              "thorough",
-              "classic"
+              "thorough"
             ],
             "enumDescriptions": [
               "The graph-layout engine with a balanced search for the card order with the fewest crossings.",
-              "The graph-layout engine searching harder for that order. Slower on large graphs.",
-              "The earlier layered engine."
+              "The graph-layout engine searching harder for that order. Slower on large graphs."
             ],
-            "description": "Which engine places and routes the layered lineage layout. Read-only in the panel, like the other lineage settings.",
+            "description": "Which engine places and routes the lineage layout. Read-only in the panel, like the other lineage settings.",
             "default": "balanced"
           },
           "fusionPowerUser.lineage.semanticZoom": {

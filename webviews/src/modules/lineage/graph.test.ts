@@ -18,7 +18,7 @@ import {
   showColumns,
 } from "./graph";
 import { groupNodeId } from "./grouping";
-import { columnHandle, layout, tableHeight } from "./layout";
+import { columnHandle } from "./layout";
 
 const table = (
   id: string,
@@ -326,20 +326,6 @@ describe("lineage graph", () => {
     });
     expect(touched).toEqual([]);
     expect(store.get().columnEdges).toEqual([]);
-  });
-
-  it("lays parents left of children with dagre", () => {
-    const positions = layout(
-      ["a", "b", "c"],
-      [
-        ["a", "b"],
-        ["b", "c"],
-      ],
-      () => tableHeight([1, 2], 0),
-    );
-    const x = (id: string) => positions.get(id)!.x;
-    expect(x("a")).toBeLessThan(x("b"));
-    expect(x("b")).toBeLessThan(x("c"));
   });
 });
 

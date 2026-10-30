@@ -20,7 +20,7 @@ import { minimapShown, minimapSize } from "./minimap";
 
 /**
  * The fit options for the canvas, and the fits that frame the graph. The canvas is fitted when it is resized or its
- * padding changes, and on each redraw. A change of the drawn nodes, the layout or Connections refits too, unless the
+ * padding changes, and on each redraw. A change of the drawn nodes, the engine or Connections refits too, unless the
  * user has panned or zoomed since the last fit and the nodes are the same (see `refitsGraph`).
  */
 export const useFit = ({
@@ -28,7 +28,6 @@ export const useFit = ({
   minimapShown: showMinimap,
   notice,
   drawnKey,
-  layered,
   focusId,
   nodeKey,
   shapeKey,
@@ -37,11 +36,10 @@ export const useFit = ({
   minimapShown: boolean;
   notice: number;
   drawnKey: number;
-  layered: boolean;
   focusId: string | undefined;
   /** The drawn nodes, by id: a change of them is a change of the graph. */
   nodeKey: string;
-  /** The layout and Connections: a change of either is a change of the graph's shape. */
+  /** The engine and Connections: a change of either is a change of the graph's shape. */
   shapeKey: string;
 }): { options: FitViewOptions; refit: () => void } => {
   const flow = useReactFlow();
@@ -63,12 +61,11 @@ export const useFit = ({
         padding,
         width,
         height,
-        layered,
         focusId,
       });
       fittedRef.current = { nodeKey: key, viewport: flow.getViewport() };
     },
-    [flow, options, padding, width, height, layered, focusId],
+    [flow, options, padding, width, height, focusId],
   );
   // The effects below read the latest fit and node key through these refs, so that only their own changes run them.
   const fitRef = useRef(fit);

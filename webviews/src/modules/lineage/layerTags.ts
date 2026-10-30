@@ -72,7 +72,7 @@ function defaultBandColour(tag: string): string {
 }
 
 /** Position of a tag in the layer order; tags outside it rank after every listed layer. */
-export const tagRank = (tag: string): number => {
+const tagRank = (tag: string): number => {
   const rank = LAYER_ORDER.indexOf(tag);
   return rank < 0 ? LAYER_ORDER.length : rank;
 };

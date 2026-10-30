@@ -355,7 +355,7 @@ describe("table node header geometry", () => {
 });
 
 describe("table node expander bubbles", () => {
-  const drawLayered = (layered: boolean) => {
+  const drawCard = () => {
     const props = {
       id: "model.p.b",
       data: {
@@ -374,7 +374,6 @@ describe("table node expander bubbles", () => {
         hidden: { parents: 0, children: 0 },
         chips: [],
         traced: [],
-        layered,
       },
     } as unknown as React.ComponentProps<typeof TableNode>;
     return render(
@@ -385,7 +384,7 @@ describe("table node expander bubbles", () => {
   };
 
   it("sits the parents bubble on the top edge and the children bubble on the bottom edge", () => {
-    const { container } = drawLayered(true);
+    const { container } = drawCard();
     const card = container.querySelector("[data-table]");
     const parents = screen.getByRole("button", { name: "Show 1 parents" });
     const children = screen.getByRole("button", { name: "Show 7 children" });
@@ -397,15 +396,6 @@ describe("table node expander bubbles", () => {
     expect(children.textContent).toBe("7");
     expect(parents.querySelector(".codicon-arrow-up")).not.toBeNull();
     expect(children.querySelector(".codicon-arrow-down")).not.toBeNull();
-  });
-
-  it("keeps the expanders in the actions row, with their +/- labels, when not layered", () => {
-    const { container } = drawLayered(false);
-    const parents = screen.getByRole("button", { name: "Show 1 parents" });
-    expect(parents.className).not.toContain("bubble");
-    expect(parents.textContent).toBe("+1");
-    expect(parents.closest("[class*=actions]")).not.toBeNull();
-    expect(container.querySelector("[class*=bubble]")).toBeNull();
   });
 });
 

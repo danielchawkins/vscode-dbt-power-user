@@ -4,7 +4,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const ENGINES = ["classic", "balanced", "thorough"];
+const ENGINES = ["balanced", "thorough"];
 const root = path.resolve(process.argv[2] ?? "out/smoke-engines");
 
 /** The subdirectories of `dir`, leaving out the diagnostics folder. */

@@ -15,11 +15,11 @@ import {
   showPanel,
 } from "./webviewInteractions";
 
-// On demand only: `just smoke-engines`. Draws several views with every layered engine and captures each, so the
+// On demand only: `just smoke-engines`. Draws several views with every engine and captures each, so the
 // engines' drawings compare side by side.
 
 const LINEAGE: PanelEntry = PANELS.lineage;
-const ENGINES = ["classic", "balanced", "thorough"] as const;
+const ENGINES = ["balanced", "thorough"] as const;
 
 /** The start models compared on each fixture, by path under `models/`. */
 const VIEWS: Readonly<Record<string, readonly string[][]>> = {
@@ -137,7 +137,7 @@ suite("Lineage engines", function () {
     await restorePanelSize();
   });
 
-  test("captures every view with every layered engine", async function () {
+  test("captures every view with every engine", async function () {
     const views = VIEWS[currentFixtureName() ?? ""];
     if (!views) {
       this.skip();

@@ -17,11 +17,11 @@ import { ZOOM_OUT_BELOW } from "./semanticZoom";
 export const MIN_ZOOM = 0.05;
 const FIT_MAX_ZOOM = 1;
 /**
- * The lowest zoom a layered fit goes to. Below it cards switch to the zoomed-out form, so a graph taller than the
+ * The lowest zoom a fit goes to. Below it cards switch to the zoomed-out form, so a graph taller than the
  * canvas is panned to rather than shrunk.
  */
 const FIT_MIN_ZOOM = ZOOM_OUT_BELOW;
-/** The space, in flow units, that a layered fit leaves around the cards' box. */
+/** The space, in flow units, that a fit leaves around the cards' box. */
 const FIT_MARGIN = 24;
 
 /** The canvas space a fit keeps clear above the graph, in pixels, besides a notice's overlap. */
@@ -45,7 +45,7 @@ const framed = (nodes: readonly Node[]): Box => {
 };
 
 /**
- * The boxes a layered fit frames: every card, and when the graph has an Other column, the main bands' cards and the
+ * The boxes a fit frames: every card, and when the graph has an Other column, the main bands' cards and the
  * Other column's cards on their own. Band nodes span whole rows, so they are left out; they would stretch the box and
  * draw the cards smaller than they need to be. A card is in the Other column when its centre lies in the Other band.
  */
@@ -132,13 +132,12 @@ interface FitRequest {
   padding: FitPadding;
   width: number;
   height: number;
-  layered: boolean;
   focusId: string | undefined;
 }
 
 /**
  * Fits the drawn graph to the canvas. `fitView` waits until React Flow has measured the nodes, so the bounds read after
- * it are the drawn ones. A layered graph is then centred on its focused card, which the layout places off the middle of
+ * it are the drawn ones. The graph is then centred on its focused card, which the layout places off the middle of
  * its cards, framing the cards and not the bands, and never zoomed below `FIT_MIN_ZOOM`. See `focusedViewport` for
  * how the Other column is kept on screen.
  */
@@ -148,12 +147,11 @@ export const fitGraph = async ({
   padding,
   width,
   height,
-  layered,
   focusId,
 }: FitRequest): Promise<void> => {
   await flow.fitView(options);
   const focus = focusId === undefined ? undefined : flow.getNode(focusId);
-  if (!layered || !focus || width <= 0 || height <= 0) {
+  if (!focus || width <= 0 || height <= 0) {
     return;
   }
   const focusX =
@@ -188,7 +186,7 @@ const sameViewport = (a: Viewport, b: Viewport): boolean =>
   Math.abs(a.zoom - b.zoom) < 1e-6;
 
 /**
- * Whether a change to the graph refits the view. A change to the drawn nodes always does. A change of layout or
+ * Whether a change to the graph refits the view. A change to the drawn nodes always does. A change of engine or
  * Connections does only when the user has not panned or zoomed since the last fit, so their view is kept.
  */
 export const refitsGraph = (

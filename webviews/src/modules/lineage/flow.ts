@@ -14,13 +14,12 @@ import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
   drawsTableEdges,
   layoutRequest,
-  rankingEdges,
   type FlowInput,
 } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { expansionKey } from "./graph";
 import { bandColour, layerTagOf } from "./layerTags";
-import { columnHandle, geometry, layout, tableHeight } from "./layout";
+import { columnHandle, geometry, tableHeight } from "./layout";
 import { relationshipPath } from "./relationshipRoute";
 import { drawLayout } from "./routeDrawing";
 
@@ -46,8 +45,6 @@ interface TableNodeData extends Record<string, unknown> {
   tracing?: { column: string; since: number } | undefined;
   errors?: string[] | undefined;
   columnsNeedStrict?: boolean | undefined;
-  /** The layered layout: table edges enter on the top bubble and leave by the bottom one. */
-  layered?: boolean | undefined;
   /** The colour of the card's layer stripe: its band's colour. */
   layerColour: string;
 }
@@ -58,8 +55,6 @@ export type TableNode = Node<TableNodeData, "table">;
 interface GroupNodeData extends Record<string, unknown> {
   label: string;
   count: number;
-  /** The layered layout: the group's edges enter on the top bubble and leave by the bottom one. */
-  layered?: boolean | undefined;
 }
 
 export type GroupNode = Node<GroupNodeData, "folderGroup">;
@@ -72,7 +67,7 @@ interface BandNodeData extends Record<string, unknown> {
 
 export type BandNode = Node<BandNodeData, "band">;
 
-/** A layered edge's routed path, from the gutter router. */
+/** An edge's routed path, from the layout engine's routing (routeDrawing.ts). */
 export interface RoutedEdgeData extends Record<string, unknown> {
   d: string;
   labelAt: Point;
@@ -174,10 +169,10 @@ function bandNodes(
 }
 
 /**
- * The layered placement: every card and band position, and the routed path of every edge. The edge ids are the ones
+ * The placement: every card and band position, and the routed path of every edge. The edge ids are the ones
  * `toEdges` gives, so each edge finds its path by id.
  */
-function placeLayered(
+function placeCards(
   input: FlowInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
   heightOf: (id: string) => number,
@@ -222,7 +217,7 @@ function arrowColour(edge: Edge): string | undefined {
   return "var(--xy-edge-stroke)";
 }
 
-/** React Flow nodes and edges for the drawn lineage and its groups: layered by default, or dagre left to right. */
+/** React Flow nodes and edges for the drawn lineage and its groups: the cards in their layer bands, and the routed edges. */
 export function toFlow(input: FlowInput): {
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
@@ -234,7 +229,6 @@ export function toFlow(input: FlowInput): {
   const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
-  const layered = (input.layout ?? "layered") === "layered";
   // One height per table, for the layout and for the initial size: the start card and the selected card show their
   // relation line and actions row.
   const heightOfTable = (table: string) =>
@@ -245,19 +239,13 @@ export function toFlow(input: FlowInput): {
     );
   const heightOf = (id: string) =>
     groupIds.has(id) ? geometry.groupHeight : heightOfTable(id);
-  const placed = layered ? placeLayered(input, listed, heightOf) : undefined;
-  const positions =
-    placed?.positions ??
-    layout(
-      [...data.tables.map((t) => t.table), ...groups.map((g) => g.id)],
-      rankingEdges(input),
-      heightOf,
-    );
-  const nodes = cardNodes(input, { positions, listed, heightOfTable, layered });
+  const placed = placeCards(input, listed, heightOf);
+  const nodes = cardNodes(input, {
+    positions: placed.positions,
+    listed,
+    heightOfTable,
+  });
   const edges = toEdges(input, listed);
-  if (!placed) {
-    return { nodes, edges };
-  }
   return {
     nodes: [...placed.bands, ...nodes],
     edges: routedEdges(edges, placed),
@@ -269,13 +257,12 @@ interface CardPlacement {
   positions: Map<string, Point>;
   listed: (table: string) => lineage.LineageColumn[] | undefined;
   heightOfTable: (table: string) => number;
-  layered: boolean;
 }
 
 /** The table and group nodes at their positions, each with the data its card draws. */
 function cardNodes(
   input: FlowInput,
-  { positions, listed, heightOfTable, layered }: CardPlacement,
+  { positions, listed, heightOfTable }: CardPlacement,
 ): (TableNode | GroupNode)[] {
   const { data, expansions, errors } = input;
   const pending = input.pending ?? [];
@@ -325,7 +312,6 @@ function cardNodes(
           : undefined,
       errors: errors[t.table],
       columnsNeedStrict: input.columnsNeedStrict,
-      layered,
       layerColour: bandColour(
         layerTagOf(t.nodeType, t.layer),
         input.layerColors,
@@ -338,7 +324,7 @@ function cardNodes(
     position: positions.get(g.id) ?? { x: 0, y: 0 },
     initialWidth: geometry.tableWidth,
     initialHeight: geometry.groupHeight,
-    data: { label: g.label, count: g.count, layered },
+    data: { label: g.label, count: g.count },
   }));
   return [...tableNodes, ...groupNodes];
 }
@@ -346,9 +332,9 @@ function cardNodes(
 /** The routed edges: each is drawn on the path the router gave it, so the edges the router did not route are left out. */
 function routedEdges(
   edges: Edge[],
-  placed: ReturnType<typeof placeLayered>,
+  placed: ReturnType<typeof placeCards>,
 ): Edge[] {
-  // Layered edges are drawn from the router's paths; an edge the router did not route is not drawn.
+  // Edges are drawn from the router's paths; an edge the router did not route is not drawn.
   return edges.flatMap((edge): Edge[] => {
     const path = placed.paths.get(edge.id);
     if (!path) {

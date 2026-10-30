@@ -191,7 +191,7 @@ Antithesis: The thesis says 'bezier fallbacks appear only on leftToRight'. The b
 
 Counter-evidence:
 
-- [a8](../../webviews/src/modules/lineage/gutterPlan.ts): "if (ia > ib || !boxes.has(column.from) || !boxes.has(column.to)) {"
+- [a8](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "if (ia > ib || !boxes.has(column.from) || !boxes.has(column.to)) {"
 - [a9](../../webviews/src/modules/lineage/flow.ts): "// Layered edges are drawn from the router's paths; an edge the router did not route is not drawn."
 
 ### 6. The leftToRight layout runs dagre for node positions only. The function returns only top-left corners and drops dagre's own edge points, and no routed path is computed on that path. So its table/column edges, drawn by React Flow's default edge, and its relationship beziers ignore the cards. This is the one code path shown to draw lines through cards in the panel. The cheapest fix is to run leftToRight through graph-layout with direction "right", which the package supports, rather than to keep dagre
@@ -230,17 +230,17 @@ The thesis read only the header. The body contains the checks (spine, gapChannel
 
 Citations:
 
-- [r7a](../../webviews/src/modules/lineage/gutterPlan.ts): "// The vertical channel for a span: the corridor when no card between the two rows sits over it; else the clear"
-- [r7b](../../webviews/src/modules/lineage/gutterPlan.ts): "const margin = 16;"
-- [r7c](../../webviews/src/modules/lineage/gutterPlan.ts): "if (ia > ib || !boxes.has(column.from) || !boxes.has(column.to)) {"
-- [r7d](../../webviews/src/modules/lineage/gutterRouter.ts): "Crossings that remain are drawn as hops: the horizontal run arcs over the vertical one."
+- [r7a](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "// The vertical channel for a span: the corridor when no card between the two rows sits over it; else the clear"
+- [r7b](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "const margin = 16;"
+- [r7c](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "if (ia > ib || !boxes.has(column.from) || !boxes.has(column.to)) {"
+- [r7d](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterRouter.ts): "Crossings that remain are drawn as hops: the horizontal run arcs over the vertical one."
 
 Thesis (speculative): The classic (owned) engine routes through fixed gutters and lanes, not through an obstacle check. Declared relationships join the gutter between rows, and the router header describes a lane beside each card and an outer channel for avoiding cards. Those are design intentions, not checked guarantees. Whether the classic router actually crosses cards was not measured, so this is speculative.
 
 Thesis citations:
 
-- [c14](../../webviews/src/modules/lineage/gutterPlan.ts): "cards in one row join through the gutter."
-- [c15](../../webviews/src/modules/lineage/gutterRouter.ts): "an outer channel on each side for an edge that must pass the start node's row without touching it."
+- [c14](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "cards in one row join through the gutter."
+- [c15](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterRouter.ts): "an outer channel on each side for an edge that must pass the start node's row without touching it."
 
 Antithesis: The claim of 'no obstacle check in the code I read' is wrong, and confidence is marked speculative only because the thesis did not read the file. The classic gutter plan does check obstacles for every vertical span. It takes the central corridor only if no card in the intermediate rows overlaps it. Otherwise it searches the clear x-intervals between those rows' cards, with a 16px margin, nearest to the target. Failing that, it uses the outer channel beyond the layered bounds.
 
@@ -254,8 +254,8 @@ Antithesis: c14 and c15 are used to claim 'design intentions, not checked guaran
 
 Counter-evidence:
 
-- [a11](../../webviews/src/modules/lineage/gutterPlan.ts): "The vertical channel for a span: the corridor when no card between the two rows sits over it; else the clear"
-- [a12](../../webviews/src/modules/lineage/gutterPlan.ts): "const blocked = this.ids"
+- [a11](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "The vertical channel for a span: the corridor when no card between the two rows sits over it; else the clear"
+- [a12](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterPlan.ts): "const blocked = this.ids"
 
 ### 8. ELK's OrthogonalRoutingGenerator, after Sander GD 2003, is a channel router between two layers. It turns hyperedges into segments, orders them with a dependency graph, assigns routing slots, and breaks critical cycles by splitting a segment. It avoids nodes because everything happens inside the inter-layer gap. It has no notion of an arbitrary obstacle such as a cluster box. The constant 16 is a crossing weight in the segment dependency graph used for slot ordering and cycle breaking, not a global quality model. Cost is per gap and grows with the segments in that gap, so it fits a Sugiyama pipeline (route in channels) and handles hyperedges and ports natively
 
@@ -379,7 +379,7 @@ The thesis restated the goal without a mechanism. The antithesis supplies one, a
 Citations:
 
 - [r13a](../../packages/graph-layout/README.md): "A cluster that spans a rank with no member of its own gets a dummy there, chained to its members above and below, so that its box stays contiguous across the ranks it spans (`spines.ts`)."
-- [r13b](../../webviews/src/modules/lineage/gutterRouter.ts): "an outer channel on each side for an edge that must pass the start node's row without touching it."
+- [r13b](https://github.com/danielchawkins/vscode-dbt-power-user/blob/b187a9fc7208a6de24bdc5434bc2dcba41a9dcdb/webviews/src/modules/lineage/gutterRouter.ts): "an outer channel on each side for an edge that must pass the start node's row without touching it."
 
 Thesis (speculative): Recommendation per mode. rows: keep channel routing, and add cluster and band boxes to the obstacle set in the metric. levels: route upward runs in lanes outside the rows rather than through them, and forbid a run's horizontal part from entering any node box. relationship edges between non-adjacent ranks: route them through channels around the dummy chain, as the layered path already does. attraction edges and cluster boxes: treat both as obstacles in the same measurement. wrapped sub-rows: give each sub-row its own channel set.
 
