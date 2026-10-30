@@ -15,12 +15,14 @@ const root = path.resolve(import.meta.dirname, "../../../..");
 
 /**
  * Copies what `lint-ratchet` reads (its scripts, the crates, the sources it tags and the suppression files) into
- * .cache/ratchet-plants/<name>. The CLI finds its root from its own location, so it measures the copy.
+ * .cache/ratchet-plants/<name>. The CLI finds its root from its own location, so it measures the copy. Generated
+ * `.cache` folders are not copied: lint fixtures are written under `webviews/.cache` while this copy runs.
  */
 function copyRatchetTree(name: string): string {
   const dir = path.join(root, ".cache/ratchet-plants", name);
   rmSync(dir, { recursive: true, force: true });
-  const skip = (src: string) => !/[\\/](node_modules|target|dist)$/.test(src);
+  const skip = (src: string) =>
+    !/[\\/](node_modules|target|dist|\.cache)$/.test(src);
   for (const entry of ["scripts", "crates", "src", "packages", "webviews"]) {
     cpSync(path.join(root, entry), path.join(dir, entry), {
       recursive: true,
