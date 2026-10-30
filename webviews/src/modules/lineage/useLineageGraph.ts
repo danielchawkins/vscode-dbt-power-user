@@ -19,6 +19,7 @@ import {
   linkDrawn,
   selectTable,
   showColumns,
+  withHidden,
 } from "./graph";
 import {
   executeRequestInAsync,
@@ -27,6 +28,7 @@ import {
   fetchEdges,
   fetchNeighbours,
   openFile,
+  persistHiddenCards,
 } from "./requests";
 import type { TableActions } from "./viewModel";
 import { planRender, viewStateOf } from "./viewModel";
@@ -84,11 +86,21 @@ async function build(
   }
 }
 
+/** Sets the hidden cards of the graph to `hidden`, and posts the whole list: the host keeps it for the workspace. */
+const setHidden = (store: GraphStore, hidden: lineage.HiddenCard[]): void => {
+  store.update((s) => withHidden(s, hidden));
+  persistHiddenCards(store.get().hiddenCards);
+};
+
 /** The table actions over `store`. */
 const actionsFor = (
   store: () => GraphStore,
   openDetails: (table: string) => void,
 ): TableActions => ({
+  hide: (table: string, label: string) => {
+    const s = store();
+    setHidden(s, [...s.get().hiddenCards, { id: table, label }]);
+  },
   toggleExpansion: (table: string, direction: Direction) => {
     const s = store();
     // A click on an expander that is still loading cancels it, as a click on an open one closes it.
@@ -181,7 +193,11 @@ function useGraphStore(
     (start: lineage.LineageTable | undefined, saved?: LineageViewState) => {
       const gen = ++generationRef.current;
       const { cap, groupBy } = expansionOptions();
-      graphRef.current = emptyGraph(start, cap, groupBy);
+      // The hidden cards outlive the graph they were hidden in: every start model keeps them.
+      graphRef.current = {
+        ...emptyGraph(start, cap, groupBy),
+        hiddenCards: graphRef.current.hiddenCards,
+      };
       setGraph(graphRef.current);
       buildingRef.current = !!start;
       if (!start) {
@@ -212,14 +228,16 @@ function useGraphStore(
  * `expansionOptions` gives the cap on neighbours an expansion draws at first (0 draws all) and how they are grouped.
  * While `ready` is false, the latest render is held and drawn once it turns true, so the cap is the host's.
  */
-export function useLineageGraph(
-  defaultExpansion: () => number,
-  openDetails: (table: string) => void,
-  {
-    expansionOptions = () => ({ cap: 0, groupBy: "none" }),
-    ready = true,
-  }: { expansionOptions?: () => ExpansionOptions; ready?: boolean } = {},
-): {
+/** The options of `useLineageGraph`. */
+interface LineageGraphOptions {
+  expansionOptions?: () => ExpansionOptions;
+  ready?: boolean;
+  /** The hidden cards the host sent for the workspace; undefined until they arrive. */
+  hidden?: lineage.HiddenCard[] | undefined;
+}
+
+/** What `useLineageGraph` returns. */
+interface LineageGraphModel {
   graph: GraphState;
   /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
   rendered?: lineage.RenderArgs | undefined;
@@ -227,9 +245,34 @@ export function useLineageGraph(
   actions: TableActions;
   select: (table: string | undefined) => void;
   reset: () => void;
-} {
+  restore: (table: string) => void;
+  restoreAll: () => void;
+}
+
+/** Applies the hidden cards once the host sends them. Declared before the held render, so that render sees them. */
+function useHiddenSeed(
+  current: () => GraphStore,
+  hidden: lineage.HiddenCard[] | undefined,
+) {
+  useEffect(() => {
+    if (hidden) {
+      current().update((s) => withHidden(s, hidden));
+    }
+  }, [hidden, current]);
+}
+
+export function useLineageGraph(
+  defaultExpansion: () => number,
+  openDetails: (table: string) => void,
+  {
+    expansionOptions = () => ({ cap: 0, groupBy: "none" }),
+    ready = true,
+    hidden,
+  }: LineageGraphOptions = {},
+): LineageGraphModel {
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
     useGraphStore(defaultExpansion, expansionOptions);
+  useHiddenSeed(current, hidden);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);
@@ -292,8 +335,8 @@ export function useLineageGraph(
     const start = graphRef.current.start;
     rebuild(start ? graphRef.current.known[start] : undefined);
   };
-  const { select, actions } = useTableActions(current, openDetails);
-  return { graph, rendered, drawnKey, actions, select, reset };
+  const tableActions = useTableActions(current, openDetails);
+  return { graph, rendered, drawnKey, reset, ...tableActions };
 }
 
 /** `handle`, except that while `ready` is false the latest call is held, and replayed once `ready` turns true. */
@@ -338,5 +381,16 @@ function useTableActions(
       }),
     [current, select, openDetails],
   );
-  return { select, actions };
+  const restore = useCallback(
+    (table: string) =>
+      setHidden(
+        current(),
+        current()
+          .get()
+          .hiddenCards.filter((card) => card.id !== table),
+      ),
+    [current],
+  );
+  const restoreAll = useCallback(() => setHidden(current(), []), [current]);
+  return { select, actions, restore, restoreAll };
 }

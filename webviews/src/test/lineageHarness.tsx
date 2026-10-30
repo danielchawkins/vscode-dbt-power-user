@@ -182,6 +182,14 @@ let hostSettings: Partial<lineage.LineageSettings> = {};
 /** The relationships the host answers `getRelationships` with, as `openLineage` sets them. */
 let hostRefs: lineage.LineageRef[] = [];
 
+/** The hidden cards the host answers `getHiddenCards` with, as `openLineage` sets them. */
+let hostHidden: lineage.HiddenCard[] = [];
+
+/** Sets what the host answers `getLineageSettings` with, for a test that renders without `openLineage`. */
+export const setHostSettings = (settings: Partial<lineage.LineageSettings>) => {
+  hostSettings = settings;
+};
+
 const ANSWERS: Record<string, (params: Params) => unknown> = {
   childTables: ({ table: t }) => ({ tables: CHILDREN[String(t)] ?? [] }),
   parentTables: ({ table: t }) => ({ tables: PARENTS[String(t)] ?? [] }),
@@ -198,6 +206,8 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   getLineageSettings: () => hostSettings,
   persistLineageSettings: () => true,
   getRelationships: () => ({ refs: hostRefs }),
+  getHiddenCards: () => ({ cards: hostHidden }),
+  persistHiddenCards: () => ({ ok: true }),
 };
 
 type Posted = {
@@ -207,7 +217,7 @@ type Posted = {
 };
 
 /** Answers each sync request the panel posts as the host would; `held` requests wait until `release` is called. */
-const answerRequests = (held: readonly string[] = []) => {
+export const answerRequests = (held: readonly string[] = []) => {
   const waiting: (() => void)[] = [];
   getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
     const { command, syncRequestId, args } = message as Posted;
@@ -255,6 +265,8 @@ export const openLineage = async (
     settings?: Partial<lineage.LineageSettings>;
     /** The relationships the host answers `getRelationships` with. */
     refs?: lineage.LineageRef[];
+    /** The hidden cards the host answers `getHiddenCards` with: hidden in this workspace. */
+    hidden?: lineage.HiddenCard[];
     renderFirst?: boolean;
     /** How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. */
     flowNodes?: number;
@@ -265,6 +277,7 @@ export const openLineage = async (
   );
   hostSettings = options.settings ?? {};
   hostRefs = options.refs ?? [];
+  hostHidden = options.hidden ?? [];
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
@@ -378,6 +391,8 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "slider:Inferred confidence ≥ 0.80",
   "checkbox:Infer relationships for sources",
   "button:Reset",
+  "button:Restore a",
+  "button:Restore all",
   "button:Help",
   "link:Help/Documentation",
   "button:Help/Close",
@@ -392,6 +407,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table a/Open file",
   "button:table a/Columns",
   "button:table a/Details",
+  "button:table a/Hide",
   "button:table b/Hide 1 parents",
   "button:table b/Show 1 parents",
   "button:table b/Hide 1 children",
@@ -404,6 +420,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table c/Show 0 children",
   "button:table c/Columns",
   "button:table c/Details",
+  "button:table c/Hide",
   "button:Open staging",
   "button:Open marts",
   "button:Open alpha",
@@ -426,42 +443,52 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table alpha1/Show 0 children",
   "button:table alpha1/Columns",
   "button:table alpha1/Details",
+  "button:table alpha1/Hide",
   "button:table alpha2/Show 1 parents",
   "button:table alpha2/Show 0 children",
   "button:table alpha2/Columns",
   "button:table alpha2/Details",
+  "button:table alpha2/Hide",
   "button:table beta1/Show 1 parents",
   "button:table beta1/Show 0 children",
   "button:table beta1/Columns",
   "button:table beta1/Details",
+  "button:table beta1/Hide",
   "button:table beta2/Show 1 parents",
   "button:table beta2/Show 0 children",
   "button:table beta2/Columns",
   "button:table beta2/Details",
+  "button:table beta2/Hide",
   "button:table gamma1/Show 1 parents",
   "button:table gamma1/Show 0 children",
   "button:table gamma1/Columns",
   "button:table gamma1/Details",
+  "button:table gamma1/Hide",
   "button:table gamma2/Show 1 parents",
   "button:table gamma2/Show 0 children",
   "button:table gamma2/Columns",
   "button:table gamma2/Details",
+  "button:table gamma2/Hide",
   "button:table delta1/Show 1 parents",
   "button:table delta1/Show 0 children",
   "button:table delta1/Columns",
   "button:table delta1/Details",
+  "button:table delta1/Hide",
   "button:table delta2/Show 1 parents",
   "button:table delta2/Show 0 children",
   "button:table delta2/Columns",
   "button:table delta2/Details",
+  "button:table delta2/Hide",
   "button:table epsilon1/Show 1 parents",
   "button:table epsilon1/Show 0 children",
   "button:table epsilon1/Columns",
   "button:table epsilon1/Details",
+  "button:table epsilon1/Hide",
   "button:table epsilon2/Show 1 parents",
   "button:table epsilon2/Show 0 children",
   "button:table epsilon2/Columns",
   "button:table epsilon2/Details",
+  "button:table epsilon2/Hide",
   "button:table hub/Hide 6 children",
   "button:table hub/Show 6 children",
   "button:table hub/Show 0 parents",
@@ -471,10 +498,12 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table hub/Close staging",
   "button:table s1/Columns",
   "button:table s1/Details",
+  "button:table s1/Hide",
   "button:table s1/Show 0 children",
   "button:table s1/Show 1 parents",
   "button:table s2/Columns",
   "button:table s2/Details",
+  "button:table s2/Hide",
   "button:table s2/Show 0 children",
   "button:table s2/Show 1 parents",
   "button:Details/Open file",

@@ -29,9 +29,11 @@ const Check = ({
 const EdgeSettings = ({
   settings,
   change,
+  children,
 }: {
   settings: ResolvedSettings;
   change: Change;
+  children?: React.ReactNode;
 }) => (
   <div className={styles.menu}>
     <Check
@@ -85,6 +87,7 @@ const EdgeSettings = ({
         onChange={(e) => change({ edgeOpacity: Number(e.target.value) })}
       />
     </label>
+    {children}
   </div>
 );
 
@@ -154,15 +157,59 @@ const RefSettings = ({
   </div>
 );
 
-/** The toolbar: edge settings, the connections choice, help and reset. */
+/** The cards the user hid, each with Restore, and Restore all; the empty state says none are hidden. */
+const HiddenCards = ({
+  cards,
+  restore,
+  restoreAll,
+}: {
+  cards: { id: string; name: string }[];
+  restore: (table: string) => void;
+  restoreAll: () => void;
+}) => (
+  <section className={styles.hiddenCards} aria-label="Hidden cards">
+    <span>Hidden cards</span>
+    {cards.length === 0 ? (
+      <p>No cards are hidden. Hide a card from its Hide button.</p>
+    ) : (
+      <>
+        <ul>
+          {cards.map((card) => (
+            <li key={card.id}>
+              {card.name}{" "}
+              <button
+                type="button"
+                aria-label={`Restore ${card.name}`}
+                onClick={() => restore(card.id)}
+              >
+                Restore
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button type="button" onClick={restoreAll}>
+          Restore all
+        </button>
+      </>
+    )}
+  </section>
+);
+
+/** The toolbar: edge settings, the hidden cards, the connections choice, help and reset. */
 const Toolbar = ({
   settings,
   change,
   reset,
+  hiddenCards,
+  restore,
+  restoreAll,
 }: {
   settings: ResolvedSettings;
   change: Change;
   reset: () => void;
+  hiddenCards: { id: string; name: string }[];
+  restore: (table: string) => void;
+  restoreAll: () => void;
 }): React.JSX.Element => (
   <div className={styles.toolbar}>
     <PopoverWithButton
@@ -174,7 +221,15 @@ const Toolbar = ({
         </button>
       }
     >
-      {() => <EdgeSettings settings={settings} change={change} />}
+      {() => (
+        <EdgeSettings settings={settings} change={change}>
+          <HiddenCards
+            cards={hiddenCards}
+            restore={restore}
+            restoreAll={restoreAll}
+          />
+        </EdgeSettings>
+      )}
     </PopoverWithButton>
     <PopoverWithButton
       width={260}

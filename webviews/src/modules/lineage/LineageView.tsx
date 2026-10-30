@@ -40,6 +40,9 @@ const Graph = (): React.JSX.Element => {
             settings={settings}
             change={model.change}
             reset={model.reset}
+            hiddenCards={model.hiddenCards}
+            restore={model.restore}
+            restoreAll={model.restoreAll}
           />
         </div>
         <SemanticZoomContext value={settings.semanticZoom}>

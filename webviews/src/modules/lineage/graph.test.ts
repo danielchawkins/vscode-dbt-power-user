@@ -1,4 +1,5 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
@@ -15,6 +16,8 @@ import {
   linkDrawn,
   parseExpansion,
   showColumns,
+  visibleOf,
+  withHidden,
 } from "./graph";
 import { groupNodeId } from "./grouping";
 import { columnHandle } from "./layout";
@@ -469,6 +472,142 @@ describe("expander and column clicks", () => {
 
     it("traces the same column name on a different table", () => {
       expect(columnClick(selected(["b", "id"]), ["c", "id"])).toBe("trace");
+    });
+  });
+});
+
+describe("hidden cards", () => {
+  // `s` has parents `hub` and `z`; `hub` has parents `x` and `y`, and `z` has parent `x` too. Hiding `hub` leaves `x`,
+  // which `z` still draws, and takes `y`, which only `hub` draws.
+  const hubbed = () => {
+    let state = emptyGraph(table("s"));
+    state = addNeighbours(state, "parents", "s", [table("hub"), table("z")]);
+    state = addNeighbours(state, "parents", "hub", [table("x"), table("y")]);
+    return addNeighbours(state, "parents", "z", [table("x")]);
+  };
+  const drawnIds = (state: GraphState) =>
+    [...visibleOf(state).drawn].toSorted();
+
+  it("hides a hub, and the cards drawn only through it, but keeps a card still reached another way", () => {
+    const state = withHidden(hubbed(), [{ id: "hub" }]);
+    expect(drawnIds(state)).toEqual(["s", "x", "z"]);
+    const { edges } = drawnGraph(state);
+    expect(edges.flat()).not.toContain("hub");
+    expect(edges.flat()).not.toContain("y");
+  });
+
+  it("draws the hidden cards again once they are restored", () => {
+    const state = withHidden(withHidden(hubbed(), [{ id: "hub" }]), []);
+    expect(drawnIds(state)).toEqual(["hub", "s", "x", "y", "z"]);
+  });
+
+  it("ignores a hidden ID that is not in the graph", () => {
+    const state = withHidden(hubbed(), [{ id: "not-in-graph" }]);
+    expect(drawnIds(state)).toEqual(drawnIds(hubbed()));
+  });
+
+  it("keeps the label each hidden card was hidden with, and the last label given for an ID", () => {
+    const state = withHidden(hubbed(), [
+      { id: "hub", label: "Hub" },
+      { id: "z", label: "Zed" },
+      { id: "hub", label: "Hub again" },
+    ]);
+    expect(state.hiddenCards).toEqual([
+      { id: "hub", label: "Hub again" },
+      { id: "z", label: "Zed" },
+    ]);
+  });
+
+  it("draws a card reached only through a later expansion, and what that card's own expansion draws", () => {
+    // s draws h and j; h draws k, and k draws m; j draws k too. With h hidden, k is reached only through j, which was
+    // expanded after k's own expansion, so the order the expansions were made in must not decide what is drawn.
+    let state = emptyGraph(table("s"));
+    state = addNeighbours(state, "children", "s", [table("h"), table("j")]);
+    state = addNeighbours(state, "children", "h", [table("k")]);
+    state = addNeighbours(state, "children", "k", [table("m")]);
+    state = addNeighbours(state, "children", "j", [table("k")]);
+    expect(drawnIds(state)).toEqual(["h", "j", "k", "m", "s"]);
+    expect(drawnIds(withHidden(state, [{ id: "h" }]))).toEqual([
+      "j",
+      "k",
+      "m",
+      "s",
+    ]);
+  });
+
+  it("drops the column edges that touch a card that is not drawn", () => {
+    const columnEdges: lineage.ColumnLineage[] = [
+      { source: ["s", "id"], target: ["hub", "id"], type: "direct" },
+      { source: ["x", "id"], target: ["z", "id"], type: "direct" },
+      { source: ["y", "id"], target: ["z", "id"], type: "indirect" },
+    ];
+    const state = {
+      ...withHidden(hubbed(), [{ id: "hub" }]),
+      columnEdges,
+    };
+    expect(
+      lineageData(state, { direct: true, indirect: true }).columnEdges,
+    ).toEqual([columnEdges[1]]);
+  });
+
+  describe("the drawn set is the reachable set", () => {
+    const IDS = ["t0", "t1", "t2", "t3", "t4", "t5"];
+    const id = fc.constantFrom(...IDS);
+    const step = fc.record({
+      direction: fc.constantFrom("children", "parents"),
+      owner: id,
+      others: fc.uniqueArray(id, { maxLength: 4 }),
+    });
+    const scenario = fc.record({
+      steps: fc.array(step, { maxLength: 12 }),
+      hidden: fc.uniqueArray(id, { maxLength: 4 }),
+    });
+
+    /** Brute force: pass over every expansion, from a drawn card and not hidden, until a pass draws nothing new. */
+    const reachable = (state: GraphState): Set<string> => {
+      const hidden = new Set(state.hiddenCards.map((card) => card.id));
+      const drawn = new Set([state.start ?? ""]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const key of state.expansions) {
+          const owner = parseExpansion(key)?.[1] ?? "";
+          if (!drawn.has(owner)) {
+            continue;
+          }
+          for (const other of state.neighbours[key] ?? []) {
+            if (!hidden.has(other) && !drawn.has(other)) {
+              drawn.add(other);
+              changed = true;
+            }
+          }
+        }
+      }
+      return drawn;
+    };
+
+    it("draws, for any expansions and hidden cards, exactly the cards the brute-force walk reaches", () => {
+      fc.assert(
+        fc.property(scenario, ({ steps, hidden }) => {
+          let state = emptyGraph(table("t0"));
+          for (const s of steps) {
+            state = addNeighbours(
+              state,
+              s.direction,
+              s.owner,
+              s.others.map((other) => table(other)),
+            );
+          }
+          state = withHidden(
+            state,
+            hidden.map((card) => ({ id: card })),
+          );
+          expect([...visibleOf(state).drawn].toSorted()).toEqual(
+            [...reachable(state)].toSorted(),
+          );
+        }),
+        { numRuns: 500 },
+      );
     });
   });
 });

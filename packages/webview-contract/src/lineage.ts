@@ -258,7 +258,19 @@ export type PanelMessage =
   /** Stops the column trace named by `trace`; its pending `getConnectedColumns` answers `cancelled`. */
   | { command: "cancelColumnTrace"; trace: string }
   | OptionalRequest<"getLineageSettings">
-  | Request<"persistLineageSettings", PersistedLineageSettings>;
+  | Request<"persistLineageSettings", PersistedLineageSettings>
+  /** The unique IDs of the cards the user hid in this workspace, for every start model. */
+  | OptionalRequest<"getHiddenCards">
+  | Request<"persistHiddenCards", { cards: HiddenCard[] }>;
+
+/**
+ * A card the user hid: its unique ID, and the title the panel showed it by when it was hidden (`label`, absent when none
+ * was stored). The workspace keeps these for every start model.
+ */
+export interface HiddenCard {
+  id: string;
+  label?: string | undefined;
+}
 
 /**
  * The body the host answers each request with, by request command. `getExposureDetails` and `getFunctionDetails`
@@ -275,6 +287,8 @@ export interface ResponseBodies {
   getConnectedColumns: ConnectedColumns;
   getLineageSettings: LineageSettings;
   persistLineageSettings: { ok: true };
+  getHiddenCards: { cards: HiddenCard[] };
+  persistHiddenCards: { ok: true };
 }
 
 const request = <P>(params: Fields<NoInfer<P>>) => ({
@@ -299,6 +313,11 @@ const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   meta: optionalBoolean,
   semantic: optionalBoolean,
   inferred: optionalBoolean,
+});
+
+const isHiddenCard = shape<HiddenCard>({
+  id: isString,
+  label: optional(isString),
 });
 
 const panelFields: CommandFields<PanelMessage> = {
@@ -335,6 +354,10 @@ const panelFields: CommandFields<PanelMessage> = {
     dimOffPath: optionalBoolean,
     hubDeemphasis: optionalBoolean,
     edgeOpacity: optional(isNumber),
+  }),
+  getHiddenCards: optionalRequest({}),
+  persistHiddenCards: request<{ cards: HiddenCard[] }>({
+    cards: arrayOf(isHiddenCard),
   }),
 };
 

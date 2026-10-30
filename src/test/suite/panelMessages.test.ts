@@ -66,11 +66,15 @@ function lineageHarness() {
   };
   const currentProject = { current: undefined };
   const globalState = new Map<string, unknown>();
+  const workspaceState = new Map<string, unknown>();
   const extensionContext = {
     extensionUri: Uri.file("/ext"),
     getFromGlobalState: (key: string) => globalState.get(key),
     setToGlobalState: (key: string, value: unknown) =>
       globalState.set(key, value),
+    getFromWorkspaceState: (key: string) => workspaceState.get(key),
+    setToWorkspaceState: (key: string, value: unknown) =>
+      workspaceState.set(key, value),
   };
   const panel = lineagePanel(silentLog(), {
     extensionContext,
@@ -93,6 +97,7 @@ function lineageHarness() {
     view: page.page,
     postMessage: page.page.webview.postMessage,
     globalState,
+    workspaceState,
     send: page.send,
   };
 }
@@ -315,6 +320,37 @@ describe("lineage panel messages", () => {
         expect.objectContaining({ connections: "both" }),
       );
       expect(h.postMessage).toHaveBeenCalledWith(response("s1", { ok: true }));
+    },
+    getHiddenCards: async () => {
+      const h = lineageHarness();
+      h.workspaceState.set("lineage.hiddenCards", [
+        { id: "model.p.a", label: "a" },
+      ]);
+      await h.send({ command: "getHiddenCards", syncRequestId: "g1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("g1", { cards: [{ id: "model.p.a", label: "a" }] }),
+      );
+    },
+    persistHiddenCards: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "persistHiddenCards",
+        args: {
+          params: {
+            cards: [
+              { id: "model.p.a", label: "a" },
+              { id: "model.p.a", label: "a" },
+              { id: "model.p.b", label: "b" },
+            ],
+          },
+        },
+        syncRequestId: "h1",
+      });
+      expect(h.workspaceState.get("lineage.hiddenCards")).toEqual([
+        { id: "model.p.a", label: "a" },
+        { id: "model.p.b", label: "b" },
+      ]);
+      expect(h.postMessage).toHaveBeenCalledWith(response("h1", { ok: true }));
     },
   };
 

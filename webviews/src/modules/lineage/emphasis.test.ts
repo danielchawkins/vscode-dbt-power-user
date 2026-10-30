@@ -57,12 +57,11 @@ describe("emphasisOf", () => {
     expect(settingsOff.dimmedEdge("a", "d")).toBe(false);
   });
 
-  it("marks the edges of a card with more connections than maxNeighbours as hub edges", () => {
-    // `a` has two connections, `b` two, `c` and `d` one.
+  it("marks the edges of a card with more parents or children than maxNeighbours as hub edges", () => {
+    // `a` has two children, `b` one parent and one child, `c` and `d` one parent.
     const counts = connectionCounts(EDGES);
     const view = emphasisOf(EDGES, counts, { ...on, maxNeighbours: 1 });
     expect(view.hubEdge("a", "b")).toBe(true);
-    expect(view.hubEdge("b", "c")).toBe(true);
     expect(view.hubEdge("a", "d")).toBe(true);
     const none = emphasisOf(EDGES, counts, { ...on, maxNeighbours: 2 });
     expect(none.hubEdge("a", "b")).toBe(false);
@@ -72,6 +71,25 @@ describe("emphasisOf", () => {
       hubDeemphasis: false,
     });
     expect(off.hubEdge("a", "b")).toBe(false);
+  });
+
+  it("compares each direction with maxNeighbours, not the sum of both", () => {
+    // `b` has one parent and one child: two connections, more than a cap of one, but neither direction is over it.
+    const view = emphasisOf(EDGES, connectionCounts(EDGES), {
+      ...on,
+      maxNeighbours: 1,
+    });
+    expect(view.hubEdge("b", "c")).toBe(false);
+    expect(view.hubEdge("a", "b")).toBe(true);
+  });
+
+  it("never makes a card a hub when maxNeighbours is 0, which draws every neighbour", () => {
+    const view = emphasisOf(EDGES, connectionCounts(EDGES), {
+      ...on,
+      maxNeighbours: 0,
+    });
+    expect(view.hubEdge("a", "b")).toBe(false);
+    expect(view.hubEdge("a", "d")).toBe(false);
   });
 
   it("counts a hub by its known connections, capped ones included, not by the drawn edges", () => {

@@ -54,6 +54,14 @@ export const fetchConnected = async (
 export const fetchSettings = (): Promise<lineage.LineageSettings> =>
   executeRequestInSync("getLineageSettings");
 
+/** The hidden cards of this workspace, as the host kept them. */
+export const fetchHiddenCards = async (): Promise<lineage.HiddenCard[]> =>
+  (await executeRequestInSync("getHiddenCards")).cards;
+
+export const persistHiddenCards = (cards: lineage.HiddenCard[]): void => {
+  executeRequestInAsync("persistHiddenCards", { args: { params: { cards } } });
+};
+
 export const persistSettings = (
   settings: Partial<lineage.LineageSettings>,
 ): Promise<unknown> =>
