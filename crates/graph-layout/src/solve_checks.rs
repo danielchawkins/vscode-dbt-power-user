@@ -4,13 +4,13 @@
 //! The tolerances are those of the TypeScript tests: `vpscCases.test.ts` (positions within 1e-4 of MSAGL, goal close to
 //! six digits), `vpsc.test.ts` (feasibility 1e-7, solver slack 1e-9, objective within 1e-12 relative).
 //!
-//! The property checks are seeded loops over the testkit generators rather than proptest: the crate's `--no-dev-deps`
-//! feature gate cannot hold a lock that names a dev-dependency.
+//! The property checks are proptest properties over the testkit generators, which draw from mulberry32.
 
 use crate::solve::{Problem, Projector, Separation, solve};
 use crate::testkit::solve::{
     Instance, cases, chain, exact_optimum, objective, random_outputs, random_problem, small_dag,
 };
+use proptest::prelude::*;
 
 /// MSAGL prints expected positions to five significant digits, so the comparison is looser than the solver's own.
 const POSITION_TOLERANCE: f64 = 1e-4;
@@ -240,40 +240,44 @@ fn near_degenerate_gaps_are_solved_to_the_exact_optimum() {
     }
 }
 
-/// Small DAGs (`testkit::solve::small_dag`) reach the exact optimum and hold every separation.
-#[test]
-fn small_dags_reach_the_exact_optimum() {
-    for seed in 0..PROPERTY_CASES {
+// The property checks draw a mulberry32 seed from proptest, so a failing seed shrinks toward 0 and is persisted to
+// `proptest-regressions/`. The generators are the testkit's, which the TypeScript fixtures also use.
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(PROPERTY_CASES))]
+
+    /// Small DAGs (`testkit::solve::small_dag`) reach the exact optimum and hold every separation.
+    #[test]
+    fn small_dags_reach_the_exact_optimum(seed in any::<u32>()) {
         let Instance { x0, weight, seps } = small_dag(seed);
         let x = solve(&Problem {
             x0: &x0,
             weight: &weight,
             separations: &seps,
         })
-        .unwrap_or_else(|e| panic!("seed {seed}: {e}"));
-        assert!(
+        .map_err(|e| TestCaseError::fail(format!("seed {seed}: {e}")))?;
+        prop_assert!(
             feasible(&seps, &x, TOLERANCE),
-            "seed {seed}: a separation does not hold: {x:?}"
+            "a separation does not hold: {x:?}"
         );
-        expect_optimal(&x0, &weight, &seps, &x).unwrap_or_else(|e| panic!("seed {seed}: {e}"));
+        expect_optimal(&x0, &weight, &seps, &x)
+            .map_err(|e| TestCaseError::fail(format!("seed {seed}: {e}")))?;
     }
-}
 
-/// Chains (`testkit::solve::chain`), the one-layer projection of `projectRanks`, reach the exact optimum.
-#[test]
-fn chains_reach_the_exact_optimum() {
-    for seed in 0..PROPERTY_CASES {
+    /// Chains (`testkit::solve::chain`), the one-layer projection of `projectRanks`, reach the exact optimum.
+    #[test]
+    fn chains_reach_the_exact_optimum(seed in any::<u32>()) {
         let Instance { x0, weight, seps } = chain(seed);
         let x = solve(&Problem {
             x0: &x0,
             weight: &weight,
             separations: &seps,
         })
-        .unwrap_or_else(|e| panic!("seed {seed}: {e}"));
-        assert!(
+        .map_err(|e| TestCaseError::fail(format!("seed {seed}: {e}")))?;
+        prop_assert!(
             feasible(&seps, &x, TOLERANCE),
-            "seed {seed}: a separation does not hold: {x:?}"
+            "a separation does not hold: {x:?}"
         );
-        expect_optimal(&x0, &weight, &seps, &x).unwrap_or_else(|e| panic!("seed {seed}: {e}"));
+        expect_optimal(&x0, &weight, &seps, &x)
+            .map_err(|e| TestCaseError::fail(format!("seed {seed}: {e}")))?;
     }
 }
