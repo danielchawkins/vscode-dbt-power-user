@@ -55,6 +55,30 @@ const tagCount = (tag) => () =>
       0,
     );
 
+/** The Rust crates under crates/, each with a `rustSuppressions.<crate>` ceiling. */
+export const RUST_CRATES = [
+  "graph-layout",
+  "graph-layout-napi",
+  "graph-layout-wasm",
+];
+
+/** A suppression attribute: `#[expect(`, `#![expect(` and `#[allow(` (overridden lints only; the workspace denies it). */
+const RUST_SUPPRESSION = /#!?\[(?:expect|allow)\(/g;
+
+/** The suppression attributes in every `.rs` file under `srcDir`. */
+export function countRustSuppressions(srcDir) {
+  return fs
+    .readdirSync(srcDir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".rs"))
+    .map((entry) =>
+      fs.readFileSync(path.join(entry.parentPath, entry.name), "utf8"),
+    )
+    .reduce(
+      (total, text) => total + (text.match(RUST_SUPPRESSION) ?? []).length,
+      0,
+    );
+}
+
 /**
  * Every ratcheted value. A `ceiling` may only fall and a `floor` may only rise. Values are stored and compared
  * at `precision` decimals; floors round down and ceilings round up.
@@ -72,6 +96,13 @@ export const METRICS = [
     kind: "ceiling",
     precision: 0,
     measure: () => suppressionTotal(file),
+  })),
+  ...RUST_CRATES.map((crate) => ({
+    key: `rustSuppressions.${crate}`,
+    kind: "ceiling",
+    precision: 0,
+    measure: () =>
+      countRustSuppressions(path.join(root, "crates", crate, "src")),
   })),
   {
     key: "internalTags",
