@@ -1,0 +1,5 @@
+id: rust-core-layer-imports-hash
+valid:
+  - 'use std::hash::Hasher;'
+invalid:
+  - 'use crate::model::Graph;'

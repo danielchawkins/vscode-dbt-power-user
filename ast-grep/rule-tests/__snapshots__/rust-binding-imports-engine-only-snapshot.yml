@@ -1,0 +1,28 @@
+id: rust-binding-imports-engine-only
+snapshots:
+  use graph_layout as core;:
+    labels:
+    - source: graph_layout as core
+      style: primary
+      start: 4
+      end: 24
+    - source: graph_layout
+      style: secondary
+      start: 4
+      end: 16
+  use graph_layout::order::order;:
+    labels:
+    - source: graph_layout::order::order
+      style: primary
+      start: 4
+      end: 30
+  use graph_layout::{engine, model};:
+    labels:
+    - source: graph_layout::{engine, model}
+      style: primary
+      start: 4
+      end: 33
+    - source: graph_layout
+      style: secondary
+      start: 4
+      end: 16

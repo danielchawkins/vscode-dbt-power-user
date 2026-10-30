@@ -1,0 +1,21 @@
+id: rust-core-layer-imports-layering
+language: rust
+severity: error
+message: >-
+  layering may import only index, budget, rand and solve from the crate (ADR 0011, module table; solve only if
+  ranking needs it). Test code may use testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/layering/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(layering|index|budget|rand|solve|testkit)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

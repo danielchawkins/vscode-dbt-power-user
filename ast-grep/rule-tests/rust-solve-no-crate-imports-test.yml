@@ -1,0 +1,8 @@
+id: rust-solve-no-crate-imports
+valid:
+  - 'pub(crate) fn sweep() {}'
+  - 'use super::Scratch;'
+  - 'use super::*;'
+invalid:
+  - 'use crate::index::Indexed;'
+  - 'use super::super::model::Graph;'

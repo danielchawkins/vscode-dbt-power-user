@@ -1,0 +1,21 @@
+id: rust-core-layer-imports-order
+language: rust
+severity: error
+message: >-
+  order may import only index, the output types of layering, budget and rand from the crate, and never place or
+  route (ADR 0011, module table). Test code may use testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/order/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(order|index|layering|budget|rand|testkit)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

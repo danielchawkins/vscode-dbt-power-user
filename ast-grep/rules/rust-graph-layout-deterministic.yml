@@ -1,0 +1,13 @@
+id: rust-graph-layout-deterministic
+language: rust
+severity: error
+message: >-
+  The core reads no clock and no unseeded randomness (ADR 0011, Decision 9: budgets are counts, not clocks).
+  Use the seeded generator in `rand`, and bound work by counts.
+files:
+  - crates/graph-layout/src/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '(^|::)(Instant|SystemTime)::now$'
+    - pattern: thread_rng()

@@ -1,0 +1,14 @@
+id: rust-core-layer-imports-overview
+snapshots:
+  use crate::pack::Packed;:
+    labels:
+    - source: crate::pack::Packed
+      style: primary
+      start: 4
+      end: 23
+  use crate::place::Placement;:
+    labels:
+    - source: crate::place::Placement
+      style: primary
+      start: 4
+      end: 27

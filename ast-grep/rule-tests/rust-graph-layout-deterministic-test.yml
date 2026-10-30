@@ -1,0 +1,9 @@
+id: rust-graph-layout-deterministic
+valid:
+  - 'fn budget() { let budget = Budget::sweeps(8); }'
+  - 'fn seeded() { let seeded = rand::Mulberry32::new(seed); }'
+invalid:
+  - 'fn start() { let start = std::time::Instant::now(); }'
+  - 'fn tick() { let t = Instant::now(); }'
+  - 'fn when() { let when = SystemTime::now(); }'
+  - 'fn roll() { let r = thread_rng(); }'

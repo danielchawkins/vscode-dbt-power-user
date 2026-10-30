@@ -1,0 +1,21 @@
+id: rust-core-layer-imports-place
+language: rust
+severity: error
+message: >-
+  place may import only solve, across, order and index from the crate (ADR 0011, module table). Test code may use
+  testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/place/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(place|solve|across|order|index|testkit)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

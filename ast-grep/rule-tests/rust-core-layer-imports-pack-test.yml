@@ -1,0 +1,5 @@
+id: rust-core-layer-imports-pack
+valid:
+  - 'use crate::model::Graph;'
+invalid:
+  - 'use crate::overview::Overview;'

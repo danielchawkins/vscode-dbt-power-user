@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-index
+valid:
+  - 'use crate::model::Graph;'
+  - 'use super::Table;'
+invalid:
+  - 'use crate::order::Order;'
+  - 'use crate::{model, order};'

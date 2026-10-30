@@ -1,0 +1,16 @@
+id: rust-solve-no-crate-imports
+language: rust
+severity: error
+message: >-
+  solve is the leaf solver: it imports nothing from the crate (ADR 0011, module table). pub(crate) stays legal;
+  `super::super` reaches past the module and is banned.
+files:
+  - crates/graph-layout/src/solve/**
+rule:
+  any:
+    - kind: crate
+      not:
+        inside:
+          kind: visibility_modifier
+    - kind: scoped_identifier
+      regex: '^super::super(::|$)'

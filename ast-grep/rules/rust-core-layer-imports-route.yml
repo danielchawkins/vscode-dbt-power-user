@@ -1,0 +1,21 @@
+id: rust-core-layer-imports-route
+language: rust
+severity: error
+message: >-
+  route may import from place only its public boxes module, plus order and index (ADR 0011, module table). Test
+  code may use testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/route/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(route|index|order|testkit|place::boxes)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

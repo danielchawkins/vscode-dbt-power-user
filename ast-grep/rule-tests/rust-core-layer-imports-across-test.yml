@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-across
+valid:
+  - 'use crate::order::Order;'
+  - 'use crate::index::Indexed;'
+invalid:
+  - 'use crate::layering::Ranks;'
+  - 'use crate::place::Boxes;'

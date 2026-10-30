@@ -1,0 +1,27 @@
+id: rust-binding-imports-engine-only
+language: rust
+severity: error
+message: >-
+  A binding imports only the public modules of graph-layout: engine, model, overview and pack (ADR 0011). The
+  compiler hides the other modules; this rule also bans a `{...}` list or an alias of graph_layout, so each
+  public module is named on its own `use` line.
+files:
+  - crates/graph-layout-wasm/src/**
+  - crates/graph-layout-napi/src/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^graph_layout::'
+      not:
+        any:
+          - regex: '^graph_layout::(engine|model|overview|pack)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^graph_layout$'
+    - kind: use_as_clause
+      has:
+        field: path
+        regex: '^graph_layout$'

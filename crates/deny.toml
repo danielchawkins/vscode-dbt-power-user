@@ -1,0 +1,38 @@
+# cargo-deny for the Rust workspace (`just crates::deny`): licences, advisories, sources and bans.
+# Licences are the ones compatible with this repository's MIT licence; anything else is refused until listed here.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+unmaintained = "workspace"
+yanked = "deny"
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+allow = [
+  "0BSD",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "ISC",
+  "MIT",
+  "Unicode-3.0",
+  "Zlib",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# Workspace members depend on each other by path, which carries no version.
+allow-wildcard-paths = true
+highlight = "all"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

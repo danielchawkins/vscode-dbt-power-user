@@ -1,0 +1,26 @@
+id: rust-graph-layout-deterministic
+snapshots:
+  fn roll() { let r = thread_rng(); }:
+    labels:
+    - source: thread_rng()
+      style: primary
+      start: 20
+      end: 32
+  fn start() { let start = std::time::Instant::now(); }:
+    labels:
+    - source: std::time::Instant::now
+      style: primary
+      start: 25
+      end: 48
+  fn tick() { let t = Instant::now(); }:
+    labels:
+    - source: Instant::now
+      style: primary
+      start: 20
+      end: 32
+  fn when() { let when = SystemTime::now(); }:
+    labels:
+    - source: SystemTime::now
+      style: primary
+      start: 23
+      end: 38

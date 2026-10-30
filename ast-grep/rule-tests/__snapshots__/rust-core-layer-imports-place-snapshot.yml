@@ -1,0 +1,14 @@
+id: rust-core-layer-imports-place
+snapshots:
+  use crate::metrics::score;:
+    labels:
+    - source: crate::metrics::score
+      style: primary
+      start: 4
+      end: 25
+  use crate::route::Routing;:
+    labels:
+    - source: crate::route::Routing
+      style: primary
+      start: 4
+      end: 25
