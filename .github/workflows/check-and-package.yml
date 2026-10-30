@@ -23,6 +23,11 @@ jobs:
       - name: Install tools
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
 
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: crates
+
       - name: Compare ratchet ceilings with the base branch
         if: github.event_name == 'pull_request'
         env:
