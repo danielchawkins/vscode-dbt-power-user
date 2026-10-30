@@ -6,3 +6,13 @@ rustflags = ["-C", "link-arg=-Wl,-undefined,dynamic_lookup"]
 
 [target.'cfg(all(target_os = "linux", target_env = "gnu"))']
 rustflags = ["-C", "link-arg=-Wl,-z,nodelete"]
+
+# The WebAssembly test runner: `cargo test --target wasm32-wasip1` runs each test binary under Node's WASI through
+# scripts/quality/wasi-run.mjs, so the core's own tests run in WebAssembly. Cargo runs a test binary from its package
+# directory, so the path is relative to crates/graph-layout.
+[target.wasm32-wasip1]
+runner = [
+  "node",
+  "--no-warnings=ExperimentalWarning",
+  "../../scripts/quality/wasi-run.mjs",
+]

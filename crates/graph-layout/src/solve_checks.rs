@@ -73,6 +73,11 @@ fn sep(from: u32, to: u32, gap: f64) -> Separation {
     Separation { from, to, gap }
 }
 
+/// Whether two outputs are the same bits: the same length, and every value equal by `to_bits`, so -0 and +0 differ.
+fn same_bits(a: &[f64], b: &[f64]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
+}
+
 #[test]
 fn msagl_cases_hold_their_expected_positions_and_goals() {
     let mut bit_identical = 0;
@@ -104,7 +109,7 @@ fn msagl_cases_hold_their_expected_positions_and_goals() {
                 case.name
             );
         }
-        if x == case.ts {
+        if same_bits(&x, &case.ts) {
             bit_identical += 1;
         }
     }
@@ -161,7 +166,7 @@ fn random_problems_match_typescript() {
             (rust_cost - ts_cost).abs() <= ROUNDING * (1.0 + ts_cost),
             "seed {seed}: objective {rust_cost}, TypeScript {ts_cost}"
         );
-        if x == *ts {
+        if same_bits(&x, ts) {
             bit_identical += 1;
         } else {
             differences.push(seed);
@@ -174,6 +179,33 @@ fn random_problems_match_typescript() {
         differences.len(),
         differences
     );
+}
+
+/// Writes the output of every random problem as the hex of its bits, one `seed<TAB>bits` line per seed, to the file named
+/// by `GRAPH_LAYOUT_SOLVE_OUT`. `just crates::parity` runs this natively and under WASI and compares the two files byte
+/// for byte. Without the variable it does nothing, so the ordinary test run writes nothing.
+#[test]
+fn random_outputs_are_written_for_the_parity_comparison() {
+    use std::fmt::Write as _;
+
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_SOLVE_OUT") else {
+        return;
+    };
+    let mut projector = Projector::new();
+    let mut text = String::new();
+    for seed in 0..crate::testkit::solve::RANDOM_PROBLEMS {
+        let Instance { x0, weight, seps } = random_problem(seed);
+        let x = projector
+            .solve(&Problem {
+                x0: &x0,
+                weight: &weight,
+                separations: &seps,
+            })
+            .unwrap_or_else(|e| panic!("seed {seed}: {e}"));
+        let bits: Vec<String> = x.iter().map(|v| format!("{:016x}", v.to_bits())).collect();
+        writeln!(text, "{seed}\t{}", bits.join(",")).expect("writing to a String cannot fail");
+    }
+    std::fs::write(path, text).expect("the parity output file is writable");
 }
 
 /// Two blocks whose merge closes a cycle of blocks: a<b and c<d merge first, then a<d and c<b cross the two blocks.

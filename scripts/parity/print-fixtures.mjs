@@ -137,10 +137,19 @@ function randomProblem(seed) {
 
 const csv = (xs) => (xs.length > 0 ? xs.map(String).join(",") : "-");
 
+/** The IEEE 754 bits of `x` as 16 lowercase hex digits, so that -0 and every ulp survive the print (`String` drops -0). */
+function bitsHex(x) {
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, x);
+  return view.getBigUint64(0).toString(16).padStart(16, "0");
+}
+
+const bitsCsv = (xs) => (xs.length > 0 ? xs.map(bitsHex).join(",") : "-");
+
 function printSolveCases() {
   const lines = [
     HEADER,
-    "# case <name> <desired> <weight> <seps> <expected> <goal> <ts>: a MSAGL case (msaglCases.ts, msaglChains.ts), fields tab-separated; lists comma-separated; seps are from:to:gap joined by ';'; '-' is empty; ts is solveSeparations' output.",
+    "# case <name> <desired> <weight> <seps> <expected> <goal> <ts>: a MSAGL case (msaglCases.ts, msaglChains.ts), fields tab-separated; lists comma-separated; seps are from:to:gap joined by ';'; '-' is empty; ts is solveSeparations' output as the hex of each value's IEEE 754 bits (16 digits).",
   ];
   for (const c of [...cases, ...chainCases]) {
     const weight = c.weight ?? c.desired.map(() => 1);
@@ -157,7 +166,7 @@ function printSolveCases() {
           : "-",
         csv(c.expected),
         c.goal === undefined ? "-" : String(c.goal),
-        csv(x),
+        bitsCsv(x),
       ].join("\t"),
     );
   }
@@ -167,14 +176,16 @@ function printSolveCases() {
 function printSolveRandom() {
   const lines = [
     HEADER,
-    `# problem <seed> <ts>: solveSeparations of randomProblem(seed), seeds 0..${SOLVE_PROBLEMS - 1}, fields tab-separated; ts is the solution, comma-separated.`,
+    `# problem <seed> <ts>: solveSeparations of randomProblem(seed), seeds 0..${SOLVE_PROBLEMS - 1}, fields tab-separated; ts is the solution, comma-separated, each value as the hex of its IEEE 754 bits (16 digits).`,
   ];
   for (let seed = 0; seed < SOLVE_PROBLEMS; seed++) {
     const { x0, weight, seps } = randomProblem(seed);
     lines.push(
-      ["problem", String(seed), csv(solveSeparations(x0, weight, seps))].join(
-        "\t",
-      ),
+      [
+        "problem",
+        String(seed),
+        bitsCsv(solveSeparations(x0, weight, seps)),
+      ].join("\t"),
     );
   }
   return lines;
