@@ -21,13 +21,22 @@ fmt-check: require-cargo
 lint-toolchain: require-cargo
     node ../scripts/quality/rust-toolchain.mjs
 
-# Clippy is pedantic with warnings denied; the lint table lives in crates/Cargo.toml.
-# `cargo doc` cannot run in a jj workspace whose parent holds a bare `.bare` repository: cargo's git discovery fails
-# ("did not expect repo ... to be bare"). rustdoc runs on the core directly; it has no dependencies to document.
+# Clippy is pedantic with warnings denied; the lint table lives in crates/Cargo.toml. `cargo doc` documents the whole
+# workspace with warnings denied. Its one fallback: in a jj workspace whose git store is a bare `.bare` repository,
+# cargo cannot read a path package's file list ("did not expect repo ... to be bare") and cannot run at all. Only that
+# failure falls back to rustdoc on the core, which has no dependencies; every other failure stops the recipe.
 [group("quality")]
 lint: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
     cargo clippy --workspace --all-targets --locked -- -D warnings
-    rustdoc --edition 2024 --crate-type lib -D warnings -D rustdoc::broken_intra_doc_links --out-dir "${CARGO_TARGET_DIR:-target}/rustdoc" graph-layout/src/lib.rs
+    log="${CARGO_TARGET_DIR:-target}/cargo-doc.log"
+    mkdir -p "$(dirname "$log")"
+    if ! RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --workspace --locked 2>&1 | tee "$log"; then
+        grep -q 'did not expect repo .* to be bare' "$log" || exit 1
+        echo "crates: cargo doc cannot read this jj workspace's bare git store; documenting the core alone with rustdoc" >&2
+        rustdoc --edition 2024 --crate-type lib -D warnings -D rustdoc::broken_intra_doc_links --out-dir "${CARGO_TARGET_DIR:-target}/rustdoc" graph-layout/src/lib.rs
+    fi
     cargo machete
     typos
 

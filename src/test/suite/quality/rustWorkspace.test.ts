@@ -1,11 +1,18 @@
 import { spawnSync } from "node:child_process";
-import { appendFileSync, cpSync, mkdirSync, rmSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-// Planted-violation checks for the Rust workspace lint table (checklist 3). Each plant copies crates/ to a scratch
-// folder under .cache/, appends one violation, and runs the same command as `just crates::lint`. Build output goes to
-// one target directory, so the dependency graph compiles once across plants.
+// Planted-violation checks for the Rust workspace (checklists 3, 7 and 8). Each plant copies crates/ to a scratch
+// folder under .cache/, makes one violation, and runs the same command as the matching `just crates::` recipe. Build
+// output goes to one target directory, so the dependency graph compiles once across plants.
 const root = path.resolve(import.meta.dirname, "../../../..");
 const cratesDir = path.join(root, "crates");
 const plantsDir = path.join(root, ".cache/rust-plants");
@@ -17,8 +24,17 @@ type Run = { status: number | null; output: string };
 // rustc prints a lint name with hyphens in some messages (`-D unsafe-code`) and underscores in others.
 const lintName = (lint: string) => new RegExp(lint.replaceAll("_", "[_-]"));
 
-/** Copies crates/ into .cache/rust-plants/<name>, appends `appended` to the files named by path, and returns the copy. */
-function stage(name: string, appended: Record<string, string>): string {
+type Edits = {
+  /** Text appended to the files named by path. */
+  appended?: Record<string, string>;
+  /** [from, to] replacements of one exact line in the files named by path. */
+  replaced?: Record<string, [string, string]>;
+  /** New files, by path under crates/. */
+  written?: Record<string, string>;
+};
+
+/** Copies crates/ into .cache/rust-plants/<name>, makes `edits` in the copy, and returns the copy. */
+function stage(name: string, edits: Edits): string {
   const dir = path.join(plantsDir, name, "crates");
   rmSync(path.join(plantsDir, name), { recursive: true, force: true });
   mkdirSync(path.dirname(dir), { recursive: true });
@@ -26,8 +42,18 @@ function stage(name: string, appended: Record<string, string>): string {
     recursive: true,
     filter: (src) => path.basename(src) !== "target",
   });
-  for (const [file, text] of Object.entries(appended)) {
+  for (const [file, text] of Object.entries(edits.appended ?? {})) {
     appendFileSync(path.join(dir, file), text);
+  }
+  for (const [file, [from, to]] of Object.entries(edits.replaced ?? {})) {
+    const target = path.join(dir, file);
+    const text = readFileSync(target, "utf8");
+    expect(text, `${file} has no line ${from}`).toContain(from);
+    writeFileSync(target, text.replace(from, to));
+  }
+  for (const [file, text] of Object.entries(edits.written ?? {})) {
+    mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    writeFileSync(path.join(dir, file), text);
   }
   return dir;
 }
@@ -47,7 +73,7 @@ function run(cwd: string, bin: string, args: string[]): Run {
 
 /** The clippy command of `just crates::lint`, run in a staged copy. */
 function clippyPlant(name: string, appended: Record<string, string>): Run {
-  const dir = stage(name, appended);
+  const dir = stage(name, { appended });
   return run(dir, "cargo", [
     "clippy",
     "--workspace",
@@ -61,7 +87,7 @@ function clippyPlant(name: string, appended: Record<string, string>): Run {
 
 /** The rustdoc command of `just crates::lint`, run in a staged copy. */
 function docPlant(name: string, appended: Record<string, string>): Run {
-  const dir = stage(name, appended);
+  const dir = stage(name, { appended });
   return run(dir, "rustdoc", [
     "--edition",
     "2024",
@@ -174,5 +200,114 @@ describe("Rust determinism lints (checklist 4)", () => {
     });
     expect(run.status).not.toBe(0);
     expect(run.output).toContain("f64::sin");
+  });
+});
+
+/** A `just crates::<recipe>` run in a staged copy: the crates justfile runs from the copy, so the plant sees its tree. */
+function recipeRun(dir: string, recipe: string): Run {
+  return run(dir, "just", [
+    "--justfile",
+    path.join(dir, "justfile"),
+    "--working-directory",
+    dir,
+    recipe,
+  ]);
+}
+
+/** A path crate, which is a workspace member without the network. A license makes it a candidate for cargo-deny. */
+function plantCrate(name: string, license?: string): Record<string, string> {
+  const manifest = [
+    "[package]",
+    `name = "${name}"`,
+    'version = "0.0.0"',
+    'edition = "2024"',
+    ...(license ? [`license = "${license}"`] : []),
+    "",
+    "[lints]",
+    "workspace = true",
+    "",
+  ].join("\n");
+  return {
+    [`${name}/Cargo.toml`]: manifest,
+    [`${name}/src/lib.rs`]: "//! Planted.\n",
+  };
+}
+
+/** Adds `dependency` to the core's normal dependencies and records the new edge in the lock, so only the plant differs. */
+function coreDependency(
+  name: string,
+  dependency: string,
+  crate: Record<string, string>,
+): string {
+  const dir = stage(name, {
+    replaced: {
+      "graph-layout/Cargo.toml": [
+        "[dependencies]",
+        `[dependencies]\n${dependency}`,
+      ],
+    },
+    written: crate,
+  });
+  const lock = run(dir, "cargo", ["metadata", "--format-version", "1"]);
+  expect(lock.status, lock.output).toBe(0);
+  return dir;
+}
+
+describe("Supply chain (checklist 7)", () => {
+  it(
+    "control: the unmodified workspace passes boundaries",
+    { timeout: 300_000 },
+    () => {
+      const check = recipeRun(stage("boundaries-control", {}), "boundaries");
+      expect(check.status, check.output).toBe(0);
+    },
+  );
+
+  it(
+    "plant: a new normal dependency in the core fails boundaries",
+    { timeout: 300_000 },
+    () => {
+      const dir = coreDependency(
+        "boundaries-dependency",
+        'planted = { path = "../planted" }',
+        plantCrate("planted"),
+      );
+      const check = recipeRun(dir, "boundaries");
+      expect(check.status).not.toBe(0);
+      expect(check.output).toMatch(/\+planted v0\.0\.0/);
+    },
+  );
+
+  it("plant: a GPL-licensed crate fails deny", { timeout: 300_000 }, () => {
+    const dir = coreDependency(
+      "deny-gpl",
+      'gpl = { path = "../gpl" }',
+      plantCrate("gpl", "GPL-3.0"),
+    );
+    const check = recipeRun(dir, "deny");
+    expect(check.status).not.toBe(0);
+    expect(check.output).toMatch(/GPL-3\.0/);
+  });
+});
+
+describe("Formatting (checklist 8)", () => {
+  it(
+    "control: the unmodified workspace passes fmt-check",
+    { timeout: 300_000 },
+    () => {
+      const check = recipeRun(stage("fmt-control", {}), "fmt-check");
+      expect(check.status, check.output).toBe(0);
+    },
+  );
+
+  it("plant: a rustfmt violation fails fmt-check", { timeout: 300_000 }, () => {
+    const dir = stage("fmt-violation", {
+      appended: {
+        "graph-layout/src/engine/mod.rs": "\npub fn   planted( ) ->u8{1}\n",
+      },
+    });
+    const check = recipeRun(dir, "fmt-check");
+    expect(check.status).not.toBe(0);
+    expect(check.output).toContain("engine/mod.rs");
   });
 });
