@@ -43,7 +43,7 @@ const SHARED_COMMANDS: ReadonlySet<string> = new Set(["webview:ready"]);
 /**
  * Commands whose senders land in a later step. Remove each entry once its sender exists.
  * `proposeColumns` and `runNoticeAction` now have senders (`ColumnProposalActions.tsx`,
- * `ProposalSummary.tsx`), so no entries are pending.
+ * `ProposalSummary.tsx`); `getProjectGraph` has one in `requests.ts`.
  */
 const PENDING_SENDERS: Readonly<Record<string, ReadonlySet<string>>> = {};
 

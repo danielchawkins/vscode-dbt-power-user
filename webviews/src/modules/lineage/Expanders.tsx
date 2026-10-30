@@ -13,20 +13,44 @@ export const ExpandButton = ({
   direction,
   expanded,
   pending,
+  expandable,
 }: {
   table: lineage.LineageTable;
   direction: Direction;
   expanded: boolean;
   pending: boolean;
+  expandable: boolean;
 }): React.JSX.Element => {
   const up = direction === "parents";
   const count = up ? table.parentCount : table.childCount;
-  const title = pending
-    ? `Loading ${count} ${direction}; click to cancel`
-    : `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
+  const placement = up ? styles.bubbleTop : styles.bubbleBottom;
   const icon = (
     <span className={`codicon codicon-arrow-${up ? "up" : "down"}`} />
   );
+  // Whole project: the count is shown, but there is nothing to open, so the bubble is not a control.
+  if (!expandable) {
+    return (
+      <span
+        className={`${styles.expander} ${styles.bubble} ${placement}`}
+        title={`${count} ${direction}`}
+      >
+        {up ? (
+          <>
+            {icon}
+            {count}
+          </>
+        ) : (
+          <>
+            {count}
+            {icon}
+          </>
+        )}
+      </span>
+    );
+  }
+  const title = pending
+    ? `Loading ${count} ${direction}; click to cancel`
+    : `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
   const actions = use(TableActionsContext);
   let body: React.ReactNode = up ? (
     <>
@@ -42,7 +66,6 @@ export const ExpandButton = ({
   if (pending) {
     body = <span className="codicon codicon-loading codicon-modifier-spin" />;
   }
-  const placement = up ? styles.bubbleTop : styles.bubbleBottom;
   return (
     <button
       type="button"

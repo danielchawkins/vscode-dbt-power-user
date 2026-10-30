@@ -1,67 +1,40 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { sameColumnName } from "./edgeIds";
-import { filteredOutTables } from "./filteredOut";
-import type { NeighbourGroups } from "./grouping";
-import { bucketNeighbours, groupedNeighbours } from "./grouping";
+import { bucketNeighbours } from "./grouping";
+import {
+  expansionKey,
+  isExpanded,
+  knownPairs,
+  parseExpansion,
+  visibleOf,
+} from "./projection";
+
+export {
+  drawnNeighbours,
+  expansionKey,
+  framedCards,
+  knownPairs,
+  parseExpansion,
+  visibleOf,
+} from "./projection";
+export type {
+  Direction,
+  Expansion,
+  GraphState,
+  TableColumn,
+  ViewSettings,
+} from "./graphState";
+import type {
+  Direction,
+  Expansion,
+  GraphState,
+  TableColumn,
+  ViewSettings,
+} from "./graphState";
 
 type LineageTable = lineage.LineageTable;
 type LineageColumn = lineage.LineageColumn;
-type ColumnLineage = lineage.ColumnLineage;
 
-/** Which neighbours of a table an expansion adds: its dbt children or its dbt parents. */
-export type Direction = "children" | "parents";
-
-/** A column as `[table unique ID, column name]`. */
-export type TableColumn = [table: string, column: string];
-
-/**
- * The lineage graph the panel draws. `known`, `neighbours` and `columns` cache host answers; the drawn graph is the
- * start table plus each entry of `expansions`, in order, whose table is drawn.
- */
-export interface GraphState {
-  start?: string | undefined;
-  known: Record<string, LineageTable>;
-  /** The neighbour IDs each expansion key added. */
-  neighbours: Record<string, string[]>;
-  /** Applied expansions, each `c:<table>` (children) or `p:<table>` (parents). */
-  expansions: string[];
-  columns: Record<string, LineageColumn[]>;
-  /** Drawn tables that list their columns. */
-  columnTables: string[];
-  /** Column edges traced from `selectedColumn`. */
-  columnEdges: ColumnLineage[];
-  /**
-   * The hidden cards of the workspace, whatever the start model. A hidden card, and each card drawn only through it, is
-   * not drawn; a card that is not in this graph does nothing here, and is kept for the other models.
-   */
-  hiddenCards: lineage.HiddenCard[];
-  /** Tooltip lines per table from the last trace. */
-  errors: Record<string, string[]>;
-  /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */
-  cancelled: Record<string, number>;
-  /** Expansion keys whose neighbours are being fetched. */
-  pending: string[];
-  /**
-   * Data-flow `[parent, child]` pairs the host reported among drawn tables, keyed `parent\0child`. They draw edges
-   * between tables that are already drawn and never make a table drawn, so collapsing still removes what only an
-   * expansion added.
-   */
-  links: Record<string, [string, string]>;
-  /** How many of an expansion's neighbours are drawn, by key; a key without an entry draws them all. */
-  shown: Record<string, number>;
-  /** The most neighbours a new expansion draws at first; 0 draws all. */
-  cap: number;
-  /** How neighbours are bucketed once they outnumber `cap`. */
-  groupBy: "none" | "folder";
-  /** The buckets of each grouped expansion, by key; a grouped key has no `shown` entry. */
-  groups: Record<string, NeighbourGroups>;
-  selectedTable?: string | undefined;
-  selectedColumn?: TableColumn | undefined;
-  /** The column trace in flight: its column and when it started, from which the pending badge counts seconds. */
-  tracing?: { column: TableColumn; since: number } | undefined;
-}
-
-/** Reads and changes the latest graph; an async step reads after each answer, so it never applies a stale base. */
 export interface GraphStore {
   get(): GraphState;
   update(change: (state: GraphState) => GraphState): void;
@@ -80,6 +53,14 @@ export type FetchEdges = (
   tables: readonly string[],
 ) => Promise<[string, string][]>;
 
+/** The view a graph draws until told otherwise: the neighbourhood, with the defaults the settings resolve to. */
+export const NEIGHBOURHOOD_VIEW: ViewSettings = {
+  viewMode: "neighbourhood",
+  upstreamDepth: 2,
+  downstreamDepth: 2,
+  cardBudget: 150,
+};
+
 export const emptyGraph = (
   start?: LineageTable,
   cap = 0,
@@ -87,6 +68,7 @@ export const emptyGraph = (
 ): GraphState => ({
   start: start?.table,
   known: start ? { [start.table]: start } : {},
+  view: NEIGHBOURHOOD_VIEW,
   neighbours: {},
   expansions: [],
   columns: {},
@@ -102,29 +84,6 @@ export const emptyGraph = (
   groups: {},
   hiddenCards: [],
 });
-
-export const expansionKey = (direction: Direction, table: string): string =>
-  `${direction === "children" ? "c" : "p"}:${table}`;
-
-export const parseExpansion = (
-  key: string,
-): [Direction, string] | undefined => {
-  const [prefix, table] = [key.slice(0, 2), key.slice(2)];
-  if (!table) {
-    return undefined;
-  }
-  return prefix === "c:"
-    ? ["children", table]
-    : prefix === "p:"
-      ? ["parents", table]
-      : undefined;
-};
-
-const isExpanded = (
-  state: GraphState,
-  direction: Direction,
-  table: string,
-): boolean => state.expansions.includes(expansionKey(direction, table));
 
 /** Whether the `direction` neighbours of `table` are being fetched. */
 const isPending = (
@@ -158,17 +117,6 @@ export const columnClick = (
 const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;
 
-/** The neighbours expansion `key` draws: all it fetched, or the first `shown[key]` of them, or its open buckets. */
-export const drawnNeighbours = (state: GraphState, key: string): string[] => {
-  const group = state.groups[key];
-  if (group) {
-    return groupedNeighbours(group);
-  }
-  const all = state.neighbours[key] ?? [];
-  const limit = state.shown[key];
-  return limit === undefined ? all : all.slice(0, limit);
-};
-
 /** `state.shown` without `key`, so that expansion draws every neighbour. */
 export const shownWithout = (
   state: GraphState,
@@ -177,43 +125,25 @@ export const shownWithout = (
   Object.fromEntries(Object.entries(state.shown).filter(([k]) => k !== key));
 
 /**
- * What the lineage view shows, decided once from the graph state. The cards and every edge (table, group and column)
- * read this one projection, so a card and an edge cannot disagree about what is visible.
+ * `state` with the whole project's tables and data-flow pairs added. The tables the graph already knows keep their
+ * answers; the pairs draw edges between drawn tables, as links do.
  */
-export interface Visible {
-  /** The IDs of the drawn cards: the start table and each neighbour its expansions draw, filtered-out ones included. */
-  drawn: Set<string>;
-  /** The filtered-out cards: drawn as cards, with no edge. */
-  filteredOut: Set<string>;
-  /** Whether a drawn card takes part in edges: it is drawn and not filtered out. */
-  hasEdges: (id: string) => boolean;
-}
-
-/** The visible projection of `state`: see `Visible`. Nothing is drawn until the start table is known. */
-export function visibleOf(state: GraphState): Visible {
-  const hidden = new Set(state.hiddenCards.map((card) => card.id));
-  // Reachability from the start card: each drawn card draws the neighbours of its expansions, unless they are hidden.
-  // The queue grows as it is read, so the order the expansions were made in does not matter.
-  const queue = state.start && state.known[state.start] ? [state.start] : [];
-  const drawn = new Set(queue);
-  for (const table of queue) {
-    const others = state.expansions
-      .filter((key) => parseExpansion(key)?.[1] === table)
-      .flatMap((key) => drawnNeighbours(state, key));
-    for (const other of others) {
-      if (!hidden.has(other) && !drawn.has(other)) {
-        drawn.add(other);
-        queue.push(other);
-      }
-    }
-  }
-  const filteredOut = filteredOutTables(state);
-  return {
-    drawn,
-    filteredOut,
-    hasEdges: (id) => drawn.has(id) && !filteredOut.has(id),
-  };
-}
+export const withProject = (
+  state: GraphState,
+  tables: LineageTable[],
+  edges: [string, string][],
+): GraphState => ({
+  ...state,
+  known: {
+    ...Object.fromEntries(tables.map((t) => [t.table, t])),
+    ...state.known,
+  },
+  links: {
+    ...state.links,
+    ...Object.fromEntries(edges.map(([p, c]) => [`${p}\0${c}`, [p, c]])),
+  },
+  project: tables.map((t) => t.table),
+});
 
 /**
  * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
@@ -230,29 +160,6 @@ export function drawnGraph(state: GraphState): {
       ([parent, child]) => visible.hasEdges(parent) && visible.hasEdges(child),
     ),
   };
-}
-
-/**
- * Every known `[parent, child]` pair, whatever its ends' state: each neighbour of an expansion, then each link. A pair
- * from a link and from an expansion is listed once.
- */
-export function knownPairs(state: GraphState): [string, string][] {
-  const pairs = new Map<string, [string, string]>();
-  for (const [key, others] of Object.entries(state.neighbours)) {
-    const parsed = parseExpansion(key);
-    if (!parsed) {
-      continue;
-    }
-    for (const other of others) {
-      const edge: [string, string] =
-        parsed[0] === "children" ? [parsed[1], other] : [other, parsed[1]];
-      pairs.set(edge.join("\u0000"), edge);
-    }
-  }
-  for (const [key, edge] of Object.entries(state.links)) {
-    pairs.set(key, edge);
-  }
-  return [...pairs.values()];
 }
 
 /** The IDs of the drawn tables. */
@@ -300,8 +207,7 @@ export function prune(state: GraphState): GraphState {
  */
 export function addNeighbours(
   state: GraphState,
-  direction: Direction,
-  table: string,
+  [direction, table]: Expansion,
   neighbours: LineageTable[],
 ): GraphState {
   const key = expansionKey(direction, table);
@@ -371,8 +277,7 @@ export function collapse(
  */
 export async function expand(
   store: GraphStore,
-  direction: Direction,
-  table: string,
+  [direction, table]: Expansion,
   fetch: FetchNeighbours,
 ): Promise<string[]> {
   const known = store.get().known[table];
@@ -417,7 +322,7 @@ export async function fetchExpansion(
   if ((store.get().cancelled[key] ?? 0) !== cancelledBefore) {
     return [];
   }
-  store.update((s) => addNeighbours(s, direction, table, neighbours));
+  store.update((s) => addNeighbours(s, [direction, table], neighbours));
   return neighbours.map((n) => n.table);
 }
 

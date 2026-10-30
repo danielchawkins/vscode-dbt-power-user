@@ -30,6 +30,12 @@ export const fetchEdges = async (
   return body.edges ?? [];
 };
 
+/** Every table of the project graph, with the data-flow `[parent, child]` pairs among them. */
+export const fetchProjectGraph = (): Promise<{
+  tables: lineage.LineageTable[];
+  edges: [string, string][];
+}> => executeRequestInSync("getProjectGraph");
+
 /** The `getColumns` body of `table`; `refresh` asks the warehouse for a source's columns. */
 export const fetchTableColumns = (
   table: string,

@@ -116,6 +116,7 @@ export const Canvas = ({
   drawnKey,
   nodeKey,
   shapeKey,
+  frame,
   overlap,
   canvasRef,
   size,
@@ -127,6 +128,8 @@ export const Canvas = ({
   drawnKey: number;
   nodeKey: string;
   shapeKey: string;
+  /** The cards the fit reads its zoom from, by id; undefined reads every drawn card. */
+  frame?: readonly string[] | undefined;
   /** How far the notice covers the canvas's top edge, which the fit keeps clear of. */
   overlap: number;
   canvasRef: RefObject<HTMLDivElement | null>;
@@ -143,6 +146,7 @@ export const Canvas = ({
     notice: overlap,
     drawnKey,
     focusId,
+    frame,
     nodeKey,
     shapeKey,
   });

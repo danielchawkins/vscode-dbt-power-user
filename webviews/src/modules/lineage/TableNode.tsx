@@ -158,6 +158,7 @@ const Actions = ({
   expanded,
   pending,
   capped,
+  expandable = true,
   listed,
   hideable,
   label,
@@ -167,6 +168,7 @@ const Actions = ({
   expanded: { parents: boolean; children: boolean };
   pending: { parents: boolean; children: boolean };
   capped: { parents: number; children: number };
+  expandable?: boolean | undefined;
   listed: boolean;
   hideable: boolean;
   /** The title the card shows; Hide keeps it with the card. */
@@ -207,12 +209,14 @@ const Actions = ({
       direction="parents"
       expanded={expanded.parents}
       pending={pending.parents}
+      expandable={expandable}
     />
     <ExpandButton
       table={table}
       direction="children"
       expanded={expanded.children}
       pending={pending.children}
+      expandable={expandable}
     />
   </>
 );
@@ -338,6 +342,7 @@ const TableNodeView = ({
         expanded={data.expanded}
         pending={data.pending}
         capped={data.capped}
+        expandable={data.expandable}
         listed={data.columns !== undefined}
         hideable={!data.isStart}
         label={cardTitle(data.table, data.title)}

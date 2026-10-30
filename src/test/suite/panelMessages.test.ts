@@ -60,6 +60,10 @@ function lineageHarness() {
     getConnectedColumns: vi
       .fn()
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
+    getProjectGraph: vi.fn().mockReturnValue({
+      tables: [{ table: "model.p.a" }, { table: "model.p.z" }],
+      edges: [["model.p.z", "model.p.a"]],
+    }),
   };
   const queryManifestService = {
     manifestFor: vi.fn().mockReturnValue(undefined),
@@ -188,6 +192,17 @@ describe("lineage panel messages", () => {
       });
       expect(h.postMessage).toHaveBeenCalledWith(
         response("e1", { edges: [["model.p.z", "model.p.a"]] }),
+      );
+    },
+    getProjectGraph: async () => {
+      const h = lineageHarness();
+      await h.send({ command: "getProjectGraph", syncRequestId: "w1" });
+      expect(h.panel.lineageService.getProjectGraph).toHaveBeenCalled();
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("w1", {
+          tables: [{ table: "model.p.a" }, { table: "model.p.z" }],
+          edges: [["model.p.z", "model.p.a"]],
+        }),
       );
     },
     getColumns: async () => {

@@ -160,6 +160,8 @@ export interface FlowDecoration {
   pending?: readonly string[] | undefined;
   /** Neighbours each capped expansion does not draw yet, by expansion key. */
   capped?: Record<string, number> | undefined;
+  /** Whether the cards' expanders open their neighbours; off in the whole project, which draws every card, so each shows only its count. */
+  expandable?: boolean | undefined;
   /** The tables drawn as cards with no edge (dbt's `meta.lineage.hidden`); the start table is never among them. */
   filteredOut?: ReadonlySet<string> | undefined;
   errors: Record<string, string[]>;

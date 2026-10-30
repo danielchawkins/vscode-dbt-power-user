@@ -250,10 +250,17 @@ export class LineagePanel
     | "childTables"
     | "parentTables"
     | "tableEdges"
+    | "getProjectGraph"
     | "getColumns"
     | "getRelationships"
   > {
     return {
+      getProjectGraph: ({ syncRequestId }) =>
+        this.respond(
+          "getProjectGraph",
+          syncRequestId,
+          this.lineageService.getProjectGraph(),
+        ),
       childTables: ({ args, syncRequestId }) =>
         this.respond(
           "childTables",

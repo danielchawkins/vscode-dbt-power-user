@@ -97,8 +97,7 @@ describe("toFlow with combined edges from a real state", () => {
     });
     let state = addNeighbours(
       emptyGraph(table("hub"), 3, "folder"),
-      "children",
-      "hub",
+      ["children", "hub"],
       [
         child("models/a", "a1"),
         child("models/a", "a2"),

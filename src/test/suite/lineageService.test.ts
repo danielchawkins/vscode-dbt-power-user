@@ -131,6 +131,42 @@ describe("LineageService — foreign-key-only edge hiding", () => {
   });
 });
 
+describe("LineageService.getProjectGraph", () => {
+  it("draws every table that has a parent or a child, and the data-flow pairs among them", () => {
+    // Parents of b: a (data) and d (FK only). Parents of c: b. Children of a: b and d. Children of b: c.
+    // A table is drawn if it is a key of either map, so c (a parent key only) and a (a child key only) both count.
+    const parents = new Map([
+      ["b", { nodes: [node("a", "data"), node("d", "constraint")] }],
+      ["c", { nodes: [node("b", "data")] }],
+    ]);
+    const children = new Map([
+      ["a", { nodes: [node("b", "data"), node("d", "constraint")] }],
+      ["b", { nodes: [node("c", "data")] }],
+    ]);
+    const svc = makeService({ parents, children, tests: new Map() });
+
+    const graph = svc.getProjectGraph();
+
+    expect(graph.tables.map((table) => table.table).toSorted()).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+    expect(
+      graph.edges.toSorted((a, b) => a.join().localeCompare(b.join())),
+    ).toEqual([
+      ["a", "b"],
+      ["b", "c"],
+    ]);
+  });
+
+  it("is empty when no project is loaded", () => {
+    const svc = Object.create(LineageService.prototype) as LineageService;
+    (svc as any).currentProject = { current: undefined };
+    expect(svc.getProjectGraph()).toEqual({ tables: [], edges: [] });
+  });
+});
+
 describe("LineageService.getConnectedColumns", () => {
   const listNodes = (...nodes: [string, string[], string?][]) => ({
     error: null,

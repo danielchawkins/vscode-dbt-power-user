@@ -20,11 +20,12 @@ const table = (
 // The start S has children H (filtered out) and C; H has child X. S -> C is the only edge that should be drawn.
 function sample(startFilteredOut = false): GraphState {
   const start = emptyGraph(table("S", { hidden: startFilteredOut }));
-  const withChildren = addNeighbours(start, "children", "S", [
-    table("H", { hidden: true }),
-    table("C"),
-  ]);
-  return addNeighbours(withChildren, "children", "H", [table("X")]);
+  const withChildren = addNeighbours(
+    start,
+    ["children", "S"],
+    [table("H", { hidden: true }), table("C")],
+  );
+  return addNeighbours(withChildren, ["children", "H"], [table("X")]);
 }
 
 describe("filtered-out tables", () => {

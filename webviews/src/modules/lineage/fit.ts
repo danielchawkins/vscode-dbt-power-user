@@ -125,7 +125,7 @@ export const fitOptions = (
   };
 };
 
-/** What a fit needs: the canvas size, the padding and options to fit with, and the focused card. */
+/** What a fit needs: the canvas size, the padding and options to fit with, the focused card and the frame, if any. */
 interface FitRequest {
   flow: ReturnType<typeof useReactFlow>;
   options: FitViewOptions;
@@ -133,6 +133,8 @@ interface FitRequest {
   width: number;
   height: number;
   focusId: string | undefined;
+  /** The cards the zoom is read from, by id, instead of every drawn card. */
+  frame?: readonly string[] | undefined;
 }
 
 /**
@@ -148,6 +150,7 @@ export const fitGraph = async ({
   width,
   height,
   focusId,
+  frame,
 }: FitRequest): Promise<void> => {
   await flow.fitView(options);
   const focus = focusId === undefined ? undefined : flow.getNode(focusId);
@@ -157,7 +160,13 @@ export const fitGraph = async ({
   const focusX =
     focus.position.x + (focus.measured?.width ?? geometry.tableWidth) / 2;
   const focusY = focus.position.y + (focus.measured?.height ?? 0) / 2;
-  const { bounds, columns } = fitBoxes(flow.getNodes());
+  const nodes = flow.getNodes();
+  const framedIds = new Set<string>(frame);
+  const framedCards = nodes.filter((node) => framedIds.has(node.id));
+  const { bounds, columns } =
+    framedCards.length > 0
+      ? { bounds: framed(framedCards), columns: undefined }
+      : fitBoxes(nodes);
   await flow.setViewport(
     focusedViewport({
       bounds,

@@ -4,7 +4,7 @@ import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
-import { drawnIds } from "./graph";
+import { drawnIds, NEIGHBOURHOOD_VIEW } from "./graph";
 import { groupNodeId, shortGroupKey } from "./grouping";
 import { useLineageGraph } from "./useLineageGraph";
 
@@ -200,7 +200,11 @@ describe("useLineageGraph", () => {
     });
     const { result } = renderHook(() =>
       useLineageGraph(() => 1, vi.fn(), {
-        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+        expansionOptions: () => ({
+          cap: 2,
+          groupBy: "folder",
+          view: NEIGHBOURHOOD_VIEW,
+        }),
       }),
     );
     await postRender("a");
@@ -250,7 +254,11 @@ describe("useLineageGraph", () => {
     } as never);
     const { result } = renderHook(() =>
       useLineageGraph(() => 1, vi.fn(), {
-        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+        expansionOptions: () => ({
+          cap: 2,
+          groupBy: "folder",
+          view: NEIGHBOURHOOD_VIEW,
+        }),
       }),
     );
     await postRender("a");

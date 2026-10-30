@@ -14,9 +14,9 @@ const PANEL_STATE_PURE =
   "queryPanel/(constants|context/(queryPanelReducer|types)|components/QueryPanelContents/types))\\.ts$";
 
 const LINEAGE_PURE =
-  "^src/modules/lineage/(card|channels|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|" +
+  "^src/modules/lineage/(card|channels|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|graphState|" +
   "groupEdges|grouping|gutterPlan|gutterRouter|filteredOut|layerTags|layered|layeredFlow|" +
-  "layeredMetrics|layeredRanks|layeredRows|layout|minimap|routeDrawing|routeGeometry|routeTypes|visibility|" +
+  "layeredMetrics|layeredRanks|layeredRows|layout|minimap|projection|routeDrawing|routeGeometry|routeTypes|visibility|" +
   "engine/[A-Za-z]+)\\.ts$";
 
 // The lineage layout-engine port (engine/layoutEngine.ts), the registry that picks an engine (engine/engines.ts),

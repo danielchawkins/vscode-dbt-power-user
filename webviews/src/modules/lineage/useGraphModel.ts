@@ -1,4 +1,4 @@
-import type { lineage } from "@fusion-power-user/webview-contract";
+import { lineage } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
 import type { DrawerRef } from "@uicore";
 import {
@@ -16,7 +16,12 @@ import type { LayoutInput } from "./engine/layoutRequest";
 import { cappedCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
 import { type BuiltFlow, drawnPairs, emphasize, toFlow } from "./flow";
-import { type GraphState, knownPairs, visibleOf } from "./graph";
+import {
+  type GraphState,
+  knownPairs,
+  type ViewSettings,
+  visibleOf,
+} from "./graph";
 import { combinedEdges } from "./groupEdges";
 import {
   fetchHiddenCards,
@@ -65,6 +70,20 @@ const useHiddenCards = () => {
   return hidden;
 };
 
+/** The options the expansions are built with, from the settings: the cap, the grouping and the view. */
+const expansionOptionsOf = (settings: ResolvedSettings): ExpansionOptions => ({
+  cap: settings.maxNeighbours,
+  groupBy: settings.groupBy,
+  view: viewOf(settings),
+});
+
+const viewOf = (settings: ResolvedSettings): ViewSettings => ({
+  viewMode: settings.viewMode,
+  upstreamDepth: settings.upstreamDepth,
+  downstreamDepth: settings.downstreamDepth,
+  cardBudget: settings.cardBudget,
+});
+
 /** The keys the canvas fits by: the drawn nodes by id, and the engine and Connections, which refit it when they change. */
 const useFitKeys = (flow: BuiltFlow, settings: ResolvedSettings) => {
   const nodeKey = useMemo(
@@ -76,7 +95,11 @@ const useFitKeys = (flow: BuiltFlow, settings: ResolvedSettings) => {
         .join("\n"),
     [flow],
   );
-  return { nodeKey, shapeKey: `${settings.engine}|${settings.connections}` };
+  return {
+    nodeKey,
+    // The default expansion sets the neighbourhood the whole view fits to, so changing it refits.
+    shapeKey: `${settings.engine}|${settings.connections}|${settings.defaultExpansion}`,
+  };
 };
 
 /** The hidden cards by id, each with the label it was hidden with; the id stands in only when no label was stored. */
@@ -91,9 +114,8 @@ const hiddenCardsOf = (
  */
 const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
   const [refs, setRefs] = useState<lineage.LineageRef[]>([]);
-  const declared = settings.connections !== "dbt";
   useEffect(() => {
-    if (!declared) {
+    if (settings.connections === "dbt") {
       return;
     }
     let live = true;
@@ -103,7 +125,7 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
     return () => {
       live = false;
     };
-  }, [declared, settings.includeSourcesInInference, drawnKey]);
+  }, [settings.connections, settings.includeSourcesInInference, drawnKey]);
   return refs;
 };
 
@@ -123,6 +145,18 @@ type FlowSettings = Pick<
   | "inferenceConfidenceThreshold"
 >;
 
+/** The counts of `extra` added to those of `base`, key by key. */
+const sumCounts = (
+  base: Record<string, number>,
+  extra: Record<string, number>,
+): Record<string, number> => {
+  const sum = { ...base };
+  for (const [key, count] of Object.entries(extra)) {
+    sum[key] = (sum[key] ?? 0) + count;
+  }
+  return sum;
+};
+
 /** The React Flow nodes and edges, with no emphasis, and the drawn pairs the emphasis follows. */
 const flowOf = ({
   graph,
@@ -137,6 +171,7 @@ const flowOf = ({
   columnsNeedStrict: boolean;
   layouter: Layouter;
 }): { flow: BuiltFlow; pairs: ReturnType<typeof drawnPairs> } => {
+  const visible = visibleOf(graph);
   const data = lineageData(graph, {
     direct: settings.showSelectEdges,
     indirect: settings.showNonSelectEdges,
@@ -160,8 +195,10 @@ const flowOf = ({
       title: settings.title,
       expansions: graph.expansions,
       pending: graph.pending,
-      capped: cappedCounts(graph),
-      filteredOut: visibleOf(graph).filteredOut,
+      capped: sumCounts(cappedCounts(graph), visible.capped),
+      // The whole project draws every card, so an expander has no neighbours to open.
+      expandable: graph.view.viewMode === "neighbourhood",
+      filteredOut: visible.filteredOut,
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,
@@ -298,6 +335,8 @@ interface GraphModel {
   details: GraphState["known"][string] | undefined;
   nodeKey: string;
   shapeKey: string;
+  /** The cards the whole view fits to; undefined in the neighbourhood. */
+  frame: string[] | undefined;
 }
 
 /**
@@ -312,6 +351,33 @@ const useHoveredCard = (settings: ResolvedSettings) => {
   );
   const highlighting = settings.pathHighlight || settings.dimOffPath;
   return { hovered: highlighting ? pointed : undefined, hover };
+};
+
+/**
+ * The graph's reads of the settings, held in refs so a change follows without re-creating the graph store. A layout
+ * effect runs before the graph's effects, so a render held until the settings load is drawn with them. "More" in the
+ * neighbourhood, when the card budget left the cards out, raises the budget by one expansion's cap.
+ */
+const useSettingsRefs = (
+  settings: ResolvedSettings,
+  change: ReturnType<typeof useSettings>["change"],
+) => {
+  const expansionRef = useRef(settings.defaultExpansion);
+  const optionsRef = useRef<ExpansionOptions>(expansionOptionsOf(settings));
+  const changeRef = useRef(change);
+  useLayoutEffect(() => {
+    expansionRef.current = settings.defaultExpansion;
+    optionsRef.current = expansionOptionsOf(settings);
+    changeRef.current = change;
+  }, [settings, change]);
+  const defaultExpansion = useCallback(() => expansionRef.current, []);
+  const expansionOptions = useCallback(() => optionsRef.current, []);
+  const raiseBudget = useCallback((by: number) => {
+    const { cardBudget } = optionsRef.current.view;
+    const next = cardBudget + Math.max(1, by);
+    changeRef.current({ cardBudget: Math.min(lineage.MAX_CARD_BUDGET, next) });
+  }, []);
+  return { defaultExpansion, expansionOptions, raiseBudget };
 };
 
 /**
@@ -331,22 +397,10 @@ export const useGraphModel = (
     },
     [drawerRef],
   );
-  // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store. A layout
-  // effect runs before the graph's effects, so a render held until the settings load is drawn with them.
-  const expansionRef = useRef(settings.defaultExpansion);
-  const optionsRef = useRef<ExpansionOptions>({
-    cap: settings.maxNeighbours,
-    groupBy: settings.groupBy,
-  });
-  useLayoutEffect(() => {
-    expansionRef.current = settings.defaultExpansion;
-    optionsRef.current = {
-      cap: settings.maxNeighbours,
-      groupBy: settings.groupBy,
-    };
-  }, [settings.defaultExpansion, settings.maxNeighbours, settings.groupBy]);
-  const defaultExpansion = useCallback(() => expansionRef.current, []);
-  const expansionOptions = useCallback(() => optionsRef.current, []);
+  const { defaultExpansion, expansionOptions, raiseBudget } = useSettingsRefs(
+    settings,
+    change,
+  );
   const {
     graph,
     rendered,
@@ -356,8 +410,10 @@ export const useGraphModel = (
     reset,
     restore,
     restoreAll,
+    frame,
   } = useLineageGraph(defaultExpansion, openDetails, {
     expansionOptions,
+    raiseBudget,
     ready: loaded && hiddenIds !== undefined,
     hidden: hiddenIds,
   });
@@ -366,10 +422,14 @@ export const useGraphModel = (
     [graph.hiddenCards],
   );
   const notice = rendered?.missingLineageMessage;
-  const columnsNeedStrict = rendered?.columnsNeedStrict === true;
   const refs = useRefs(settings, drawnKey);
   const { hovered, hover } = useHoveredCard(settings);
-  const built = useBuiltFlow({ graph, settings, refs, columnsNeedStrict });
+  const built = useBuiltFlow({
+    graph,
+    settings,
+    refs,
+    columnsNeedStrict: rendered?.columnsNeedStrict === true,
+  });
   const { nodes, edges } = useEmphasizedFlow({
     graph,
     settings,
@@ -379,6 +439,7 @@ export const useGraphModel = (
   const details = detailsTable ? graph.known[detailsTable] : undefined;
   const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);
   return {
+    frame,
     settings,
     change,
     reset,

@@ -135,3 +135,38 @@ describe("the fit's top padding", () => {
     expect(bubbleTop).toBeGreaterThanOrEqual(padding.top);
   });
 });
+
+describe("the whole-project fit", () => {
+  it("opens at the zoom and centre of the neighbourhood it frames", async () => {
+    // The open model c0 and its two neighbours are framed; the rest of the project lies far below them.
+    const framed = [
+      card("c0", 0, 0, 200),
+      card("c1", 0, 260, 200),
+      card("c2", 0, 520, 200),
+    ];
+    const rest = Array.from({ length: 30 }, (_, index) =>
+      card(`far${index}`, 0, 2000 + index * 300, 200),
+    );
+    const { flow, views } = fakeFlow([...framed, ...rest]);
+    await fitGraph({
+      flow,
+      options: {},
+      padding: fitPadding(),
+      width: 800,
+      height: 600,
+      focusId: "c0",
+      frame: framed.map((node) => node.id),
+    });
+    const { flow: neighbourhood, views: neighbourhoodViews } = fakeFlow(framed);
+    await fitGraph({
+      flow: neighbourhood,
+      options: {},
+      padding: fitPadding(),
+      width: 800,
+      height: 600,
+      focusId: "c0",
+    });
+    expect(views.at(-1)).toEqual(neighbourhoodViews.at(-1));
+    expect(views.at(-1)?.zoom).toBeGreaterThan(ZOOM_OUT_BELOW);
+  });
+});

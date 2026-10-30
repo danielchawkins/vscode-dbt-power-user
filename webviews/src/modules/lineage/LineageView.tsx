@@ -55,6 +55,7 @@ const Graph = (): React.JSX.Element => {
             drawnKey={model.drawnKey}
             nodeKey={model.nodeKey}
             shapeKey={model.shapeKey}
+            frame={model.frame}
             overlap={overlap}
             canvasRef={canvasRef}
             size={size}

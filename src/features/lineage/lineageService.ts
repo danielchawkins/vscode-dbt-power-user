@@ -267,6 +267,46 @@ export class LineageService {
     return { edges };
   }
 
+  /**
+   * Every table of the project's lineage graph and the data-flow pairs among them, for the whole-project view. A
+   * table's URL is the one a neighbour's edge carries for it, when one does.
+   */
+  getProjectGraph(): {
+    tables: lineage.LineageTable[];
+    edges: [string, string][];
+  } {
+    const manifest = this.currentProject.current?.manifest;
+    if (!manifest) {
+      return { tables: [], edges: [] };
+    }
+    const { graphMetaMap } = manifest;
+    const urls = new Map<string, string>();
+    for (const map of [graphMetaMap.parents, graphMetaMap.children]) {
+      for (const { nodes } of map.values()) {
+        for (const node of nodes) {
+          if (node.url !== undefined) {
+            urls.set(node.key, node.url);
+          }
+        }
+      }
+    }
+    const keys = new Set([
+      ...graphMetaMap.parents.keys(),
+      ...graphMetaMap.children.keys(),
+    ]);
+    const tables: lineage.LineageTable[] = [];
+    for (const key of keys) {
+      const table = this.createTable(manifest, urls.get(key), key);
+      if (table) {
+        tables.push(table);
+      }
+    }
+    const { edges } = this.getTableEdges({
+      tables: tables.map((table) => table.table),
+    });
+    return { tables, edges };
+  }
+
   private getConnectedTables(
     key: keyof GraphMetaMap,
     table: string,

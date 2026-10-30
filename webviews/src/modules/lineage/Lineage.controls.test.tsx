@@ -12,12 +12,15 @@ import {
   FANOUT_GROUPS,
   FANOUT_MEMBERS,
   FILTER,
+  WIDE,
   flowNodes,
   HUB,
+  HUB_CHILDREN,
   node,
   nodes,
   openLineage,
   pane,
+  PROJECT_IDS,
   tableIds,
   TESTED_CONTROLS,
   zoomPast,
@@ -42,6 +45,27 @@ const backdropOf = (label: string) =>
 
 const drawer = (name: string) =>
   within(screen.getByRole("complementary", { name }));
+
+/** The two views the scope suites run in: the whole project, and the neighbourhood the other tests were written for. */
+const MODES = ["whole", "neighbourhood"] as const;
+type Mode = (typeof MODES)[number];
+
+/**
+ * The table IDs a view draws in `mode` for the neighbourhood `ids`. The whole project draws every fixture table, so
+ * its cards are all of them whatever the neighbourhood is.
+ */
+const drawnIn = (mode: Mode, ids: string[]): string[] =>
+  mode === "whole" ? PROJECT_IDS.toSorted() : ids.toSorted();
+
+/** The whole project without the cards `ids`: what the whole-project view draws once they are hidden. */
+const projectWithout = (...ids: string[]): string[] =>
+  PROJECT_IDS.filter((id) => !ids.includes(id)).toSorted();
+
+/**
+ * The edges the whole project thins with a cap of one: every edge of `hub` (six), of `fanout` (ten), of `filter`
+ * (one drawn, to `kept`) and of `wide` (three). `a`, `b` and `c` have no hub end.
+ */
+const WHOLE_HUB_EDGES = 20;
 
 // ---- the tests ----
 
@@ -118,6 +142,7 @@ describe("Lineage Settings popover", () => {
   it("sets the default expansion from its number input", async () => {
     const { user } = await openLineage();
     await press(user, "button", "Settings");
+    await press(user, "radio", "Whole project");
     const expansion = await typeInto(
       user,
       "spinbutton",
@@ -131,14 +156,233 @@ describe("Lineage Settings popover", () => {
   });
 });
 
-describe("Lineage emphasis controls", () => {
+describe("Lineage view controls", () => {
+  it("shows Default expansion only in the whole project, and switches the view both ways", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Settings");
+    expect(
+      screen.queryByRole("spinbutton", { name: "Default expansion" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("spinbutton", { name: "Upstream depth" }),
+    ).toHaveValue(2);
+    await press(user, "radio", "Whole project");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { viewMode: "whole" } },
+    });
+    expect(
+      screen.getByRole("spinbutton", { name: "Default expansion" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: "Upstream depth" }),
+    ).toBeNull();
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(PROJECT_IDS.toSorted()),
+    );
+    await press(user, "radio", "Neighbourhood");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { viewMode: "neighbourhood" } },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+  });
+
+  it("hides a card in the whole project, and leaves the rest of the project drawn", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+      flowNodes: PROJECT_IDS.length,
+    });
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(PROJECT_IDS.toSorted()),
+    );
+    await press(user, "button", "Hide", node(container, "a"));
+    // c is reached from a source only through a, so it goes with it; the start b stays.
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(
+        PROJECT_IDS.filter((id) => id !== "a" && id !== "c").sort(),
+      ),
+    );
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [{ id: "a", label: "a" }] } },
+    });
+  });
+
+  it("shows a plain count on each card in the whole project, and a click on it does nothing", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(PROJECT_IDS.toSorted()),
+    );
+    const card = container.querySelector<HTMLElement>('[data-table="b"]')!;
+    // The count is a span, not a button, and there is no live "Show N parents" or "Show N children" control.
+    expect(within(card).queryByRole("button", { name: /parents/ })).toBeNull();
+    expect(within(card).queryByRole("button", { name: /children/ })).toBeNull();
+    const parents = card.querySelector<HTMLElement>('[title="1 parents"]')!;
+    const children = card.querySelector<HTMLElement>('[title="1 children"]')!;
+    expect(parents.tagName).toBe("SPAN");
+    expect(parents).toHaveTextContent("1");
+    expect(children).toHaveTextContent("1");
+
+    const requestsBefore = [
+      ...commands("parentTables"),
+      ...commands("childTables"),
+    ].length;
+    await user.click(parents);
+    await user.click(children);
+    expect([
+      ...commands("parentTables"),
+      ...commands("childTables"),
+    ]).toHaveLength(requestsBefore);
+    expect(tableIds(container)).toEqual(PROJECT_IDS.toSorted());
+  });
+
+  it("relays the neighbourhood out when a depth settles, and posts it", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Settings");
+    expect(tableIds(container)).toEqual(["a", "b", "c"]);
+    await typeInto(user, "spinbutton", "Upstream depth", "0");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { upstreamDepth: 0 } },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["b", "c"]));
+    await typeInto(user, "spinbutton", "Downstream depth", "0");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { downstreamDepth: 0 } },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["b"]));
+  });
+
+  it("keeps the card budget, and posts it as it changes", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { cardBudget: 2 },
+      flowNodes: 2,
+    });
+    expect(tableIds(container)).toEqual(["a", "b"]);
+    // b's child c is left out by the budget, so b shows the count it could not draw.
+    expect(
+      within(
+        node(container, "b").getByRole("button", { name: /more children/ }),
+      ).getByText("+1"),
+    ).toBeInTheDocument();
+    await press(user, "button", "Settings");
+    await typeInto(user, "spinbutton", "Card budget", "3");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { cardBudget: 3 } },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+  });
+
+  it("posts the card budget once after typing settles, not per keystroke", async () => {
+    const { user } = await openLineage(undefined, {
+      settings: { cardBudget: 2 },
+      flowNodes: 2,
+    });
+    await press(user, "button", "Settings");
+    await typeInto(user, "spinbutton", "Card budget", "150");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { cardBudget: 150 } },
+    });
+    expect(commands("persistLineageSettings")).toHaveLength(1);
+  });
+
+  it("'more' on a budget-capped card draws it without refetching or losing the expansions", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { cardBudget: 2 },
+      flowNodes: 2,
+    });
+    expect(tableIds(container)).toEqual(["a", "b"]);
+    await press(user, "button", "Columns", node(container, "a"));
+    // A manual expansion made before the click must survive it.
+    await press(user, "button", "Show 1 children", node(container, "a"));
+    const fetchesBefore = [
+      ...commands("childTables"),
+      ...commands("parentTables"),
+      ...commands("getColumns"),
+    ].length;
+    await press(user, "button", "Show 1 more children", node(container, "b"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    expect([
+      ...commands("childTables"),
+      ...commands("parentTables"),
+      ...commands("getColumns"),
+    ]).toHaveLength(fetchesBefore);
+    // The column list of a survived the rebuild-free change of budget.
+    expect(
+      node(container, "a").getByRole("button", { name: "id" }),
+    ).toBeInTheDocument();
+    // So did the expansion `a` made by hand.
+    expect(
+      node(container, "a").getByRole("button", { name: "Hide 1 children" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("a selection and a manual expansion survive a budget raise, the change 'more' makes", async () => {
+    // A click on a card's own control selects that card, so the selection is made on `a`, and the raise is made from
+    // the Card budget setting: "more" raises the same setting, and a click on `b`'s control would select `b`.
+    const { user, container } = await openLineage(undefined, {
+      settings: { cardBudget: 2 },
+      flowNodes: 2,
+    });
+    expect(tableIds(container)).toEqual(["a", "b"]);
+    await press(user, "button", "Show 1 children", node(container, "a"));
+    await zoomPast(user, container, "In");
+    await user.click(node(container, "a").getByText("a"));
+    const selected = () =>
+      container.querySelector('.react-flow__node[data-id="a"]');
+    await waitFor(() => expect(selected()).toHaveClass("selected"));
+    await press(user, "button", "Settings");
+    await typeInto(user, "spinbutton", "Card budget", "3");
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    expect(selected()).toHaveClass("selected");
+    expect(
+      node(container, "a").getByRole("button", { name: "Hide 1 children" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("'more' on a card that both the cap and the budget limit draws new cards in one click", async () => {
+    // `wide` feeds three cards. The cap of two draws two of them, and the budget of two keeps only `w_one`, so the
+    // label counts two: `w_two`, which the budget leaves out, and `w_three`, which the cap does. One click raises the
+    // budget by both, and draws all three children.
+    const { user, container } = await openLineage(
+      { node: WIDE, publication: "s:1" },
+      { settings: { maxNeighbours: 2, cardBudget: 2 }, flowNodes: 2 },
+    );
+    expect(tableIds(container)).toEqual(["w_one", "wide"]);
+    await press(
+      user,
+      "button",
+      "Show 2 more children",
+      node(container, "wide"),
+    );
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual([
+        "w_one",
+        "w_three",
+        "w_two",
+        "wide",
+      ]),
+    );
+    expect(
+      node(container, "wide").queryByRole("button", {
+        name: /more children/,
+      }),
+    ).toBeNull();
+    await expectPosted("persistLineageSettings", {
+      args: { params: { cardBudget: 4 } },
+    });
+  });
+});
+
+describe.each(MODES)("Lineage emphasis controls in the %s view", (viewMode) => {
   const card = (container: HTMLElement, id: string) =>
     container
       .querySelector<HTMLElement>(`[data-table="${id}"]`)!
       .closest<HTMLElement>(".react-flow__node")!;
 
   it("highlights the path of the hovered card, and posts the setting", async () => {
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await press(user, "button", "Settings");
     const box = await press(
       user,
@@ -164,10 +408,13 @@ describe("Lineage emphasis controls", () => {
   });
 
   it("dims the cards and edges off the highlighted path", async () => {
-    const { user, container } = await openLineage({
-      node: FILTER,
-      publication: "s:1",
-    });
+    const { user, container } = await openLineage(
+      {
+        node: FILTER,
+        publication: "s:1",
+      },
+      { settings: { viewMode } },
+    );
     await press(user, "button", "Settings");
     const box = await press(
       user,
@@ -191,7 +438,11 @@ describe("Lineage emphasis controls", () => {
     // With a cap of one, `filter` has two children (`kept` and `audit`), so it is a hub. Only `kept` has a drawn edge.
     const { user, container } = await openLineage(
       { node: FILTER, publication: "s:1" },
-      { settings: { maxNeighbours: 1 }, flowNodes: 2 },
+      {
+        settings: { maxNeighbours: 1, viewMode },
+        // Only the neighbourhood starts with two cards; the whole project draws them all.
+        flowNodes: viewMode === "neighbourhood" ? 2 : undefined,
+      },
     );
     await press(user, "button", "Settings");
     expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(0);
@@ -202,38 +453,44 @@ describe("Lineage emphasis controls", () => {
     });
     expect(
       container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
-    ).toHaveLength(1);
+    ).toHaveLength(viewMode === "whole" ? WHOLE_HUB_EDGES : 1);
   });
 
   it("does not thin the edges of a card whose parents and children are each within the cap", async () => {
     // `b` has one parent and one child: with a cap of one, neither direction is over it, so it is no hub.
     const { user, container } = await openLineage(undefined, {
-      settings: { maxNeighbours: 1 },
+      settings: { maxNeighbours: 1, viewMode },
     });
     await press(user, "button", "Settings");
     await press(user, "checkbox", "Thin the edges of hub cards");
-    expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(0);
+    // The whole project has hubs elsewhere (`hub`, `fanout` and `filter`), so only the edges of those are thinned.
+    expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(
+      viewMode === "whole" ? WHOLE_HUB_EDGES : 0,
+    );
   });
 
-  it("thins the edges of a hub whose neighbours are capped, counted from the known neighbours", async () => {
-    // `hub` has six children, only two groups drawn at the cap of two: its drawn edges alone make it look like no hub.
-    const { user, container } = await openLineage(
-      { node: HUB, publication: "s:1" },
-      { settings: { maxNeighbours: 2 }, flowNodes: 3 },
-    );
-    await press(user, "button", "Settings");
-    await press(user, "checkbox", "Thin the edges of hub cards");
-    expect(
-      container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
-    ).toHaveLength(2);
-  });
+  // Only the neighbourhood caps a card's expansion, so only there is a hub's drawn edges fewer than its neighbours.
+  it.runIf(viewMode === "neighbourhood")(
+    "thins the edges of a hub whose neighbours are capped, counted from the known neighbours",
+    async () => {
+      const { user, container } = await openLineage(
+        { node: HUB, publication: "s:1" },
+        { settings: { maxNeighbours: 2 }, flowNodes: 3 },
+      );
+      await press(user, "button", "Settings");
+      await press(user, "checkbox", "Thin the edges of hub cards");
+      expect(
+        container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
+      ).toHaveLength(2);
+    },
+  );
 
   it("highlights a drawn relationship on the path, as a table edge is", async () => {
     // `kept` declares a relationship to `audit`, which has no table edge: under `both` the relationship joins them.
     const { user, container } = await openLineage(
       { node: FILTER, publication: "s:1" },
       {
-        settings: { connections: "both" },
+        settings: { connections: "both", viewMode },
         refs: [
           {
             id: "kept-audit",
@@ -261,7 +518,9 @@ describe("Lineage emphasis controls", () => {
   });
 
   it("sets the edge opacity from its slider, on the view", async () => {
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await press(user, "button", "Settings");
     const slider = await press(user, "slider", "Edge opacity 1.00");
     fireEvent.change(slider, { target: { value: "0.5" } });
@@ -281,7 +540,9 @@ describe("Lineage emphasis controls", () => {
   it("does not call the layout engine when an emphasis control changes", async () => {
     const engine = engineFor(resolveSettings(undefined).engine);
     const layout = vi.spyOn(engine, "layout");
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     const laidOut = layout.mock.calls.length;
     await press(user, "button", "Settings");
     await press(
@@ -683,9 +944,11 @@ describe("Lineage details drawer", () => {
   });
 });
 
-describe("Lineage card click", () => {
+describe.each(MODES)("Lineage card click in the %s view", (viewMode) => {
   it("only selects at normal zoom", async () => {
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await zoomPast(user, container, "In");
     await user.click(node(container, "b").getByText("b"));
     await waitFor(() =>
@@ -697,7 +960,9 @@ describe("Lineage card click", () => {
   });
 
   it("opens the Details drawer when zoomed out", async () => {
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await zoomPast(user, container, "Out");
     await user.click(node(container, "b").getByText("b"));
     await waitFor(() =>
@@ -709,7 +974,7 @@ describe("Lineage card click", () => {
 
   it("with lineage.semanticZoom off, keeps the full card and only selects when zoomed out", async () => {
     const { user, container } = await openLineage(undefined, {
-      settings: { semanticZoom: false },
+      settings: { semanticZoom: false, viewMode },
     });
     await zoomPast(user, container, "Out");
     expect(container.querySelector("[data-table]")?.className).not.toContain(
@@ -976,7 +1241,14 @@ describe("Lineage card strip", () => {
   });
 });
 
-describe("Lineage Hide control", () => {
+describe.each(MODES)("Lineage Hide control in the %s view", (viewMode) => {
+  /**
+   * The cards a view draws with `a` hidden. In the whole project `c` goes too, as the only card drawn through `a`; the
+   * neighbourhood starts at `b`, so `c` stays.
+   */
+  const withoutA = viewMode === "whole" ? projectWithout("a", "c") : ["b", "c"];
+  const all = drawnIn(viewMode, ["a", "b", "c"]);
+
   /** Opens every group of `FANOUT`, as the coverage gate's overflow state does. */
   const openOverflow = async () => {
     const opened = await openLineage(
@@ -991,72 +1263,109 @@ describe("Lineage Hide control", () => {
   };
 
   it("hides a card and posts the hidden set, and the card is no longer drawn", async () => {
-    const { user, container } = await openLineage();
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await press(user, "button", "Hide", node(container, "a"));
-    await waitFor(() => expect(tableIds(container)).toEqual(["b", "c"]));
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutA));
     await expectPosted("persistHiddenCards", {
       args: { params: { cards: [{ id: "a", label: "a" }] } },
     });
   });
 
-  it("hides a child card the same way, and leaves its parent drawn", async () => {
-    const { user, container } = await openLineage();
+  it("hides a child card the same way, and leaves the start drawn", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await press(user, "button", "Hide", node(container, "c"));
-    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b"]));
+    // In the whole project `a` is reached only through `c`, so it goes with it; the start `b` is always drawn.
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(
+        viewMode === "whole" ? projectWithout("a", "c") : ["a", "b"],
+      ),
+    );
     await expectPosted("persistHiddenCards", {
       args: { params: { cards: [{ id: "c", label: "c" }] } },
     });
   });
 
-  it("hides each card of an open group, one at a time", async () => {
-    const { user, container } = await openOverflow();
-    for (const member of FANOUT_MEMBERS) {
-      await press(user, "button", "Hide", node(container, member));
-    }
-    await expectPosted("persistHiddenCards", {
-      args: {
-        params: {
-          cards: FANOUT_MEMBERS.map((member) => ({
-            id: member,
-            label: member,
-          })),
+  // The whole project has no expansion groups, so only the neighbourhood opens them.
+  it.runIf(viewMode === "neighbourhood")(
+    "hides each card of an open group, one at a time",
+    async () => {
+      const { user, container } = await openOverflow();
+      for (const member of FANOUT_MEMBERS) {
+        await press(user, "button", "Hide", node(container, member));
+      }
+      await expectPosted("persistHiddenCards", {
+        args: {
+          params: {
+            cards: FANOUT_MEMBERS.map((member) => ({
+              id: member,
+              label: member,
+            })),
+          },
         },
-      },
-    });
-    await waitFor(() => expect(tableIds(container)).toEqual(["fanout"]));
-  });
+      });
+      await waitFor(() => expect(tableIds(container)).toEqual(["fanout"]));
+    },
+  );
 
-  it("hides the cards of a capped group, which the expansion drew", async () => {
-    const { user, container } = await openLineage(
-      { node: HUB, publication: "s:1" },
-      { settings: { maxNeighbours: 2 } },
-    );
-    await activate(user, "button", "Open staging");
-    await screen.findByRole("button", { name: "Close staging" });
-    await waitFor(() => expect(node(container, "s1")).toBeDefined());
-    await press(user, "button", "Hide", node(container, "s1"));
-    await press(user, "button", "Hide", node(container, "s2"));
-    await expectPosted("persistHiddenCards", {
-      args: {
-        params: {
-          cards: [
-            { id: "s1", label: "s1" },
-            { id: "s2", label: "s2" },
-          ],
+  // The whole project has no capped groups, so only the neighbourhood draws them.
+  it.runIf(viewMode === "neighbourhood")(
+    "hides the cards of a capped group, which the expansion drew",
+    async () => {
+      const { user, container } = await openLineage(
+        { node: HUB, publication: "s:1" },
+        { settings: { maxNeighbours: 2 } },
+      );
+      await activate(user, "button", "Open staging");
+      await screen.findByRole("button", { name: "Close staging" });
+      await waitFor(() => expect(node(container, "s1")).toBeDefined());
+      await press(user, "button", "Hide", node(container, "s1"));
+      await press(user, "button", "Hide", node(container, "s2"));
+      await expectPosted("persistHiddenCards", {
+        args: {
+          params: {
+            cards: [
+              { id: "s1", label: "s1" },
+              { id: "s2", label: "s2" },
+            ],
+          },
         },
-      },
-    });
-  });
+      });
+    },
+  );
+
+  // The neighbourhood draws a group only through the card that opened it, so hiding that card takes the group too.
+  // `s1` starts the view; `hub`, its parent, is drawn through it, and the group `hub` opens is drawn through `hub` only.
+  it.runIf(viewMode === "neighbourhood")(
+    "hides a card and the group only it drew, and keeps the start",
+    async () => {
+      const { user, container } = await openLineage(
+        { node: HUB_CHILDREN[0]!, publication: "s:1" },
+        { settings: { maxNeighbours: 2 }, flowNodes: 2 },
+      );
+      expect(tableIds(container)).toEqual(["hub", "s1"]);
+      await press(user, "button", "Show 6 children", node(container, "hub"));
+      await activate(user, "button", "Open staging");
+      await screen.findByRole("button", { name: "Close staging" });
+      await waitFor(() => expect(tableIds(container)).toContain("s3"));
+      await press(user, "button", "Hide", node(container, "hub"));
+      await waitFor(() => expect(tableIds(container)).toEqual(["s1"]));
+    },
+  );
 
   it("restores a hidden card from the settings list", async () => {
     const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
       hidden: [{ id: "a", label: "a" }],
-      flowNodes: 2,
+      flowNodes: withoutA.length,
     });
-    await waitFor(() => expect(tableIds(container)).toEqual(["b", "c"]));
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutA));
     await press(user, "button", "Settings");
     await press(user, "button", "Restore a");
-    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
     await expectPosted("persistHiddenCards", {
       args: { params: { cards: [] } },
     });
@@ -1064,6 +1373,7 @@ describe("Lineage Hide control", () => {
 
   it("lists a hidden card by the label it was hidden with, or by its id when none was stored", async () => {
     const { user } = await openLineage(undefined, {
+      settings: { viewMode },
       hidden: [
         { id: "model.proj.orders", label: "orders" },
         { id: "model.proj.legacy" },
@@ -1080,23 +1390,30 @@ describe("Lineage Hide control", () => {
 
   it("restores every hidden card with Restore all", async () => {
     const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
       hidden: [
         { id: "a", label: "a" },
         { id: "c", label: "c" },
       ],
-      flowNodes: 1,
+      flowNodes: viewMode === "whole" ? projectWithout("a", "c").length : 1,
     });
-    await waitFor(() => expect(tableIds(container)).toEqual(["b"]));
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(
+        viewMode === "whole" ? projectWithout("a", "c") : ["b"],
+      ),
+    );
     await press(user, "button", "Settings");
     await press(user, "button", "Restore all");
-    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
     await expectPosted("persistHiddenCards", {
       args: { params: { cards: [] } },
     });
   });
 
   it("says in the settings list that no card is hidden, when none is", async () => {
-    const { user } = await openLineage();
+    const { user } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
     await press(user, "button", "Settings");
     expect(screen.getByText(/No cards are hidden/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Restore all" })).toBeNull();

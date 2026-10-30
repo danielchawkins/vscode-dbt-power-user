@@ -21,7 +21,11 @@ const ids = (state: GraphState) =>
 // The hub has five children, given out of label order.
 const CHILDREN = ["e", "c", "a", "d", "b"].map((id) => table(id));
 const capped = (cap: number) =>
-  addNeighbours(emptyGraph(table("hub", 5), cap), "children", "hub", CHILDREN);
+  addNeighbours(
+    emptyGraph(table("hub", 5), cap),
+    ["children", "hub"],
+    CHILDREN,
+  );
 
 describe("expansion cap", () => {
   it("draws the first `cap` neighbours by label and counts the rest", () => {
@@ -50,9 +54,8 @@ describe("expansion cap", () => {
     const withE = { ...start, known: { ...start.known, e: table("e") } };
     // `e` is drawn through another expansion before the hub's children arrive.
     const state = addNeighbours(
-      addNeighbours(withE, "parents", "hub", [table("e")]),
-      "children",
-      "hub",
+      addNeighbours(withE, ["parents", "hub"], [table("e")]),
+      ["children", "hub"],
       CHILDREN,
     );
     expect(ids(state)).toEqual(["a", "e", "hub"]);

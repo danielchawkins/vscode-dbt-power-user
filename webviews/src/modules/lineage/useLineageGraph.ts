@@ -1,82 +1,81 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
-import { readViewState, writeViewState } from "@modules/app/viewState";
-import { panelLogger } from "@modules/logger";
+import { readViewState } from "@modules/app/viewState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { columnKey, traceColumn } from "./columnTrace";
-import { expandLevels, replayExpansions } from "./expansionBatch";
-import { showMore } from "./expansionCap";
-import { closeGroup, openGroup, showMoreInGroup } from "./expansionGroups";
-import type { TableColumn, Direction, GraphState, GraphStore } from "./graph";
+import { traceColumn } from "./columnTrace";
+import { expandDepths, replayExpansions } from "./expansionBatch";
+import type { GraphState, GraphStore, ViewSettings } from "./graph";
 import {
-  clearColumn,
-  collapse,
-  columnClick,
   emptyGraph,
-  expand,
-  expansionClick,
-  hideColumns,
   linkDrawn,
+  NEIGHBOURHOOD_VIEW,
   selectTable,
   showColumns,
-  withHidden,
+  withProject,
 } from "./graph";
 import {
-  executeRequestInAsync,
+  useHeldUntil,
+  useHiddenSeed,
+  useHostMessages,
+  useViewStateWriter,
+  useWholeFrame,
+} from "./lineageHooks";
+import {
   fetchColumns,
   fetchConnected,
   fetchEdges,
   fetchNeighbours,
-  openFile,
-  persistHiddenCards,
+  fetchProjectGraph,
 } from "./requests";
+import { actionsFor, logError, setHidden } from "./tableActions";
 import type { TableActions } from "./viewModel";
-import { planRender, viewStateOf } from "./viewModel";
+import { planRender } from "./viewModel";
 
-const logError = (what: string) => (error: unknown) =>
-  panelLogger.error(`lineage ${what}`, error);
-
-/** Traces `column` and then draws the tables its traced edges touch. */
-const traceSelected = (store: GraphStore, column: TableColumn): void => {
-  traceColumn(store, column, fetchConnected)
-    .then((touched) => showColumns(store, touched, fetchColumns))
-    .catch(logError("column trace"));
-};
-
-/** Cancels the trace in flight on the host and ends it here, so none of its later hops is posted. */
-const stopTrace = (store: GraphStore): void => {
-  const tracing = store.get().tracing;
-  if (tracing) {
-    executeRequestInAsync("cancelColumnTrace", {
-      trace: columnKey(tracing.column),
-    });
-    store.update((s) => ({ ...s, tracing: undefined }));
-  }
-};
-
-/** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
+/** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`; and the view. */
 export interface ExpansionOptions {
   cap: number;
   groupBy: "none" | "folder";
+  view: ViewSettings;
 }
 
-/** Replays `saved` onto the start table, or expands `levels` levels when nothing is saved. */
+/**
+ * The view settings that shape the build as one comparable key: a change of the view mode or a depth relays the graph
+ * out. The card budget is not among them; it only changes the projection, so it is synced into the state instead.
+ */
+const shapeKeyOf = (view: ViewSettings): string =>
+  [view.viewMode, view.upstreamDepth, view.downstreamDepth].join("|");
+
+/**
+ * Draws the view `store` holds. The whole project comes from the host; the neighbourhood replays `saved` and expands
+ * to the depths. Saved columns and the selection are restored after either.
+ */
 async function build(
   store: GraphStore,
   saved: LineageViewState | undefined,
-  levels: number,
 ): Promise<void> {
-  if (!saved) {
-    await expandLevels(store, levels, fetchNeighbours);
+  const { view } = store.get();
+  if (view.viewMode === "whole") {
+    const { tables, edges } = await fetchProjectGraph();
+    store.update((s) => withProject(s, tables, edges));
+  } else {
+    await replayExpansions(
+      store,
+      {
+        expansions: saved?.expansions ?? [],
+        openGroups: saved?.openGroups ?? [],
+      },
+      fetchNeighbours,
+    );
+    await expandDepths(
+      store,
+      { parents: view.upstreamDepth, children: view.downstreamDepth },
+      fetchNeighbours,
+    );
     await linkDrawn(store, fetchEdges);
+  }
+  if (!saved) {
     return;
   }
-  await replayExpansions(
-    store,
-    { expansions: saved.expansions, openGroups: saved.openGroups ?? [] },
-    fetchNeighbours,
-  );
-  await linkDrawn(store, fetchEdges);
   await showColumns(store, saved.columnTables, fetchColumns);
   store.update((s) => selectTable(s, saved.selectedTable));
   const column = saved.selectedColumn;
@@ -86,94 +85,15 @@ async function build(
   }
 }
 
-/** Sets the hidden cards of the graph to `hidden`, and posts the whole list: the host keeps it for the workspace. */
-const setHidden = (store: GraphStore, hidden: lineage.HiddenCard[]): void => {
-  store.update((s) => withHidden(s, hidden));
-  persistHiddenCards(store.get().hiddenCards);
-};
-
-/** The table actions over `store`. */
-const actionsFor = (
-  store: () => GraphStore,
-  openDetails: (table: string) => void,
-): TableActions => ({
-  hide: (table: string, label: string) => {
-    const s = store();
-    setHidden(s, [...s.get().hiddenCards, { id: table, label }]);
-  },
-  toggleExpansion: (table: string, direction: Direction) => {
-    const s = store();
-    // A click on an expander that is still loading cancels it, as a click on an open one closes it.
-    if (expansionClick(s.get(), direction, table) === "collapse") {
-      s.update((g) => collapse(g, direction, table));
-      return;
-    }
-    expand(s, direction, table, fetchNeighbours)
-      .then(() => linkDrawn(s, fetchEdges))
-      .catch(logError("expand"));
-  },
-  showMore: (table: string, direction: Direction) => {
-    const s = store();
-    s.update((g) => showMore(g, direction, table));
-    linkDrawn(s, fetchEdges).catch(logError("show more"));
-  },
-  openGroup: (id: string) => {
-    const s = store();
-    s.update((g) => openGroup(g, id));
-    linkDrawn(s, fetchEdges).catch(logError("open group"));
-  },
-  showMoreInGroup: (id: string) => {
-    const s = store();
-    s.update((g) => showMoreInGroup(g, id));
-    linkDrawn(s, fetchEdges).catch(logError("show more in group"));
-  },
-  // Closing only removes tables, so there are no new pairs to fetch.
-  closeGroup: (id: string) => {
-    store().update((g) => closeGroup(g, id));
-  },
-  toggleColumns: (table: string) => {
-    const s = store();
-    if (s.get().columnTables.includes(table)) {
-      if (s.get().selectedColumn?.[0] === table) {
-        stopTrace(s);
-      }
-      s.update((g) => hideColumns(g, table));
-      return;
-    }
-    showColumns(s, [table], fetchColumns).catch(logError("columns"));
-  },
-  selectColumn: (table: string, column: string) => {
-    const s = store();
-    const ref: TableColumn = [table, column];
-    if (columnClick(s.get(), ref) === "clear") {
-      stopTrace(s);
-      s.update(clearColumn);
-      return;
-    }
-    traceSelected(s, ref);
-  },
-  retryTrace: () => {
-    const s = store();
-    const column = s.get().selectedColumn;
-    if (column) {
-      traceSelected(s, column);
-    }
-  },
-  cancelTrace: () => stopTrace(store()),
-  openDetails,
-  openFile,
-});
-
 /** The graph state, a store per rebuild generation, and `rebuild`, which bumps `drawnKey` when it settles. */
-function useGraphStore(
-  defaultExpansion: () => number,
-  expansionOptions: () => ExpansionOptions,
-) {
+function useGraphStore(expansionOptions: () => ExpansionOptions) {
   const [graph, setGraph] = useState<GraphState>(emptyGraph);
   const [drawnKey, setDrawnKey] = useState(0);
   const graphRef = useRef(graph);
   const generationRef = useRef(0);
   const buildingRef = useRef(false);
+  // The view the graph was last built for; a different one on the panel is relaid out.
+  const builtViewRef = useRef<string | undefined>(undefined);
 
   const storeFor = useCallback(
     (gen: number): GraphStore => ({
@@ -192,18 +112,20 @@ function useGraphStore(
   const rebuild = useCallback(
     (start: lineage.LineageTable | undefined, saved?: LineageViewState) => {
       const gen = ++generationRef.current;
-      const { cap, groupBy } = expansionOptions();
+      const { cap, groupBy, view } = expansionOptions();
       // The hidden cards outlive the graph they were hidden in: every start model keeps them.
       graphRef.current = {
         ...emptyGraph(start, cap, groupBy),
+        view,
         hiddenCards: graphRef.current.hiddenCards,
       };
       setGraph(graphRef.current);
+      builtViewRef.current = shapeKeyOf(view);
       buildingRef.current = !!start;
       if (!start) {
         return;
       }
-      build(storeFor(gen), saved, defaultExpansion())
+      build(storeFor(gen), saved)
         .catch(logError("rebuild"))
         .finally(() => {
           if (gen === generationRef.current) {
@@ -212,14 +134,22 @@ function useGraphStore(
           }
         });
     },
-    [storeFor, defaultExpansion, expansionOptions],
+    [storeFor, expansionOptions],
   );
 
   const current = useCallback(
     () => storeFor(generationRef.current),
     [storeFor],
   );
-  return { graph, graphRef, drawnKey, buildingRef, current, rebuild };
+  return {
+    graph,
+    graphRef,
+    drawnKey,
+    buildingRef,
+    builtViewRef,
+    current,
+    rebuild,
+  };
 }
 
 /**
@@ -231,6 +161,8 @@ function useGraphStore(
 /** The options of `useLineageGraph`. */
 interface LineageGraphOptions {
   expansionOptions?: () => ExpansionOptions;
+  /** "More" on a neighbourhood card the card budget left out: raises the budget. */
+  raiseBudget?: (by: number) => void;
   ready?: boolean;
   /** The hidden cards the host sent for the workspace; undefined until they arrive. */
   hidden?: lineage.HiddenCard[] | undefined;
@@ -245,33 +177,68 @@ interface LineageGraphModel {
   actions: TableActions;
   select: (table: string | undefined) => void;
   reset: () => void;
+  /** The cards the whole view fits to, as IDs; undefined in the neighbourhood, which fits to what it draws. */
+  frame: string[] | undefined;
   restore: (table: string) => void;
   restoreAll: () => void;
 }
 
-/** Applies the hidden cards once the host sends them. Declared before the held render, so that render sees them. */
-function useHiddenSeed(
-  current: () => GraphStore,
-  hidden: lineage.HiddenCard[] | undefined,
-) {
+/**
+ * A changed view mode or depth relays the graph out from the start card, as Reset does. A changed card budget only
+ * projects again: the state keeps the selection, the expansions and the column lists.
+ */
+function useViewSync(
+  {
+    graphRef,
+    builtViewRef,
+    current,
+    reset,
+  }: {
+    graphRef: { current: GraphState };
+    builtViewRef: { current: string | undefined };
+    current: () => GraphStore;
+    reset: () => void;
+  },
+  expansionOptions: () => ExpansionOptions,
+): void {
   useEffect(() => {
-    if (hidden) {
-      current().update((s) => withHidden(s, hidden));
+    const { view } = expansionOptions();
+    if (graphRef.current.start && shapeKeyOf(view) !== builtViewRef.current) {
+      reset();
+      return;
     }
-  }, [hidden, current]);
+    if (graphRef.current.view.cardBudget !== view.cardBudget) {
+      current().update((s) => ({
+        ...s,
+        view: { ...s.view, cardBudget: view.cardBudget },
+      }));
+    }
+  });
 }
 
 export function useLineageGraph(
   defaultExpansion: () => number,
   openDetails: (table: string) => void,
   {
-    expansionOptions = () => ({ cap: 0, groupBy: "none" }),
+    expansionOptions = () => ({
+      cap: 0,
+      groupBy: "none",
+      view: NEIGHBOURHOOD_VIEW,
+    }),
+    raiseBudget,
     ready = true,
     hidden,
   }: LineageGraphOptions = {},
 ): LineageGraphModel {
-  const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
-    useGraphStore(defaultExpansion, expansionOptions);
+  const {
+    graph,
+    graphRef,
+    drawnKey,
+    buildingRef,
+    builtViewRef,
+    current,
+    rebuild,
+  } = useGraphStore(expansionOptions);
   useHiddenSeed(current, hidden);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
@@ -303,70 +270,35 @@ export function useLineageGraph(
     ),
   );
 
-  useEffect(() => {
-    const onMessage = (event: MessageEvent<lineage.HostMessage>) => {
-      const message = event.data;
-      if (message.command === "render") {
-        onRender(message.args);
-      }
-      if (message.command === "projectSaved") {
-        // The saved manifest may change neighbours and columns, so the next render redraws and replays.
-        refreshRef.current = true;
-        executeRequestInAsync("init");
-      }
-    };
-    window.addEventListener("message", onMessage);
-    executeRequestInAsync("init");
-    return () => window.removeEventListener("message", onMessage);
-  }, [onRender]);
+  // The saved manifest may change neighbours and columns, so the next render redraws and replays.
+  const onProjectSaved = useCallback(() => {
+    refreshRef.current = true;
+  }, []);
+  useHostMessages(onRender, onProjectSaved);
 
-  useEffect(() => {
-    // A rebuild's partial graph is not written; drawnKey advances when it settles.
-    const state =
-      restoredRef.current && !buildingRef.current
-        ? viewStateOf(graph, publicationRef.current)
-        : undefined;
-    if (state) {
-      writeViewState(state);
-    }
-  }, [graph, drawnKey, buildingRef]);
+  useViewStateWriter({
+    graph,
+    drawnKey,
+    buildingRef,
+    restoredRef,
+    publicationRef,
+  });
 
   const reset = () => {
     const start = graphRef.current.start;
     rebuild(start ? graphRef.current.known[start] : undefined);
   };
-  const tableActions = useTableActions(current, openDetails);
-  return { graph, rendered, drawnKey, reset, ...tableActions };
-}
-
-/** `handle`, except that while `ready` is false the latest call is held, and replayed once `ready` turns true. */
-function useHeldUntil<T>(ready: boolean, handle: (value: T) => void) {
-  const readyRef = useRef(ready);
-  const heldRef = useRef<{ value: T }>(undefined);
-  useEffect(() => {
-    readyRef.current = ready;
-    const held = heldRef.current;
-    if (ready && held) {
-      heldRef.current = undefined;
-      handle(held.value);
-    }
-  }, [ready, handle]);
-  return useCallback(
-    (value: T) => {
-      if (readyRef.current) {
-        handle(value);
-      } else {
-        heldRef.current = { value };
-      }
-    },
-    [handle],
-  );
+  useViewSync({ graphRef, builtViewRef, current, reset }, expansionOptions);
+  const frame = useWholeFrame(graph, defaultExpansion);
+  const tableActions = useTableActions(current, openDetails, raiseBudget);
+  return { graph, rendered, drawnKey, reset, frame, ...tableActions };
 }
 
 /** Selection and the table actions over the current store; stable while `current` and `openDetails` are. */
 function useTableActions(
   current: () => GraphStore,
   openDetails: (table: string) => void,
+  raiseBudget: ((by: number) => void) | undefined,
 ) {
   const select = useCallback(
     (table: string | undefined) =>
@@ -375,11 +307,15 @@ function useTableActions(
   );
   const actions = useMemo(
     () =>
-      actionsFor(current, (table) => {
-        select(table);
-        openDetails(table);
-      }),
-    [current, select, openDetails],
+      actionsFor(
+        current,
+        (table) => {
+          select(table);
+          openDetails(table);
+        },
+        raiseBudget,
+      ),
+    [current, select, openDetails, raiseBudget],
   );
   const restore = useCallback(
     (table: string) =>

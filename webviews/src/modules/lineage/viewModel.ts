@@ -40,6 +40,19 @@ const resolveEmphasis = (
   edgeOpacity: settings?.edgeOpacity ?? 1,
 });
 
+/** The view settings, each resolved to its default: the whole project, and a neighbourhood of 2 and 2 steps in a budget of 150. */
+const resolveView = (
+  settings: Partial<Settings> | undefined,
+): Pick<
+  ResolvedSettings,
+  "viewMode" | "upstreamDepth" | "downstreamDepth" | "cardBudget"
+> => ({
+  viewMode: settings?.viewMode ?? "whole",
+  upstreamDepth: settings?.upstreamDepth ?? 2,
+  downstreamDepth: settings?.downstreamDepth ?? 2,
+  cardBudget: settings?.cardBudget ?? 150,
+});
+
 /** The user settings the panel only reads, each resolved to its default. */
 const resolveUserSettings = (
   settings: Partial<Settings> | undefined,
@@ -78,6 +91,7 @@ export const resolveSettings = (
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
   ...resolveEmphasis(settings),
+  ...resolveView(settings),
   ...resolveUserSettings(settings),
 });
 

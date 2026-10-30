@@ -171,7 +171,7 @@ describe("combinedEdges", () => {
         const drawn = [...drawnIds(store.get())].toSorted();
         const pick = drawn[Math.floor(picks() * drawn.length)] ?? dag.start;
         const direction = picks() < 0.5 ? "children" : "parents";
-        await expand(store, direction, pick, dag.fetchNeighbours);
+        await expand(store, [direction, pick], dag.fetchNeighbours);
         await linkDrawn(store, dag.fetchEdges);
       }
       const state = store.get();
@@ -212,15 +212,14 @@ describe("combinedEdges", () => {
     const stg = child("models/staging", "stg_orders");
     let state = addNeighbours(
       emptyGraph(hub, 4, "folder"),
-      "parents",
-      "fct_finance",
+      ["parents", "fct_finance"],
       [stg],
     );
-    state = addNeighbours(state, "children", "fct_finance", [
-      ...ledger,
-      ...payments,
-      ...marts,
-    ]);
+    state = addNeighbours(
+      state,
+      ["children", "fct_finance"],
+      [...ledger, ...payments, ...marts],
+    );
     const ledgerGroup = groupNodeId("c:fct_finance", "models/finance/ledger");
     const paymentsGroup = groupNodeId(
       "c:fct_finance",

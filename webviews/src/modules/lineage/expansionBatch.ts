@@ -2,10 +2,13 @@ import { restoreGroupId } from "./expansionGroups";
 import type { FetchNeighbours, GraphStore } from "./graph";
 import { drawnIds, expand, fetchExpansion, parseExpansion } from "./graph";
 
-/** Expands the start table `levels` levels of parents and of children. */
-export async function expandLevels(
+/**
+ * Expands the start table: `depths.parents` levels of parents and `depths.children` levels of children, each level
+ * the neighbours of the one before. A card an expansion already covers is not fetched again.
+ */
+export async function expandDepths(
   store: GraphStore,
-  levels: number,
+  depths: { parents: number; children: number },
   fetch: FetchNeighbours,
 ): Promise<void> {
   const start = store.get().start;
@@ -14,9 +17,13 @@ export async function expandLevels(
   }
   for (const direction of ["parents", "children"] as const) {
     let frontier = [start];
-    for (let level = 0; level < levels && frontier.length > 0; level++) {
+    for (
+      let level = 0;
+      level < depths[direction] && frontier.length > 0;
+      level++
+    ) {
       const added = await Promise.all(
-        frontier.map((table) => expand(store, direction, table, fetch)),
+        frontier.map((table) => expand(store, [direction, table], fetch)),
       );
       frontier = [...new Set(added.flat())];
     }
