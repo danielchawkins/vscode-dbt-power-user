@@ -13,7 +13,7 @@ export interface Emphasis {
   pathHighlight: boolean;
   dimOffPath: boolean;
   hubDeemphasis: boolean;
-  /** A card with more connections than this is a hub. */
+  /** A card with more parents or more children than this is a hub; 0 draws every neighbour, so no card is one. */
   maxNeighbours: number;
 }
 
@@ -31,15 +31,28 @@ export interface EmphasisView {
   hubEdge: (parent: string, child: string) => boolean;
 }
 
+/** How many neighbours a card has in each direction: its parents and its children in the known pairs. */
+export interface Neighbours {
+  parents: number;
+  children: number;
+}
+
 /**
- * How many connections each card has: the pairs it is in. Pass every known pair, not the drawn ones, so a card whose
- * neighbours are capped or grouped still counts them.
+ * How many neighbours each card has, by direction: the pairs it is in. Pass every known pair, not the drawn ones, so a
+ * card whose neighbours are capped or grouped still counts them.
  */
-export function connectionCounts(pairs: readonly Pair[]): Map<string, number> {
-  const counts = new Map<string, number>();
+export function connectionCounts(
+  pairs: readonly Pair[],
+): Map<string, Neighbours> {
+  const counts = new Map<string, Neighbours>();
+  const count = (table: string) => {
+    const known = counts.get(table) ?? { parents: 0, children: 0 };
+    counts.set(table, known);
+    return known;
+  };
   for (const [parent, child] of pairs) {
-    counts.set(parent, (counts.get(parent) ?? 0) + 1);
-    counts.set(child, (counts.get(child) ?? 0) + 1);
+    count(parent).children += 1;
+    count(child).parents += 1;
   }
   return counts;
 }
@@ -62,11 +75,12 @@ function reachable(start: string, next: Map<string, string[]>): Set<string> {
 /**
  * The emphasis of the drawn `edges`. With a focus, the highlighted path is the focus and every card upstream or
  * downstream of it; an edge is on it when its child reaches the focus or the focus reaches its parent. `connections`
- * says how many connections each card has (see `connectionCounts`); a card with more than `maxNeighbours` is a hub.
+ * says how many neighbours each card has in each direction (see `connectionCounts`); a hub is a card with more than
+ * `maxNeighbours` parents, or more than `maxNeighbours` children.
  */
 export function emphasisOf(
   edges: readonly Pair[],
-  connections: ReadonlyMap<string, number>,
+  connections: ReadonlyMap<string, Neighbours>,
   emphasis: Emphasis,
 ): EmphasisView {
   const focus = emphasis.focus;
@@ -90,10 +104,14 @@ export function emphasisOf(
       downstream.has(parent));
   const highlighting = focus !== undefined && emphasis.pathHighlight;
   const dimming = focus !== undefined && emphasis.dimOffPath;
+  // A hub has more parents, or more children, than one expansion draws; a cap of 0 draws all, so no card is a hub.
+  const isHub = ({ parents, children }: Neighbours) =>
+    emphasis.maxNeighbours > 0 &&
+    (parents > emphasis.maxNeighbours || children > emphasis.maxNeighbours);
   const hubs = new Set(
     emphasis.hubDeemphasis
       ? [...connections]
-          .filter(([, count]) => count > emphasis.maxNeighbours)
+          .filter(([, counts]) => isHub(counts))
           .map(([table]) => table)
       : [],
   );

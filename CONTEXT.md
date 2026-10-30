@@ -32,6 +32,8 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 
 **Filtered-out Table**: A lineage table whose dbt model sets `meta.lineage.hidden: true`. It is drawn as a card with no table, group or column edge. The start table is never filtered out. *Avoid*: Hidden table, hidden node
 
+**Hidden Card**: A card the user hid, with the cards drawn only through it; it is not drawn, and remembered per workspace, whatever the start model. Its label is the title the card showed when it was hidden. Unlike a Filtered-out Table, which is drawn with no edges, a Hidden Card is not drawn at all. *Avoid*: Filtered-out table, hidden table, hidden node
+
 **Capped Neighbours**: The neighbours an expansion fetched but does not draw, because `lineage.maxNeighbours` limits the draw; shown as a `+N` on the card's expander. *Avoid*: Hidden neighbours, overflow
 
 **Undrawn Member**: A member of an open Group that its chip does not draw yet, shown as `+K` on the chip. *Avoid*: Hidden member, remainder

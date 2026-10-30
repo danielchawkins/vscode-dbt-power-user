@@ -177,6 +177,8 @@ export function planRender(input: {
 /** What a table node asks the view to do. */
 export interface TableActions {
   toggleExpansion: (table: string, direction: Direction) => void;
+  /** Hides a card, and every card drawn only through it, for this workspace; `label` is the title the card shows. */
+  hide: (table: string, label: string) => void;
   /** Draws the next batch of a capped expansion's neighbours. */
   showMore: (table: string, direction: Direction) => void;
   /** Draws a closed group's members as ordinary cards, by the group's node ID. */
@@ -200,6 +202,7 @@ const noop = (): undefined => undefined;
 /** The view's table actions; memoized nodes read them from context, so they never see a stale handler. */
 export const TableActionsContext = createContext<TableActions>({
   toggleExpansion: noop,
+  hide: noop,
   showMore: noop,
   openGroup: noop,
   showMoreInGroup: noop,

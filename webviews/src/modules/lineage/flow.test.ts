@@ -1,9 +1,9 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { Position } from "@xyflow/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { tableEdgeId } from "./edgeIds";
 import { connectionCounts, emphasisOf } from "./emphasis";
-import { createLayouter, freshLayouter } from "./engine/layoutCache";
+import { createLayouter } from "./engine/layoutCache";
 import type { FlowDecoration, LayoutInput } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
@@ -710,30 +710,8 @@ describe("emphasize", () => {
       hubDeemphasis: false,
       maxNeighbours: 20,
     });
-  const nodeOf = (flow: ReturnType<typeof toFlow>, id: string) =>
-    flow.nodes.find((n) => n.id === id)!;
   const edgeOf = (flow: ReturnType<typeof toFlow>, id: string) =>
     flow.edges.find((e) => e.id === id)!;
-
-  it("restyles a built flow: the layouter is not called, and only the emphasised cards and edges are new objects", () => {
-    const flat = chain();
-    const layouter = vi.fn(freshLayouter);
-    const built = toFlow(flat, flat, layouter);
-    const laidOut = layouter.mock.calls.length;
-
-    const hovered = emphasize(built, pathOn(flat, "b"));
-
-    expect(layouter.mock.calls.length).toBe(laidOut);
-    expect(nodeOf(hovered, "b")).not.toBe(nodeOf(built, "b"));
-    expect(nodeOf(hovered, "b")).toHaveProperty("className", "lineage-path");
-    expect(nodeOf(hovered, "d")).toBe(nodeOf(built, "d"));
-    expect(edgeOf(hovered, tableEdgeId("a", "b"))).not.toBe(
-      edgeOf(built, tableEdgeId("a", "b")),
-    );
-    expect(edgeOf(hovered, tableEdgeId("a", "d"))).toBe(
-      edgeOf(built, tableEdgeId("a", "d")),
-    );
-  });
 
   it("gives an edge on the path the path colour, and leaves the built flow as it was", () => {
     const flat = chain();

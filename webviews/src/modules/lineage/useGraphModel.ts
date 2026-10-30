@@ -18,7 +18,12 @@ import { collapsedGroups, groupChips } from "./expansionGroups";
 import { type BuiltFlow, drawnPairs, emphasize, toFlow } from "./flow";
 import { type GraphState, knownPairs, visibleOf } from "./graph";
 import { combinedEdges } from "./groupEdges";
-import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import {
+  fetchHiddenCards,
+  fetchRelationships,
+  fetchSettings,
+  persistSettings,
+} from "./requests";
 import type { ExpansionOptions } from "./useLineageGraph";
 import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
@@ -45,6 +50,40 @@ const useSettings = () => {
   };
   return { settings, loaded, change };
 };
+
+/**
+ * The hidden cards the host kept for the workspace, with `undefined` until they arrive. A failed read hides nothing.
+ */
+const useHiddenCards = () => {
+  const [hidden, setHidden] = useState<lineage.HiddenCard[]>();
+  useEffect(() => {
+    fetchHiddenCards().then(setHidden, (error) => {
+      panelLogger.error("lineage hidden cards", error);
+      setHidden([]);
+    });
+  }, []);
+  return hidden;
+};
+
+/** The keys the canvas fits by: the drawn nodes by id, and the engine and Connections, which refit it when they change. */
+const useFitKeys = (flow: BuiltFlow, settings: ResolvedSettings) => {
+  const nodeKey = useMemo(
+    () =>
+      flow.nodes
+        .filter((node) => node.type !== "band")
+        .map((node) => node.id)
+        .sort()
+        .join("\n"),
+    [flow],
+  );
+  return { nodeKey, shapeKey: `${settings.engine}|${settings.connections}` };
+};
+
+/** The hidden cards by id, each with the label it was hidden with; the id stands in only when no label was stored. */
+const hiddenCardsOf = (
+  cards: lineage.HiddenCard[],
+): { id: string; name: string }[] =>
+  cards.map((card) => ({ id: card.id, name: card.label ?? card.id }));
 
 /**
  * The relationships of the Current Project, fetched while declared relationships are drawn and
@@ -248,6 +287,10 @@ interface GraphModel {
   select: Lineage["select"];
   hover: (table: string | undefined) => void;
   openDetails: (table: string) => void;
+  /** The hidden cards by id, with the name each is shown by. */
+  hiddenCards: { id: string; name: string }[];
+  restore: (table: string) => void;
+  restoreAll: () => void;
   drawnKey: number;
   nodes: BuiltFlow["nodes"];
   edges: BuiltFlow["edges"];
@@ -280,6 +323,7 @@ export const useGraphModel = (
 ): GraphModel => {
   const [detailsTable, setDetailsTable] = useState<string>();
   const { settings, loaded, change } = useSettings();
+  const hiddenIds = useHiddenCards();
   const openDetails = useCallback(
     (table: string) => {
       setDetailsTable(table);
@@ -303,10 +347,23 @@ export const useGraphModel = (
   }, [settings.defaultExpansion, settings.maxNeighbours, settings.groupBy]);
   const defaultExpansion = useCallback(() => expansionRef.current, []);
   const expansionOptions = useCallback(() => optionsRef.current, []);
-  const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
-    defaultExpansion,
-    openDetails,
-    { expansionOptions, ready: loaded },
+  const {
+    graph,
+    rendered,
+    drawnKey,
+    actions,
+    select,
+    reset,
+    restore,
+    restoreAll,
+  } = useLineageGraph(defaultExpansion, openDetails, {
+    expansionOptions,
+    ready: loaded && hiddenIds !== undefined,
+    hidden: hiddenIds,
+  });
+  const hiddenCards = useMemo(
+    () => hiddenCardsOf(graph.hiddenCards),
+    [graph.hiddenCards],
   );
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
@@ -320,17 +377,7 @@ export const useGraphModel = (
     hovered,
   });
   const details = detailsTable ? graph.known[detailsTable] : undefined;
-  // The drawn nodes by id, and the engine and Connections: the fit refits when either changes.
-  const nodeKey = useMemo(
-    () =>
-      built.flow.nodes
-        .filter((node) => node.type !== "band")
-        .map((node) => node.id)
-        .sort()
-        .join("\n"),
-    [built.flow],
-  );
-  const shapeKey = `${settings.engine}|${settings.connections}`;
+  const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);
   return {
     settings,
     change,
@@ -339,6 +386,9 @@ export const useGraphModel = (
     select,
     hover,
     openDetails,
+    hiddenCards,
+    restore,
+    restoreAll,
     drawnKey,
     nodes,
     edges,

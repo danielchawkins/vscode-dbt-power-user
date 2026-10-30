@@ -100,9 +100,15 @@ const Header = ({
 const Tools = ({
   table,
   listed,
+  hideable,
+  label,
 }: {
   table: lineage.LineageTable;
   listed: boolean;
+  /** False on the start card, which cannot be hidden. */
+  hideable: boolean;
+  /** The title the card shows, which a hidden card keeps for the list of hidden cards. */
+  label: string;
 }) => {
   const actions = use(TableActionsContext);
   return (
@@ -122,6 +128,16 @@ const Tools = ({
       >
         Details
       </button>
+      {hideable ? (
+        <button
+          type="button"
+          className="nodrag"
+          title="Hide this card and the cards drawn only through it"
+          onClick={() => actions.hide(table.table, label)}
+        >
+          Hide
+        </button>
+      ) : null}
       {table.url ? (
         <button
           type="button"
@@ -143,6 +159,8 @@ const Actions = ({
   pending,
   capped,
   listed,
+  hideable,
+  label,
   relation,
 }: {
   table: lineage.LineageTable;
@@ -150,6 +168,9 @@ const Actions = ({
   pending: { parents: boolean; children: boolean };
   capped: { parents: number; children: number };
   listed: boolean;
+  hideable: boolean;
+  /** The title the card shows; Hide keeps it with the card. */
+  label: string;
   /** The relation line the strip shows: the start and selected cards only, so it is undefined on the others. */
   relation: string | undefined;
 }) => (
@@ -167,7 +188,12 @@ const Actions = ({
           direction="parents"
           capped={capped.parents}
         />
-        <Tools table={table} listed={listed} />
+        <Tools
+          table={table}
+          listed={listed}
+          hideable={hideable}
+          label={label}
+        />
         <MoreButton
           table={table.table}
           direction="children"
@@ -313,6 +339,8 @@ const TableNodeView = ({
         pending={data.pending}
         capped={data.capped}
         listed={data.columns !== undefined}
+        hideable={!data.isStart}
+        label={cardTitle(data.table, data.title)}
         relation={pinned ? cardSubtitle(data.table, data.title) : undefined}
       />
       <GroupChips chips={data.chips} />

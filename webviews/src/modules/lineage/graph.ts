@@ -30,6 +30,11 @@ export interface GraphState {
   columnTables: string[];
   /** Column edges traced from `selectedColumn`. */
   columnEdges: ColumnLineage[];
+  /**
+   * The hidden cards of the workspace, whatever the start model. A hidden card, and each card drawn only through it, is
+   * not drawn; a card that is not in this graph does nothing here, and is kept for the other models.
+   */
+  hiddenCards: lineage.HiddenCard[];
   /** Tooltip lines per table from the last trace. */
   errors: Record<string, string[]>;
   /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */
@@ -95,6 +100,7 @@ export const emptyGraph = (
   cap,
   groupBy,
   groups: {},
+  hiddenCards: [],
 });
 
 export const expansionKey = (direction: Direction, table: string): string =>
@@ -185,13 +191,19 @@ export interface Visible {
 
 /** The visible projection of `state`: see `Visible`. Nothing is drawn until the start table is known. */
 export function visibleOf(state: GraphState): Visible {
-  const drawn = new Set<string>();
-  if (state.start && state.known[state.start]) {
-    drawn.add(state.start);
-    for (const key of state.expansions) {
-      const table = parseExpansion(key)?.[1];
-      if (table && drawn.has(table)) {
-        drawnNeighbours(state, key).forEach((other) => drawn.add(other));
+  const hidden = new Set(state.hiddenCards.map((card) => card.id));
+  // Reachability from the start card: each drawn card draws the neighbours of its expansions, unless they are hidden.
+  // The queue grows as it is read, so the order the expansions were made in does not matter.
+  const queue = state.start && state.known[state.start] ? [state.start] : [];
+  const drawn = new Set(queue);
+  for (const table of queue) {
+    const others = state.expansions
+      .filter((key) => parseExpansion(key)?.[1] === table)
+      .flatMap((key) => drawnNeighbours(state, key));
+    for (const other of others) {
+      if (!hidden.has(other) && !drawn.has(other)) {
+        drawn.add(other);
+        queue.push(other);
       }
     }
   }
@@ -470,6 +482,18 @@ export const hideColumns = (state: GraphState, table: string): GraphState =>
         }
       : {}),
   });
+
+/**
+ * `state` with `hidden` as its hidden cards, one per ID (the last label given wins). The expansions stay, so restoring a
+ * card draws what it drew again: `visibleOf` leaves the hidden cards and what only they drew out of the view.
+ */
+export const withHidden = (
+  state: GraphState,
+  hidden: readonly lineage.HiddenCard[],
+): GraphState => ({
+  ...state,
+  hiddenCards: [...new Map(hidden.map((card) => [card.id, card])).values()],
+});
 
 export const selectTable = (
   state: GraphState,

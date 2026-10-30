@@ -391,6 +391,16 @@ const lineagePanel: Fixture[] = [
     },
     required: ["args.params"],
   },
+  { message: { command: "getHiddenCards", ...params({}) }, required: [] },
+  {
+    message: {
+      command: "persistHiddenCards",
+      ...params({
+        cards: [{ id: "model.proj.a", label: "a" }, { id: "model.proj.b" }],
+      }),
+    },
+    required: ["args.params.cards"],
+  },
 ];
 
 const directions: Direction[] = [

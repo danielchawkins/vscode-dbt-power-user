@@ -22,6 +22,7 @@ const CHIPS = ["alpha", "beta", "gamma", "delta", "epsilon"].map((label) =>
 
 const actions = () => ({
   toggleExpansion: vi.fn(),
+  hide: vi.fn(),
   showMore: vi.fn(),
   openGroup: vi.fn(),
   showMoreInGroup: vi.fn(),

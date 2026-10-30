@@ -188,10 +188,11 @@ describe("Lineage emphasis controls", () => {
   });
 
   it("thins the edges of hub cards, which have more connections than lineage.maxNeighbours", async () => {
-    // With a cap of one connection, `b` (which has `a` and `c`) is a hub, so both of its edges are hub edges.
-    const { user, container } = await openLineage(undefined, {
-      settings: { maxNeighbours: 1 },
-    });
+    // With a cap of one, `filter` has two children (`kept` and `audit`), so it is a hub. Only `kept` has a drawn edge.
+    const { user, container } = await openLineage(
+      { node: FILTER, publication: "s:1" },
+      { settings: { maxNeighbours: 1 }, flowNodes: 2 },
+    );
     await press(user, "button", "Settings");
     expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(0);
     const box = await press(user, "checkbox", "Thin the edges of hub cards");
@@ -201,7 +202,17 @@ describe("Lineage emphasis controls", () => {
     });
     expect(
       container.querySelectorAll(".react-flow__edge.lineage-hub-edge"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+  });
+
+  it("does not thin the edges of a card whose parents and children are each within the cap", async () => {
+    // `b` has one parent and one child: with a cap of one, neither direction is over it, so it is no hub.
+    const { user, container } = await openLineage(undefined, {
+      settings: { maxNeighbours: 1 },
+    });
+    await press(user, "button", "Settings");
+    await press(user, "checkbox", "Thin the edges of hub cards");
+    expect(container.querySelectorAll(".lineage-hub-edge")).toHaveLength(0);
   });
 
   it("thins the edges of a hub whose neighbours are capped, counted from the known neighbours", async () => {
@@ -962,6 +973,133 @@ describe("Lineage card strip", () => {
     expect(
       await press(user, "button", "Columns", node(container, "c")),
     ).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("Lineage Hide control", () => {
+  /** Opens every group of `FANOUT`, as the coverage gate's overflow state does. */
+  const openOverflow = async () => {
+    const opened = await openLineage(
+      { node: FANOUT, publication: "s:1" },
+      { settings: { maxNeighbours: 5 }, flowNodes: 6 },
+    );
+    for (const folder of FANOUT_GROUPS) {
+      await activate(opened.user, "button", `Open ${folder}`);
+    }
+    await screen.findByRole("button", { name: "+2 more" });
+    return opened;
+  };
+
+  it("hides a card and posts the hidden set, and the card is no longer drawn", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Hide", node(container, "a"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["b", "c"]));
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [{ id: "a", label: "a" }] } },
+    });
+  });
+
+  it("hides a child card the same way, and leaves its parent drawn", async () => {
+    const { user, container } = await openLineage();
+    await press(user, "button", "Hide", node(container, "c"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b"]));
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [{ id: "c", label: "c" }] } },
+    });
+  });
+
+  it("hides each card of an open group, one at a time", async () => {
+    const { user, container } = await openOverflow();
+    for (const member of FANOUT_MEMBERS) {
+      await press(user, "button", "Hide", node(container, member));
+    }
+    await expectPosted("persistHiddenCards", {
+      args: {
+        params: {
+          cards: FANOUT_MEMBERS.map((member) => ({
+            id: member,
+            label: member,
+          })),
+        },
+      },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["fanout"]));
+  });
+
+  it("hides the cards of a capped group, which the expansion drew", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await activate(user, "button", "Open staging");
+    await screen.findByRole("button", { name: "Close staging" });
+    await waitFor(() => expect(node(container, "s1")).toBeDefined());
+    await press(user, "button", "Hide", node(container, "s1"));
+    await press(user, "button", "Hide", node(container, "s2"));
+    await expectPosted("persistHiddenCards", {
+      args: {
+        params: {
+          cards: [
+            { id: "s1", label: "s1" },
+            { id: "s2", label: "s2" },
+          ],
+        },
+      },
+    });
+  });
+
+  it("restores a hidden card from the settings list", async () => {
+    const { user, container } = await openLineage(undefined, {
+      hidden: [{ id: "a", label: "a" }],
+      flowNodes: 2,
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["b", "c"]));
+    await press(user, "button", "Settings");
+    await press(user, "button", "Restore a");
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [] } },
+    });
+  });
+
+  it("lists a hidden card by the label it was hidden with, or by its id when none was stored", async () => {
+    const { user } = await openLineage(undefined, {
+      hidden: [
+        { id: "model.proj.orders", label: "orders" },
+        { id: "model.proj.legacy" },
+      ],
+    });
+    await press(user, "button", "Settings");
+    expect(
+      screen.getByRole("button", { name: "Restore orders" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Restore model.proj.legacy" }),
+    ).toBeInTheDocument();
+  });
+
+  it("restores every hidden card with Restore all", async () => {
+    const { user, container } = await openLineage(undefined, {
+      hidden: [
+        { id: "a", label: "a" },
+        { id: "c", label: "c" },
+      ],
+      flowNodes: 1,
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(["b"]));
+    await press(user, "button", "Settings");
+    await press(user, "button", "Restore all");
+    await waitFor(() => expect(tableIds(container)).toEqual(["a", "b", "c"]));
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [] } },
+    });
+  });
+
+  it("says in the settings list that no card is hidden, when none is", async () => {
+    const { user } = await openLineage();
+    await press(user, "button", "Settings");
+    expect(screen.getByText(/No cards are hidden/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Restore all" })).toBeNull();
   });
 });
 

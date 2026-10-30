@@ -441,6 +441,7 @@ describe("table node expander bubbles", () => {
 describe("table node column trace", () => {
   const actionsWith = (overrides: Partial<TableActions>): TableActions => ({
     toggleExpansion: vi.fn(),
+    hide: vi.fn(),
     showMore: vi.fn(),
     openGroup: vi.fn(),
     showMoreInGroup: vi.fn(),
