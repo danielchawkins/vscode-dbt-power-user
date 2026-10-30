@@ -2,11 +2,11 @@
 
 Intent: refactor-scout evidence for the request-timing plan (fixed `COMMAND_DEADLINE_MS` replaced by request policies). Reuses `../lsp-capabilities/lib.mjs`. Output summarised in `docs/research/evidence/lsp-2.0.8-timing/`.
 
-| Script                 | What it measures                                                                                              |
+| Script | What it measures |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `timing.mjs`           | listNodes before the first compile, two at once, `$/cancelRequest`, during a recompile, mixed with other commands, a client `workDoneToken`; every `dbt/*` notification and `$/progress` with times |
-| `cost.mjs`             | table vs column listNodes, two column selectors in one call, cancel then resend, getProjectInfo during listNodes, server silence during a request |
-| `after-background.mjs` | column listNodes after the background full compile finished                                                  |
+| `timing.mjs` | listNodes before the first compile, two at once, `$/cancelRequest`, during a recompile, mixed with other commands, a client `workDoneToken`; every `dbt/*` notification and `$/progress` with times |
+| `cost.mjs` | table vs column listNodes, two column selectors in one call, cancel then resend, getProjectInfo during listNodes, server silence during a request |
+| `after-background.mjs` | column listNodes after the background full compile finished |
 
 ```sh
 sh scripts/spikes/lsp-capabilities/prep-jaffle.sh   # HOME=/tmp/fpu-home if ~/.dbt is not writable

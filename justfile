@@ -45,7 +45,6 @@ verify-setup:
     npm --version
     just --version
     lefthook version
-    dprint --version
     rumdl --version
     shfmt --version
     shellcheck --version
@@ -181,8 +180,9 @@ lint-ast-grep:
     ast-grep test
     ast-grep scan --error=unused-suppression
 
-# Unused files, exports, types, enum members and dependencies, in all code and in production code alone; then
-# every @internal export has a production caller and every @planned export has none.
+# Unused files, exports, types, enum members and production dependencies, from `knip --production` alone. Tests and
+# devDependencies are not checked. Then every @internal export has a production caller, and every @planned export
+# has none.
 [group("quality")]
 lint-unused:
     npm run lint:unused
@@ -214,12 +214,10 @@ lint-deps:
 
 [group("quality")]
 fmt-markdown:
-    dprint fmt
     rumdl fmt .
 
 [group("quality")]
 lint-markdown:
-    dprint check
     rumdl check .
     node scripts/quality/docs-symbols.mjs
 
