@@ -195,7 +195,10 @@ export const METRICS = [
     kind: "ceiling",
     precision: 0,
     measure: () =>
-      countRustSuppressions(path.join(root, "crates", crate, "src")),
+      ["src", "tests"]
+        .map((dir) => path.join(root, "crates", crate, dir))
+        .filter((dir) => fs.existsSync(dir))
+        .reduce((total, dir) => total + countRustSuppressions(dir), 0),
   })),
   {
     key: "internalTags",

@@ -2,7 +2,7 @@
 //! `adj`, sized by its degree in the whole separation graph, so linking and unlinking never allocate. A slot keeps its
 //! entries in link order, because the traversals visit them in that order and the sums depend on it.
 
-use super::{NONE, id};
+use super::{NONE, id, reserve_to};
 
 /// The separations as adjacency slots over the variables.
 #[derive(Debug, Default)]
@@ -81,6 +81,11 @@ pub(super) struct Forest {
 }
 
 impl Forest {
+    /// Reserves the path queue for `n` variables. A path search queues each variable at most once.
+    pub(super) fn reserve(&mut self, n: usize) {
+        reserve_to(&mut self.path_queue, n);
+    }
+
     /// Sizes the forest for `n` variables and the given separations, with none linked.
     pub(super) fn reset(&mut self, n: usize, from: &[u32], to: &[u32]) {
         let tree = &mut self.tree;

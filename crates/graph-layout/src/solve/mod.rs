@@ -34,6 +34,11 @@ fn id(i: usize) -> u32 {
     u32::try_from(i).unwrap_or(NONE)
 }
 
+/// Grows `v` so that it holds `capacity` elements without reallocating. A no-op once it has that capacity.
+fn reserve_to<T>(v: &mut Vec<T>, capacity: usize) {
+    v.reserve(capacity.saturating_sub(v.len()));
+}
+
 /// A separation `x[to] - x[from] >= gap`, with variables named by their index in `x0`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Separation {
@@ -190,6 +195,12 @@ impl Projector {
             self.out.clear();
             return Ok(&self.out);
         }
+        // Scratch is sized from the problem before any step, not as steps first need it: a solve that merges nothing
+        // would otherwise leave a buffer empty, and a later solve of the same size would grow it.
+        let kept = self.blocks.from.len();
+        self.blocks.reserve(n, kept);
+        self.acyclic.reserve(n);
+        reserve_to(&mut self.out, n);
         self.acyclic.check(n, &self.blocks.from, &self.blocks.to)?;
         self.blocks.reset();
         self.blocks.run()?;

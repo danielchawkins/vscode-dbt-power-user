@@ -5,7 +5,7 @@
 use std::mem::take;
 
 use super::forest::Forest;
-use super::{NONE, SolveError, id};
+use super::{NONE, SolveError, id, reserve_to};
 
 /// The solver state: the input copied in, the block arrays, and the scratch the steps reuse.
 #[derive(Debug, Default)]
@@ -66,6 +66,16 @@ fn value_of(pos: &[f64], block_of: &[u32], off: &[f64], v: usize) -> f64 {
 }
 
 impl Blocks {
+    /// Reserves the lists that `reset` does not size: `negative` (at most one entry per separation), `dirty` (two ends
+    /// per negative separation, and the two ends of the first violation), `losing` (a forest path, at most one entry
+    /// per variable), and the forest's path queue.
+    pub(super) fn reserve(&mut self, n: usize, kept: usize) {
+        reserve_to(&mut self.negative, kept);
+        reserve_to(&mut self.dirty, 2 * (kept + 1));
+        reserve_to(&mut self.losing, n);
+        self.forest.reserve(n);
+    }
+
     /// Sizes every array for the copied input and makes each variable its own block.
     pub(super) fn reset(&mut self) {
         let n = self.x0.len();
