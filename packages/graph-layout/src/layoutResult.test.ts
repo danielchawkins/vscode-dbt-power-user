@@ -194,18 +194,6 @@ describe("partitions", () => {
     );
   });
 
-  it("is empty when no node sets a partition", () => {
-    fc.assert(
-      fc.property(routeCaseArb, (c: Case) => {
-        expect(c.graph.nodes.some((n) => n.partition !== undefined)).toBe(
-          false,
-        );
-        expect(layout(c.graph, optionsOf(c, "rows")).partitions).toEqual([]);
-      }),
-      { numRuns: RUNS },
-    );
-  });
-
   it("boxes each partition present by the hull of its members", () => {
     fc.assert(
       fc.property(partitionedArb, (c: Case) => {

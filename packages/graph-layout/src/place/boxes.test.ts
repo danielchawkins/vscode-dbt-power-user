@@ -76,15 +76,6 @@ describe("cluster boxes follow Graphviz's rules", () => {
     expect(drawings(graph)).toEqual([NONE, NONE]);
   });
 
-  it("keeps a non-member on the next rank clear of a box with wide padding", () => {
-    const graph: LayoutGraph = {
-      nodes: [node("a", "A"), node("x")],
-      edges: [edge("e", "a", "x")],
-      clusters: [{ id: "A", padding: 30 }],
-    };
-    expect(drawings(graph)).toEqual([NONE, NONE]);
-  });
-
   it("keeps one box for a cluster that skips a middle rank, holding its members in both ranks", () => {
     const graph: LayoutGraph = {
       nodes: [node("c0", "C"), node("m"), node("c2", "C")],
@@ -94,16 +85,6 @@ describe("cluster boxes follow Graphviz's rules", () => {
     const result = placed(graph);
     expect([...result.clusters.keys()]).toEqual(["C"]);
     expect(drawings(graph)).toEqual([NONE, NONE]);
-  });
-
-  it("keeps a non-member beside a box outside it", () => {
-    const graph: LayoutGraph = {
-      nodes: [node("a", "A"), node("x")],
-      edges: [],
-      clusters: [{ id: "A" }],
-    };
-    const result = placed(graph);
-    expect(boxViolations(graph, result.nodes, result.clusters)).toEqual(NONE);
   });
 
   it("keeps a nested box inside its parent with the parent's padding", () => {

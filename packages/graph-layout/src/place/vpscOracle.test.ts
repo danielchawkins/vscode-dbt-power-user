@@ -51,12 +51,12 @@ function separate(
 }
 
 /**
- * A random DAG on 2 to 200 variables with 3n separations at most. Each separation runs from a lower to a higher index,
+ * A random DAG on 2 to 300 variables with 3n separations at most. Each separation runs from a lower to a higher index,
  * and its gap is one of three kinds: tight (close to the current distance, so it binds), redundant (well below it),
  * or free (any gap in -3..3). Weights are mixed over two decades.
  */
 const instanceArb: fc.Arbitrary<Instance> = fc
-  .integer({ min: 2, max: 200 })
+  .integer({ min: 2, max: 300 })
   .chain((n) =>
     fc.tuple(
       fc.array(finite(-50, 50), { minLength: n, maxLength: n }),
@@ -248,7 +248,7 @@ function assertAgreement(
 }
 
 describe("solveSeparations against WebCola's vpsc", () => {
-  it("reaches the same cost, and satisfies every separation, on seeded random DAGs of up to 200 variables, in any index order", () => {
+  it("reaches the same cost, and satisfies every separation, on seeded random DAGs of up to 300 variables, in any index order", () => {
     assertAgreement(shuffled(instanceArb), SEED, 100);
   }, 120_000);
 

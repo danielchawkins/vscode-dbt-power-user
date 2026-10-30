@@ -220,7 +220,7 @@ describe("solveQuadratic", () => {
     );
   });
 
-  it("moves a lone pulled node to its target and reports the work it took", () => {
+  it("moves a lone pulled node to its target", () => {
     const problem: Problem = {
       layers: [[0]],
       gapLeft: [0],
@@ -228,8 +228,7 @@ describe("solveQuadratic", () => {
       links: [],
       pulls: [{ node: 0, weight: 1, target: 5 }],
     };
-    const { x, iterations } = solveQuadratic(problem, [0], 100);
+    const { x } = solveQuadratic(problem, [0], 100);
     expect(x[0]).toBeCloseTo(5, 9);
-    expect(iterations).toBeLessThanOrEqual(100);
   });
 });

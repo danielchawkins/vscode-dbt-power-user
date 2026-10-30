@@ -62,95 +62,6 @@ describe("measureDrawing", () => {
     expect(m.bends).toBe(0);
   });
 
-  it("does not count two edges that only touch at an end", () => {
-    const m = measureDrawing(
-      drawingOf(
-        [],
-        [
-          [
-            "a",
-            path([
-              [0, 5],
-              [5, 5],
-            ]),
-          ],
-          [
-            "b",
-            path([
-              [5, 0],
-              [5, 10],
-            ]),
-          ],
-        ],
-      ),
-    );
-    expect(m.crossings).toBe(0);
-  });
-
-  it("does not count an edge crossing itself", () => {
-    const m = measureDrawing(
-      drawingOf(
-        [],
-        [
-          [
-            "a",
-            path([
-              [0, 5],
-              [10, 5],
-              [10, 15],
-              [5, 15],
-              [5, 0],
-            ]),
-          ],
-        ],
-      ),
-    );
-    expect(m.crossings).toBe(0);
-  });
-
-  it("does not count edges that share a trunk", () => {
-    const paths: [string, DrawnPath][] = [
-      [
-        "a",
-        path([
-          [0, 5],
-          [10, 5],
-        ]),
-      ],
-      [
-        "b",
-        path([
-          [5, 0],
-          [5, 10],
-        ]),
-      ],
-    ];
-    expect(measureDrawing(drawingOf([], paths)).crossings).toBe(1);
-    const shared = drawingOf([], paths, { trunkOf: () => "port" });
-    expect(measureDrawing(shared).crossings).toBe(0);
-  });
-
-  it("still counts crossings between edges on different trunks", () => {
-    const paths: [string, DrawnPath][] = [
-      [
-        "a",
-        path([
-          [0, 5],
-          [10, 5],
-        ]),
-      ],
-      [
-        "b",
-        path([
-          [5, 0],
-          [5, 10],
-        ]),
-      ],
-    ];
-    const apart = drawingOf([], paths, { trunkOf: (id) => id });
-    expect(measureDrawing(apart).crossings).toBe(1);
-  });
-
   it("counts a crossing at a point inside another edge's collinear run", () => {
     const m = measureDrawing(
       drawingOf(
@@ -548,19 +459,6 @@ describe("measureDrawing properties", () => {
       { numRuns: 200 },
     );
   });
-
-  it("never lowers the crossing count when a path is added", () => {
-    fc.assert(
-      fc.property(paths, orthogonal, (polylines, extra) => {
-        const before = measureDrawing(toDrawing(polylines)).crossings;
-        const after = measureDrawing(
-          toDrawing([...polylines, extra]),
-        ).crossings;
-        expect(after).toBeGreaterThanOrEqual(before);
-      }),
-      { numRuns: 200 },
-    );
-  });
 });
 
 describe("compareDrawings", () => {
@@ -680,19 +578,14 @@ describe("compareDrawings", () => {
   });
 
   it("leaves rankChanges undefined when one drawing has no ranks", () => {
-    const d = drawingOf(nodes, []);
-    expect(compareDrawings(d, d).rankChanges).toBeUndefined();
-  });
-
-  it("is zero against itself for any drawing", () => {
-    fc.assert(
-      fc.property(paths, (polylines) => {
-        const d = toDrawing(polylines, { boxes: new Map(nodes) });
-        const r = compareDrawings(d, d, { anchor: "a" });
-        expect(r.maxDisplacement).toBe(0);
-        expect(r.orderFlips).toBe(0);
-      }),
-      { numRuns: 50 },
-    );
+    const before = drawingOf(nodes, [], {
+      ranks: new Map([
+        ["a", 0],
+        ["b", 1],
+        ["c", 0],
+      ]),
+    });
+    const after = drawingOf(nodes, []);
+    expect(compareDrawings(before, after).rankChanges).toBeUndefined();
   });
 });

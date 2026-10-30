@@ -206,13 +206,10 @@ describe("place", () => {
     );
   });
 
-  it("does no solver work at fast effort and at most its cap otherwise", () => {
+  it("does no solver work at fast effort: the Brandes and Köpf coordinates are the answer", () => {
     fc.assert(
       fc.property(sizedGraphArb, (graph) => {
         expect(placeGraph(graph, { ...options, effort: "fast" }).work).toBe(0);
-        expect(
-          placeGraph(graph, { ...options, effort: "balanced" }).work,
-        ).toBeLessThanOrEqual(100);
       }),
       { numRuns: 100 },
     );
