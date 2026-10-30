@@ -149,3 +149,28 @@ describe("graphLayoutEngine with cards in Other", () => {
     }
   });
 });
+
+describe("a hint edge", () => {
+  // A pull between two unranked cards: with no table edge between them, nothing else moves them.
+  const base: LayoutRequest = {
+    focus: "a",
+    cards: [
+      { id: "a", width: 280, height: 56, tag: "staging" },
+      { id: "b", width: 280, height: 56, tag: "staging" },
+    ],
+    edges: [],
+    rankPairs: [],
+    traceOn: false,
+  };
+  const hinted: LayoutRequest = {
+    ...base,
+    edges: [{ id: "a>b", from: "a", to: "b", role: "hint" }],
+  };
+
+  it("neither ranks its cards nor is drawn", () => {
+    const plain = graphLayoutEngine("balanced").layout(base);
+    const withHint = graphLayoutEngine("balanced").layout(hinted);
+    expect(withHint.positions).toEqual(plain.positions);
+    expect(withHint.edges.has("a>b")).toBe(false);
+  });
+});
