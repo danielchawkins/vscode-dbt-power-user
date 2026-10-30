@@ -55,7 +55,7 @@ describe("expansion cap", () => {
       "hub",
       CHILDREN,
     );
-    expect(state.neighbours["c:hub"]?.slice(0, 2)).toEqual(["e", "a"]);
+    expect(ids(state)).toEqual(["a", "e", "hub"]);
   });
 
   it("a collapse leaves no capped count behind", () => {

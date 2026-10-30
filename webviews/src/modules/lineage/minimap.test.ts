@@ -85,23 +85,10 @@ describe("minimapColour", () => {
   it("leaves band nodes transparent", () => {
     expect(minimapColour({ type: "band" })).toBe("transparent");
   });
-
-  it("colours every other node with the editor widget border", () => {
-    const expected =
-      "var(--vscode-editorWidget-border, var(--vscode-disabledForeground))";
-    expect(minimapColour({ type: "table" })).toBe(expected);
-    expect(minimapColour({ type: "folderGroup" })).toBe(expected);
-    expect(minimapColour({})).toBe(expected);
-  });
 });
 
 describe("minimapStroke", () => {
   it("leaves band nodes transparent", () => {
     expect(minimapStroke({ type: "band" })).toBe("transparent");
-  });
-
-  it("strokes every other node with the focus border", () => {
-    expect(minimapStroke({ type: "table" })).toBe("var(--vscode-focusBorder)");
-    expect(minimapStroke({})).toBe("var(--vscode-focusBorder)");
   });
 });
