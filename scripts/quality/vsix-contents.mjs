@@ -24,9 +24,17 @@ const SHIPPED = [
   "extension/snippets/",
 ];
 
-/** Whether `entry` is a file the extension loads: under a shipped directory and not a source map. */
+/**
+ * Build outputs under a shipped directory that package.json `files` does not name yet: the WebAssembly and Node-API
+ * bindings. Phase 8 adds them to `files`, and then this list shrinks.
+ */
+const UNSHIPPED = ["extension/dist/graph-layout/"];
+
+/** Whether `entry` is a file the extension loads: under a shipped directory and not a source map or an unshipped output. */
 const shippedFile = (entry, shipped) =>
-  !entry.endsWith(".map") && shipped.some((dir) => entry.startsWith(dir));
+  !entry.endsWith(".map") &&
+  !UNSHIPPED.some((dir) => entry.startsWith(dir)) &&
+  shipped.some((dir) => entry.startsWith(dir));
 
 /** Returns each entry that is neither a fixed vsce entry nor a shipped file. */
 export function unexpectedEntries(entries, shipped = SHIPPED) {

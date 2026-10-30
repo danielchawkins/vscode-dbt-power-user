@@ -37,6 +37,10 @@
         "!src/test/**!"
       ],
       "ignoreDependencies": ["@vscode/codicons"]
+    },
+    "crates/graph-layout-wasm/js": {
+      "entry": ["parity.mjs!"],
+      "project": ["*.mjs!"]
     }
   }
 }
