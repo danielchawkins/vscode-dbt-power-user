@@ -33,7 +33,7 @@ fn ranking_rule(kind: usize) -> EdgeRule {
 }
 
 /// The rule of an edge of `kind` in the layering tests: dependency and heavy rank (weights 1 and 4); column does not.
-fn layering_rule(kind: usize) -> EdgeRule {
+pub(super) fn layering_rule(kind: usize) -> EdgeRule {
     let (ranks, weight) = match kind {
         0 => (true, 1.0),
         1 => (true, 4.0),
@@ -48,7 +48,7 @@ fn layering_rule(kind: usize) -> EdgeRule {
 }
 
 /// The view of a graph of `count` nodes whose edges run between the given ends.
-fn indexed(count: usize, pairs: &[(usize, usize)]) -> Indexed {
+pub(super) fn indexed(count: usize, pairs: &[(usize, usize)]) -> Indexed {
     let ends = pairs
         .iter()
         .map(|&(a, b)| {
@@ -61,11 +61,11 @@ fn indexed(count: usize, pairs: &[(usize, usize)]) -> Indexed {
     Indexed::from_ends(count, ends, &vec![true; pairs.len()])
 }
 
-fn balanced() -> Budget {
+pub(super) fn balanced() -> Budget {
     Budget::for_effort(None).expect("the balanced budget exists")
 }
 
-fn options<'a>(
+pub(super) fn options<'a>(
     partitions: PartitionMode,
     node_partition: &'a [Option<f64>],
     rules: &'a [EdgeRule],
