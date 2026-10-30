@@ -1,10 +1,14 @@
-//! WebAssembly binding: `layout` returns the placeholder until the engine lands.
+//! WebAssembly binding: `layout` takes a graph frame and returns a layout frame. The hello stub returns an empty layout
+//! until the engine lands.
 use graph_layout::engine;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::prelude::{JsError, wasm_bindgen};
 
-/// Returns the placeholder engine result. Phase 1 wires the binding only.
+/// Takes a graph frame (ADR 0011, Decision 6) and returns the layout frame.
+///
+/// # Errors
+///
+/// Throws when `graph` is not a graph frame of this version.
 #[wasm_bindgen]
-#[must_use]
-pub fn layout() -> u32 {
-    engine::PLACEHOLDER
+pub fn layout(graph: &[u8]) -> Result<Vec<u8>, JsError> {
+    engine::layout_frame(graph).map_err(|error| JsError::new(&error.to_string()))
 }
