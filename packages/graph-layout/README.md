@@ -184,7 +184,7 @@ Line numbers are for this revision and point at the line where the call or the i
 | `route/doglegs.ts:139` columnsOf `sort(ascending)` | a | Distinct numbers from a Set (spread at line 139); `ascending`. |
 | `route/doglegs.ts:139` columnsOf Set spread | a | Sorted in the same statement. |
 | `solve/vpscBlocks.ts:176` negative blocks `sort` | a | Equal numbers are interchangeable; inline `a - b`, suppressed, because `solve/` imports nothing from the layout. |
-| `spines.ts:37` spinesOf `sort` | c | Members listed in node index order; tie on the node index. |
+| `spines.ts:41` spinesOf `sort` | c | Members listed in node index order; tie on the node index. |
 | `bundles.ts:36` groupBundles `values()` | b | Groups inserted per edge in input order. |
 | `metrics.ts:67` measureDrawing `Array.from(paths, …)` | b | Pieces in paths insertion order (paths inserted in `result.ts` edge order). This order sets the float `edgeLength` sum and the input order of the crossing count; load-bearing. |
 | `metrics.ts:73` measureDrawing `values()` reduce | b | Float sum in node insertion order; load-bearing, so the Map keeps its order. |

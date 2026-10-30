@@ -128,6 +128,7 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
   });
   if (bundle.flat) {
     bundle.chain = [top, bottom];
+    keyChain(build, first.id, bundle.chain);
     return;
   }
   const b = build.bundles.length - 1;
@@ -149,6 +150,7 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
   }
   chain.push(bottom);
   bundle.chain = chain;
+  keyChain(build, first.id, chain);
   for (let k = 0; k + 1 < chain.length; k++) {
     build.segments.push({
       bundle: b,
@@ -159,6 +161,19 @@ function addBundle(build: Build, members: readonly LayoutEdge[]): void {
       bottomOffset: k + 2 === chain.length ? lowerOffset : 0,
     });
   }
+}
+
+/**
+ * Gives each dummy of a bundle's chain its key: the bundle's first member edge, the dummy's rank, and its position in
+ * the chain. The chain's real ends have no key, since they are real nodes.
+ */
+function keyChain(build: Build, edge: string, chain: readonly number[]): void {
+  chain.forEach((x, position) => {
+    const node = build.nodes[x]!;
+    if (node.id === undefined) {
+      node.key = { kind: "edge", owner: edge, rank: node.rank, position };
+    }
+  });
 }
 
 /**
