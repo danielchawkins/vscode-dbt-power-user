@@ -2,7 +2,7 @@ import type { Direction, GraphState } from "./graph";
 import { drawnNeighbours, expansionKey, shownWithout } from "./graph";
 
 /** How many neighbours each capped expansion does not draw yet, by expansion key; uncapped keys are absent. */
-export const hiddenCounts = (state: GraphState): Record<string, number> =>
+export const cappedCounts = (state: GraphState): Record<string, number> =>
   Object.fromEntries(
     Object.keys(state.shown).map((key) => [
       key,

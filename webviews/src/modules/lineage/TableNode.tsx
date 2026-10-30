@@ -19,7 +19,8 @@ import { useZoomedOut } from "./semanticZoom";
 import { ErrorFlag, TraceStatus } from "./TraceStatus";
 import { TableActionsContext } from "./viewModel";
 
-const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
+const FILTERED_OUT_TITLE =
+  "Filtered out by meta.lineage.hidden: its edges are not drawn";
 
 const NameBlock = ({
   table,
@@ -51,7 +52,7 @@ const Header = ({
   table,
   file,
   errors,
-  hiddenFromLineage,
+  filteredOut,
   zoomedOut,
   mode,
   showRelation,
@@ -60,7 +61,7 @@ const Header = ({
   table: lineage.LineageTable;
   file: string | undefined;
   errors?: string[] | undefined;
-  hiddenFromLineage: boolean;
+  filteredOut: boolean;
   zoomedOut: boolean;
   showRelation: boolean;
 }) => (
@@ -80,17 +81,17 @@ const Header = ({
     {/* A card with a layer shows it as the stripe on its left edge; the others keep their type badge. */}
     {table.layer ? null : <span className={styles.type}>{table.nodeType}</span>}
     <NameBlock table={table} mode={mode} file={file} zoomedOut={zoomedOut} />
-    {errors?.length || hiddenFromLineage ? (
+    {errors?.length || filteredOut ? (
       <span className={styles.flags}>
         {errors?.length ? <ErrorFlag errors={errors} /> : null}
-        {hiddenFromLineage ? (
+        {filteredOut ? (
           <>
             <i
               className="codicon codicon-eye-closed"
-              title={HIDDEN_TITLE}
+              title={FILTERED_OUT_TITLE}
               aria-hidden="true"
             />
-            <span className={styles.srOnly}>{HIDDEN_TITLE}</span>
+            <span className={styles.srOnly}>{FILTERED_OUT_TITLE}</span>
           </>
         ) : null}
       </span>
@@ -152,13 +153,13 @@ const Actions = ({
   table,
   expanded,
   pending,
-  hidden,
+  capped,
   listed,
 }: {
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
   pending: { parents: boolean; children: boolean };
-  hidden: { parents: number; children: number };
+  capped: { parents: number; children: number };
   listed: boolean;
 }) => (
   <>
@@ -166,13 +167,13 @@ const Actions = ({
       <MoreButton
         table={table.table}
         direction="parents"
-        hidden={hidden.parents}
+        capped={capped.parents}
       />
       <Tools table={table} listed={listed} />
       <MoreButton
         table={table.table}
         direction="children"
-        hidden={hidden.children}
+        capped={capped.children}
       />
     </div>
     {/* The expanders are bubbles on the card's edges, outside the actions row. */}
@@ -283,15 +284,14 @@ const TableNodeView = ({
   data,
   selected,
 }: NodeProps<TableNodeType>): React.JSX.Element => {
-  // The graph never hides the start table, so its card shows no hidden cue either.
-  const hiddenFromLineage = data.table.hidden === true && !data.isStart;
+  const { filteredOut } = data;
   const zoomedOut = useZoomedOut();
   // The start and selected cards keep their relation line and actions row; other cards show the row on hover.
   const pinned = data.isStart || selected;
   return (
     <div
       className={`${styles.node} ${data.isStart ? styles.start : ""} ${
-        hiddenFromLineage ? styles.hidden : ""
+        filteredOut ? styles.filteredOut : ""
       } ${zoomedOut ? styles.zoomedOut : ""} ${
         data.columns === undefined ? styles.noColumns : ""
       } ${pinned ? styles.pinned : ""}`}
@@ -303,7 +303,7 @@ const TableNodeView = ({
         table={data.table}
         file={cardFile(data.table, data.title)}
         errors={data.errors}
-        hiddenFromLineage={hiddenFromLineage}
+        filteredOut={filteredOut}
         zoomedOut={zoomedOut}
         mode={data.title}
         showRelation={pinned}
@@ -312,7 +312,7 @@ const TableNodeView = ({
         table={data.table}
         expanded={data.expanded}
         pending={data.pending}
-        hidden={data.hidden}
+        capped={data.capped}
         listed={data.columns !== undefined}
       />
       <GroupChips chips={data.chips} />

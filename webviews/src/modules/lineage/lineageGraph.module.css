@@ -238,8 +238,8 @@
   box-shadow: 0 0 0 2px var(--vscode-focusBorder);
 }
 
-/* A hidden node is drawn off to the side with dashed, muted styling; its edges are not drawn. */
-.node.hidden {
+/* A filtered-out node (dbt's meta.lineage.hidden) keeps its card, drawn with dashed, muted styling; its edges are not drawn. */
+.node.filteredOut {
   border-style: dashed;
   opacity: 0.6;
 }

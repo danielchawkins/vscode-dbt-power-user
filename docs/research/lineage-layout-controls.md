@@ -361,7 +361,7 @@ The thesis's split holds in outline. The antithesis's third class follows from t
 
 Citations:
 
-- [r11a](../../webviews/src/modules/lineage/hiddenNodes.ts): "A hidden table can still be drawn; only its edges are left out."
+- [r11a](../../webviews/src/modules/lineage/filteredOut.ts): "A hidden table can still be drawn; only its edges are left out."
 - [r11b](../../packages/graph-layout/README.md): "Every call is a pure function of its graph and options"
 
 Thesis (medium): Hiding nodes, collapsing hubs, excluding utility nodes and changing thresholds all change what is drawn, so they need a relayout. Restyling (dimming, highlighting a path, de-emphasising a hub) can run without one. The visibility-relayouts, emphasis-restyles split is my inference from the engine's pure-function design, not a documented finding.

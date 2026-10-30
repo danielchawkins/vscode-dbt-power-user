@@ -1,8 +1,7 @@
 import type { GroupView } from "./expansionGroups";
 import type { GraphState } from "./graph";
-import { drawnIds, knownPairs } from "./graph";
+import { drawnIds, knownPairs, visibleOf } from "./graph";
 import { groupNodeId } from "./grouping";
-import { hiddenTables } from "./hiddenNodes";
 
 /** The table a group hangs off: the end of its edge that is not the group. */
 const hubOf = (group: GroupView): string =>
@@ -26,16 +25,16 @@ const bucketMembers = (state: GraphState): Map<string, string[]> =>
 function visibleGroups(
   state: GraphState,
   groups: readonly GroupView[],
-  hidden: ReadonlySet<string>,
+  filteredOut: ReadonlySet<string>,
 ): { shown: GroupView[]; groupsOf: Map<string, string[]> } {
   const members = bucketMembers(state);
   const shown: GroupView[] = [];
   const groupsOf = new Map<string, string[]>();
   for (const group of groups) {
     const visible = (members.get(group.id) ?? []).filter(
-      (member) => !hidden.has(member),
+      (member) => !filteredOut.has(member),
     );
-    if (hidden.has(hubOf(group)) || visible.length === 0) {
+    if (filteredOut.has(hubOf(group)) || visible.length === 0) {
       continue;
     }
     shown.push(group);
@@ -48,19 +47,19 @@ function visibleGroups(
 
 /**
  * The edges that join the closed `groups` to the drawn graph, each `[parent, child]`: each group's edge to its table,
- * and each known pair with an end in a group, that end replaced by the group. A group whose table is hidden, or that
- * has no visible member, draws no edge. A hidden member draws none. A member drawn elsewhere is a drawn table, so its
+ * and each known pair with an end in a group, that end replaced by the group. A group whose table is filtered out, or
+ * that has no visible member, draws no edge. A filtered-out member draws none. A member drawn elsewhere is a drawn table, so its
  * pairs are table edges, not group edges. A pair with both ends drawn is a table edge too.
  */
 export function combinedEdges(
   state: GraphState,
   groups: readonly GroupView[],
 ): [string, string][] {
-  const hidden = hiddenTables(state);
+  const { filteredOut } = visibleOf(state);
   const drawn = drawnIds(state);
-  const { shown, groupsOf } = visibleGroups(state, groups, hidden);
+  const { shown, groupsOf } = visibleGroups(state, groups, filteredOut);
   const endsOf = (table: string): string[] => {
-    if (hidden.has(table)) {
+    if (filteredOut.has(table)) {
       return [];
     }
     return drawn.has(table) ? [table] : (groupsOf.get(table) ?? []);

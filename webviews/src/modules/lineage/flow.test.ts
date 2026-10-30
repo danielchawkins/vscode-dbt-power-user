@@ -1,15 +1,16 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
-import type { FlowInput } from "./engine/layoutRequest";
+import type { FlowDecoration, LayoutInput } from "./engine/layoutRequest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
 import { drawnEdges, toFlow } from "./flow";
-import { addNeighbours, emptyGraph, lineageData } from "./graph";
+import { addNeighbours, emptyGraph } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
 import { geometry, tableHeight } from "./layout";
 import type { RoutedRelationshipData } from "./relationshipRoute";
+import { lineageData } from "./visibility";
 
 const table = (id: string): lineage.LineageTable => ({
   table: id,
@@ -19,6 +20,23 @@ const table = (id: string): lineage.LineageTable => ({
   parentCount: 0,
   tests: [],
 });
+
+/**
+ * A test input: the layout input and the decoration in one object. `pinned` defaults to the start and the selected
+ * table, which the panel pins.
+ */
+type TestInput = Omit<LayoutInput, "pinned"> &
+  FlowDecoration & { pinned?: readonly string[] };
+
+/** `toFlow` for a test input, split into its layout input and its decoration. */
+const toFlowOf = (flat: TestInput) => {
+  const pinned =
+    flat.pinned ??
+    [flat.data.start, flat.selectedTable].filter(
+      (name): name is string => name !== undefined,
+    );
+  return toFlow({ ...flat, pinned }, flat);
+};
 
 const input = (groupEdges: [string, string][]) => ({
   data: {
@@ -45,7 +63,7 @@ const input = (groupEdges: [string, string][]) => ({
 
 describe("toFlow with groups", () => {
   it("lays group nodes out with the tables, and gives them the group size", () => {
-    const { nodes } = toFlow(input([["hub", "g:1"]]));
+    const { nodes } = toFlowOf(input([["hub", "g:1"]]));
     const hub = nodes.find((n) => n.id === "hub");
     const group = nodes.find((n) => n.id === "g:1");
     expect(group?.type).toBe("folderGroup");
@@ -59,7 +77,7 @@ describe("toFlow with groups", () => {
   });
 
   it("gives a group node the card's width, not React Flow's built-in 150px group type", () => {
-    const { nodes } = toFlow(input([["hub", "g:1"]]));
+    const { nodes } = toFlowOf(input([["hub", "g:1"]]));
     const group = nodes.find((n) => n.id === "g:1");
     expect(group?.type).not.toBe("group");
     // React Flow measures a node from its wrapper's width, which is the size given before measurement.
@@ -67,14 +85,14 @@ describe("toFlow with groups", () => {
   });
 
   it("draws the given group edges to the group nodes", () => {
-    const { edges } = toFlow(input([["hub", "g:1"]]));
+    const { edges } = toFlowOf(input([["hub", "g:1"]]));
     expect(edges).toContainEqual(
       expect.objectContaining({ source: "hub", target: "g:1" }),
     );
   });
 
   it("draws no group edges when none are given", () => {
-    const { nodes, edges } = toFlow(input([]));
+    const { nodes, edges } = toFlowOf(input([]));
     expect(nodes.filter((n) => n.type !== "band").map((n) => n.id)).toEqual([
       "hub",
       "g:1",
@@ -105,7 +123,7 @@ describe("toFlow with combined edges from a real state", () => {
     state = { ...state, links: { "a1\u0000b1": ["a1", "b1"] } };
     const groups = collapsedGroups(state);
     const groupEdges = combinedEdges(state, groups);
-    const { nodes, edges } = toFlow({
+    const { nodes, edges } = toFlowOf({
       data: lineageData(state, { direct: true, indirect: true }),
       columns: {},
       columnTables: [],
@@ -139,7 +157,7 @@ describe("toFlow with group chips", () => {
     total: 2,
   });
   const hubNode = (chips: GroupChip[]) =>
-    toFlow({
+    toFlowOf({
       data: {
         start: "hub",
         tables: [table("hub")],
@@ -168,7 +186,7 @@ describe("toFlow with group chips", () => {
   });
 
   it("reserves the relation line and actions row only on the start card", () => {
-    const hub = toFlow({
+    const hub = toFlowOf({
       data: {
         start: "other",
         tables: [table("hub")],
@@ -196,7 +214,7 @@ describe("toFlow with group chips", () => {
 
 describe("toFlow title mode", () => {
   const titleOf = (title?: "alias" | "name") =>
-    toFlow({ ...input([]), groups: [], title }).nodes.find(
+    toFlowOf({ ...input([]), groups: [], title }).nodes.find(
       (n) => n.id === "hub",
     )?.data;
 
@@ -213,7 +231,7 @@ describe("toFlow layout", () => {
     { ...table("stg"), layer: "staging" },
     { ...table("mart"), layer: "marts" },
   ];
-  const layeredInput = (): FlowInput => ({
+  const layeredInput = (): TestInput => ({
     data: {
       start: "stg",
       tables,
@@ -233,14 +251,14 @@ describe("toFlow layout", () => {
     nodes.find((n) => n.id === id);
 
   it("places parents above their children", () => {
-    const { nodes } = toFlow(layeredInput());
+    const { nodes } = toFlowOf(layeredInput());
     const y = (id: string) => at(nodes, id)?.position.y ?? NaN;
     expect(y("src")).toBeLessThan(y("stg"));
     expect(y("stg")).toBeLessThan(y("mart"));
   });
 
   it("draws one band per layer behind the cards, and bands take no selection or drag", () => {
-    const { nodes } = toFlow(layeredInput());
+    const { nodes } = toFlowOf(layeredInput());
     const bands = nodes.filter((n) => n.type === "band");
     expect(bands.map((b) => b.data.tag).sort()).toEqual([
       "marts",
@@ -260,7 +278,7 @@ describe("toFlow layout", () => {
 
   it("colours each arrowhead with its edge's stroke, and draws none on relationships", () => {
     const base = layeredInput();
-    const { edges } = toFlow({
+    const { edges } = toFlowOf({
       ...base,
       data: {
         ...base.data,
@@ -289,7 +307,7 @@ describe("toFlow layout", () => {
   });
 
   it("colours an unselected table edge's arrowhead with the table edge stroke", () => {
-    const { edges } = toFlow(layeredInput());
+    const { edges } = toFlowOf(layeredInput());
     const edge = edges.find((e) => e.id === "t:src->stg");
     expect(edge?.markerEnd).toEqual({
       type: "arrowclosed",
@@ -298,7 +316,7 @@ describe("toFlow layout", () => {
   });
 
   it("places a group node in the band of its dominant layer, not its anchor's", () => {
-    const { nodes } = toFlow({
+    const { nodes } = toFlowOf({
       ...layeredInput(),
       groups: [
         {
@@ -327,7 +345,7 @@ describe("toFlow layout", () => {
   });
 
   it("draws every edge along its routed path, with an arrowhead", () => {
-    const { edges } = toFlow(layeredInput());
+    const { edges } = toFlowOf(layeredInput());
     expect(edges.map((e) => e.id).sort()).toEqual([
       "t:src->stg",
       "t:stg->mart",
@@ -341,7 +359,7 @@ describe("toFlow layout", () => {
 
   it("keeps a routed relationship's type, ref and card ends, with no arrowhead", () => {
     const base = layeredInput();
-    const { edges } = toFlow({
+    const { edges } = toFlowOf({
       ...base,
       refs: [
         {
@@ -372,7 +390,7 @@ describe("toFlow layout", () => {
       "when the referenced card is selected and taller",
     () => {
       const base = layeredInput();
-      const { nodes, edges } = toFlow({
+      const { nodes, edges } = toFlowOf({
         ...base,
         data: {
           ...base.data,
@@ -473,7 +491,7 @@ describe("toFlow connections", () => {
     connections,
   });
   const edgeIds = (connections?: lineage.Connections) =>
-    toFlow(mixed(connections))
+    toFlowOf(mixed(connections))
       .edges.map((e) => e.id)
       .sort();
 
@@ -491,7 +509,7 @@ describe("toFlow connections", () => {
 
   it("gives each relationship edge type relationship, from the referenced side", () => {
     for (const connections of ["declared", "both"] as const) {
-      const rel = toFlow(mixed(connections)).edges.find(
+      const rel = toFlowOf(mixed(connections)).edges.find(
         (e) => e.id === "r:ref1",
       );
       expect(rel).toMatchObject({
@@ -504,7 +522,7 @@ describe("toFlow connections", () => {
   });
 
   it("under declared, draws only relationship and column edges, with the referenced table above", () => {
-    const { nodes, edges } = toFlow(mixed("declared"));
+    const { nodes, edges } = toFlowOf(mixed("declared"));
     expect(edges.map((e) => e.id).sort()).toEqual([
       "c:hub.id->child.hub_id",
       "r:ref1",
@@ -515,7 +533,7 @@ describe("toFlow connections", () => {
   });
 
   it("under both, routes every kind of edge", () => {
-    const { edges } = toFlow(mixed("both"));
+    const { edges } = toFlowOf(mixed("both"));
     expect(edges.map((e) => e.id).sort()).toEqual([
       "c:hub.id->child.hub_id",
       "g:hub->g:1",
@@ -529,7 +547,7 @@ describe("toFlow connections", () => {
 });
 
 describe("drawnEdges", () => {
-  const { edges } = toFlow({
+  const { edges } = toFlowOf({
     data: {
       start: "hub",
       tables: [table("hub"), table("x")],
