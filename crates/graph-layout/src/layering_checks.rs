@@ -13,7 +13,7 @@ use std::fmt::Write as _;
 use crate::budget::Budget;
 use crate::index::Indexed;
 use crate::layering::{
-    ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Scratch, layer, rank,
+    ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Ranks, Scratch, layer, rank,
 };
 
 const FIXTURE: &str = include_str!("../fixtures/parity/layering-cases.txt");
@@ -152,7 +152,8 @@ fn chains_text(layers: &Layers, dummy_rank: fn(f64) -> String) -> String {
         .join(";")
 }
 
-fn run(case: &Case, scratch: &mut Scratch) -> Output {
+/// Ranks and lays out one case: the ranking, then the layers (the bundles and their chains).
+fn rank_and_layer(case: &Case, scratch: &mut Scratch) -> (Ranks, Layers) {
     let budget = Budget::for_effort(None).expect("the balanced budget exists");
     let graph = Indexed::from_ends(
         case.count,
@@ -177,6 +178,11 @@ fn run(case: &Case, scratch: &mut Scratch) -> Output {
     };
     let ranking = rank(&graph, &options, scratch).expect("the case ranks");
     let layers = layer(&graph, &case.rules, &ranking.ranks);
+    (ranking, layers)
+}
+
+fn run(case: &Case, scratch: &mut Scratch) -> Output {
+    let (ranking, layers) = rank_and_layer(case, scratch);
     Output {
         ranks: ranking.ranks,
         reversed: ranking.reversed,
@@ -307,4 +313,36 @@ fn layering_outputs_are_written_for_the_parity_comparison() {
         .expect("writing to a string");
     }
     std::fs::write(&path, text).expect("the layering output is writable");
+}
+
+/// The timing workload: the one case of the file `GRAPH_LAYOUT_LAYERING_TIMING` names, ranked and layered
+/// `GRAPH_LAYOUT_LAYERING_REPEATS` times with one `Scratch`, as `scripts/bench/layering-timings.mjs` times it. The first
+/// run must equal TypeScript's output for the case. The core reads no clock, so the script times the whole process from
+/// outside.
+#[test]
+fn layering_timing_workload_runs() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_LAYERING_TIMING") else {
+        return;
+    };
+    let repeats: u32 = std::env::var("GRAPH_LAYOUT_LAYERING_REPEATS")
+        .expect("GRAPH_LAYOUT_LAYERING_REPEATS is set with the workload")
+        .parse()
+        .expect("GRAPH_LAYOUT_LAYERING_REPEATS is a count");
+    let text = std::fs::read_to_string(&path).expect("the timing workload is readable");
+    let cases = parse(&text);
+    assert_eq!(cases.len(), 1, "a timing workload holds one case");
+    let case = &cases[0];
+    let mut scratch = Scratch::default();
+    // The first run must give TypeScript's answer, so that the timed runs are the same computation.
+    let first = run(case, &mut scratch);
+    assert!(
+        same_bits(&first.ranks, &case.expected.ranks)
+            && first.reversed == case.expected.reversed
+            && first.chains == case.expected.chains,
+        "the timing workload {} differs from TypeScript",
+        case.name
+    );
+    for _ in 0..repeats {
+        std::hint::black_box(rank_and_layer(case, &mut scratch));
+    }
 }

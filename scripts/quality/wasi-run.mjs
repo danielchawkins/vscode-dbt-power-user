@@ -17,7 +17,11 @@ if (binary === undefined) {
 }
 
 const preopens = {};
-for (const name of ["GRAPH_LAYOUT_SOLVE_OUT", "GRAPH_LAYOUT_LAYERING_OUT"]) {
+for (const name of [
+  "GRAPH_LAYOUT_SOLVE_OUT",
+  "GRAPH_LAYOUT_LAYERING_OUT",
+  "GRAPH_LAYOUT_LAYERING_TIMING",
+]) {
   const output = process.env[name];
   if (output !== undefined) {
     const directory = path.dirname(path.resolve(output));
