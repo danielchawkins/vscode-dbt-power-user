@@ -1,3 +1,4 @@
+import { byThenIndex } from "../comparators.js";
 import { components } from "../constraints/components.js";
 import type { Separation } from "../constraints/types.js";
 import type { LayeredGraph } from "../layeredGraph.js";
@@ -94,7 +95,9 @@ function overlapSeparations(input: LevelNodeInput): Separation[] {
   const { nodes } = layered;
   const low = (i: number): number => inRank[i]! - halfIn[i]!;
   const high = (i: number): number => inRank[i]! + halfIn[i]!;
-  const order = nodes.map((_, i) => i).sort((a, b) => low(a) - low(b));
+  const order = nodes
+    .map((_, i) => i)
+    .sort(byThenIndex<number>([low], (i) => i));
   const out: Separation[] = [];
   order.forEach((u, a) => {
     for (let b = a + 1; b < order.length; b++) {

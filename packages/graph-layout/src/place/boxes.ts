@@ -1,3 +1,4 @@
+import { byThenIndex, sortedInInputOrder } from "../comparators.js";
 import type { LayeredGraph } from "../layering.js";
 import type { Separation } from "../solve/vpsc.js";
 import type { LayoutCluster } from "../types.js";
@@ -211,7 +212,7 @@ export function tightenBoxes(
     box.parent === undefined || !index.has(box.parent)
       ? 0
       : 1 + depth(plan.boxes[index.get(box.parent)!]!);
-  const deepestFirst = plan.boxes.toSorted((a, b) => depth(b) - depth(a));
+  const deepestFirst = sortedInInputOrder(plan.boxes, [(box) => -depth(box)]);
   for (const box of deepestFirst) {
     let left = Infinity;
     let right = -Infinity;
@@ -273,7 +274,7 @@ export function acrossExtents(
   };
   const deepestFirst = plan.boxes
     .map((box, i) => ({ i, d: depth(box) }))
-    .sort((a, b) => b.d - a.d);
+    .sort(byThenIndex<{ i: number; d: number }>([(x) => -x.d], (x) => x.i));
   for (const { i } of deepestFirst) {
     const parent = plan.boxes[i]!.parent;
     const p = parent === undefined ? undefined : index.get(parent);

@@ -1,3 +1,4 @@
+import { sortedInInputOrder } from "../comparators.js";
 import { arrangeRank, arrangement } from "./clusters.js";
 import { totalCrossings } from "./crossings.js";
 import { type OrderModel, setLayer, slot } from "./model.js";
@@ -102,7 +103,7 @@ function weightedMean(reads: readonly Read[]): number | undefined {
 
 /** The weighted median; halfway between the two middle reads when the weight splits exactly in half. */
 function weightedMedian(reads: readonly Read[]): number | undefined {
-  const sorted = reads.toSorted((a, b) => a.at - b.at);
+  const sorted = sortedInInputOrder(reads, [(r) => r.at]);
   const total = sorted.reduce((sum, r) => sum + r.weight, 0);
   if (total <= 0) {
     return undefined;

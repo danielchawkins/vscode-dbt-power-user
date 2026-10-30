@@ -1,3 +1,4 @@
+import { byThenIndex, sortedInInputOrder } from "../comparators.js";
 import type { LayeredGraph } from "../layering.js";
 import type { LayoutHints } from "../types.js";
 
@@ -28,7 +29,7 @@ export function startingLayers(
   const blocks = blockMembers(graph);
   return layers.map((layer) =>
     layer
-      .toSorted((a, b) => keys[a]! - keys[b]!)
+      .toSorted(byThenIndex<number>([(x) => keys[x]!], (x) => x))
       .flatMap((head) => blocks.get(head) ?? [head]),
   );
 }
@@ -68,7 +69,7 @@ function blockMembers(graph: LayeredGraph): Map<number, number[]> {
  */
 function nearestFirst(graph: LayeredGraph, dummies: number[]): number[] {
   const offsetOf = (x: number): number => graph.nodes[x]?.port?.offset ?? 0;
-  const left = dummies.toSorted((a, b) => offsetOf(a) - offsetOf(b));
+  const left = sortedInInputOrder(dummies, [(x) => offsetOf(x)]);
   const order: number[] = [];
   while (left.length > 0) {
     const last = left.length - 1;
@@ -96,7 +97,7 @@ function hintKeys(graph: LayeredGraph, hints: LayoutHints): number[] {
   });
   const fractions: (number | undefined)[] = graph.nodes.map(() => undefined);
   for (const list of members) {
-    list.sort((a, b) => hinted[a]! - hinted[b]! || a - b);
+    list.sort(byThenIndex<number>([(x) => hinted[x]!], (x) => x));
     list.forEach((x, k) => {
       fractions[x] = (k + 0.5) / list.length;
     });

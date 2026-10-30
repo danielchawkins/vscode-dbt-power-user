@@ -9,6 +9,7 @@
  * its crossings plus touches.
  */
 
+import { sortedInInputOrder } from "../comparators.js";
 import {
   crossingsAbove,
   straightCrossings,
@@ -118,7 +119,7 @@ function place(
   hypers: readonly Hyperedge[],
   options: ChannelOptions,
 ): Placement {
-  const tracked = hypers.toSorted((a, b) => a.lo - b.lo || a.hi - b.hi);
+  const tracked = sortedInInputOrder(hypers, [(h) => h.lo, (h) => h.hi]);
   const { pairs, capped } = overlappingPairs(tracked, options.budget);
   const prefs = preferences(pieces, tracked, pairs);
   assignTracks(tracked, prefs, options.edge);

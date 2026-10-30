@@ -1,3 +1,4 @@
+import { sortedInInputOrder } from "../comparators.js";
 import type { Problem } from "./problem.js";
 
 /** One pass's view of the ranks: nodes from left to right, each node's index and its left neighbour, and the gap. */
@@ -152,7 +153,7 @@ function medianNeighbours(
   nbrs: readonly Neighbour[],
   pos: readonly number[],
 ): Neighbour[] {
-  const sorted = nbrs.toSorted((a, b) => pos[a.node]! - pos[b.node]!);
+  const sorted = sortedInInputOrder(nbrs, [(n) => pos[n.node]!]);
   const d = sorted.length;
   if (d === 0) {
     return [];

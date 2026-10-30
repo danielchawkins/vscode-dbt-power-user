@@ -1,4 +1,5 @@
 import { chainOf } from "./clusters.js";
+import { byThenIndex } from "./comparators.js";
 import type { LayoutGraph } from "./types.js";
 
 /**
@@ -33,7 +34,7 @@ export function spinesOf(
 ): Spine[] {
   return (graph.clusters ?? []).flatMap((cluster, c) => {
     const members = ranks.flatMap((_, x) => (paths[x]?.includes(c) ? [x] : []));
-    members.sort((a, b) => ranks[a]! - ranks[b]!);
+    members.sort(byThenIndex<number>([(x) => ranks[x]!], (x) => x));
     const chain = chainOf(graph, cluster.id);
     return members.slice(1).flatMap((lower, k) => {
       const upper = members[k]!;

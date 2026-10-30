@@ -1,0 +1,14 @@
+id: ts-graph-layout-sort-tiebreak
+valid:
+  - 'const order = nodes.toSorted(byThenIndex((n) => rank[n]!, (n) => n));'
+  - 'const heights = [...heightSet].sort(ascending);'
+  - 'const sorted = items.toSorted(compare);'
+  - 'const keep = list.sort();'
+  - 'const seen = new Set(xs).has(x); const count = xs.filter((x) => x > 0).length;'
+  - '// ast-grep-ignore: ts-graph-layout-sort-tiebreak -- the values are equal numbers, so ties cannot differ.
+    const lowers = values.sort((a, b) => a - b);'
+invalid:
+  - 'const lowers = [...new Set(sorted.map((link) => link[1]))].sort((a, b) => a - b);'
+  - 'const ordered = segments.toSorted((a, b) => a.fixed - b.fixed || a.from - b.from);'
+  - 'events.sort(function (a, b) { return a.x - b.x; });'
+  - 'const order = nodes.map((_, i) => i).sort((a, b) => low(a) - low(b));'
