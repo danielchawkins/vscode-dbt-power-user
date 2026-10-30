@@ -8,11 +8,10 @@ pub mod overview;
 pub mod pack;
 
 mod across;
-mod layering;
 mod metrics;
 mod order;
 mod place;
-// `budget`, `hash`, `index`, `rand` and `solve` are compiled for their tests until the layout phases use them; a
+// `budget`, `hash`, `index`, `layering`, `rand` and `solve` are compiled for their tests until the layout phases use them; a
 // non-test build would otherwise report their items as dead code.
 #[cfg(test)]
 mod budget;
@@ -20,6 +19,8 @@ mod budget;
 mod hash;
 #[cfg(test)]
 mod index;
+#[cfg(test)]
+mod layering;
 #[cfg(test)]
 mod rand;
 mod route;
