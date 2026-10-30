@@ -259,27 +259,36 @@ describe("table node name block", () => {
     expect(title).toContain("relation: DEV.marts.summary_mart");
   });
 
-  it("shows the relation line only on the start card and a selected card", () => {
+  it("shows the relation line in the strip on the start card and a selected card only", () => {
     const relation = (isStart: boolean, selected: boolean) =>
       drawCard({}, { isStart, selected }).container.querySelector(
-        "[class*=subtitle]",
+        "[class*=strip] [class*=subtitle]",
       );
     expect(relation(false, false)).toBeNull();
-    expect(relation(true, false)).not.toBeNull();
-    expect(relation(false, true)).not.toBeNull();
+    expect(relation(true, false)?.textContent).not.toBe("\u00a0");
+    expect(relation(false, true)?.textContent).not.toBe("\u00a0");
   });
 
-  it("grows the header by the relation line only on the start card and a selected card", () => {
+  it("keeps every card's header to the plain name block, with no relation line in it", () => {
     const header = (isStart: boolean, selected: boolean) =>
       drawCard({}, { isStart, selected }).container.querySelector(
         "[data-table] > [class*=header]",
-      )?.className;
-    expect(header(false, false)).not.toContain("headerRelation");
-    expect(header(true, false)).toContain("headerRelation");
-    expect(header(false, true)).toContain("headerRelation");
+      );
+    for (const [isStart, selected] of [
+      [false, false],
+      [true, false],
+      [false, true],
+    ]) {
+      expect(
+        header(isStart, selected)?.querySelector("[class*=subtitle]"),
+      ).toBe(null);
+      expect(header(isStart, selected)?.className).not.toContain(
+        "headerRelation",
+      );
+    }
   });
 
-  it("pins the start and selected cards, whose actions row always shows", () => {
+  it("pins the start and selected cards, whose strip always shows", () => {
     const pinned = (props: { isStart?: boolean; selected?: boolean }) =>
       drawCard({}, props).container.querySelector("[data-table]")?.className;
     expect(pinned({ isStart: true })).toContain("pinned");
@@ -296,15 +305,16 @@ describe("table node name block", () => {
   });
 });
 
+/** The whole stylesheet's text. */
+const css = (): string =>
+  readFileSync(join(import.meta.dirname, "lineageGraph.module.css"), "utf8");
+
 /** The stylesheet's declarations for the rule whose selector starts a line. */
 const rule = (selector: string): string => {
-  const css = readFileSync(
-    join(import.meta.dirname, "lineageGraph.module.css"),
-    "utf8",
-  );
-  const start = css.indexOf(`\n${selector} {`);
+  const sheet = css();
+  const start = sheet.indexOf(`\n${selector} {`);
   expect(start).toBeGreaterThanOrEqual(0);
-  return css.slice(start, css.indexOf("}", start));
+  return sheet.slice(start, sheet.indexOf("}", start));
 };
 
 /** The pixel value of `property` in a rule's declarations. */
@@ -317,7 +327,7 @@ const px = (declarations: string, property: string): number => {
 };
 
 describe("table node header geometry", () => {
-  it("keeps the header's CSS heights in step with geometry", () => {
+  it("keeps the header's CSS heights in step with geometry, with no relation line", () => {
     const header = rule(".header");
     const nameBlock = px(rule(".names"), "height");
     const padding = px(header, "padding");
@@ -325,36 +335,61 @@ describe("table node header geometry", () => {
     // The header is a content box: the name block, its padding and its border.
     expect(px(header, "height")).toBe(nameBlock);
     expect(nameBlock + 2 * padding + border).toBe(geometry.headerHeight);
-    // The relation line is a row gap and the subtitle's line.
-    const relationLine =
-      px(rule(".subtitle"), "line-height") + px(header, "gap");
-    expect(relationLine).toBe(geometry.relationHeight);
-    expect(px(rule(".headerRelation"), "height")).toBe(
-      nameBlock + relationLine,
-    );
+    expect(css()).not.toContain("headerRelation");
     expect(
       px(rule(".node.noColumns .header"), "padding-bottom") - padding,
     ).toBe(geometry.headerClearance);
   });
 
-  it("keeps the actions row's CSS heights in step with geometry", () => {
+  it("keeps the strip's CSS heights in step with geometry", () => {
+    // The relation line is the subtitle's line and the strip's top padding; the actions row is the strip's second row.
+    const relationLine =
+      px(rule(".subtitle"), "line-height") +
+      px(rule(".strip > .subtitle"), "padding");
+    expect(relationLine).toBe(geometry.relationHeight);
     expect(px(rule(".actions"), "height")).toBe(geometry.actionsHeight);
-    // An unpinned card takes no room for the row: it is taken out of the flow and hidden, and hovering it or focus
-    // inside it shows the row over the card's bottom edge, so the card's size never changes.
-    const unpinned = rule(".node:not(.pinned) .actions");
-    expect(unpinned).toContain("position: absolute;");
-    expect(unpinned).toContain("visibility: hidden;");
-    expect(
-      rule(
-        ".node:not(.pinned):hover .actions,\n.node:not(.pinned):focus-within .actions",
-      ),
-    ).toContain("visibility: visible;");
   });
 
   it("keeps the expander bubbles' CSS size in step with geometry", () => {
     const bubble = rule(".node .bubble");
     expect(px(bubble, "min-width")).toBe(geometry.bubbleWidth);
     expect(px(bubble, "height")).toBe(2 * geometry.bubbleOverhang);
+  });
+});
+
+describe("table node strip", () => {
+  /** The `z-index` in a rule's declarations. */
+  const zIndex = (declarations: string): number => {
+    const match = /(?:^|[\s;{])z-index:\s*(\d+)/.exec(declarations);
+    expect(match, `z-index in ${declarations}`).not.toBeNull();
+    return Number(match?.[1]);
+  };
+
+  it("hangs the strip under the card's bottom edge, so it takes no layout space", () => {
+    const strip = rule(".strip");
+    expect(strip).toContain("position: absolute;");
+    expect(strip).toContain("top: 100%;");
+    // It paints under the card's bubbles, so the bottom expander stays on top of it.
+    expect(zIndex(strip)).toBeLessThan(zIndex(rule(".node .bubble")));
+  });
+
+  it("keeps an unpinned card's strip hidden by opacity, focusable, and shows it on hover or focus", () => {
+    const hidden = rule(".node:not(.pinned) .strip");
+    expect(hidden).toContain("opacity: 0;");
+    expect(hidden).toContain("pointer-events: none;");
+    expect(hidden).not.toContain("visibility");
+    const shown = rule(
+      ".node:not(.pinned):hover .strip,\n.node:not(.pinned):focus-within .strip",
+    );
+    expect(shown).toContain("opacity: 1;");
+    expect(shown).toContain("pointer-events: auto;");
+  });
+
+  it("raises the card's node while its strip shows, so the strip paints over edges and neighbours", () => {
+    const raised = rule(
+      ":global(.react-flow__node):has(> .node.pinned),\n:global(.react-flow__node):has(> .node:not(.pinned):hover),\n:global(.react-flow__node):has(> .node:not(.pinned):focus-within)",
+    );
+    expect(raised).toContain("z-index: 1000 !important;");
   });
 });
 

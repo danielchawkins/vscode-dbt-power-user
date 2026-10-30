@@ -310,11 +310,6 @@
   grid-template-columns: 1fr auto;
 }
 
-/* A start or selected card adds its relation line (geometry.relationHeight, 16px: a 2px row gap and a 14px line): 76px in all. */
-.headerRelation {
-  height: 63px;
-}
-
 /* A card with no column list gets geometry.headerClearance (5px) more padding under the header, which keeps the expander bubbles clear of the text. */
 .node.noColumns .header {
   padding-bottom: 11px;
@@ -388,7 +383,6 @@
 }
 
 .subtitle {
-  grid-column: 1 / -1;
   overflow: hidden;
   color: var(--vscode-descriptionForeground);
   font-size: 11px;
@@ -421,6 +415,30 @@
   white-space: nowrap;
 }
 
+/*
+ * The strip holds a start or selected card's relation line and its actions row, or an unpinned card's actions row. It
+ * hangs under the card's bottom edge (top: 100%), so it takes no layout space and covers only what sits under the card:
+ * an edge or band padding, never a column row. It is 44px: geometry.relationHeight (16px) then geometry.actionsHeight
+ * (28px). Its z-index is below the card's bubbles, so the bottom expander stays clickable on top of it.
+ */
+.strip {
+  position: absolute;
+  top: 100%;
+  /* Clears the bottom expander bubble, which sticks 9px below the card's border. */
+  padding-top: 8px;
+  right: -1px;
+  left: -1px;
+  z-index: 0;
+  border: 1px solid var(--lineage-card-border);
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+  background: var(--lineage-card-fill);
+}
+
+.strip > .subtitle {
+  padding: 2px 8px 0;
+}
+
 .actions {
   display: flex;
   gap: 4px;
@@ -431,25 +449,29 @@
 }
 
 /*
- * An unpinned card (not the start or selected card) keeps its actions row out of the layout, so it takes no space;
- * geometry.tableHeight leaves the row out of it. Hovering it, or focus inside it, shows the row as a strip over the
- * card's bottom edge, so the card keeps its size and the routed edges stay attached.
+ * An unpinned card shows its strip on hover, or on focus inside it. The strip stays focusable while it is hidden, so a
+ * keyboard user tabs into it and focus shows it: opacity and pointer-events hide it, not visibility, which would
+ * take the buttons out of the focus order.
  */
-.node:not(.pinned) .actions {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  visibility: hidden;
-  border-top: 1px solid var(--lineage-card-border);
-  border-radius: 0 0 4px 4px;
-  background: var(--lineage-card-fill);
+.node:not(.pinned) .strip {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.node:not(.pinned):hover .actions,
-.node:not(.pinned):focus-within .actions {
-  visibility: visible;
+.node:not(.pinned):hover .strip,
+.node:not(.pinned):focus-within .strip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+ * A React Flow node is a stacking context, so its strip paints over the edges and the neighbouring cards only if the
+ * node itself is raised while the strip shows. React Flow sets the node's inline z-index, so this overrides it.
+ */
+:global(.react-flow__node):has(> .node.pinned),
+:global(.react-flow__node):has(> .node:not(.pinned):hover),
+:global(.react-flow__node):has(> .node:not(.pinned):focus-within) {
+  z-index: 1000 !important;
 }
 
 /* Group chips sit under the actions row, two to a row, the +N button taking the last slot when groups
@@ -766,20 +788,16 @@
 }
 
 /* Zoomed out: the card keeps its size; detail hides but stays mounted, so handles hold and nothing re-lays out. */
-.zoomedOut .subtitle {
+.zoomedOut .strip,
+.zoomedOut .bubble,
+.zoomedOut .groupChips,
+.zoomedOut .columns {
   visibility: hidden;
 }
 
 .zoomedOut .file,
 .zoomedOut .tags {
   display: none;
-}
-
-.zoomedOut .actions,
-.zoomedOut .bubble,
-.zoomedOut .groupChips,
-.zoomedOut .columns {
-  visibility: hidden;
 }
 
 .zoomedOut .label {

@@ -38,6 +38,6 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 
 **Visible Graph**: The one projection of what the lineage view shows, decided from the graph state: the drawn cards, the Filtered-out Tables and which cards take part in edges. Cards and every edge read it, so they cannot disagree. *Avoid*: Drawn set, visible set
 
-**Layout Input**: What the lineage layout engine reads: the drawn graph, card sizes and the options. It never holds the selection or the open file. *Avoid*: Flow input, layout request
+**Layout Input**: What the lineage layout engine reads: the drawn graph, card sizes and the options. It never holds the selection, and card sizes never depend on the open file. The start table is the layout anchor, so it is part of the graph: an open-file change re-roots the graph, which is a different graph. *Avoid*: Flow input, layout request
 
 **Decoration**: What the lineage view draws over a layout without moving any card or edge: the selection, the highlight, the open file, colours and labels. *Avoid*: Flow input, style props

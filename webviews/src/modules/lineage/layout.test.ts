@@ -170,18 +170,17 @@ describe("focusedViewport", () => {
 });
 
 describe("tableHeight", () => {
-  it("leaves the relation line and actions row out of an unpinned card", () => {
+  it("is the plain name block on every card: no relation line and no actions row", () => {
+    // The pre-strip height: a 60px header and the 5px clearance under it, on a card with no column list.
+    expect(tableHeight(undefined, 0)).toBe(65);
     expect(tableHeight(undefined, 0)).toBe(
       geometry.headerHeight + geometry.headerClearance,
     );
   });
 
-  it("adds the relation line and the actions row to a pinned card", () => {
-    expect(tableHeight(undefined, 0, true)).toBe(
-      tableHeight(undefined, 0) +
-        geometry.relationHeight +
-        geometry.actionsHeight,
-    );
+  it("adds the column list and the chip rows, and nothing for the strip", () => {
+    // 60px header, one 24px chip row, the 8px list padding and two 24px column rows.
+    expect(tableHeight(["a", "b"], 2)).toBe(140);
   });
 });
 

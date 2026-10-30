@@ -55,7 +55,6 @@ const Header = ({
   filteredOut,
   zoomedOut,
   mode,
-  showRelation,
 }: {
   mode: TitleMode;
   table: lineage.LineageTable;
@@ -63,12 +62,9 @@ const Header = ({
   errors?: string[] | undefined;
   filteredOut: boolean;
   zoomedOut: boolean;
-  showRelation: boolean;
 }) => (
   <div
-    className={`${styles.header} ${showRelation ? styles.headerRelation : ""} ${
-      table.layer ? styles.noBadge : ""
-    }`}
+    className={`${styles.header} ${table.layer ? styles.noBadge : ""}`}
     title={table.layer ? `${table.layer} layer` : undefined}
   >
     <Handle
@@ -98,14 +94,6 @@ const Header = ({
     ) : (
       <span />
     )}
-    {showRelation ? (
-      <span
-        className={styles.subtitle}
-        title={cardSubtitle(table, mode) || undefined}
-      >
-        {cardSubtitle(table, mode) || "\u00a0"}
-      </span>
-    ) : null}
   </div>
 );
 
@@ -155,28 +143,39 @@ const Actions = ({
   pending,
   capped,
   listed,
+  relation,
 }: {
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
   pending: { parents: boolean; children: boolean };
   capped: { parents: number; children: number };
   listed: boolean;
+  /** The relation line the strip shows: the start and selected cards only, so it is undefined on the others. */
+  relation: string | undefined;
 }) => (
   <>
-    <div className={styles.actions}>
-      <MoreButton
-        table={table.table}
-        direction="parents"
-        capped={capped.parents}
-      />
-      <Tools table={table} listed={listed} />
-      <MoreButton
-        table={table.table}
-        direction="children"
-        capped={capped.children}
-      />
+    {/* The strip hangs under the card's bottom edge, so it takes no layout space; the expanders stay on the edge. */}
+    <div className={styles.strip}>
+      {relation === undefined ? null : (
+        <span className={styles.subtitle} title={relation || undefined}>
+          {relation || "\u00a0"}
+        </span>
+      )}
+      <div className={styles.actions}>
+        <MoreButton
+          table={table.table}
+          direction="parents"
+          capped={capped.parents}
+        />
+        <Tools table={table} listed={listed} />
+        <MoreButton
+          table={table.table}
+          direction="children"
+          capped={capped.children}
+        />
+      </div>
     </div>
-    {/* The expanders are bubbles on the card's edges, outside the actions row. */}
+    {/* The expanders are bubbles on the card's edges, outside the strip. */}
     <ExpandButton
       table={table}
       direction="parents"
@@ -286,7 +285,8 @@ const TableNodeView = ({
 }: NodeProps<TableNodeType>): React.JSX.Element => {
   const { filteredOut } = data;
   const zoomedOut = useZoomedOut();
-  // The start and selected cards keep their relation line and actions row; other cards show the row on hover.
+  // The start and selected cards show their relation line and actions row in the strip; other cards show the strip on
+  // hover or focus.
   const pinned = data.isStart || selected;
   return (
     <div
@@ -306,7 +306,6 @@ const TableNodeView = ({
         filteredOut={filteredOut}
         zoomedOut={zoomedOut}
         mode={data.title}
-        showRelation={pinned}
       />
       <Actions
         table={data.table}
@@ -314,6 +313,7 @@ const TableNodeView = ({
         pending={data.pending}
         capped={data.capped}
         listed={data.columns !== undefined}
+        relation={pinned ? cardSubtitle(data.table, data.title) : undefined}
       />
       <GroupChips chips={data.chips} />
       {data.columns ? (

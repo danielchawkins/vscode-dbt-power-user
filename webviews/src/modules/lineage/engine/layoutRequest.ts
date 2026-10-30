@@ -99,10 +99,9 @@ function layoutCards(
       return undefined;
     }
     const chips = input.chips?.filter((c) => c.table === table).length ?? 0;
-    const pinned = input.pinned.includes(table);
     return columns.map((column, index) => ({
       id: column.name,
-      offset: columnRowOffset(index, chips, pinned),
+      offset: columnRowOffset(index, chips),
     }));
   };
   return [
@@ -127,16 +126,13 @@ function layoutCards(
 
 /**
  * What the layout engine is asked for: the drawn graph, the card sizes and the options. The engine and the layout
- * request read this and nothing else: no selection, highlight, colour or label. The start and the selected table
- * are `pinned` here, because their cards are drawn taller, so the caller passes them in rather than the layout
- * reading the selection.
+ * request read this and nothing else: no selection, highlight, colour or label. A card's size is its columns and chips
+ * only, so no card's size depends on what is selected: the relation line and actions row sit in a strip under the card.
  */
 export interface LayoutInput {
   data: lineage.LineageData;
   columns: Record<string, lineage.LineageColumn[]>;
   columnTables: readonly string[];
-  /** Tables whose cards are drawn with their relation line and actions row: the start table and the selected one. */
-  pinned: readonly string[];
   /** Closed groups of applied expansions, each drawn as one card. */
   groups?: readonly GroupView[] | undefined;
   /** The `[parent, child]` pairs joining each group to its table. */

@@ -70,7 +70,7 @@ const SNAPSHOT = `(() => document.body.dataset.entry === "lineage" ? {
       id: card.dataset.table.split(".").at(-1),
       title: parts[0]?.textContent ?? "",
       file: parts.length === 3 ? parts[1].textContent : undefined,
-      subtitle: card.querySelector(":scope > div:first-child > [class*=subtitle]")?.textContent,
+      subtitle: card.querySelector("[class*=strip] > [class*=subtitle]")?.textContent,
       top: Math.round(box.top),
       left: Math.round(box.left),
     };

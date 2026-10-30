@@ -3,7 +3,7 @@ export const geometry = {
   tableWidth: 280,
   /** The header with its name block (title, file line, chips), padding and border. */
   headerHeight: 60,
-  /** The relation line a start card shows under its name block. */
+  /** The relation line a start or selected card shows at the top of its strip, under the card. */
   relationHeight: 16,
   /** The extra header padding on a card with no column list, which keeps the expander bubbles clear of the text. */
   headerClearance: 5,
@@ -29,17 +29,15 @@ const chipRows = (chips: number): number =>
 
 /**
  * The height of a table node: its header, its group chips two to a row, capped at `MAX_CHIP_ROWS` rows with the rest
- * in the +N popover, and `columns` when listed. A `pinned` card (the start or selected card) adds its relation line
- * and its actions row; an unpinned card's actions row shows only on hover or focus, so it takes no space. An empty
- * list keeps one row for its message.
+ * in the +N popover, and `columns` when listed. The relation line and the actions row are not in it: they sit in a
+ * strip under the card's bottom edge, which takes no layout space. So the size depends on the graph and the settings
+ * only, and selecting a card does not resize it. An empty list keeps one row for its message.
  */
 export const tableHeight = (
   columns: readonly unknown[] | undefined,
   chips: number,
-  pinned = false,
 ): number =>
   geometry.headerHeight +
-  (pinned ? geometry.relationHeight + geometry.actionsHeight : 0) +
   chipRows(chips) * geometry.chipRowHeight +
   (columns
     ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
@@ -49,13 +47,8 @@ export const tableHeight = (
  * The distance from a layered card's top to the centre of its `index`th column row: the same stack `tableHeight` sums
  * before the column list.
  */
-export const columnRowOffset = (
-  index: number,
-  chips: number,
-  pinned: boolean,
-): number =>
+export const columnRowOffset = (index: number, chips: number): number =>
   geometry.headerHeight +
-  (pinned ? geometry.relationHeight + geometry.actionsHeight : 0) +
   chipRows(chips) * geometry.chipRowHeight +
   geometry.listPadding +
   index * geometry.columnHeight +

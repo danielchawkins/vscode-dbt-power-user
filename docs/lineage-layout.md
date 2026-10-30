@@ -36,7 +36,7 @@ The gallery draws the traced column `amount` on its cards in column mode. Table 
 
 ## Relation line and subtitle
 
-The gallery writes each card's relation as `DEV_STAGING.shop`. The panel writes `database.schema · materialization · package`, with a dot, and shows that subtitle on the start card and on a selected card only (`showRelation` in `TableNode.tsx`). The smoke checkpoint records the start card's subtitle; the other cards record their title and file line.
+The gallery writes each card's relation as `DEV_STAGING.shop`. The panel writes `database.schema · materialization · package`, with a dot, and shows that subtitle on the start card and on a selected card only (the `relation` prop of the strip in `TableNode.tsx`). The smoke checkpoint records the start card's subtitle; the other cards record their title and file line.
 
 ## Card width
 
