@@ -62,8 +62,104 @@ export const RUST_CRATES = [
   "graph-layout-wasm",
 ];
 
-/** A suppression attribute: `#[expect(`, `#![expect(` and `#[allow(` (overridden lints only; the workspace denies it). */
-const RUST_SUPPRESSION = /#!?\[(?:expect|allow)\(/g;
+/** The start of an attribute: `#[` or `#![`. */
+const ATTRIBUTE_START = /#!?\[/g;
+/** A suppression call inside an attribute: `expect(` or `allow(`, directly or inside `cfg_attr(`. */
+const SUPPRESSION_CALL = /\b(?:expect|allow)\s*\(/g;
+/** A raw string opener (`r"`, `r#"`, `br##"`), matched at a position. */
+const RAW_STRING = /b?r(#*)"/y;
+/** A char literal (`'a'`, `'\n'`, `'\u{1F600}'`) matched at a position; a lifetime (`'a`) does not match. */
+const CHAR_LITERAL = /'(?:\\[^']*|[^\\'\n])'/y;
+
+/** The end of a raw string that starts at `i`, or -1 when no raw string starts there. */
+function rawStringEnd(text, i) {
+  if (/\w/.test(text[i - 1] ?? "")) {
+    return -1;
+  }
+  RAW_STRING.lastIndex = i;
+  const match = RAW_STRING.exec(text);
+  if (!match) {
+    return -1;
+  }
+  const close = `"${match[1]}`;
+  const end = text.indexOf(close, i + match[0].length);
+  return end === -1 ? text.length : end + close.length;
+}
+
+/**
+ * Rust source with comments and string or char literals replaced by spaces (newlines kept), so a suppression quoted
+ * in a comment or a string is not counted. A small tokenizer: nested block comments, raw strings and lifetimes are
+ * handled; anything else is kept as written.
+ */
+export function blankRustNonCode(text) {
+  const blank = (segment) => segment.replaceAll(/[^\n]/g, " ");
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    let end = -1;
+    if (text.startsWith("//", i)) {
+      const newline = text.indexOf("\n", i);
+      end = newline === -1 ? text.length : newline;
+    } else if (text.startsWith("/*", i)) {
+      let depth = 0;
+      end = i;
+      do {
+        if (text.startsWith("/*", end)) {
+          depth += 1;
+          end += 2;
+        } else if (text.startsWith("*/", end)) {
+          depth -= 1;
+          end += 2;
+        } else {
+          end += 1;
+        }
+      } while (depth > 0 && end < text.length);
+    } else if (rawStringEnd(text, i) !== -1) {
+      end = rawStringEnd(text, i);
+    } else if (text[i] === '"') {
+      end = i + 1;
+      while (end < text.length && text[end] !== '"') {
+        end += text[end] === "\\" ? 2 : 1;
+      }
+      end = Math.min(end + 1, text.length);
+    } else if (text[i] === "'") {
+      CHAR_LITERAL.lastIndex = i;
+      const match = CHAR_LITERAL.exec(text);
+      end = match ? i + match[0].length : -1;
+    }
+    if (end === -1) {
+      out += text[i];
+      i += 1;
+    } else {
+      out += blank(text.slice(i, end));
+      i = end;
+    }
+  }
+  return out;
+}
+
+/** The suppression calls in the attributes of one Rust file: `#[expect(..)]`, `#![allow(..)]`, `#[cfg_attr(.., expect(..))]`. */
+export function countRustSuppressionsInText(text) {
+  const code = blankRustNonCode(text);
+  let total = 0;
+  for (const start of code.matchAll(ATTRIBUTE_START)) {
+    const open = start.index + start[0].length - 1;
+    let depth = 0;
+    let close = open;
+    for (; close < code.length; close += 1) {
+      if (code[close] === "[") {
+        depth += 1;
+      } else if (code[close] === "]") {
+        depth -= 1;
+        if (depth === 0) {
+          break;
+        }
+      }
+    }
+    total += [...code.slice(open, close).matchAll(SUPPRESSION_CALL)].length;
+  }
+  return total;
+}
 
 /** The suppression attributes in every `.rs` file under `srcDir`. */
 export function countRustSuppressions(srcDir) {
@@ -73,10 +169,7 @@ export function countRustSuppressions(srcDir) {
     .map((entry) =>
       fs.readFileSync(path.join(entry.parentPath, entry.name), "utf8"),
     )
-    .reduce(
-      (total, text) => total + (text.match(RUST_SUPPRESSION) ?? []).length,
-      0,
-    );
+    .reduce((total, text) => total + countRustSuppressionsInText(text), 0);
 }
 
 /**

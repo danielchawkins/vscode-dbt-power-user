@@ -22,9 +22,10 @@ lint-toolchain: require-cargo
     node ../scripts/quality/rust-toolchain.mjs
 
 # Clippy is pedantic with warnings denied; the lint table lives in crates/Cargo.toml. `cargo doc` documents the whole
-# workspace with warnings denied. Its one fallback: in a jj workspace whose git store is a bare `.bare` repository,
-# cargo cannot read a path package's file list ("did not expect repo ... to be bare") and cannot run at all. Only that
-# failure falls back to rustdoc on the core, which has no dependencies; every other failure stops the recipe.
+# workspace with warnings denied. In a jj workspace whose git store is a bare `.bare` repository, cargo cannot list a
+# path package's files ("did not expect repo ... to be bare") and documents nothing. That error is a checkout-layout
+# fact, not a documentation fault, so the recipe then documents a copy of the crates outside any repository, with the
+# same Cargo.lock and the same target directory. Every other failure stops the recipe.
 [group("quality")]
 lint: require-cargo
     #!/usr/bin/env bash
@@ -34,8 +35,12 @@ lint: require-cargo
     mkdir -p "$(dirname "$log")"
     if ! RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --workspace --locked 2>&1 | tee "$log"; then
         grep -q 'did not expect repo .* to be bare' "$log" || exit 1
-        echo "crates: cargo doc cannot read this jj workspace's bare git store; documenting the core alone with rustdoc" >&2
-        rustdoc --edition 2024 --crate-type lib -D warnings -D rustdoc::broken_intra_doc_links --out-dir "${CARGO_TARGET_DIR:-target}/rustdoc" graph-layout/src/lib.rs
+        target_dir="${CARGO_TARGET_DIR:-$PWD/target}"
+        case "$target_dir" in /*) ;; *) target_dir="$PWD/$target_dir" ;; esac
+        copy=$(mktemp -d)
+        trap 'rm -rf "$copy"' EXIT
+        tar -c --exclude ./target -C "$PWD" . | tar -x -C "$copy"
+        (cd "$copy" && RUSTDOCFLAGS='-D warnings' CARGO_TARGET_DIR="$target_dir" cargo doc --no-deps --workspace --locked)
     fi
     cargo machete
     typos

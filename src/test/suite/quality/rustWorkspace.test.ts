@@ -3,10 +3,12 @@ import {
   appendFileSync,
   cpSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -33,10 +35,10 @@ type Edits = {
   written?: Record<string, string>;
 };
 
-/** Copies crates/ into .cache/rust-plants/<name>, makes `edits` in the copy, and returns the copy. */
-function stage(name: string, edits: Edits): string {
-  const dir = path.join(plantsDir, name, "crates");
-  rmSync(path.join(plantsDir, name), { recursive: true, force: true });
+/** Copies crates/ into .cache/rust-plants/<name> (or into `base`, when given), makes `edits` in the copy, and returns the copy. */
+function stage(name: string, edits: Edits, base = plantsDir): string {
+  const dir = path.join(base, name, "crates");
+  rmSync(path.join(base, name), { recursive: true, force: true });
   mkdirSync(path.dirname(dir), { recursive: true });
   cpSync(cratesDir, dir, {
     recursive: true,
@@ -85,27 +87,44 @@ function clippyPlant(name: string, appended: Record<string, string>): Run {
   ]);
 }
 
-/** The rustdoc command of `just crates::lint`, run in a staged copy. */
+/** The `cargo doc` command of `just crates::lint`, with warnings denied, run in `cwd`. */
+function cargoDoc(cwd: string): Run {
+  const result = spawnSync(
+    "cargo",
+    ["doc", "--no-deps", "--workspace", "--locked"],
+    {
+      cwd,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        CARGO_TARGET_DIR: targetDir,
+        RUSTDOCFLAGS: "-D warnings",
+      },
+    },
+  );
+  expect(
+    result.error,
+    "cargo not found; run `mise install` in the repository root",
+  ).toBeUndefined();
+  return { status: result.status, output: `${result.stdout}${result.stderr}` };
+}
+
+/**
+ * The `cargo doc` command of `just crates::lint`, for the whole workspace, run in a staged copy outside the
+ * repository: cargo cannot read a bare `.bare` git store, so the recipe documents such a copy too.
+ */
 function docPlant(name: string, appended: Record<string, string>): Run {
-  const dir = stage(name, { appended });
-  return run(dir, "rustdoc", [
-    "--edition",
-    "2024",
-    "--crate-type",
-    "lib",
-    "-D",
-    "warnings",
-    "-D",
-    "rustdoc::broken_intra_doc_links",
-    "--out-dir",
-    path.join(targetDir, "rustdoc"),
-    "graph-layout/src/lib.rs",
-  ]);
+  const base = mkdtempSync(path.join(tmpdir(), "rust-doc-plant-"));
+  try {
+    return cargoDoc(stage(name, { appended }, base));
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 }
 
 describe("Rust workspace lints (checklist 3)", () => {
   it(
-    "control: the unmodified workspace passes clippy and rustdoc",
+    "control: the unmodified workspace passes clippy and cargo doc",
     { timeout: 600_000 },
     () => {
       const lint = clippyPlant("control", {});
@@ -160,7 +179,7 @@ describe("Rust workspace lints (checklist 3)", () => {
   });
 
   it(
-    "plant: a broken intra-doc link fails rustdoc",
+    "plant: a broken intra-doc link fails cargo doc",
     { timeout: 300_000 },
     () => {
       const run = docPlant("broken-link", {
@@ -275,6 +294,15 @@ describe("Supply chain (checklist 7)", () => {
       const check = recipeRun(dir, "boundaries");
       expect(check.status).not.toBe(0);
       expect(check.output).toMatch(/\+planted v0\.0\.0/);
+    },
+  );
+
+  it(
+    "control: the unmodified workspace passes deny",
+    { timeout: 300_000 },
+    () => {
+      const check = recipeRun(stage("deny-control", {}), "deny");
+      expect(check.status, check.output).toBe(0);
     },
   );
 
