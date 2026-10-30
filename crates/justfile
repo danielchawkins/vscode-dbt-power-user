@@ -90,9 +90,15 @@ wasm: require-cargo
 # no JavaScript side of its own, and the CLI would add an npm dependency for one copy.
 [group("quality")]
 napi: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
     cargo build --locked --release -p graph-layout-napi
     mkdir -p ../dist/graph-layout
-    case "$(uname -s)" in Darwin) lib=libgraph_layout_napi.dylib ;; *) lib=libgraph_layout_napi.so ;; esac
+    case "$(uname -s)" in
+      Darwin) lib=libgraph_layout_napi.dylib ;;
+      MINGW* | MSYS* | CYGWIN*) lib=graph_layout_napi.dll ;;
+      *) lib=libgraph_layout_napi.so ;;
+    esac
     cp "${CARGO_TARGET_DIR:-target}/release/$lib" ../dist/graph-layout/graph_layout_napi.node
 
 # Native and WebAssembly outputs compared byte for byte with the golden. CI runs it; `check` does not.
