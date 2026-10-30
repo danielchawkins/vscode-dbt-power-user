@@ -34,6 +34,15 @@ function rustCliProblems(miseToml: string, lock: string): string[] {
     } else if (!lock.includes(`[[tools."${cli}"]]`)) {
       problems.push(`${cli} is not pinned in mise.lock; run 'mise lock'`);
     }
+    // CI runs on ubuntu-latest and the developer machines are macOS arm64; a CLI locked for only one of them
+    // has no URL or checksum for the other, so `mise install --locked` fails there or fetches unverified.
+    for (const platform of ["linux-x64", "macos-arm64"]) {
+      if (!lock.includes(`[tools."${cli}"."platforms.${platform}"]`)) {
+        problems.push(
+          `${cli} has no ${platform} entry in mise.lock; run 'mise lock --platform ${platform}'`,
+        );
+      }
+    }
   }
   for (const key of keys.filter((k) => k.startsWith("cargo:"))) {
     problems.push(
@@ -109,6 +118,16 @@ describe("Rust CLIs in mise (checklist 2)", () => {
     );
     expect(rustCliProblems(miseToml, planted).join("\n")).toMatch(
       /aqua:tamasfe\/taplo is not pinned in mise\.lock/,
+    );
+  });
+
+  it("plant: a CLI locked for macOS only fails", () => {
+    const planted = lock.replace(
+      '[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64"]',
+      '[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64-unlocked"]',
+    );
+    expect(rustCliProblems(miseToml, planted).join("\n")).toMatch(
+      /github:bnjbvr\/cargo-machete has no linux-x64 entry in mise\.lock/,
     );
   });
 

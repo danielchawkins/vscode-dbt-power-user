@@ -1,0 +1,28 @@
+# Clippy configuration for the crates (checklist 4). The layout must be byte-identical across processes and platforms
+# (ADR 0011, "Determinism"), so these are banned in the core. `crate::fmath` (Phase 2) holds the sanctioned
+# transcendental functions. `sqrt` is correctly rounded by IEEE 754 on every platform and stays allowed.
+disallowed-types = [
+  { path = "std::collections::HashMap", reason = "iteration order is randomised per process; use BTreeMap" },
+  { path = "std::collections::HashSet", reason = "iteration order is randomised per process; use BTreeSet" },
+]
+disallowed-methods = [
+  { path = "std::time::Instant::now", reason = "wall-clock time must not reach the layout; budgets are data" },
+  { path = "std::time::SystemTime::now", reason = "wall-clock time must not reach the layout; budgets are data" },
+  { path = "f64::mul_add", reason = "fused multiply-add rounds differently; use crate::fmath" },
+  { path = "f64::sin", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::cos", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::tan", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::asin", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::acos", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::atan", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::atan2", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::exp", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::exp2", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::ln", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::log2", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::log10", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::powf", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::powi", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::hypot", reason = "platform libm is not deterministic; use crate::fmath" },
+  { path = "f64::cbrt", reason = "platform libm is not deterministic; use crate::fmath" },
+]

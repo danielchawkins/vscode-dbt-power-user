@@ -146,3 +146,33 @@ describe("Rust workspace lints (checklist 3)", () => {
     },
   );
 });
+
+describe("Rust determinism lints (checklist 4)", () => {
+  // Aliases do not hide a banned item: clippy resolves the path to its definition.
+  it("plant: an aliased HashMap fails", { timeout: 300_000 }, () => {
+    const run = clippyPlant("aliased-hashmap", {
+      "graph-layout/src/engine/mod.rs":
+        "\nuse std::collections::HashMap as Map;\n/// Doc.\npub fn planted() -> usize {\n    let m: Map<u8, u8> = Map::new();\n    m.len()\n}\n",
+    });
+    expect(run.status).not.toBe(0);
+    expect(run.output).toContain("std::collections::HashMap");
+  });
+
+  it("plant: a stored Instant::now fails", { timeout: 300_000 }, () => {
+    const run = clippyPlant("stored-instant", {
+      "graph-layout/src/engine/mod.rs":
+        "\n/// Doc.\npub fn planted() -> bool {\n    let f = std::time::Instant::now;\n    let _ = f();\n    true\n}\n",
+    });
+    expect(run.status).not.toBe(0);
+    expect(run.output).toContain("std::time::Instant::now");
+  });
+
+  it("plant: a platform sin fails", { timeout: 300_000 }, () => {
+    const run = clippyPlant("platform-sin", {
+      "graph-layout/src/engine/mod.rs":
+        "\n/// Doc.\npub fn planted(x: f64) -> f64 {\n    x.sin()\n}\n",
+    });
+    expect(run.status).not.toBe(0);
+    expect(run.output).toContain("f64::sin");
+  });
+});

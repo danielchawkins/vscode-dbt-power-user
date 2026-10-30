@@ -2,6 +2,7 @@
   "recommendations": [
     "dbaeumer.vscode-eslint",
     "oxc.oxc-vscode",
+    "tamasfe.even-better-toml",
     "hverlin.mise-vscode",
     "rvben.rumdl",
     "nefrob.vscode-just-syntax"
