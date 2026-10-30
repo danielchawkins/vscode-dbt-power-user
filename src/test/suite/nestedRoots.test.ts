@@ -199,21 +199,6 @@ describe("guardMiddleware diagnostics and watched files", () => {
     expect(innerHandler).toHaveBeenCalledTimes(1);
   });
 
-  it("a didChangeWatchedFile event under a nested root is not passed to next", async () => {
-    vi.mocked(Uri.parse).mockImplementation((value: string) =>
-      VsCodeUri.parse(value),
-    );
-    const middleware = guardMiddleware(guardFor(), {});
-    const watched = middleware.workspace!.didChangeWatchedFile!;
-    const next = vi.fn(() => Promise.resolve());
-
-    await watched(fileEventAt(innerModel.fsPath), next);
-    expect(next).not.toHaveBeenCalled();
-
-    await watched(fileEventAt(outerModel.fsPath), next);
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-
   it("a batch with one outer and one nested event passes only the outer event", async () => {
     vi.mocked(Uri.parse).mockImplementation((value: string) =>
       VsCodeUri.parse(value),

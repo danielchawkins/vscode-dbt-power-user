@@ -532,6 +532,11 @@ describe("ProjectRegistry", () => {
         Uri.file(path.join(single.uri.fsPath, "models/model.sql")),
       ),
     ).toBe(true);
+    expect(
+      registry.projects[0].contains(
+        Uri.file(`${single.uri.fsPath}-other/models/model.sql`),
+      ),
+    ).toBe(false);
     expect(registry.projects[0].contains({ fsPath: undefined } as any)).toBe(
       false,
     );
@@ -785,7 +790,16 @@ describe("ProjectRegistry", () => {
       const changed = vi.fn();
       registry.onDidChangeProjects(changed);
 
-      expect(watch.keys()).not.toContain(`${tmp}|.strands-other`);
+      const ancestors = (dir: string): string[] =>
+        path.dirname(dir) === dir
+          ? []
+          : [
+              `${path.dirname(dir)}|${path.basename(dir)}`,
+              ...ancestors(path.dirname(dir)),
+            ];
+      expect(watch.keys().sort()).toEqual(
+        [`${root}|${PROJECT_FILE_GLOB}`, ...ancestors(root)].sort(),
+      );
       expect(registry.projects.map((p) => p.root.fsPath)).toEqual([root]);
       expect(changed).not.toHaveBeenCalled();
     });
@@ -975,15 +989,13 @@ describe("ProjectRegistry", () => {
     const registry = new ProjectRegistry(terminal);
     await registry.initialize();
 
-    expect(terminal.warn).toHaveBeenCalledWith(
+    const warnings = terminal.warn.mock.calls;
+    expect(warnings.map(([channel]: unknown[]) => channel)).toEqual([
       "projectRegistry",
-      expect.stringContaining("Invalid Declared Project entry"),
-    );
-    expect(terminal.warn).toHaveBeenCalledWith(
       "projectRegistry",
-      expect.stringContaining(
-        "Declared Project entry projects/typo has no dbt_project.yml",
-      ),
+    ]);
+    expect(warnings.map(([, message]: unknown[]) => message)).toContainEqual(
+      expect.stringContaining("projects/typo"),
     );
   });
 
@@ -1060,20 +1072,17 @@ describe("ProjectRegistry", () => {
       expect(changed).toHaveBeenCalledTimes(1);
     });
 
-    it.each(["yaml"])("accepts a %s document", async (language) => {
-      const registry = await start();
-      registry.declareFromDocuments([
-        openedDocument(soxModel, { languageId: language }),
-      ]);
-      expect(roots(registry)).toContain("sox:openedFile");
-    });
-
-    it.each([["an unsupported language", { languageId: "markdown" }]])(
-      "ignores a document with %s",
-      async (_name, overrides) => {
+    it.each([
+      ["yaml", ["general:explicit", "sox:openedFile"]],
+      ["markdown", ["general:explicit"]],
+    ])(
+      "for a %s document, declares an opened-file root only when accepted",
+      async (languageId, expected) => {
         const registry = await start();
-        registry.declareFromDocuments([openedDocument(soxModel, overrides)]);
-        expect(roots(registry)).toEqual(["general:explicit"]);
+        registry.declareFromDocuments([
+          openedDocument(soxModel, { languageId }),
+        ]);
+        expect(roots(registry)).toEqual(expected);
       },
     );
 
