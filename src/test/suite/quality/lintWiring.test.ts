@@ -39,17 +39,26 @@ describe("recipeBody", () => {
 });
 
 describe("lint wiring", () => {
-  it("runs the host Oxlint config in lint-code", () => {
-    expect(recipeBody(read("."), "lint-code")).toContain("npm run lint:oxlint");
-  });
-
-  it("runs the webview Oxlint config in webviews::lint", () => {
-    expect(recipeBody(read("webviews"), "lint")).toContain(
-      "npm run lint:oxlint",
-    );
-  });
-
-  it("applies the webview Oxlint fixes in webviews::fmt", () => {
-    expect(recipeBody(read("webviews"), "fmt")).toContain("npm run fix:oxlint");
+  it.each([
+    {
+      name: "host lint-code",
+      dir: ".",
+      recipe: "lint-code",
+      command: "npm run lint:oxlint",
+    },
+    {
+      name: "webview lint",
+      dir: "webviews",
+      recipe: "lint",
+      command: "npm run lint:oxlint",
+    },
+    {
+      name: "webview fmt",
+      dir: "webviews",
+      recipe: "fmt",
+      command: "npm run fix:oxlint",
+    },
+  ])("$name runs `$command`", ({ dir, recipe, command }) => {
+    expect(recipeBody(read(dir), recipe)).toContain(command);
   });
 });

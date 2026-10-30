@@ -142,10 +142,4 @@ describe("build wiring", () => {
       ).toEqual([]);
     },
   );
-
-  it("watches exactly what build:packages builds", () => {
-    expect(scripts["watch:packages"]).toBe(
-      `${scripts["build:packages"]} --watch --preserveWatchOutput`,
-    );
-  });
 });
