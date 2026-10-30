@@ -15,6 +15,9 @@ mod layering;
 mod metrics;
 mod order;
 mod place;
+// `rand` is compiled for its fixture tests until the layout phases draw from it (Phase 2); a non-test build would
+// otherwise report its items as dead code.
+#[cfg(test)]
 mod rand;
 mod route;
 mod solve;
