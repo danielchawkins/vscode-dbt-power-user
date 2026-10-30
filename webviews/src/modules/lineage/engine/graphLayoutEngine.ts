@@ -43,6 +43,21 @@ const EDGE_KINDS: Readonly<Record<string, EdgeKindPolicy>> = {
   relationship: { ranks: false },
 };
 
+/**
+ * The hint kind: a pull without a drawn edge. Offered only to a request that draws a hint: the engine's layouts
+ * change when a kind it does not use is offered, so the other requests keep the kinds they always had.
+ */
+const HINT_KIND: EdgeKindPolicy = { ranks: false, routed: false, weight: 0.5 };
+
+/** The edge kinds a request is laid out with. */
+function edgeKindsOf(
+  request: LayoutRequest,
+): Readonly<Record<string, EdgeKindPolicy>> {
+  return request.edges.some((edge) => edge.role === "hint")
+    ? { ...EDGE_KINDS, hint: HINT_KIND }
+    : EDGE_KINDS;
+}
+
 export type GraphLayoutEffort = NonNullable<LayoutOptions["effort"]>;
 
 /** The adapter's engine, ranks on shared rows, with the ordering search `effort` sets. */
@@ -74,7 +89,7 @@ function optionsFor(
       : undefined;
   return {
     direction: "down",
-    edgeKinds: EDGE_KINDS,
+    edgeKinds: edgeKindsOf(request),
     partitions: "soft",
     ranks: "rows",
     anchor: request.focus,

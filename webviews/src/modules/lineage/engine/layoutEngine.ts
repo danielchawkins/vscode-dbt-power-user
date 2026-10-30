@@ -42,9 +42,10 @@ export interface LayoutCard {
 
 /**
  * What an edge is. `table` and `group` are dbt dependencies, `column` joins two column rows, `relationship` is a
- * declared relationship such as a foreign key, drawn and routed but never ranking.
+ * declared relationship such as a foreign key, drawn and routed but never ranking. `hint` pulls its two cards
+ * together without ranking them or being drawn.
  */
-type EdgeRole = "table" | "group" | "column" | "relationship";
+type EdgeRole = "table" | "group" | "column" | "relationship" | "hint";
 
 export interface LayoutEdgeSpec {
   /** The id `toEdges` gives the drawn edge (edgeIds.ts), so the drawn edge finds its path. */
