@@ -109,6 +109,7 @@ clean:
 [group("quality")]
 fmt:
     just fmt-just
+    just fmt-toml
     just crates::fmt
     just webviews::fmt
     just fmt-code
@@ -121,7 +122,7 @@ lint:
     set -uo pipefail
     failed=()
     for step in lint-just lint-mise-lock lint-code lint-ast-grep lint-unused lint-ratchet webviews::lint \
-        lint-format lint-lockfiles lint-deps lint-markdown lint-shell; do
+        lint-format lint-toml lint-lockfiles lint-deps lint-markdown lint-shell; do
         just "$step" || failed+=("$step")
     done
     if ((${#failed[@]})); then
@@ -151,6 +152,10 @@ check:
 fmt-just:
     just --fmt
     just --justfile webviews/justfile --fmt
+
+[group("quality")]
+fmt-toml:
+    taplo fmt
 
 [group("quality")]
 lint-just:
@@ -205,6 +210,10 @@ lint-ratchet *args:
 [group("quality")]
 lint-format:
     npm run check:format
+
+[group("quality")]
+lint-toml:
+    taplo fmt --check
 
 [group("quality")]
 lint-lockfiles:
