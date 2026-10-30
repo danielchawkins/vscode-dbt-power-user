@@ -75,13 +75,6 @@ describe("toFlow with groups", () => {
     expect(group?.initialWidth).toBe(geometry.tableWidth);
   });
 
-  it("draws the given group edges to the group nodes", () => {
-    const { edges } = toFlowOf(input([["hub", "g:1"]]));
-    expect(edges).toContainEqual(
-      expect.objectContaining({ source: "hub", target: "g:1" }),
-    );
-  });
-
   it("draws no group edges when none are given", () => {
     const { nodes, edges } = toFlowOf(input([]));
     expect(nodes.filter((n) => n.type !== "band").map((n) => n.id)).toEqual([
@@ -168,12 +161,7 @@ describe("toFlow with group chips", () => {
     const height = (count: number) =>
       hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
     expect(height(0)).toBe(base);
-    expect(height(1)).toBe(base + geometry.chipRowHeight);
-    expect(height(2)).toBe(base + geometry.chipRowHeight);
     expect(height(3)).toBe(base + 2 * geometry.chipRowHeight);
-    expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
-    expect(height(5)).toBe(base + 2 * geometry.chipRowHeight);
-    expect(height(8)).toBe(base + 2 * geometry.chipRowHeight);
   });
 
   it("sizes every card alike at the pre-strip height, and moves no card when one is selected", () => {

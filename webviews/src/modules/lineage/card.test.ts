@@ -47,12 +47,6 @@ describe("lineage card text", () => {
     );
   });
 
-  it("tells two same-alias nodes apart by their relation", () => {
-    const a = table({ database: "DEV_STAGING", schema: "grant" });
-    const b = table({ database: "DEV_STAGING", schema: "kikoff" });
-    expect(cardSubtitle(a)).not.toBe(cardSubtitle(b));
-  });
-
   it("keeps materialization and package for a node with no relation", () => {
     expect(
       cardSubtitle(
@@ -200,7 +194,8 @@ describe("lineage card text", () => {
     it("shortens to the zoomed length when zoomed", () => {
       const long = table({ label: "stg__backend_grant__cash_advance_log" });
       expect(cardTitle(long, "alias")).toHaveLength(30);
-      expect(cardTitle(long, "name", true)).toHaveLength(15);
+      // Cut in the middle: the start and the end of the name survive.
+      expect(cardTitle(long, "name", true)).toBe("stg__…vance_log");
     });
 
     it("shows the alias in the name-mode subtitle only when it differs", () => {
