@@ -172,6 +172,7 @@ export class Blocks {
     for (const u of walked) {
       this.walkSeen[u] = false;
     }
+    // ast-grep-ignore: ts-graph-layout-sort-tiebreak -- plain numbers: equal values are interchangeable, and the solver takes no layout module (solve-is-self-contained).
     return negative.sort((a, b) => a - b);
   }
 

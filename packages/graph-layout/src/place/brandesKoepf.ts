@@ -1,3 +1,4 @@
+import { ascending } from "../comparators.js";
 import {
   adjacency,
   alignBlocks,
@@ -75,7 +76,7 @@ function balance(runs: readonly Run[], n: number): number[] {
   });
   const out: number[] = [];
   for (let v = 0; v < n; v++) {
-    const values = aligned.map((x) => x[v]!).sort((a, b) => a - b);
+    const values = aligned.map((x) => x[v]!).sort(ascending);
     out.push((values[1]! + values[2]!) / 2);
   }
   return out;

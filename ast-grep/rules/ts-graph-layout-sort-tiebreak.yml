@@ -1,0 +1,26 @@
+# Every sort in the layout engine gives the same order whatever array it starts from, because its comparator breaks ties on
+# an index or id (ADR 0011, "Determinism rules" 4). The shared comparators in `src/comparators.ts` do that. An inline
+# arrow comparator is flagged: it is easy to write one whose ties are not broken, and the Rust port needs each key stated.
+id: ts-graph-layout-sort-tiebreak
+language: typescript
+severity: error
+message: >-
+  Sort the layout engine's arrays with a shared comparator from `src/comparators.ts`: `byThenIndex(key, index)`, which
+  breaks ties on a unique index or id, or `ascending` for plain numbers. For an exception, put
+  `ast-grep-ignore: ts-graph-layout-sort-tiebreak -- <why>` in a comment above the line and say why in review.
+files:
+  - packages/graph-layout/src/**
+ignores:
+  - "**/*.test.ts"
+  - "**/*.bench.ts"
+  # Test support: tsconfig excludes `src/testing/` from the build, as it excludes the tests.
+  - "**/testing/**"
+rule:
+  any:
+    - pattern: $RECV.sort($CMP)
+    - pattern: $RECV.toSorted($CMP)
+constraints:
+  CMP:
+    any:
+      - kind: arrow_function
+      - kind: function_expression

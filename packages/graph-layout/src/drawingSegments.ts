@@ -1,3 +1,4 @@
+import { sortedInInputOrder } from "./comparators.js";
 import type { Point } from "./types.js";
 
 /** An axis-aligned piece of an edge; `from` and `to` are its ends along the varying axis, `from` < `to`. */
@@ -95,12 +96,11 @@ function segmentOf(a: Point, b: Point): Segment | undefined {
 
 /** Joins the segments of one line that overlap or touch, so a point of the line lies in at most one segment. */
 function joinOnLines(segments: readonly Segment[]): Segment[] {
-  const ordered = segments.toSorted(
-    (a, b) =>
-      Number(a.horizontal) - Number(b.horizontal) ||
-      a.fixed - b.fixed ||
-      a.from - b.from,
-  );
+  const ordered = sortedInInputOrder(segments, [
+    (s) => Number(s.horizontal),
+    (s) => s.fixed,
+    (s) => s.from,
+  ]);
   const joined: Segment[] = [];
   for (const s of ordered) {
     const last = joined.at(-1);

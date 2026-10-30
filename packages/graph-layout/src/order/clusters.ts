@@ -1,3 +1,4 @@
+import { sortedInInputOrder } from "../comparators.js";
 import { type OrderModel, setLayer, unitsOf } from "./model.js";
 
 /**
@@ -75,8 +76,9 @@ function arrangeAt(
       units: arrangeAt(context, members, depth + 1),
     });
   }
-  entries.sort((a, b) => a.key - b.key || a.order - b.order);
-  return entries.flatMap((entry) => entry.units);
+  return sortedInInputOrder(entries, [(e) => e.key, (e) => e.order]).flatMap(
+    (entry) => entry.units,
+  );
 }
 
 /**

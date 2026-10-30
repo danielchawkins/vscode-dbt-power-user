@@ -146,6 +146,83 @@ Rejected, with the reason:
 - WASM: the spike's slowest phase at 600 nodes with columns is under 100 ms in plain TypeScript.
 - Direction-relative port sides (before, after, left, right): a port belongs to its card's shape, and column rows stay on the same side of a card whatever the direction, so absolute sides match the drawing's frame.
 
+## Ordering
+
+Every sort and every Map or Set iteration in `src/` (not tests) is listed below, so the Rust port can match each one. The list comes from the TypeScript checker and from `rg`, not from a text search alone. It covers method calls on a Map or Set receiver (`.keys()`, `.values()`, `.entries()`, `.forEach`), `for…of` loops, spreads, and a Map or Set passed as an argument (`Array.from(map, …)`, `new Map(map)`). The sort sites include the calls to `sortedInInputOrder`. The ast-grep rule `ts-graph-layout-sort-tiebreak` makes every inline comparator either a shared one from `src/comparators.ts` or a suppression with a reason.
+
+Classes:
+
+- **(a) order-free:** the output is the same under any permutation of the items: integer counts, min and max, membership, a lookup by key, or a sort of distinct keys (equal numbers are interchangeable). A float sum is not order-free, because addition is not associative.
+- **(b) fixed by input:** the order is the insertion order of a Map or Set, or the input order of an array, and every insertion runs over an input array or dense index. A sort whose keys end in a stated index tie-break is also (b). The port reproduces the same insertion sequence or the same keys.
+- **(c) unstated, fixed here:** a comparator with ties and no tie-break. Each one now sorts by `sortedInInputOrder` (ties in input position) or `byThenIndex` (ties on an index). Both give the order the stable sort gave before, so output does not change.
+
+Counts: 21 sorts (a 7, b 1, c 13) and 34 Map or Set iterations (a 23, b 11, c 0). Zero Map or Set sites are (c): every Map or Set is filled in input order or only feeds an order-free use.
+
+Line numbers are for this revision and point at the line where the call or the iteration starts.
+
+| Site (`src/`) | Class | What makes it deterministic |
+| --- | --- | --- |
+| `drawingSegments.ts:99` joinOnLines `sortedInInputOrder` | c | Ties on horizontal, fixed, from; ties in input position. |
+| `metrics.ts:211` sweepCrossings `sort(ascending)` | a | Distinct numbers from a Set (spread at line 210); `ascending`. |
+| `metrics.ts:251` sweepEvents `sortedInInputOrder` | c | Ties on x and order; ties in input position. |
+| `order/clusters.ts:79` arrangeAt `sortedInInputOrder` | c | Ties on key and order; ties in input position. |
+| `order/crossings.ts:14` countCrossings `sortedInInputOrder` | c | Ties on both positions (weights differ); ties in input position. |
+| `order/crossings.ts:15` countCrossings `sort(ascending)` | a | Distinct positions from a Set (spread at line 15); `ascending`. |
+| `order/crossings.ts:15` countCrossings Set spread | a | Sorted in the same statement. |
+| `order/seed.ts:32` layer `toSorted` | c | Layers filled in node index order; tie on the node index. |
+| `order/seed.ts:72` nearestFirst `sortedInInputOrder` | c | Dummies in input order; ties in input position. |
+| `order/seed.ts:100` hintKeys `sort` | b | Key, then node index (already stated; `byThenIndex`). |
+| `order/sweeps.ts:106` weightedMedian `sortedInInputOrder` | c | Reads in input order; ties in input position (float sums follow it). |
+| `place/bkAlignment.ts:156` medianNeighbours `sortedInInputOrder` | c | Neighbours in link order; ties in input position. |
+| `place/boxes.ts:215` deepest-first `sortedInInputOrder` | c | Ties on depth; ties in input position in `plan.boxes`. |
+| `place/boxes.ts:277` deepest-first `sort` | c | Ties on depth; tie on the box index `i`, which is input order. |
+| `place/brandesKoepf.ts:79` alignment median `sort(ascending)` | a | Equal numbers are interchangeable; `ascending`. |
+| `place/levelNodes.ts:100` overlapSeparations `sort` | c | Ties on low; tie on the node index. |
+| `rank/constraints.ts:36` partitionConstraints `sort(ascending)` | a | Distinct numbers from a Set (spread at line 35); `ascending`. |
+| `result.ts:105` partitionBoxes `sort` | a | Distinct Map keys (partitions); tie on the key itself. |
+| `route/channel.ts:122` place `sortedInInputOrder` | c | Ties on lo and hi; ties in input position. |
+| `route/doglegs.ts:139` columnsOf `sort(ascending)` | a | Distinct numbers from a Set (spread at line 139); `ascending`. |
+| `route/doglegs.ts:139` columnsOf Set spread | a | Sorted in the same statement. |
+| `solve/vpscBlocks.ts:176` negative blocks `sort` | a | Equal numbers are interchangeable; inline `a - b`, suppressed, because `solve/` imports nothing from the layout. |
+| `spines.ts:37` spinesOf `sort` | c | Members listed in node index order; tie on the node index. |
+| `bundles.ts:36` groupBundles `values()` | b | Groups inserted per edge in input order. |
+| `metrics.ts:67` measureDrawing `Array.from(paths, …)` | b | Pieces in paths insertion order (paths inserted in `result.ts` edge order). This order sets the float `edgeLength` sum and the input order of the crossing count; load-bearing. |
+| `metrics.ts:73` measureDrawing `values()` reduce | b | Float sum in node insertion order; load-bearing, so the Map keeps its order. |
+| `metrics.ts:98` opaqueBreaches `for…of` paths | a | Integer count. |
+| `metrics.ts:117` compareDrawings `keys()` | b | Float sum over `before.boxes` order; load-bearing. |
+| `metrics.ts:201` trunkGroups `values()` | a | Integer crossing counts, subtracted. |
+| `metrics.ts:210` sweepCrossings Set spread | a | Sorted at line 211. |
+| `metrics.ts:296` boundsOf `values()` | a | Min and max. |
+| `metrics.ts:300` boundsOf paths `values()` | a | Min and max. |
+| `metrics.ts:318` nodeOverlaps `values()` | a | Integer count of pairs. |
+| `metrics.ts:357` nodesRunThrough spread | a | Integer count. |
+| `opaque.ts:40` allowedOf spread | a | Builds a Set; only membership is used. |
+| `opaque.ts:41` allowedOf spread | a | Builds a Set; only membership is used. |
+| `opaque.ts:67` breachesOf `for…of` boxes | a | Callers use only the length or count. |
+| `order/clusters.ts:72` arrangeAt `for…of` blocks | b | Blocks inserted in item order; sorted at line 79. |
+| `order/outside.ts:234` contiguous `for…of` | a | Boolean result. |
+| `order/seed.ts:51` `Array.from(groups, …)` | a | Only `.get` reads the result, by owner; the entry order is not used. |
+| `place/boxOrder.ts:48` topological `values()` | a | Integer in-degrees. |
+| `place/boxOrder.ts:49` topological `for…of` | a | Integer in-degrees. |
+| `place/boxOrder.ts:60` topological `for…of` | a | Integer decrements. |
+| `place/boxes.ts:69` planBoxes `for…of` spansOf | b | Spans inserted in layer position order. |
+| `rank/constraints.ts:35` partitionConstraints Set spread | a | Sorted at line 36. |
+| `rank/networkSimplex.ts:46` mergeParallel `values()` | b | Map keyed by edge ends, filled in edge input order. |
+| `result.ts:104` partitionBoxes spread | a | Sorted at line 105. |
+| `result.ts:194` metricsOf spread | b | Paths inserted in `membersOf` order (bundle, then edge). |
+| `result.ts:216` resultOf `values()` | a | Feeds a min and max (hull). |
+| `result.ts:217` resultOf `values()` | a | Feeds a min and max (hull). |
+| `result.ts:218` resultOf `values()` | a | Feeds a min and max (hull). |
+| `result.ts:222` resultOf `Array.from(nodes, …)` | b | Builds the `hints.nodes` Map in `nodes` insertion order. |
+| `route/levelRoutes.ts:172` crossingsOf `for…of` edges | b | Inserted in `membersOf` order. |
+| `route/stubs.ts:35` stubCrossings `values()` | a | Integer total. |
+| `validate.ts:93` cluster checks `values()` | b | Issues reported in cluster input order. |
+| `validate.ts:113` kinds `Object.entries` | b | Not a Map, so not counted. String keys keep insertion order; the port reads kinds as a list in the same order. |
+
+The `Set` spreads are each sorted in the same statement (`metrics.ts:210`, `order/crossings.ts:15`, `rank/constraints.ts:35`, `route/doglegs.ts:139`), so only the sorted result matters.
+
+Source of the counts: the ADR's "12 sort sites" and "50 Map/Set sites" predate this audit. This audit finds 21 sorts and 34 Map or Set iterations. The earlier 31 missed `Array.from(map, …)`, which the checker does not see as a receiver method.
+
 ## Build order
 
 1. Types, presets, `validateGraph`, package wiring and boundary rules: in place.

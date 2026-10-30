@@ -1,3 +1,4 @@
+import { ascending, sortedInInputOrder } from "../comparators.js";
 import { Fenwick } from "../fenwick.js";
 import { type OrderModel, slot } from "./model.js";
 
@@ -10,10 +11,8 @@ type Link = readonly [upper: number, lower: number, weight: number];
  * a crossing counts the product of the two weights. Links that share a position at either rank do not cross.
  */
 function countCrossings(links: readonly Link[]): number {
-  const sorted = links.toSorted((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const lowers = [...new Set(sorted.map((link) => link[1]))].sort(
-    (a, b) => a - b,
-  );
+  const sorted = sortedInInputOrder(links, [(l) => l[0], (l) => l[1]]);
+  const lowers = [...new Set(sorted.map((link) => link[1]))].sort(ascending);
   const column = new Map(lowers.map((value, k) => [value, k] as const));
   const tree = new Fenwick(lowers.length);
   let seen = 0;

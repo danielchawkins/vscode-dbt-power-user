@@ -1,3 +1,4 @@
+import { byThenIndex } from "./comparators.js";
 import { indexed } from "./indexed.js";
 import { measureDrawing } from "./metrics.js";
 import { allowedOf, breachesOf, holdersOf } from "./opaque.js";
@@ -101,7 +102,7 @@ function partitionBoxes(
     }
   }
   return [...members]
-    .sort(([a], [b]) => a - b)
+    .sort(byThenIndex<[number, Point[]]>([([p]) => p], ([p]) => p))
     .map(([partition, corners]) => ({ partition, ...hullOf(corners) }));
 }
 

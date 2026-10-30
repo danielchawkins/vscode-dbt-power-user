@@ -1,3 +1,4 @@
+import { ascending } from "../comparators.js";
 import type { NetworkEdge } from "./networkSimplex.js";
 
 /**
@@ -32,7 +33,7 @@ export function partitionConstraints(
 ): Extension {
   const bands = [
     ...new Set(partitions.filter((p): p is number => p !== undefined)),
-  ].sort((a, b) => a - b);
+  ].sort(ascending);
   const gateOf = (k: number): number => partitions.length + k;
   let count = partitions.length + Math.max(0, bands.length - 1);
   const edges: NetworkEdge[] = [];

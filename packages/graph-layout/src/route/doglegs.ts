@@ -6,6 +6,7 @@
  * Pieces are visited once each, in order.
  */
 
+import { ascending } from "../comparators.js";
 import { crossable } from "./channelCrossings.js";
 import { type Segment, meet, segmentsOf } from "./channelSegments.js";
 import type { ChannelPiece, Jog } from "./channelTypes.js";
@@ -136,7 +137,7 @@ function bestJog(
 /** The in-rank columns of a band, sorted: every run end, and the midpoint between each neighbouring pair. */
 function columnsOf(pieces: readonly ChannelPiece[]): number[] {
   const coordinates = [...new Set(pieces.flatMap((q) => [q.from, q.to]))].sort(
-    (a, b) => a - b,
+    ascending,
   );
   return coordinates.flatMap((x, k) => {
     const next = coordinates[k + 1];

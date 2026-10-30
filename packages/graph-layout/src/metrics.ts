@@ -1,3 +1,4 @@
+import { ascending, sortedInInputOrder } from "./comparators.js";
 import {
   entersBox,
   type Pieces,
@@ -207,7 +208,7 @@ function trunkGroups(
 function sweepCrossings(all: readonly Segment[]): number {
   const heights = [
     ...new Set(all.filter((s) => s.horizontal).map((s) => s.fixed)),
-  ].sort((a, b) => a - b);
+  ].sort(ascending);
   const tree = new Fenwick(heights.length);
   let total = 0;
   for (const event of sweepEvents(all, heights)) {
@@ -247,7 +248,7 @@ function sweepEvents(
       });
     }
   }
-  return events.sort((a, b) => a.x - b.x || a.order - b.order);
+  return sortedInInputOrder(events, [(e) => e.x, (e) => e.order]);
 }
 
 /** Index of the first height above `value`. */
