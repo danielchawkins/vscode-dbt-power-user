@@ -16,3 +16,7 @@ napi-derive = "3"
 
 [lints]
 workspace = true
+
+[package.metadata.cargo-machete]
+# The #[napi] expansion names napi:: items, so the dependency is used through the macro, which machete cannot see.
+ignored = ["napi"]

@@ -1,0 +1,14 @@
+id: rust-core-layer-imports-across
+snapshots:
+  use crate::layering::Ranks;:
+    labels:
+    - source: crate::layering::Ranks
+      style: primary
+      start: 4
+      end: 26
+  use crate::place::Boxes;:
+    labels:
+    - source: crate::place::Boxes
+      style: primary
+      start: 4
+      end: 23

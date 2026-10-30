@@ -1,0 +1,8 @@
+id: rust-core-layer-imports-layering
+valid:
+  - 'use crate::index::Indexed;'
+  - 'use crate::solve::rank;'
+  - 'use crate::budget::Budget;'
+invalid:
+  - 'use crate::place::Boxes;'
+  - 'use crate::order::Order;'

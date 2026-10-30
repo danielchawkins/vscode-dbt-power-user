@@ -1,0 +1,8 @@
+id: rust-binding-imports-engine-only
+valid:
+  - 'use graph_layout::engine;'
+  - 'use graph_layout::model::Graph;'
+invalid:
+  - 'use graph_layout::order::order;'
+  - 'use graph_layout::{engine, model};'
+  - 'use graph_layout as core;'

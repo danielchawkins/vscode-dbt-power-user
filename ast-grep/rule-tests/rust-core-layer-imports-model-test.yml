@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-model
+valid:
+  - 'use std::collections::BTreeMap;'
+  - 'use super::Node;'
+invalid:
+  - 'use crate::order::Order;'
+  - 'use crate::{index, order};'

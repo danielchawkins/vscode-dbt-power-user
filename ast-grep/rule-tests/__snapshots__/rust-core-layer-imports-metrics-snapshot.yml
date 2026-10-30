@@ -1,0 +1,8 @@
+id: rust-core-layer-imports-metrics
+snapshots:
+  use crate::place::Placement;:
+    labels:
+    - source: crate::place::Placement
+      style: primary
+      start: 4
+      end: 27

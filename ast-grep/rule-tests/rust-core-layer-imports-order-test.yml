@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-order
+valid:
+  - 'use crate::layering::Ranks;'
+  - 'use crate::rand::Stream;'
+invalid:
+  - 'use crate::place::Boxes;'
+  - 'use crate::route::Routing;'

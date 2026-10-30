@@ -1,0 +1,14 @@
+id: rust-solve-no-crate-imports
+snapshots:
+  use crate::index::Indexed;:
+    labels:
+    - source: crate
+      style: primary
+      start: 4
+      end: 9
+  use super::super::model::Graph;:
+    labels:
+    - source: super::super::model::Graph
+      style: primary
+      start: 4
+      end: 30

@@ -1,0 +1,14 @@
+id: rust-core-layer-imports-route
+snapshots:
+  use crate::engine::run;:
+    labels:
+    - source: crate::engine::run
+      style: primary
+      start: 4
+      end: 22
+  use crate::place::Placement;:
+    labels:
+    - source: crate::place::Placement
+      style: primary
+      start: 4
+      end: 27

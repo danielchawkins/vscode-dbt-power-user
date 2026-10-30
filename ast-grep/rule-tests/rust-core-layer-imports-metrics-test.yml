@@ -1,0 +1,5 @@
+id: rust-core-layer-imports-metrics
+valid:
+  - 'use crate::model::Graph;'
+invalid:
+  - 'use crate::place::Placement;'

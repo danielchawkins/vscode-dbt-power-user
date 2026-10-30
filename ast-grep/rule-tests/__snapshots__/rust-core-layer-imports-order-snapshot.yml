@@ -1,0 +1,14 @@
+id: rust-core-layer-imports-order
+snapshots:
+  use crate::place::Boxes;:
+    labels:
+    - source: crate::place::Boxes
+      style: primary
+      start: 4
+      end: 23
+  use crate::route::Routing;:
+    labels:
+    - source: crate::route::Routing
+      style: primary
+      start: 4
+      end: 25

@@ -1,0 +1,21 @@
+id: rust-core-layer-imports-across
+language: rust
+severity: error
+message: >-
+  across may import only index and the output types of order from the crate (ADR 0011, module table). Test code
+  may use testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/across/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(across|index|order|testkit)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

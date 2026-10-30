@@ -1,0 +1,5 @@
+id: rust-core-layer-imports-rand
+valid:
+  - 'use super::Stream;'
+invalid:
+  - 'use crate::model::Graph;'

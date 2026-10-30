@@ -1,0 +1,18 @@
+id: rust-core-layer-imports-model
+snapshots:
+  use crate::order::Order;:
+    labels:
+    - source: crate::order::Order
+      style: primary
+      start: 4
+      end: 23
+  use crate::{index, order};:
+    labels:
+    - source: crate::{index, order}
+      style: primary
+      start: 4
+      end: 25
+    - source: crate
+      style: secondary
+      start: 4
+      end: 9

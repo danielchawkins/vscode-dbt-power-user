@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-overview
+valid:
+  - 'use crate::model::Graph;'
+  - 'use crate::engine::run;'
+invalid:
+  - 'use crate::place::Placement;'
+  - 'use crate::pack::Packed;'

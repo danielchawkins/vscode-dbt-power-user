@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-place
+valid:
+  - 'use crate::solve::sweep;'
+  - 'use crate::across::Gap;'
+invalid:
+  - 'use crate::route::Routing;'
+  - 'use crate::metrics::score;'

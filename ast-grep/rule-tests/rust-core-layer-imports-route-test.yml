@@ -1,0 +1,7 @@
+id: rust-core-layer-imports-route
+valid:
+  - 'use crate::place::boxes::Box;'
+  - 'use crate::order::Order;'
+invalid:
+  - 'use crate::place::Placement;'
+  - 'use crate::engine::run;'

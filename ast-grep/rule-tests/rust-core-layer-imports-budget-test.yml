@@ -1,0 +1,6 @@
+id: rust-core-layer-imports-budget
+valid:
+  - 'use std::num::NonZeroU32;'
+  - 'use crate::testkit::clock;'
+invalid:
+  - 'use crate::model::Graph;'

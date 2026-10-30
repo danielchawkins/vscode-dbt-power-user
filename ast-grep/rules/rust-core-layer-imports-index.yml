@@ -1,0 +1,20 @@
+id: rust-core-layer-imports-index
+language: rust
+severity: error
+message: >-
+  index may import only model from the crate (ADR 0011, module table). Test code may use testkit. A `{...}` list of crate paths is banned: name each module on its own use line.
+files:
+  - crates/graph-layout/src/index/**
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: '^crate::'
+      not:
+        any:
+          - regex: '^crate::(index|model|testkit)(::|$)'
+          - inside:
+              kind: scoped_identifier
+    - kind: scoped_use_list
+      has:
+        field: path
+        regex: '^crate$'

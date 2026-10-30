@@ -1,0 +1,8 @@
+id: rust-core-layer-imports-hash
+snapshots:
+  use crate::model::Graph;:
+    labels:
+    - source: crate::model::Graph
+      style: primary
+      start: 4
+      end: 23
