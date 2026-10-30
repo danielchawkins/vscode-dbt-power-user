@@ -1,16 +1,50 @@
+import { spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   compareMeasured,
   compareWithBase,
-  countRustSuppressions,
+  countRustSuppressionsInText,
   METRICS,
   parseTrailers,
   SUPPRESSION_FILES,
 } from "../../../../scripts/quality/ratchet.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
+
+/**
+ * Copies what `lint-ratchet` reads (its scripts, the crates, the sources it tags and the suppression files) into
+ * .cache/ratchet-plants/<name>. The CLI finds its root from its own location, so it measures the copy.
+ */
+function copyRatchetTree(name: string): string {
+  const dir = path.join(root, ".cache/ratchet-plants", name);
+  rmSync(dir, { recursive: true, force: true });
+  const skip = (src: string) => !/[\\/](node_modules|target|dist)$/.test(src);
+  for (const entry of ["scripts", "crates", "src", "packages", "webviews"]) {
+    cpSync(path.join(root, entry), path.join(dir, entry), {
+      recursive: true,
+      filter: skip,
+    });
+  }
+  for (const file of Object.values(SUPPRESSION_FILES)) {
+    cpSync(path.join(root, file), path.join(dir, file));
+  }
+  return dir;
+}
+
+/** `lint-ratchet` itself: `node scripts/quality/ratchet.mjs`, run in the tree at `dir`. */
+function runRatchetCli(dir: string): { status: number | null; output: string } {
+  const result = spawnSync(
+    process.execPath,
+    [path.join(dir, "scripts/quality/ratchet.mjs")],
+    { cwd: dir, encoding: "utf8" },
+  );
+  return {
+    status: result.status,
+    output: `${result.stdout}${result.stderr}`,
+  };
+}
 
 const metrics = [
   { key: "suppressions.host", kind: "ceiling", precision: 0 },
@@ -254,24 +288,56 @@ describe("Rust suppression ratchet", () => {
     });
   });
 
-  it("plant: one extra #[expect] in the core fails the ratchet", () => {
-    // A copy of the core's src/ with one suppression added, counted the way the ratchet counts the real one.
-    const plantsDir = path.join(root, ".cache/ratchet-plants");
-    rmSync(plantsDir, { recursive: true, force: true });
-    const src = path.join(plantsDir, "graph-layout/src");
-    cpSync(path.join(root, "crates/graph-layout/src"), src, {
-      recursive: true,
-    });
-    appendFileSync(
-      path.join(src, "lib.rs"),
-      '\n#[expect(dead_code, reason = "planted")]\nfn planted() {}\n',
-    );
-    const key = "rustSuppressions.graph-layout";
-    const result = compareMeasured(
-      rustMetrics.filter((metric) => metric.key === key),
-      ceilings,
-      { [key]: countRustSuppressions(src) },
-    );
-    expect(result.worse).toEqual([{ key, value: 1, entry: ceilings[key] }]);
+  it(
+    "control: the lint-ratchet CLI passes on an unmodified copy of the tree",
+    { timeout: 300_000 },
+    () => {
+      const run = runRatchetCli(copyRatchetTree("ratchet-control"));
+      expect(run.status, run.output).toBe(0);
+    },
+  );
+
+  it(
+    "plant: the lint-ratchet CLI fails on one extra #[expect] in a copied tree",
+    { timeout: 300_000 },
+    () => {
+      const dir = copyRatchetTree("ratchet-plant");
+      appendFileSync(
+        path.join(dir, "crates/graph-layout/src/lib.rs"),
+        '\n#[expect(dead_code, reason = "planted")]\nfn planted() {}\n',
+      );
+      const run = runRatchetCli(dir);
+      expect(run.status).not.toBe(0);
+      expect(run.output).toContain("rustSuppressions.graph-layout");
+    },
+  );
+
+  it("counts a suppression inside cfg_attr", () => {
+    expect(
+      countRustSuppressionsInText(
+        "#[cfg_attr(test, expect(dead_code))]\nfn f() {}\n",
+      ),
+    ).toBe(1);
+  });
+
+  it("does not count a suppression quoted in a comment or a string", () => {
+    const text = [
+      "// #[expect(dead_code)]",
+      "/* outer /* #[allow(dead_code)] */ still a comment #[expect(x)] */",
+      'const S: &str = "#[expect(dead_code)]";',
+      'const R: &str = r#"#[allow(dead_code)]"#;',
+      "const Q: char = '\"';",
+      "fn f<'a>(x: &'a str) -> &'a str { x }",
+      "",
+    ].join("\n");
+    expect(countRustSuppressionsInText(text)).toBe(0);
+  });
+
+  it("counts the real suppressions beside the quoted ones", () => {
+    expect(
+      countRustSuppressionsInText(
+        '// #[expect(a)]\n#[expect(b, reason = "x")]\nfn f() {}\n',
+      ),
+    ).toBe(1);
   });
 });
