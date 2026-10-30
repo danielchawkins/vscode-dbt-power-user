@@ -118,6 +118,7 @@ napi: require-cargo
 parity: wasm napi
     node graph-layout-wasm/js/parity.mjs ../dist/graph-layout
     just solve-parity
+    just layering-parity
 
 # The planted divergence for `parity`: a golden one byte off must make it exit 1, the mismatch status. Any other failure
 # (a missing build, a crash) fails this recipe too, so the plant cannot pass by accident. `check` runs it after `parity`.
@@ -142,6 +143,7 @@ parity-plant: wasm napi
         exit 1
     fi
     just solve-parity-plant
+    just layering-parity-plant
 
 # The solver (`solve`, private to the core) run natively and under WASI: the core's whole test suite runs in
 # WebAssembly through scripts/quality/wasi-run.mjs (Node's own WASI), and each run writes its 2,000 random outputs as
@@ -183,6 +185,70 @@ solve-parity-plant: require-cargo
     fi
     if ! grep -qE '^solve-parity: [0-9]+ of [0-9]+ outputs differ' <<<"$report"; then
         echo "solve-parity-plant: exit 1 without a difference report; this is a crash, not a divergence" >&2
+        echo "$report" >&2
+        exit 1
+    fi
+
+# The layering outputs (ranks, reversed edges and dummy chains of every fixture case) run natively and under WASI: the
+# test writes them when GRAPH_LAYOUT_LAYERING_OUT names a file, and the WASI runner preopens that directory.
+[private]
+layering-outputs dir: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    GRAPH_LAYOUT_LAYERING_OUT="$1/native.txt" cargo test --locked -p graph-layout layering_outputs_are_written_for_the_parity_comparison
+    GRAPH_LAYOUT_LAYERING_OUT="$1/wasm.txt" cargo test --locked --target wasm32-wasip1 -p graph-layout layering_outputs_are_written_for_the_parity_comparison
+
+# Compares two layering outputs byte for byte: exit 1 with a report when they differ, exit 2 when a file is unreadable or
+# does not have one line per fixture case, so an empty output cannot pass.
+[private]
+layering-compare native wasm:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    cases=$(grep -cv '^#' graph-layout/fixtures/parity/layering-cases.txt)
+    for f in "$1" "$2"; do
+        if [[ ! -r "$f" ]] || [[ "$(wc -l < "$f" | tr -d ' ')" != "$cases" ]]; then
+            echo "layering-parity: $f is unreadable or does not have $cases cases" >&2
+            exit 2
+        fi
+    done
+    if cmp -s "$1" "$2"; then
+        echo "layering-parity: native and wasm outputs are byte-identical on $cases cases"
+        exit 0
+    fi
+    echo "layering-parity: $(cmp -l "$1" "$2" 2>/dev/null | wc -l | tr -d ' ') bytes differ; native and wasm outputs differ"
+    diff "$1" "$2" | head -6
+    exit 1
+
+# Native and WebAssembly layering outputs compared byte for byte.
+[group("quality")]
+layering-parity: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    just layering-outputs "$tmp"
+    just layering-compare "$tmp/native.txt" "$tmp/wasm.txt"
+
+# The planted divergence for `layering-parity`: one WebAssembly rank bit flipped on the first line must make the comparison
+# exit 1 with its report. A missing file or a malformed output (exit 2) fails this recipe too.
+[group("quality")]
+layering-parity-plant: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    just layering-outputs "$tmp"
+    awk -F'\t' 'BEGIN { OFS = "\t" } NR == 1 { sub(/^0/, "1", $2) } 1' "$tmp/wasm.txt" > "$tmp/planted.txt"
+    cmp -s "$tmp/wasm.txt" "$tmp/planted.txt" && { echo "layering-parity-plant: the plant changed nothing" >&2; exit 1; }
+    status=0
+    report=$(just layering-compare "$tmp/native.txt" "$tmp/planted.txt" 2>&1) || status=$?
+    if [[ "$status" -ne 1 ]]; then
+        echo "layering-parity-plant: comparison exited $status for a planted divergence; expected 1" >&2
+        echo "$report" >&2
+        exit 1
+    fi
+    if ! grep -qE '^layering-parity: [0-9]+ bytes differ' <<<"$report"; then
+        echo "layering-parity-plant: exit 1 without a difference report; this is a crash, not a divergence" >&2
         echo "$report" >&2
         exit 1
     fi
