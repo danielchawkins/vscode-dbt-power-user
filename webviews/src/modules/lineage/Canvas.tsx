@@ -111,6 +111,7 @@ export const Canvas = ({
   nodes,
   edges,
   select,
+  hover,
   openDetails,
   drawnKey,
   nodeKey,
@@ -120,6 +121,8 @@ export const Canvas = ({
   size,
 }: FlowGraph & {
   select: (table: string | undefined) => void;
+  /** Follows the pointer over a card, for the path highlight. */
+  hover: (table: string | undefined) => void;
   openDetails: (table: string) => void;
   drawnKey: number;
   nodeKey: string;
@@ -159,6 +162,10 @@ export const Canvas = ({
         proOptions={{ hideAttribution: true }}
         onError={onError}
         onNodeClick={onNodeClick}
+        onNodeMouseEnter={(_, node) =>
+          hover(node.type === "table" ? node.id : undefined)
+        }
+        onNodeMouseLeave={() => hover(undefined)}
         onPaneClick={() => select(undefined)}
       >
         <CanvasControls options={options} refit={refit} minimap={minimap} />

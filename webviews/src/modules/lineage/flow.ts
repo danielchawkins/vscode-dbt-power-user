@@ -9,6 +9,7 @@ import {
   sameColumnName,
   tableEdgeId,
 } from "./edgeIds";
+import type { EmphasisView, Pair } from "./emphasis";
 import { freshLayouter, type Layouter } from "./engine/layoutCache";
 import type { LayerBand, Point } from "./engine/layoutEngine";
 import {
@@ -214,6 +215,9 @@ function arrowColour(edge: Edge): string | undefined {
     return undefined;
   }
   const classes = edge.className ?? "";
+  if (classes.includes("lineage-path-edge")) {
+    return "var(--lineage-selected-stroke)";
+  }
   if (classes.includes("lineage-column-edge")) {
     return classes.includes("indirect")
       ? "var(--lineage-indirect-stroke)"
@@ -225,18 +229,35 @@ function arrowColour(edge: Edge): string | undefined {
   return "var(--xy-edge-stroke)";
 }
 
+/** React Flow nodes and edges as built: the layout and the decoration, with no emphasis. See `emphasize`. */
+export interface BuiltFlow {
+  nodes: (TableNode | GroupNode | BandNode)[];
+  edges: Edge[];
+}
+
+/**
+ * The `[parent, child]` pairs the panel draws: table and group edges where they are drawn, and every relationship. The
+ * emphasis follows these, so a relationship edge is on a highlighted path like any other.
+ */
+export function drawnPairs(layout: LayoutInput): Pair[] {
+  const tableEdges = drawsTableEdges(layout)
+    ? [...layout.data.edges, ...(layout.groupEdges ?? [])]
+    : [];
+  return [
+    ...tableEdges,
+    ...layout.refs.map((ref): Pair => [ref.to.table, ref.from.table]),
+  ];
+}
+
 /**
  * React Flow nodes and edges for the drawn lineage and its groups: the cards in their layer bands, and the routed
- * edges. The layout decides where things go; the decoration decides what they show.
+ * edges. The layout decides where things go; the decoration decides what they show. Emphasis is not applied here.
  */
 export function toFlow(
   layout: LayoutInput,
   decoration: FlowDecoration,
   layouter: Layouter = freshLayouter,
-): {
-  nodes: (TableNode | GroupNode | BandNode)[];
-  edges: Edge[];
-} {
+): BuiltFlow {
   const { columns, columnTables } = layout;
   const groups = layout.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
@@ -267,6 +288,63 @@ interface CardPlacement {
   positions: Map<string, Point>;
   listed: (table: string) => lineage.LineageColumn[] | undefined;
   heightOfTable: (table: string) => number;
+}
+
+/** The class of a card or group on the highlighted path, or dimmed off it; empty when neither applies. */
+const cardClass = (view: EmphasisView, id: string): string =>
+  view.dimmedCard(id)
+    ? "lineage-dimmed"
+    : view.pathCard(id)
+      ? "lineage-path"
+      : "";
+
+/**
+ * The built flow with its emphasis. Only the cards and edges the view marks are new objects; every other card and edge
+ * is the same object as in `flow`, so a hover or a settings change restyles the flow and rebuilds nothing else.
+ */
+export function emphasize(flow: BuiltFlow, view: EmphasisView): BuiltFlow {
+  return {
+    nodes: flow.nodes.map((node) => emphasizedNode(node, view)),
+    edges: flow.edges.map((edge) => emphasizedEdge(edge, view)),
+  };
+}
+
+function emphasizedNode(
+  node: BuiltFlow["nodes"][number],
+  view: EmphasisView,
+): BuiltFlow["nodes"][number] {
+  if (node.type === "band") {
+    return node;
+  }
+  const className = cardClass(view, node.id);
+  return className === (node.className ?? "") ? node : { ...node, className };
+}
+
+/**
+ * The edge with its emphasis classes: on the highlighted path, dimmed off it, or touching a hub. An edge on the path
+ * is drawn in the path colour, its arrowhead too.
+ */
+function emphasizedEdge(edge: Edge, view: EmphasisView): Edge {
+  const { source, target } = edge;
+  const classes = [
+    view.pathEdge(source, target) ? "lineage-path-edge" : undefined,
+    view.dimmedEdge(source, target) ? "lineage-dimmed" : undefined,
+    view.hubEdge(source, target) ? "lineage-hub-edge" : undefined,
+  ].filter((c) => c !== undefined);
+  if (classes.length === 0) {
+    return edge;
+  }
+  const emphasized = {
+    ...edge,
+    className: [edge.className, ...classes].join(" ").trim(),
+  };
+  const colour = arrowColour(emphasized);
+  return colour === undefined
+    ? emphasized
+    : {
+        ...emphasized,
+        markerEnd: { type: MarkerType.ArrowClosed, color: colour },
+      };
 }
 
 /** The table and group nodes at their positions, each with the data its card draws. */

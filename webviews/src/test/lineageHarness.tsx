@@ -179,6 +179,9 @@ type Params = Record<string, unknown>;
 /** The settings the host answers `getLineageSettings` with, as `openLineage` sets them. */
 let hostSettings: Partial<lineage.LineageSettings> = {};
 
+/** The relationships the host answers `getRelationships` with, as `openLineage` sets them. */
+let hostRefs: lineage.LineageRef[] = [];
+
 const ANSWERS: Record<string, (params: Params) => unknown> = {
   childTables: ({ table: t }) => ({ tables: CHILDREN[String(t)] ?? [] }),
   parentTables: ({ table: t }) => ({ tables: PARENTS[String(t)] ?? [] }),
@@ -194,7 +197,7 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   }),
   getLineageSettings: () => hostSettings,
   persistLineageSettings: () => true,
-  getRelationships: () => ({ refs: [] }),
+  getRelationships: () => ({ refs: hostRefs }),
 };
 
 type Posted = {
@@ -250,6 +253,8 @@ export const openLineage = async (
   args: lineage.RenderArgs = { node: TABLES.b, publication: "s:1" },
   options: {
     settings?: Partial<lineage.LineageSettings>;
+    /** The relationships the host answers `getRelationships` with. */
+    refs?: lineage.LineageRef[];
     renderFirst?: boolean;
     /** How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. */
     flowNodes?: number;
@@ -259,6 +264,7 @@ export const openLineage = async (
     options.renderFirst ? ["getLineageSettings"] : [],
   );
   hostSettings = options.settings ?? {};
+  hostRefs = options.refs ?? [];
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
@@ -354,6 +360,10 @@ afterEach(() => {
 export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Settings",
   "spinbutton:Default expansion",
+  "checkbox:Highlight the paths of the hovered or selected card",
+  "checkbox:Dim the cards and edges off the path",
+  "checkbox:Thin the edges of hub cards",
+  "slider:Edge opacity 1.00",
   "checkbox:Show select (direct) column edges",
   "checkbox:Show non-select (indirect) column edges",
   "button:Connections",

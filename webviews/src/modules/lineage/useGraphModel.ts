@@ -10,12 +10,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { connectionCounts, emphasisOf } from "./emphasis";
 import { createLayouter, type Layouter } from "./engine/layoutCache";
+import type { LayoutInput } from "./engine/layoutRequest";
 import { cappedCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
-import { toFlow } from "./flow";
-import type { GraphState } from "./graph";
-import { visibleOf } from "./graph";
+import { type BuiltFlow, drawnPairs, emphasize, toFlow } from "./flow";
+import { type GraphState, knownPairs, visibleOf } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import type { ExpansionOptions } from "./useLineageGraph";
@@ -67,7 +68,23 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
   return refs;
 };
 
-/** The React Flow nodes and edges: the lineage data the settings select, with the relationships drawn. */
+/**
+ * The settings a flow is built from: each one that places, labels or filters a card or edge. The emphasis settings are
+ * not among them, so changing one restyles the built flow instead of rebuilding it.
+ */
+type FlowSettings = Pick<
+  ResolvedSettings,
+  | "showSelectEdges"
+  | "showNonSelectEdges"
+  | "connections"
+  | "engine"
+  | "title"
+  | "layerColors"
+  | "enabledRefSources"
+  | "inferenceConfidenceThreshold"
+>;
+
+/** The React Flow nodes and edges, with no emphasis, and the drawn pairs the emphasis follows. */
 const flowOf = ({
   graph,
   settings,
@@ -76,29 +93,30 @@ const flowOf = ({
   layouter,
 }: {
   graph: GraphState;
-  settings: ResolvedSettings;
+  settings: FlowSettings;
   refs: lineage.LineageRef[];
   columnsNeedStrict: boolean;
   layouter: Layouter;
-}) => {
+}): { flow: BuiltFlow; pairs: ReturnType<typeof drawnPairs> } => {
   const data = lineageData(graph, {
     direct: settings.showSelectEdges,
     indirect: settings.showNonSelectEdges,
   });
   const drawn = new Set(data.tables.map((t) => t.table));
   const groups = collapsedGroups(graph);
-  return toFlow(
-    {
-      data,
-      columns: graph.columns,
-      columnTables: graph.columnTables,
-      groups,
-      groupEdges: combinedEdges(graph, groups),
-      chips: groupChips(graph),
-      connections: settings.connections,
-      refs: visibleRefs(refs, settings, drawn),
-      engine: settings.engine,
-    },
+  const layout: LayoutInput = {
+    data,
+    columns: graph.columns,
+    columnTables: graph.columnTables,
+    groups,
+    groupEdges: combinedEdges(graph, groups),
+    chips: groupChips(graph),
+    connections: settings.connections,
+    refs: visibleRefs(refs, settings, drawn),
+    engine: settings.engine,
+  };
+  const flow = toFlow(
+    layout,
     {
       title: settings.title,
       expansions: graph.expansions,
@@ -114,6 +132,109 @@ const flowOf = ({
     },
     layouter,
   );
+  return { flow, pairs: drawnPairs(layout) };
+};
+
+/**
+ * The flow built from the layout settings, with the pairs its emphasis follows. The memo keys on the settings a flow is
+ * built from, as primitives, so a hover or an emphasis setting never rebuilds it.
+ */
+const useBuiltFlow = ({
+  graph,
+  settings,
+  refs,
+  columnsNeedStrict,
+}: {
+  graph: GraphState;
+  settings: ResolvedSettings;
+  refs: lineage.LineageRef[];
+  columnsNeedStrict: boolean;
+}) => {
+  // One layouter for the panel: its cache and the result on screen seed each layout.
+  const [layouter] = useState(() => createLayouter());
+  const {
+    showSelectEdges,
+    showNonSelectEdges,
+    connections,
+    engine,
+    title,
+    layerColors,
+    enabledRefSources,
+    inferenceConfidenceThreshold,
+  } = settings;
+  return useMemo(
+    () =>
+      flowOf({
+        graph,
+        settings: {
+          showSelectEdges,
+          showNonSelectEdges,
+          connections,
+          engine,
+          title,
+          layerColors,
+          enabledRefSources,
+          inferenceConfidenceThreshold,
+        },
+        refs,
+        columnsNeedStrict,
+        layouter,
+      }),
+    [
+      graph,
+      refs,
+      columnsNeedStrict,
+      layouter,
+      showSelectEdges,
+      showNonSelectEdges,
+      connections,
+      engine,
+      title,
+      layerColors,
+      enabledRefSources,
+      inferenceConfidenceThreshold,
+    ],
+  );
+};
+
+/**
+ * The built flow restyled by its emphasis: the path of the hovered card, else the selected one, the dimming, and the
+ * hub de-emphasis. The hub counts are the known connections, not the drawn ones. Restyles only; no layout runs.
+ */
+const useEmphasizedFlow = ({
+  graph,
+  settings,
+  built,
+  hovered,
+}: {
+  graph: GraphState;
+  settings: ResolvedSettings;
+  built: ReturnType<typeof useBuiltFlow>;
+  hovered: string | undefined;
+}) => {
+  const degrees = useMemo(() => connectionCounts(knownPairs(graph)), [graph]);
+  const focus = hovered ?? graph.selectedTable;
+  const { pathHighlight, dimOffPath, hubDeemphasis, maxNeighbours } = settings;
+  const view = useMemo(
+    () =>
+      emphasisOf(built.pairs, degrees, {
+        focus,
+        pathHighlight,
+        dimOffPath,
+        hubDeemphasis,
+        maxNeighbours,
+      }),
+    [
+      built.pairs,
+      degrees,
+      focus,
+      pathHighlight,
+      dimOffPath,
+      hubDeemphasis,
+      maxNeighbours,
+    ],
+  );
+  return useMemo(() => emphasize(built.flow, view), [built.flow, view]);
 };
 
 type Lineage = ReturnType<typeof useLineageGraph>;
@@ -125,15 +246,30 @@ interface GraphModel {
   reset: Lineage["reset"];
   actions: Lineage["actions"];
   select: Lineage["select"];
+  hover: (table: string | undefined) => void;
   openDetails: (table: string) => void;
   drawnKey: number;
-  nodes: ReturnType<typeof flowOf>["nodes"];
-  edges: ReturnType<typeof flowOf>["edges"];
+  nodes: BuiltFlow["nodes"];
+  edges: BuiltFlow["edges"];
   notice: NonNullable<Lineage["rendered"]>["missingLineageMessage"];
   details: GraphState["known"][string] | undefined;
   nodeKey: string;
   shapeKey: string;
 }
+
+/**
+ * The card the pointer is over, which the path highlight follows. It is kept only while a highlight is on, so a hover
+ * with the emphasis off rebuilds nothing.
+ */
+const useHoveredCard = (settings: ResolvedSettings) => {
+  const [pointed, setPointed] = useState<string>();
+  const hover = useCallback(
+    (table: string | undefined) => setPointed(table),
+    [],
+  );
+  const highlighting = settings.pathHighlight || settings.dimOffPath;
+  return { hovered: highlighting ? pointed : undefined, hover };
+};
 
 /**
  * The lineage view's model: the settings, the graph and its React Flow nodes and edges, the notice, and the keys the
@@ -175,22 +311,24 @@ export const useGraphModel = (
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
   const refs = useRefs(settings, drawnKey);
-  // One layouter for the panel: its cache and the result on screen seed each layout.
-  const [layouter] = useState(() => createLayouter());
-  const { nodes, edges } = useMemo(
-    () => flowOf({ graph, settings, refs, columnsNeedStrict, layouter }),
-    [graph, settings, refs, columnsNeedStrict, layouter],
-  );
+  const { hovered, hover } = useHoveredCard(settings);
+  const built = useBuiltFlow({ graph, settings, refs, columnsNeedStrict });
+  const { nodes, edges } = useEmphasizedFlow({
+    graph,
+    settings,
+    built,
+    hovered,
+  });
   const details = detailsTable ? graph.known[detailsTable] : undefined;
   // The drawn nodes by id, and the engine and Connections: the fit refits when either changes.
   const nodeKey = useMemo(
     () =>
-      nodes
+      built.flow.nodes
         .filter((node) => node.type !== "band")
         .map((node) => node.id)
         .sort()
         .join("\n"),
-    [nodes],
+    [built.flow],
   );
   const shapeKey = `${settings.engine}|${settings.connections}`;
   return {
@@ -199,6 +337,7 @@ export const useGraphModel = (
     reset,
     actions,
     select,
+    hover,
     openDetails,
     drawnKey,
     nodes,

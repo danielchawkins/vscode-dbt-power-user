@@ -27,6 +27,19 @@ export type ResolvedSettings = {
   enabledRefSources: Record<RefSource, boolean>;
 };
 
+/** The emphasis settings the panel draws with, each resolved to its default: all off, and every edge fully opaque. */
+const resolveEmphasis = (
+  settings: Partial<Settings> | undefined,
+): Pick<
+  ResolvedSettings,
+  "pathHighlight" | "dimOffPath" | "hubDeemphasis" | "edgeOpacity"
+> => ({
+  pathHighlight: settings?.pathHighlight ?? false,
+  dimOffPath: settings?.dimOffPath ?? false,
+  hubDeemphasis: settings?.hubDeemphasis ?? false,
+  edgeOpacity: settings?.edgeOpacity ?? 1,
+});
+
 /** The user settings the panel only reads, each resolved to its default. */
 const resolveUserSettings = (
   settings: Partial<Settings> | undefined,
@@ -64,6 +77,7 @@ export const resolveSettings = (
   },
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
+  ...resolveEmphasis(settings),
   ...resolveUserSettings(settings),
 });
 
@@ -73,7 +87,10 @@ export const resolveSettings = (
  */
 export const visibleRefs = (
   refs: readonly lineage.LineageRef[],
-  settings: ResolvedSettings,
+  settings: Pick<
+    ResolvedSettings,
+    "connections" | "enabledRefSources" | "inferenceConfidenceThreshold"
+  >,
   drawn: ReadonlySet<string>,
 ): lineage.LineageRef[] =>
   settings.connections !== "dbt"
