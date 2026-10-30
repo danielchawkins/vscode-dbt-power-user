@@ -22,6 +22,8 @@ mod index;
 #[cfg(test)]
 mod layering;
 #[cfg(test)]
+mod layering_checks;
+#[cfg(test)]
 mod rand;
 mod route;
 #[cfg(test)]

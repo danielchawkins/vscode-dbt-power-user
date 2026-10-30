@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Session } from "node:inspector/promises";
+import { financeGraph } from "../../parity/finance-graph.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "../../..");
@@ -163,47 +164,7 @@ async function finance() {
       ),
     ),
   );
-  // Graph construction as in /tmp/bench/full-graph.mjs: the dbt lineage of the connected part, four layer bands and
-  // one cluster per unlayered node.
-  const LAYERS = ["source", "staging", "intermediate", "marts"];
-  const tagOf = (id, node) => {
-    if (id.startsWith("source.")) return "source";
-    const p = node?.original_file_path ?? "";
-    if (/staging/.test(p)) return "staging";
-    if (/intermediate/.test(p)) return "intermediate";
-    if (/marts/.test(p)) return "marts";
-    return "other";
-  };
-  const all = { ...manifest.nodes, ...manifest.sources };
-  const keep = (id) => !id.startsWith("test.") && all[id] !== undefined;
-  const used = new Set();
-  const pairs = [];
-  for (const [child, parents] of Object.entries(manifest.parent_map)) {
-    if (!keep(child)) continue;
-    for (const parent of parents) {
-      if (keep(parent)) {
-        pairs.push([parent, child]);
-        used.add(parent);
-        used.add(child);
-      }
-    }
-  }
-  const ids = [...used];
-  const tags = ids.map((id) => tagOf(id, all[id]));
-  const graph = {
-    nodes: ids.map((id, i) => ({
-      id,
-      width: 280,
-      height: 65,
-      ...(tags[i] === "other" ? {} : { partition: LAYERS.indexOf(tags[i]) }),
-      cluster: tags[i] === "other" ? `other:${id}` : tags[i],
-    })),
-    edges: pairs.map(([s, t], i) => ({ id: `e${i}`, source: s, target: t, kind: "table" })),
-    clusters: [
-      ...LAYERS.map((id) => ({ id, padding: 22 })),
-      ...ids.filter((_, i) => tags[i] === "other").map((id) => ({ id: `other:${id}`, padding: 22 })),
-    ],
-  };
+  const graph = financeGraph(manifest);
   console.log(`nodes ${graph.nodes.length} edges ${graph.edges.length}`);
   const options = (effort) => ({
     direction: "down",
