@@ -10,18 +10,19 @@ Top-level directories were placed case by case. `test-fixtures/` collected three
 
 Each top-level directory has one consumer:
 
-| Path                               | Holds                                                                         | Consumer                                               |
+| Path | Holds | Consumer |
 | ---------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `src/`                             | The extension host and its tests                                              | The extension bundle (rsbuild) and Vitest              |
-| `webviews/`                        | The React webview app                                                         | Vite, which emits into `dist/webview/`                 |
-| `packages/`                        | Host-side TypeScript libraries                                                | `tsc -b`                                               |
-| `media/`, `syntaxes/`, `snippets/` | Assets that `package.json` contributes                                        | VS Code, at runtime                                    |
-| `dist/`                            | Build output, not tracked                                                     | The VSIX                                               |
-| `scripts/`                         | Tooling that Just and CI run, plus research harnesses with their own fixtures | Contributors and CI                                    |
-| `lint/`                            | Lint glue shared by the Oxlint and ESLint configs, and its must-fire fixtures | The lint configs and their tests                       |
-| `ast-grep/`                        | ast-grep rules and rule tests                                                 | `sgconfig.yml`                                         |
-| `docker/`                          | Contributor images, each with a `Dockerfile.dockerignore` beside it           | `just smoke-docker` and `just test-integration-docker` |
-| `docs/`                            | ADRs, plans, research and architecture                                        | Readers                                                |
+| `src/` | The extension host and its tests | The extension bundle (rsbuild) and Vitest |
+| `webviews/` | The React webview app | Vite, which emits into `dist/webview/` |
+| `packages/` | Host-side TypeScript libraries | `tsc -b` |
+| `crates/` | Rust workspace: the graph-layout core and its WASM and napi bindings (contributor tooling; `cargo` via `just crates::check`) | Contributors and CI |
+| `media/`, `syntaxes/`, `snippets/` | Assets that `package.json` contributes | VS Code, at runtime |
+| `dist/` | Build output, not tracked | The VSIX |
+| `scripts/` | Tooling that Just and CI run, plus research harnesses with their own fixtures | Contributors and CI |
+| `lint/` | Lint glue shared by the Oxlint and ESLint configs, and its must-fire fixtures | The lint configs and their tests |
+| `ast-grep/` | ast-grep rules and rule tests | `sgconfig.yml` |
+| `docker/` | Contributor images, each with a `Dockerfile.dockerignore` beside it | `just smoke-docker` and `just test-integration-docker` |
+| `docs/` | ADRs, plans, research and architecture | Readers |
 
 - The root package is the extension, in the layout VS Code documents. The webview app stays at the root rather than under `packages/`, because every `packages/*` glob here means a library built by `tsc -b`.
 - The VSIX is an allowlist: `package.json` `files` names build output and contributed assets, and `just package` fails on any other entry. Shipped code builds runtime paths under `dist/`, never under a source directory (`ts-runtime-paths-not-source-dirs`).

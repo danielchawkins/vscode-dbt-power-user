@@ -1,0 +1,8 @@
+# The link arguments napi-build (napi_build::setup) would set for the Node-API cdylib. napi-build is not used: cargo
+# cannot run a build script in a jj workspace of this repository, because its git discovery finds the bare `.bare`
+# repository (`did not expect repo ... to be bare`). The arguments are the same ones napi-build 2.6 sets.
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-arg=-Wl,-undefined,dynamic_lookup"]
+
+[target.'cfg(all(target_os = "linux", target_env = "gnu"))']
+rustflags = ["-C", "link-arg=-Wl,-z,nodelete"]

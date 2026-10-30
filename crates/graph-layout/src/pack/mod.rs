@@ -1,0 +1,1 @@
+//! Rectangle packing with spacing.

@@ -1,0 +1,30 @@
+[workspace]
+members = ["graph-layout", "graph-layout-napi", "graph-layout-wasm"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+publish = false
+version = "0.0.0"
+
+# Lint levels for every crate; each crate takes them with `[lints] workspace = true`, which Cargo does not let a crate
+# add to. A suppression is only `#[expect(<lint>, reason = "...")]`, counted by the rustSuppressions ratchet.
+# unsafe_code is `deny` here, not `forbid`: the napi-rs macros emit `#[allow(unsafe_code)]`, which a `forbid` above
+# them rejects (E0453). The core forbids it in its own lib.rs.
+[workspace.lints.rust]
+unsafe_code = "deny"
+unreachable_pub = "warn"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Float-to-integer and sign casts change a layout silently. The core has no such cast; the bindings have none either.
+cast_possible_truncation = "deny"
+cast_sign_loss = "deny"
+allow_attributes = "deny"
+allow_attributes_without_reason = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
