@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { appendFileSync, cpSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   compareMeasured,
   compareWithBase,
+  countRustSuppressions,
   METRICS,
   parseTrailers,
   SUPPRESSION_FILES,
@@ -231,5 +232,46 @@ describe("suppression ratchet keys", () => {
       );
       expect([...ruleKeys].filter((rule) => moved.has(rule))).toEqual([]);
     }
+  });
+});
+
+describe("Rust suppression ratchet", () => {
+  const ceilings = JSON.parse(
+    readFileSync(path.join(root, "scripts/quality/ceilings.json"), "utf8"),
+  ) as Record<string, number>;
+  const rustMetrics = METRICS.filter((metric) =>
+    metric.key.startsWith("rustSuppressions."),
+  );
+
+  it("control: the unmodified crates pass the ratchet", () => {
+    const measured = Object.fromEntries(
+      rustMetrics.map((metric) => [metric.key, metric.measure()]),
+    );
+    expect(compareMeasured(rustMetrics, ceilings, measured)).toEqual({
+      worse: [],
+      better: [],
+      missing: [],
+    });
+  });
+
+  it("plant: one extra #[expect] in the core fails the ratchet", () => {
+    // A copy of the core's src/ with one suppression added, counted the way the ratchet counts the real one.
+    const plantsDir = path.join(root, ".cache/ratchet-plants");
+    rmSync(plantsDir, { recursive: true, force: true });
+    const src = path.join(plantsDir, "graph-layout/src");
+    cpSync(path.join(root, "crates/graph-layout/src"), src, {
+      recursive: true,
+    });
+    appendFileSync(
+      path.join(src, "lib.rs"),
+      '\n#[expect(dead_code, reason = "planted")]\nfn planted() {}\n',
+    );
+    const key = "rustSuppressions.graph-layout";
+    const result = compareMeasured(
+      rustMetrics.filter((metric) => metric.key === key),
+      ceilings,
+      { [key]: countRustSuppressions(src) },
+    );
+    expect(result.worse).toEqual([{ key, value: 1, entry: ceilings[key] }]);
   });
 });
