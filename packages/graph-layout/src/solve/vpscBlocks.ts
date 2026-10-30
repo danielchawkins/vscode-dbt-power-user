@@ -1,4 +1,4 @@
-import { Forest } from "./vpscForest.js";
+import { Forest, type Traversal } from "./vpscForest.js";
 
 /** Parallel arrays for a block solve: targets, weights, and separations x[to] - x[from] >= gap. */
 export interface BlockInput {
@@ -41,9 +41,10 @@ export class Blocks {
   private readonly to: Int32Array;
   private readonly gap: Float64Array;
   /** Scratch for negativeIn, sized once because it runs after every merge and split. */
-  private readonly walkSeen: boolean[];
-  private readonly walkParent: number[];
-  private readonly walkSub: number[];
+  private readonly walk: Traversal;
+  /** The variables one negativeIn call has walked so far, in `walk.queue` from index 0: each block's are contiguous. */
+  private walkEnd = 0;
+  private readonly walkSub: Float64Array;
   /** The inactive separations, ascending: the only ones the violation scan has to look at. */
   private readonly candidates: Int32Array;
   private candidateCount: number;
@@ -62,9 +63,12 @@ export class Blocks {
     this.active = input.gap.map(() => false);
     this.candidates = Int32Array.from({ length: this.count }, (_, e) => e);
     this.candidateCount = this.count;
-    this.walkSeen = Array.from({ length: n }, () => false);
-    this.walkParent = Array.from({ length: n }, () => -1);
-    this.walkSub = Array.from({ length: n }, () => 0);
+    this.walk = {
+      seen: new Uint8Array(n),
+      parentEdge: new Int32Array(n),
+      queue: new Int32Array(n),
+    };
+    this.walkSub = new Float64Array(n);
     this.rebuild();
   }
 
@@ -189,45 +193,40 @@ export class Blocks {
    */
   negativeIn(vertices: readonly number[], tolerance: number): number[] {
     const negative: number[] = [];
-    const walked: number[] = [];
+    this.walkEnd = 0;
     for (const v of vertices) {
       const root = this.blocks[this.blockOf[v]!]!.least;
-      if (this.walkSeen[root]!) {
+      if (this.walk.seen[root]) {
         continue;
       }
-      for (const u of this.walkBlock(root, tolerance, negative)) {
-        walked.push(u);
-      }
+      this.walkBlock(root, tolerance, negative);
     }
-    for (const u of walked) {
-      this.walkSeen[u] = false;
+    for (let i = 0; i < this.walkEnd; i++) {
+      this.walk.seen[this.walk.queue[i]!] = 0;
     }
     // ast-grep-ignore: ts-graph-layout-sort-tiebreak -- plain numbers: equal values are interchangeable, and the solver takes no layout module (solve-is-self-contained).
     return negative.sort((a, b) => a - b);
   }
 
   /**
-   * Walks the block rooted at `root` as `multipliers()` does, appending its separations with a multiplier below
-   * `-tolerance` to `negative`. Returns the block's variables, which `walkSeen` marks until the caller clears it.
+   * Walks the block rooted at `root` as `multipliers()` does. Its variables are appended to the walk (`walk.queue`,
+   * from `walkEnd`) and marked in `walk.seen` until the caller clears them. Its separations with a multiplier below
+   * `-tolerance` are appended to `negative`.
    */
-  private walkBlock(
-    root: number,
-    tolerance: number,
-    negative: number[],
-  ): number[] {
-    this.walkParent[root] = -1;
-    const order = this.forest.componentOrder(
-      root,
-      this.walkSeen,
-      this.walkParent,
-    );
-    for (const u of order) {
+  private walkBlock(root: number, tolerance: number, negative: number[]): void {
+    const { parentEdge, queue } = this.walk;
+    const start = this.walkEnd;
+    parentEdge[root] = -1;
+    const end = this.forest.componentOrder(root, this.walk, start);
+    this.walkEnd = end;
+    for (let i = start; i < end; i++) {
+      const u = queue[i]!;
       this.walkSub[u] =
         this.input.weight[u]! * (this.value(u) - this.input.x0[u]!);
     }
-    for (let i = order.length - 1; i >= 0; i--) {
-      const u = order[i]!;
-      const e = this.walkParent[u]!;
+    for (let i = end - 1; i >= start; i--) {
+      const u = queue[i]!;
+      const e = parentEdge[u]!;
       if (e < 0) {
         continue;
       }
@@ -239,7 +238,6 @@ export class Blocks {
       }
       this.walkSub[p] = this.walkSub[p]! + s;
     }
-    return order;
   }
 
   /** Deactivates the given active separations, splitting their blocks, and recomputes the positions. */
