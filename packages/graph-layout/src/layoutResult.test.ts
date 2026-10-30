@@ -105,7 +105,7 @@ describe.each(SUITES)("layout result on %s graphs", (suite, arb) => {
         );
       });
 
-      it("draws exactly the routed edges that are not self-loops", () => {
+      it("has an entry for every routed edge: drawn, or flagged routeFailed when it is a self-loop", () => {
         fc.assert(
           fc.property(arb, (c: Case) => {
             const first = c.graph.nodes[0].id;
@@ -124,13 +124,16 @@ describe.each(SUITES)("layout result on %s graphs", (suite, arb) => {
             const o = optionsOf(c, ranks);
             const expected = graph.edges
               .filter((e) => o.edgeKinds[e.kind]?.routed !== false)
-              .filter((e) => e.source !== e.target)
               .map((e) => e.id)
               .sort((a, b) => a.localeCompare(b));
-            const drawn = [...layout(graph, o).edges.keys()].sort((a, b) =>
-              a.localeCompare(b),
-            );
-            expect(drawn).toEqual(expected);
+            const result = layout(graph, o).edges;
+            const ids = [...result.keys()].sort((a, b) => a.localeCompare(b));
+            expect(ids).toEqual(expected);
+            for (const [id, edge] of result) {
+              expect(edge.routeFailed).toBe(
+                id === "self" || edge.points.length === 0,
+              );
+            }
           }),
           { numRuns: RUNS },
         );

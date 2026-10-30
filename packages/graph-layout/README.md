@@ -59,6 +59,14 @@ Nothing is hard-coded to east-out and west-in: `direction: "down"` with a kind t
 `none` ignores partitions. `soft`, the default, penalises a backward crossing of a boundary in the ranking. `strict` forbids it: every node of a lower partition sits in an earlier rank than every node of a higher one.
 The lineage panel will expose this as a setting that lays the view out again when it changes; the setting is not wired yet.
 
+## Opaque boxes
+
+`LayoutCluster.opaque` says whether a cluster box is a wall. The default is `false`, a transparent box: edges may cross it, as an edge between two lineage layers crosses the layers between them. Set `opaque: true` on a box that is a wall, such as a folder or a single card that edges must go around.
+
+An edge may enter an opaque box only when the box holds one of its ends: its source's clusters and its target's clusters, each with their ancestors (the ancestor rule). Ordering tries to keep each long edge on one side of every opaque box it does not belong to, across every rank the box spans (`order/outside.ts`); a dummy moves only beside the box's members and never splits another cluster's members. The flag below is the guarantee, not this ordering pass. An edge still entering a foreign opaque box after that is not drawn: its `EdgeLayout` has `routeFailed: true` and no points. A piece within `OPAQUE_CLEARANCE` (1 unit) of the border counts as entering, so an edge does not hug a wall.
+
+Results have an entry for every edge of a routed kind, drawn or flagged, and a self-loop is always flagged (self-loops are not drawn yet). Edges of a kind with `routed: false` have no entry. A caller draws a flagged edge as unrouted, never as an invented path.
+
 ## Presets
 
 `layoutPresets` is a plain object of named option sets: `circuit` and `compact`.
@@ -82,6 +90,7 @@ Both values are starting points; the evaluation harness tunes them against the g
 - Deterministic: the same graph, options and `seed` give the same result. No `Math.random`, no clocks (ast-grep rule `ts-graph-layout-deterministic`).
 - No overlaps: under `ranks: "rows"` no two nodes overlap, and no edge passes through a node it does not end at (`metrics.overlaps` is zero). Under `ranks: "levels"` no two nodes overlap, but an edge can pass through a node it does not end at: a run that goes upward can cross other nodes. `layoutResult.test.ts` counts these ("documents the levels limitation"), and the property tests assert the rest on random graphs.
 - Orthogonal edges: every polyline alternates horizontal and vertical segments, and starts and ends at its ports.
+- Opaque boxes: no drawn edge enters an opaque box it may not enter (see "Opaque boxes"); an edge that cannot keep off one is flagged `routeFailed`, so `metrics.opaqueBreaches` is zero for a result.
 - Standalone: the package imports only itself (dependency-cruiser rule `graph-layout-is-standalone`), and its `tsconfig.json` has no DOM or Node types.
 - Input is checked before layout: `validateGraph` reports every problem at once, including port sides and offsets and kind default sides that are not valid.
 
@@ -97,6 +106,7 @@ It returns a `LayoutMetrics`:
 - `area`: the width times the height of `bounds`, the smallest rectangle holding every box and every point.
 - `density`: the total node area over `area`; zero for an empty drawing.
 - `overlaps`: node pairs sharing interior area, plus pairs of an edge and a node the edge does not end at, where a piece of the edge runs through the node's interior.
+- `opaqueBreaches`: pairs of an edge and an opaque box it may not enter (see "Opaque boxes"), where a piece runs through the box's interior or within `OPAQUE_CLEARANCE` of its border. Zero when the drawing has no opaque `Drawing.opaque` boxes. The check runs on the polyline as the engine returns it: corner rounding and hops are drawn by the panel, so they are not measured here.
 
 Trunk grouping: `trunkOf(edgeId)` returns the trunk of an edge, such as its source port. Edges with the same trunk never count crossings against each other.
 An edge with no trunk, because `trunkOf` is absent or returns undefined, shares a trunk with no other edge.

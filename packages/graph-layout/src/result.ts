@@ -1,4 +1,5 @@
 import { measureDrawing } from "./metrics.js";
+import { allowedOf, breachesOf, holdersOf } from "./opaque.js";
 import type { OrderResult } from "./order/index.js";
 import type { LayoutPhases } from "./phases.js";
 import type {
@@ -103,15 +104,63 @@ function partitionBoxes(
     .map(([partition, corners]) => ({ partition, ...hullOf(corners) }));
 }
 
-/** Each edge's polyline, with whether ranking reversed it. Only routed edges have a polyline. */
-function edgeLayouts(phases: LayoutPhases): Map<string, EdgeLayout> {
+/**
+ * Each routed edge's checked polyline, with whether ranking reversed it. An edge with no polyline, a self-loop, or a
+ * polyline that breaches an opaque box the edge may not enter is `routeFailed`, and has no points. A kind with
+ * `routed: false` has no entry.
+ */
+function edgeLayouts(
+  graph: LayoutGraph,
+  options: LayoutOptions,
+  phases: LayoutPhases,
+): Map<string, EdgeLayout> {
+  const opaque = opaqueOf(graph, phases.routing.clusters);
   const reversed = new Set(phases.ranking.reversed);
-  return new Map(
-    Array.from(phases.routing.edges, ([id, points]) => [
-      id,
-      { points, reversed: reversed.has(id) },
+  const edges = new Map<string, EdgeLayout>();
+  for (const edge of graph.edges) {
+    if (options.edgeKinds[edge.kind]?.routed === false) {
+      continue;
+    }
+    const points = phases.routing.edges.get(edge.id);
+    const allowed = opaque.allowed.get(edge.id) ?? new Set<string>();
+    const routed =
+      points !== undefined &&
+      edge.source !== edge.target &&
+      breachesOf(points, opaque.boxes, allowed).length === 0;
+    edges.set(edge.id, {
+      points: routed && points !== undefined ? points : [],
+      reversed: reversed.has(edge.id),
+      routeFailed: !routed,
+    });
+  }
+  return edges;
+}
+
+/** The opaque boxes of the drawing, and for each edge the boxes it may enter. */
+interface Opaque {
+  boxes: Map<string, Rect>;
+  allowed: Map<string, Set<string>>;
+}
+
+function opaqueOf(
+  graph: LayoutGraph,
+  clusters: ReadonlyMap<string, Rect>,
+): Opaque {
+  const boxes = new Map<string, Rect>();
+  for (const cluster of graph.clusters ?? []) {
+    const box = clusters.get(cluster.id);
+    if (cluster.opaque === true && box !== undefined) {
+      boxes.set(cluster.id, box);
+    }
+  }
+  const holders = holdersOf(graph);
+  const allowed = new Map(
+    graph.edges.map((edge) => [
+      edge.id,
+      allowedOf(holders, edge.source, edge.target),
     ]),
   );
+  return { boxes, allowed };
 }
 
 /** The trunk of an edge is its source port; an edge with no source port has none. */
@@ -126,23 +175,29 @@ function trunkOf(graph: LayoutGraph): (edge: string) => string | undefined {
 }
 
 /** The metrics of the drawing the node rectangles and edge polylines make. */
-function metricsOf(
-  graph: LayoutGraph,
-  nodes: ReadonlyMap<string, NodeLayout>,
-  edges: ReadonlyMap<string, EdgeLayout>,
-): LayoutMetrics {
+function metricsOf(drawn: {
+  graph: LayoutGraph;
+  nodes: ReadonlyMap<string, NodeLayout>;
+  edges: ReadonlyMap<string, EdgeLayout>;
+  clusters: ReadonlyMap<string, Rect>;
+}): LayoutMetrics {
+  const { graph, nodes, edges, clusters } = drawn;
+  const opaque = opaqueOf(graph, clusters);
   const byId = new Map<string, LayoutEdge>(
     graph.edges.map((edge) => [edge.id, edge]),
   );
   return measureDrawing({
     boxes: nodes,
     paths: new Map(
-      Array.from(edges, ([id, edge]) => {
-        const { source, target } = byId.get(id)!;
-        return [id, { points: edge.points, source, target }];
-      }),
+      [...edges]
+        .filter(([, edge]) => !edge.routeFailed)
+        .map(([id, edge]) => {
+          const { source, target } = byId.get(id)!;
+          return [id, { points: edge.points, source, target }];
+        }),
     ),
     trunkOf: trunkOf(graph),
+    opaque,
   });
 }
 
@@ -153,8 +208,8 @@ export function resultOf(
   phases: LayoutPhases,
 ): LayoutResult {
   const nodes = nodeRects(graph, phases);
-  const edges = edgeLayouts(phases);
   const clusters = phases.routing.clusters;
+  const edges = edgeLayouts(graph, options, phases);
   const points: Point[] = [
     ...[...nodes.values()].flatMap(cornersOf),
     ...[...clusters.values()].flatMap(cornersOf),
@@ -175,6 +230,6 @@ export function resultOf(
     partitions: partitionBoxes(graph, nodes, options),
     bounds: hullOf(points),
     hints,
-    metrics: metricsOf(graph, nodes, edges),
+    metrics: metricsOf({ graph, nodes, edges, clusters }),
   };
 }

@@ -397,6 +397,7 @@ describe("measureDrawing", () => {
       area: 0,
       density: 0,
       overlaps: 0,
+      opaqueBreaches: 0,
     });
   });
 });

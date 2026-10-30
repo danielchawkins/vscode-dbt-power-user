@@ -70,6 +70,13 @@ export interface LayoutCluster {
   /** Space between the box and its members, and room for a label above them. */
   padding?: number;
   labelHeight?: number;
+  /**
+   * A wall. No edge may enter an opaque box unless the box contains one of the edge's ends (the ancestor rule): the
+   * engine keeps long-edge dummies outside it and flags any edge it cannot route around it. A transparent box (the
+   * default) is drawn but edges may cross it, as lineage layer bands are crossed on the way between layers. See README,
+   * "Opaque boxes".
+   */
+  opaque?: boolean;
 }
 
 export interface LayoutGraph {
@@ -159,10 +166,18 @@ export interface NodeLayout extends Rect {
 }
 
 export interface EdgeLayout {
-  /** Orthogonal polyline from the source end to the target end, bends included. */
+  /**
+   * Orthogonal polyline from the source end to the target end, bends included, checked against every opaque box the
+   * edge may not enter. Empty when `routeFailed`.
+   */
   points: readonly Point[];
   /** The edge was laid out against its direction to keep ranking acyclic; `points` still run source to target. */
   reversed: boolean;
+  /**
+   * The engine has no route for the edge that keeps off every opaque box it may not enter, or the edge is a self-loop
+   * (not drawn yet). Nothing is drawn for it: the caller draws it as unrouted rather than inventing a path.
+   */
+  routeFailed: boolean;
 }
 
 export interface LayoutMetrics {
@@ -180,12 +195,19 @@ export interface LayoutMetrics {
    * "Guarantees").
    */
   overlaps: number;
+  /**
+   * Pairs of a drawn edge and an opaque box it may not enter, where a piece of the edge runs through the box's interior
+   * or within `OPAQUE_CLEARANCE` of its border. Zero by construction for a `LayoutResult`, whose edges are checked; the
+   * count is what `measureDrawing` reports for any drawing, so a drawing from elsewhere can be checked too.
+   */
+  opaqueBreaches: number;
 }
 
 export interface LayoutResult {
   nodes: ReadonlyMap<string, NodeLayout>;
   /**
-   * Every routed edge, by id. Absent: the edges of a kind with `routed: false`, and self-loops, which are not drawn yet.
+   * Every edge of a kind that is routed (`routed` is not `false`), by id, each with a polyline or `routeFailed`; a
+   * self-loop is `routeFailed`. Absent: the edges of a kind with `routed: false`, which are a pure layout constraint.
    */
   edges: ReadonlyMap<string, EdgeLayout>;
   clusters: ReadonlyMap<string, Rect>;

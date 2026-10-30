@@ -103,13 +103,19 @@ function toGraph(request: LayoutRequest, tags: readonly string[]): LayoutGraph {
       });
     }
   });
+  // A layer's band is transparent: edges between layers cross the bands in between. A card in Other is a wall around
+  // itself, so no edge runs through it.
   const clusters = [
     ...tags
       .filter((tag) => tag !== OTHER_TAG)
-      .map((tag) => ({ id: tag, padding: BAND_PAD })),
+      .map((tag) => ({ id: tag, padding: BAND_PAD, opaque: false })),
     ...request.cards
       .filter((card) => card.tag === OTHER_TAG)
-      .map((card) => ({ id: otherCluster(card), padding: BAND_PAD })),
+      .map((card) => ({
+        id: otherCluster(card),
+        padding: BAND_PAD,
+        opaque: true,
+      })),
   ];
   return { nodes, edges, clusters };
 }
@@ -191,7 +197,10 @@ function bandsOf(result: LayoutResult): LayerBand[] {
   }));
 }
 
-/** Every routed edge's polyline, which the package runs from the source card, so the source is where it starts. */
+/**
+ * Every routed edge's polyline, which the package runs from the source card, so the source is where it starts. An edge
+ * the engine flagged `routeFailed` has no polyline and is left out: the panel draws it unrouted, never invented.
+ */
 function edgesOf(
   result: LayoutResult,
   graph: LayoutGraph,
@@ -199,7 +208,9 @@ function edgesOf(
   const sourceOf = new Map(graph.edges.map((edge) => [edge.id, edge.source]));
   const edges = new Map<string, RoutedGeometry>();
   for (const [id, edge] of result.edges) {
-    edges.set(id, { points: edge.points, startsAt: sourceOf.get(id) });
+    if (!edge.routeFailed) {
+      edges.set(id, { points: edge.points, startsAt: sourceOf.get(id) });
+    }
   }
   return edges;
 }
