@@ -1,5 +1,6 @@
 import { groupBundles } from "./bundles.js";
 import { clusterChains } from "./clusters.js";
+import { indexed } from "./indexed.js";
 import { lateralPort } from "./lateral.js";
 import {
   type Bundle,
@@ -51,7 +52,7 @@ export function layer(
     graph,
     options,
     rank,
-    index: new Map(graph.nodes.map((node, i) => [node.id, i] as const)),
+    index: indexed(graph).nodeIndex,
     nodes: graph.nodes.map((node, i) => ({
       id: node.id,
       rank: rank[i]!,

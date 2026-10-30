@@ -1,3 +1,4 @@
+import { indexed } from "../indexed.js";
 import type { LayeredGraph } from "../layeredGraph.js";
 import type { LayoutGraph, LayoutOptions, Spacing } from "../types.js";
 import type { BoxPlan } from "./boxes.js";
@@ -16,7 +17,7 @@ export function acrossLayout({
   down: boolean;
   gaps: readonly number[];
 }): { rankHalf: number[]; centres: number[]; half: number[] } {
-  const sizes = new Map(graph.nodes.map((node) => [node.id, node] as const));
+  const sizes = indexed(graph).nodeById;
   const acrossOf = (id: string | undefined): number => {
     if (id === undefined) {
       return 0;
