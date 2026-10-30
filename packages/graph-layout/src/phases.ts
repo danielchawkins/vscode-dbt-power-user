@@ -26,7 +26,7 @@ export function runPhases(
   graph: LayoutGraph,
   options: LayoutOptions,
 ): LayoutPhases {
-  const input = indexed(graph);
+  const input = indexed(graph, options);
   const budget = budgetOf(options);
   const ranking = rank(input, options, budget);
   const layering = layer(input, options, ranking);
