@@ -1,4 +1,5 @@
 import { entersBox, piecesOf } from "./drawingSegments.js";
+import { indexed } from "./indexed.js";
 import type { LayoutGraph, Point, Rect } from "./types.js";
 
 /**
@@ -12,7 +13,7 @@ const OPAQUE_CLEARANCE = 1;
  * entry.
  */
 export function holdersOf(graph: LayoutGraph): Map<string, Set<string>> {
-  const parent = new Map((graph.clusters ?? []).map((c) => [c.id, c.parent]));
+  const parent = indexed(graph).clusterParent;
   const holders = new Map<string, Set<string>>();
   for (const node of graph.nodes) {
     const set = new Set<string>();

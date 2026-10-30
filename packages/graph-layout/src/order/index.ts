@@ -36,7 +36,7 @@ export function order(
   ranking: RankResult,
 ): OrderResult {
   const budget = ranking.budget;
-  const layered = layer(graph, options, ranking);
+  const layered = ranking.layered ?? layer(graph, options, ranking);
   const start = startingLayers(layered, options.hints);
   let best = searchFrom(layered, start, { budget, seed: options.seed ?? 0 });
   if (options.hints !== undefined) {

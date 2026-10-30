@@ -1,3 +1,4 @@
+import { indexed } from "./indexed.js";
 import type { LayoutGraph } from "./types.js";
 
 /**
@@ -5,9 +6,7 @@ import type { LayoutGraph } from "./types.js";
  * chain ends with the cluster itself.
  */
 export function chainOf(graph: LayoutGraph, cluster: string): number[] {
-  const clusters = graph.clusters ?? [];
-  const number = new Map(clusters.map((c, i) => [c.id, i] as const));
-  const parent = new Map(clusters.map((c) => [c.id, c.parent] as const));
+  const { clusterIndex: number, clusterParent: parent } = indexed(graph);
   const chain: number[] = [];
   for (
     let id: string | undefined = cluster;
@@ -31,7 +30,7 @@ export function clusterChains(
   graph: LayoutGraph,
   owners: readonly (string | undefined)[],
 ): number[][] {
-  const innermost = new Map(graph.nodes.map((n) => [n.id, n.cluster] as const));
+  const innermost = indexed(graph).innermost;
   const chains = new Map<string, number[]>();
   return owners.map((owner) => {
     const cluster = owner === undefined ? undefined : innermost.get(owner);

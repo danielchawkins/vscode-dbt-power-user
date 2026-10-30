@@ -1,5 +1,7 @@
 import { reversedEdges } from "../acyclic.js";
 import { type Budget, budgetOf } from "../budget.js";
+import { indexed } from "../indexed.js";
+import type { LayeredGraph } from "../layeredGraph.js";
 import type {
   LayoutGraph,
   LayoutHints,
@@ -19,6 +21,8 @@ export interface RankResult {
   reversed: readonly string[];
   /** The run's budget, which the later phases read their counts from. */
   budget: Budget;
+  /** The layering of these ranks, when the run has laid them out already; `order` lays them out itself otherwise. */
+  layered?: LayeredGraph;
 }
 
 /** A ranking edge in the direction it is ranked, which can differ from its source and target. */
@@ -47,7 +51,7 @@ export function rank(
   const mode = options.partitions ?? "soft";
   const edges = rankingEdges(graph, options, mode === "strict");
   breakCycles(edges);
-  const index = new Map(graph.nodes.map((node, i) => [node.id, i]));
+  const index = indexed(graph).nodeIndex;
   const at = (id: string): number => index.get(id) ?? 0;
   const network: NetworkEdge[] = edges.map((e) => ({
     tail: at(e.from),

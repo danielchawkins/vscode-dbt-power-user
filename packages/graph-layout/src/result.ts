@@ -1,3 +1,4 @@
+import { indexed } from "./indexed.js";
 import { measureDrawing } from "./metrics.js";
 import { allowedOf, breachesOf, holdersOf } from "./opaque.js";
 import type { OrderResult } from "./order/index.js";
@@ -165,7 +166,7 @@ function opaqueOf(
 
 /** The trunk of an edge is its source port; an edge with no source port has none. */
 function trunkOf(graph: LayoutGraph): (edge: string) => string | undefined {
-  const byId = new Map(graph.edges.map((edge) => [edge.id, edge] as const));
+  const byId = indexed(graph).edgeById;
   return (id) => {
     const edge = byId.get(id);
     return edge?.sourcePort === undefined
