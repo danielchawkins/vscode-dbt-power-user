@@ -18,6 +18,39 @@ jobs:
   check:
     uses: ./.github/workflows/check-and-package.yml
 
+  napi-parity:
+    # Linux runs on every pull request. macOS and Windows run only on workflow_dispatch, like the smoke jobs below.
+    # Each runner builds the Node-API binding and compares its bytes, and the WebAssembly build's, with the golden.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || '["ubuntu-latest","macos-latest","windows-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: crates
+
+      - name: Build the Node-API binding
+        run: just crates::napi
+
+      - name: Compare native and WebAssembly output with the golden
+        run: just crates::parity
+
+      - name: A planted divergence fails parity
+        run: just crates::parity-plant
+
   smoke-vscode:
     # Off until macOS runners start jobs reliably; `just smoke-docker` runs the same smoke on both hosts locally.
     # Run it on demand from the Actions tab with `workflow_dispatch`.

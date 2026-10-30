@@ -76,10 +76,14 @@ boundaries: require-cargo
 # The WebAssembly binding: release build, wasm-bindgen nodejs glue, wasm-opt -O, and the sizes (S11).
 [group("quality")]
 wasm: require-cargo
+    #!/usr/bin/env bash
+    set -euo pipefail
     cargo build --locked --release -p graph-layout-wasm --target wasm32-unknown-unknown
     out=../dist/graph-layout
     mkdir -p "$out"
     wasm-bindgen --target nodejs --out-dir "$out" "${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/graph_layout_wasm.wasm"
+    # The nodejs glue is CommonJS; the root package.json says "type": "module", so mark this folder CommonJS.
+    echo '{"type":"commonjs"}' > "$out/package.json"
     raw=$(wc -c < "$out/graph_layout_wasm_bg.wasm")
     wasm-opt -O "$out/graph_layout_wasm_bg.wasm" -o "$out/graph_layout_wasm_bg.wasm"
     opt=$(wc -c < "$out/graph_layout_wasm_bg.wasm")
@@ -105,6 +109,29 @@ napi: require-cargo
 [group("quality")]
 parity: wasm napi
     node graph-layout-wasm/js/parity.mjs ../dist/graph-layout
+
+# The planted divergence for `parity`: a golden one byte off must make it exit 1, the mismatch status. Any other failure
+# (a missing build, a crash) fails this recipe too, so the plant cannot pass by accident. CI runs it after `parity`.
+[group("quality")]
+parity-plant: wasm napi
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    sed 's/"layout":0/"layout":1/' graph-layout-wasm/js/golden/layout.txt > "$tmp/layout.txt"
+    status=0
+    report=$(node graph-layout-wasm/js/parity.mjs ../dist/graph-layout "$tmp/layout.txt" 2>&1) || status=$?
+    if [[ "$status" -ne 1 ]]; then
+        echo "parity-plant: parity exited $status for a planted divergence; expected 1" >&2
+        echo "$report" >&2
+        exit 1
+    fi
+    # Exit 1 alone is not enough: a crash (a module that fails to load) also exits 1. Require the mismatch report.
+    if ! grep -qE '^parity: (native|wasm) returned ' <<<"$report"; then
+        echo "parity-plant: parity exited 1 without a mismatch report; this is a crash, not a divergence" >&2
+        echo "$report" >&2
+        exit 1
+    fi
 
 [group("quality")]
 check:

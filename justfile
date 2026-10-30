@@ -122,7 +122,7 @@ lint:
     set -uo pipefail
     failed=()
     for step in lint-just lint-mise-lock lint-code lint-ast-grep lint-unused lint-ratchet webviews::lint \
-        lint-format lint-toml lint-lockfiles lint-deps lint-markdown lint-shell; do
+        lint-format lint-toml lint-lockfiles lint-deps lint-markdown lint-shell lint-workflows; do
         just "$step" || failed+=("$step")
     done
     if ((${#failed[@]})); then
@@ -240,6 +240,12 @@ fmt-shell:
 lint-shell:
     shfmt -d -i 2 -ci -sr scripts
     shfmt -f scripts | xargs -r shellcheck
+
+# Workflow syntax, expressions and matrix/`needs` wiring in .github/workflows; actionlint runs shellcheck on `run:` steps.
+# The files are named because actionlint finds the workflows through a `.git` directory, which a jj workspace lacks.
+[group("quality")]
+lint-workflows:
+    actionlint .github/workflows/*.yml
 
 # Traces deprecations over build, lint, test and package; fails on a warning ALLOWED lacks. Not in `just check`.
 [group("quality")]
