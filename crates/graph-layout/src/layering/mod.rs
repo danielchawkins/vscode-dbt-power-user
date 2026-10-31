@@ -12,7 +12,7 @@
 
 mod acyclic;
 mod constraints;
-mod layered;
+pub(crate) mod layered;
 mod network;
 mod tree;
 

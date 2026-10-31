@@ -1,4 +1,8 @@
-//! Public entry: the engine handle, its progress and generations (stub until the engine lands).
+//! Public entry: the engine handle, its progress and generations (stub until the engine lands). `layered` builds the
+//! layered graph that ordering reads from the output of layering.
+
+#[cfg(test)]
+mod layered;
 
 use crate::model::{EdgeLayouts, FrameError, Layout, decode_graph, encode_layout};
 
