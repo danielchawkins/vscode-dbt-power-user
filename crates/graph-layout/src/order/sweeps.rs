@@ -22,14 +22,24 @@ pub(crate) fn found(model: &OrderModel<'_>) -> Found {
     }
 }
 
-/// Searches by up to `count` sweeps, stopping early at zero crossings, and leaves the model at the best order.
+/// Searches by up to `count` sweeps, stopping early at zero crossings or at a fixed point, and leaves the model at the
+/// best order. A sweep followed by transposition is a function of the order and the direction, and the directions
+/// alternate: two sweeps in a row that change nothing leave the order where it is for every later sweep, so the search
+/// ends there with the same result it would reach by running them all.
 pub(crate) fn search(model: &mut OrderModel<'_>, count: usize) -> Found {
     let mut best = found(model);
     let mut it = 0;
-    while it < count && best.crossings > 0.0 {
+    let mut unchanged = 0;
+    while it < count && best.crossings > 0.0 && unchanged < 2 {
         let downward = it % 2 == 0;
+        let before = model.layers.clone();
         sweep(model, downward, downward);
         transpose(model);
+        unchanged = if model.layers == before {
+            unchanged + 1
+        } else {
+            0
+        };
         let current = found(model);
         if current.crossings < best.crossings {
             best = current;
