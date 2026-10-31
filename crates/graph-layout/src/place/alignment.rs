@@ -218,7 +218,9 @@ mod tests {
             layers: vec![vec![0, 1], vec![2, 3]],
             gap_left: vec![0.0; 4],
             dummy: vec![false, true, true, false],
-            links: vec![Link { top: 0, bottom: 3 }, Link { top: 1, bottom: 2 }],
+            links: vec![Link::new(0, 3), Link::new(1, 2)],
+            pulls: Vec::new(),
+            extra: None,
         };
         assert_eq!(type_one_conflicts(&problem), vec![true, false]);
     }
@@ -230,6 +232,8 @@ mod tests {
             gap_left: vec![0.0, 5.0, 7.0],
             dummy: vec![false; 3],
             links: Vec::new(),
+            pulls: Vec::new(),
+            extra: None,
         };
         let plain = frame_of(&problem, false);
         assert_eq!(plain.left, vec![None, Some(0), Some(1)]);
@@ -247,7 +251,9 @@ mod tests {
             layers: vec![vec![0], vec![1], vec![2]],
             gap_left: vec![0.0; 3],
             dummy: vec![false; 3],
-            links: vec![Link { top: 0, bottom: 1 }, Link { top: 1, bottom: 2 }],
+            links: vec![Link::new(0, 1), Link::new(1, 2)],
+            pulls: Vec::new(),
+            extra: None,
         };
         let adjacency = adjacency(&problem);
         let conflict = type_one_conflicts(&problem);
