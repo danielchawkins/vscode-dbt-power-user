@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { sleep } from "../async";
 import { currentFixtureName } from "./fixtureContext";
 import { clickFirstColumn, clickOnCard } from "./lineageProbes";
+import { setLineageViewMode } from "./lineageViewMode";
 import {
   evaluatePanel,
   readWebviewHeap,
@@ -13,8 +14,10 @@ import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import { cdpPort, smokeHost } from "./smokeEnv";
 import {
+  maximizePanelFor,
   type DocsState,
   readDocsState,
+  restorePanelSize,
   waitForDocsClean,
 } from "./webviewInteractions";
 
@@ -234,85 +237,143 @@ suite("Panel view state", function () {
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
     await showPanel(port, host, LINEAGE);
+    await maximizePanelFor(LINEAGE.entry);
+    // The parents expander is a button only in the neighbourhood view, so the view is set for this test and restored
+    // in `finally`; the whole project is the default.
+    try {
+      await setLineageViewMode("neighbourhood");
+      const drawn = await waitForLineage(
+        port,
+        "drawn",
+        (g) => g.tables.length === 2,
+      );
+      await evaluatePanel(
+        port,
+        LINEAGE.entry,
+        clickOnCard("child", "Hide 1 parents"),
+      );
+      await waitForLineage(
+        port,
+        "parents hidden",
+        (g) => g.tables.length === 1,
+      );
+      await evaluatePanel(
+        port,
+        LINEAGE.entry,
+        clickOnCard("child", "Show 1 parents"),
+      );
+      await waitForLineage(port, "parents shown", (g) => g.tables.length === 2);
+      // An earlier suite may leave the column list open, and the view state restores it after the graph is drawn.
+      // "Columns" toggles, so click only on a closed list, then read again: a restore landing after a blind click
+      // would close the list it had just opened.
+      let before = (await waitFor(
+        "lineage column list opened",
+        async () => {
+          const state = await readLineage(port);
+          if (state?.columnTables.length === 0) {
+            await evaluatePanel(
+              port,
+              LINEAGE.entry,
+              clickOnCard("child", "Columns"),
+            );
+            await sleep(500);
+            return readLineage(port);
+          }
+          return state;
+        },
+        (g): g is LineageState => g?.columnTables.length === 1,
+      )) as LineageState;
+      if (before.columns.length > 0 && before.traced.length === 0) {
+        await evaluatePanel(port, LINEAGE.entry, clickFirstColumn("child"));
+        before = await waitForLineage(
+          port,
+          "column traced",
+          (g) => g.traced.length > 0,
+        );
+      }
+
+      await showPanel(port, host, RESULTS);
+      const gone = await waitForPanelGone(port, LINEAGE.entry);
+      await showPanel(port, host, LINEAGE);
+      const after = await waitForLineage(
+        port,
+        "rebuilt page restores columns",
+        (g) =>
+          g.timeOrigin !== before.timeOrigin &&
+          JSON.stringify(g.tables) === JSON.stringify(before.tables) &&
+          g.columnTables.length === before.columnTables.length &&
+          g.traced.length === before.traced.length,
+      );
+      console.log(
+        `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, gone, drawn, before, after })}`,
+      );
+      assert.notStrictEqual(
+        after.timeOrigin,
+        before.timeOrigin,
+        "hiding the panel should rebuild its page without retainContextWhenHidden",
+      );
+      assert.deepStrictEqual(after.tables, before.tables, "same tables drawn");
+      assert.deepStrictEqual(
+        after.columnTables,
+        before.columnTables,
+        "same column lists open",
+      );
+      assert.deepStrictEqual(after.traced, before.traced, "same traced edges");
+
+      await evaluatePanel(port, LINEAGE.entry, clickOnCard("child", "Columns"));
+      await waitForLineage(
+        port,
+        "column list closed",
+        (g) => g.columnTables.length === 0,
+      );
+    } finally {
+      await showPanel(port, host, LINEAGE);
+      await setLineageViewMode("whole");
+      await restorePanelSize();
+    }
+  });
+
+  test("restores the whole-project lineage graph after the panel is hidden and shown", async function () {
+    if (currentFixtureName() !== "single-project") {
+      this.skip();
+      return;
+    }
+    const port = cdpPort();
+    const host = smokeHost();
+    const folder = vscode.workspace.workspaceFolders![0];
+    await vscode.window.showTextDocument(
+      vscode.Uri.joinPath(folder.uri, "models/child.sql"),
+    );
+    // The whole project is the default view: all three tables, and the page is rebuilt on show.
+    await showPanel(port, host, LINEAGE);
     const drawn = await waitForLineage(
       port,
-      "drawn",
-      (g) => g.tables.length === 2,
+      "whole project drawn",
+      (g) => g.tables.length === 3,
     );
-    await evaluatePanel(
-      port,
-      LINEAGE.entry,
-      clickOnCard("child", "Hide 1 parents"),
-    );
-    await waitForLineage(port, "parents hidden", (g) => g.tables.length === 1);
-    await evaluatePanel(
-      port,
-      LINEAGE.entry,
-      clickOnCard("child", "Show 1 parents"),
-    );
-    await waitForLineage(port, "parents shown", (g) => g.tables.length === 2);
-    // An earlier suite may leave the column list open, and the view state restores it after the graph is drawn.
-    // "Columns" toggles, so click only on a closed list, then read again: a restore landing after a blind click
-    // would close the list it had just opened.
-    let before = (await waitFor(
-      "lineage column list opened",
-      async () => {
-        const state = await readLineage(port);
-        if (state?.columnTables.length === 0) {
-          await evaluatePanel(
-            port,
-            LINEAGE.entry,
-            clickOnCard("child", "Columns"),
-          );
-          await sleep(500);
-          return readLineage(port);
-        }
-        return state;
-      },
-      (g): g is LineageState => g?.columnTables.length === 1,
-    )) as LineageState;
-    if (before.columns.length > 0 && before.traced.length === 0) {
-      await evaluatePanel(port, LINEAGE.entry, clickFirstColumn("child"));
-      before = await waitForLineage(
-        port,
-        "column traced",
-        (g) => g.traced.length > 0,
-      );
-    }
-
     await showPanel(port, host, RESULTS);
     const gone = await waitForPanelGone(port, LINEAGE.entry);
     await showPanel(port, host, LINEAGE);
     const after = await waitForLineage(
       port,
-      "rebuilt page restores columns",
+      "rebuilt page restores the whole project",
       (g) =>
-        g.timeOrigin !== before.timeOrigin &&
-        JSON.stringify(g.tables) === JSON.stringify(before.tables) &&
-        g.columnTables.length === before.columnTables.length &&
-        g.traced.length === before.traced.length,
+        g.timeOrigin !== drawn.timeOrigin &&
+        JSON.stringify(g.tables) === JSON.stringify(drawn.tables),
     );
     console.log(
-      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, gone, drawn, before, after })}`,
+      `FPU_SMOKE_LINEAGE_WHOLE_STATE=${JSON.stringify({ host, gone, drawn, after })}`,
     );
     assert.notStrictEqual(
       after.timeOrigin,
-      before.timeOrigin,
+      drawn.timeOrigin,
       "hiding the panel should rebuild its page without retainContextWhenHidden",
     );
-    assert.deepStrictEqual(after.tables, before.tables, "same tables drawn");
+    assert.deepStrictEqual(after.tables, drawn.tables, "same tables drawn");
     assert.deepStrictEqual(
-      after.columnTables,
-      before.columnTables,
-      "same column lists open",
-    );
-    assert.deepStrictEqual(after.traced, before.traced, "same traced edges");
-
-    await evaluatePanel(port, LINEAGE.entry, clickOnCard("child", "Columns"));
-    await waitForLineage(
-      port,
-      "column list closed",
-      (g) => g.columnTables.length === 0,
+      ["broken_ref", "child", "with_ctes"],
+      after.tables.map((table) => table.split(".").at(-1)),
+      "the whole project draws all three tables",
     );
   });
 

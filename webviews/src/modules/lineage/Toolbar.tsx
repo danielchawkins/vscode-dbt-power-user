@@ -90,19 +90,24 @@ const ViewChoice = ({
   change: Change;
 }) => (
   <>
-    <div role="radiogroup" aria-label="View">
-      {VIEW_MODES.map(({ value, label }) => (
-        <label key={value}>
-          <input
-            type="radio"
-            name="view"
-            value={value}
-            checked={settings.viewMode === value}
-            onChange={() => change({ viewMode: value })}
-          />
-          {label}
-        </label>
-      ))}
+    <div className={styles.field}>
+      <span id="lineage-view-label" className={styles.fieldLabel}>
+        View
+      </span>
+      <div role="radiogroup" aria-labelledby="lineage-view-label">
+        {VIEW_MODES.map(({ value, label }) => (
+          <label key={value}>
+            <input
+              type="radio"
+              name="view"
+              value={value}
+              checked={settings.viewMode === value}
+              onChange={() => change({ viewMode: value })}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
     </div>
     {settings.viewMode === "neighbourhood" ? (
       <>
@@ -136,10 +141,7 @@ const ViewChoice = ({
         </p>
       </>
     ) : (
-      <p>
-        The whole project is drawn and centred on the open model. Default
-        expansion sets the neighbourhood that zoom is read from.
-      </p>
+      <p>The whole project is drawn and centred on the open model.</p>
     )}
   </>
 );
@@ -166,21 +168,27 @@ const EdgeSettings = ({
       onChange={(showNonSelectEdges) => change({ showNonSelectEdges })}
     />
     {settings.viewMode === "whole" ? (
-      <label>
-        Default expansion
-        <input
-          type="number"
-          min={0}
-          max={5}
-          value={settings.defaultExpansion}
-          onChange={(e) => {
-            const value = Math.round(Number(e.target.value));
-            if (Number.isFinite(value) && value >= 0 && value <= 5) {
-              change({ defaultExpansion: value });
-            }
-          }}
-        />
-      </label>
+      <>
+        <label>
+          Default expansion
+          <input
+            type="number"
+            min={0}
+            max={5}
+            value={settings.defaultExpansion}
+            onChange={(e) => {
+              const value = Math.round(Number(e.target.value));
+              if (Number.isFinite(value) && value >= 0 && value <= 5) {
+                change({ defaultExpansion: value });
+              }
+            }}
+          />
+        </label>
+        <p>
+          The whole project is always drawn. Default expansion is how many steps
+          from the open model the view fits to when it is drawn or reset.
+        </p>
+      </>
     ) : null}
     <Check
       label="Highlight the paths of the hovered or selected card"

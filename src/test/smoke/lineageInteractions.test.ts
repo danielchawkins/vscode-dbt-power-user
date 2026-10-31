@@ -1,6 +1,8 @@
+import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { setLineageViewMode } from "./lineageViewMode";
 import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -37,6 +39,79 @@ const host = smokeHost;
 const TABLE_CARD = ".react-flow__node-table";
 /** The parents expander of the start node while its parents are shown, e.g. title "Hide 1 parents". */
 const SHOWN_PARENTS = `.react-flow__node button[title^="Hide "][title$="parents"]`;
+
+/**
+ * Each drawn card's table name, the expander buttons (neighbourhood view) and the plain count bubbles (whole view)
+ * with their titles, e.g. "1 parents". A card's counts are read from its own React Flow node.
+ */
+const READ_EXPANDERS = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const cards = [...document.querySelectorAll("[data-table]")];
+  const counts = {};
+  for (const card of cards) {
+    const scope = card.closest(".react-flow__node") ?? card;
+    counts[card.dataset.table.split(".").at(-1)] = [
+      ...scope.querySelectorAll("[title$='parents'], [title$='children']"),
+    ].map((node) => node.title);
+  }
+  return {
+    entry: "lineage",
+    tables: cards.map((card) => card.dataset.table.split(".").at(-1)).sort(),
+    expanderButtons: [
+      ...document.querySelectorAll(
+        ".react-flow__node button[title$='parents'], .react-flow__node button[title$='children']",
+      ),
+    ].map((button) => button.title),
+    counts,
+  };
+})()`;
+
+interface Expanders {
+  entry: string;
+  tables: string[];
+  expanderButtons: string[];
+  counts: Record<string, string[]>;
+}
+
+/** The Settings popover's View radio that is checked, its Default expansion input, and its paragraphs of help. */
+const READ_SETTINGS = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const dialog = document.querySelector("[role=dialog]");
+  const expansion = [...(dialog?.querySelectorAll("label") ?? [])]
+    .find((label) => label.textContent.includes("Default expansion"))
+    ?.querySelector("input");
+  return {
+    entry: "lineage",
+    viewMode: dialog?.querySelector("input[type=radio][name=view]:checked")?.value ?? null,
+    defaultExpansion: expansion
+      ? { value: expansion.value, disabled: expansion.disabled, readOnly: expansion.readOnly }
+      : null,
+    help: [...(dialog?.querySelectorAll("p") ?? [])].map((p) => p.textContent.trim()),
+  };
+})()`;
+
+interface SettingsState {
+  entry: string;
+  viewMode: string | null;
+  defaultExpansion: {
+    value: string;
+    disabled: boolean;
+    readOnly: boolean;
+  } | null;
+  help: string[];
+}
+
+async function readExpanders(): Promise<Expanders | undefined> {
+  return (
+    await evaluatePanel<Expanders>(cdpPort(), LINEAGE.entry, READ_EXPANDERS)
+  )?.value;
+}
+
+async function readSettings(): Promise<SettingsState | undefined> {
+  return (
+    await evaluatePanel<SettingsState>(cdpPort(), LINEAGE.entry, READ_SETTINGS)
+  )?.value;
+}
 
 async function nodeCount(): Promise<number> {
   const match = await evaluatePanel<{ entry: string; nodes: number }>(
@@ -116,13 +191,15 @@ suite("Lineage interactions", function () {
     }
     const evidence = interactionEvidence(host());
 
+    // The default view is the whole project, where Default expansion is shown.
     await openLineage();
     await openSettings();
     await evidence?.capture(LINEAGE, {
       name: "lineage-settings-open",
       expect:
-        "Settings popover open under the gear; its two edge checkboxes and the default expansion input.",
-      measured: { popover: "settings" },
+        "Whole project view. Settings popover open under the gear, with the View radios (Whole project checked, " +
+        "Neighbourhood), the two edge checkboxes and the Default expansion input with its help text.",
+      measured: { popover: "settings", ...(await readSettings()) },
     });
     for (const name of SETTINGS_CHECKBOXES) {
       await toggleTwice(name);
@@ -164,17 +241,97 @@ suite("Lineage interactions", function () {
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "aside[aria-label=Help]" });
 
-    const defaultNodes = await nodeCount();
-    await clickWebviewPoint(LINEAGE, { selector: SHOWN_PARENTS });
-    await waitForNodeCount(
-      "hiding the parents did not remove any nodes",
-      (count) => count < defaultNodes,
+    // The parents expander is a button only in the neighbourhood view, so the view is set for these steps and
+    // restored after them, whatever they do.
+    await setLineageViewMode("neighbourhood");
+    try {
+      const defaultNodes = await nodeCount();
+      await expectWebviewDom(LINEAGE, { present: SHOWN_PARENTS });
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-neighbourhood-parents-shown",
+        expect:
+          "Neighbourhood view. The start card's parents expander is a Hide N parents button, and the graph draws " +
+          "only the cards within the depths.",
+        measured: {
+          viewMode: "neighbourhood",
+          nodes: defaultNodes,
+          ...(await readExpanders()),
+        },
+      });
+      await clickWebviewPoint(LINEAGE, { selector: SHOWN_PARENTS });
+      await waitForNodeCount(
+        "hiding the parents did not remove any nodes",
+        (count) => count < defaultNodes,
+      );
+      await clickInWebview(LINEAGE, { role: "button", name: "Reset" });
+      await waitForNodeCount(
+        "Reset did not restore the default expansion",
+        (count) => count === defaultNodes,
+      );
+    } finally {
+      await setLineageViewMode("whole");
+    }
+  });
+
+  test("draws the whole project by default, with counts and no expander", async function () {
+    if (!runsHere()) {
+      this.skip();
+      return;
+    }
+    const evidence = interactionEvidence(host());
+
+    await openLineage();
+    const whole = await pollUntil(
+      readExpanders,
+      (state) => state?.tables.length === 3,
+      {
+        timeoutMs: 10_000,
+        intervalMs: 250,
+        describe: (last) =>
+          `the whole project should draw three tables; the last state was ${JSON.stringify(last)}`,
+      },
     );
-    await clickInWebview(LINEAGE, { role: "button", name: "Reset" });
-    await waitForNodeCount(
-      "Reset did not restore the default expansion",
-      (count) => count === defaultNodes,
+    assert.ok(whole, "the lineage view did not answer");
+    assert.deepStrictEqual(whole.tables, ["broken_ref", "child", "with_ctes"]);
+    assert.deepStrictEqual(
+      whole.expanderButtons,
+      [],
+      "the whole project should show no Show or Hide expander button",
     );
+    assert.ok(
+      whole.counts.child?.includes("1 parents"),
+      `child should show its parent count as plain text: ${JSON.stringify(whole.counts)}`,
+    );
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-whole-default",
+      expect:
+        "Whole project view on open: broken_ref, child and with_ctes drawn, each card showing its parents and " +
+        "children as plain counts with no Show or Hide expander button.",
+      measured: { viewMode: "whole", ...whole },
+    });
+
+    await openSettings();
+    const settings = await readSettings();
+    assert.strictEqual(
+      settings?.viewMode,
+      "whole",
+      "the Whole project radio should be checked",
+    );
+    assert.ok(
+      settings?.defaultExpansion,
+      "the whole view should show Default expansion",
+    );
+    assert.strictEqual(
+      settings.defaultExpansion.disabled,
+      false,
+      "Default expansion should be enabled in the whole view",
+    );
+    assert.ok(
+      settings.help.some((text) => text.includes("Default expansion")),
+      `Default expansion should be explained: ${JSON.stringify(settings.help)}`,
+    );
+    await clickInWebview(LINEAGE, gear);
+    await expectSettingsClosed();
   });
 
   test("closes Settings on a click in the pane", async function () {

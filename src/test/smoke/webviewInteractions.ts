@@ -53,6 +53,7 @@ const FRAME_HELPERS = `
   const ROLE_SELECTORS = {
     button: "button, [role=button]",
     checkbox: "input[type=checkbox], [role=checkbox]",
+    radio: "input[type=radio], [role=radio]",
     complementary: "aside, [role=complementary]",
     dialog: "[role=dialog]",
     spinbutton: "input[type=number], [role=spinbutton]",
