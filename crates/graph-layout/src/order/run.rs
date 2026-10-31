@@ -28,10 +28,6 @@ pub(crate) fn order(
     budget: &Budget,
     seed: u32,
 ) -> Ordered {
-    assert!(
-        layered.nodes.iter().all(|node| node.port.is_none()),
-        "order: lateral port dummies are not ported yet"
-    );
     let start = starting_layers(layered, hints);
     let mut best = search_from(layered, &start, budget, seed);
     if hints.is_some() {

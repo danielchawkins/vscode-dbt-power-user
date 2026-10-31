@@ -26,6 +26,7 @@ fn ranking_rule(kind: usize) -> EdgeRule {
         _ => (false, 1.0, 1.0),
     };
     EdgeRule {
+        ports: [None, None],
         kind,
         ranks,
         min_length,
@@ -41,6 +42,7 @@ pub(super) fn layering_rule(kind: usize) -> EdgeRule {
         _ => (false, 0.5),
     };
     EdgeRule {
+        ports: [None, None],
         kind,
         ranks,
         min_length: 1.0,

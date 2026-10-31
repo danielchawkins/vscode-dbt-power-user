@@ -19,17 +19,20 @@ pub(super) fn polyline(
         let flat = from.rank == to.rank;
         let toward_lower = to.rank > from.rank;
         // A run leaves its upper stop at the bottom of the node, or at its top when it goes up; it enters the lower stop
-        // at its top, or at its bottom when it goes up or is flat. A dummy has no half, so both sides meet at its centre.
-        let leave = if flat || toward_lower {
-            from.half
-        } else {
-            -from.half
-        };
-        let arrive = if flat || !toward_lower {
-            to.half
-        } else {
-            -to.half
-        };
+        // at its top, or at its bottom when it goes up or is flat. A dummy has no half, so both sides meet at its centre,
+        // or at its `side` when it is a lateral port. A stub (a flat run from an owner to its port) meets both at `side`.
+        let leave = from.side
+            + if flat || toward_lower {
+                from.half
+            } else {
+                -from.half
+            };
+        let arrive = to.side
+            + if flat || !toward_lower {
+                to.half
+            } else {
+                -to.half
+            };
         push(
             &mut out,
             frame(down, from.along, stacked.centre(from.rank) + leave),

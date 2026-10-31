@@ -237,6 +237,7 @@ fn parse_case(line: &str) -> Case {
                 parts[1].parse().expect("a node index"),
             ));
             rules.push(EdgeRule {
+                ports: [None, None],
                 kind: parts[2].parse().expect("a kind index"),
                 ranks: parts[3] == "1",
                 min_length: decimal(parts[4]),

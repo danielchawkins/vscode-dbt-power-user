@@ -58,6 +58,9 @@ pub(crate) struct Stop {
     pub(crate) across: f64,
     /// Half the stop's extent across the ranks; zero for a dummy.
     pub(crate) half: f64,
+    /// The across offset, from the rank's centre, at which the edge leaves or meets the stop. Zero except at a lateral
+    /// port: its owner's side and its port dummy sit at the port's offset, so a stub between them runs straight across.
+    pub(crate) side: f64,
 }
 
 /// One edge: whether its kind is routed, its real ends as node indices, and its stops from the source end to the target

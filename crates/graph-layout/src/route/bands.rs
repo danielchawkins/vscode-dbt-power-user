@@ -29,8 +29,10 @@ pub(super) fn assign(input: &RouteInput, drawable: &[bool]) -> TrackPlan {
             continue;
         }
         for (k, pair) in edge.stops.windows(2).enumerate() {
+            // A stub joins a lateral port's owner to its port dummy, both in one rank, and needs no track.
+            let stub = pair[0].rank == pair[1].rank && (pair[0].half == 0.0 || pair[1].half == 0.0);
             let (from, to) = (pair[0].along, pair[1].along);
-            if same_coordinate(from, to) {
+            if stub || same_coordinate(from, to) {
                 continue;
             }
             let band = pair[0].rank.min(pair[1].rank);

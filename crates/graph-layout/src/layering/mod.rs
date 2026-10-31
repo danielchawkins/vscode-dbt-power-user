@@ -16,7 +16,7 @@ pub(crate) mod layered;
 mod network;
 mod tree;
 
-pub(crate) use layered::LayeredGraph;
+pub(crate) use layered::{LayeredGraph, PortDummy};
 
 #[cfg(test)]
 pub(crate) use layered::{LayeredNode, Segment};
@@ -45,8 +45,9 @@ pub(crate) enum PartitionMode {
     Strict,
 }
 
-/// What the layering needs to know about the policy of an edge's kind. An edge whose kind has no policy has
-/// `ranks: false`, `min_length: 1` and `weight: 1`, which is what `policy ?? defaults` gives in `rank/index.ts`.
+/// What the layering needs to know about an edge: the policy of its kind, and the lateral port at each end. An edge
+/// whose kind has no policy has `ranks: false`, `min_length: 1` and `weight: 1`, which is what `policy ?? defaults`
+/// gives in `rank/index.ts`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct EdgeRule {
     /// The dense id of the edge's kind, numbered in order of first appearance.
@@ -54,6 +55,9 @@ pub(crate) struct EdgeRule {
     pub(crate) ranks: bool,
     pub(crate) min_length: f64,
     pub(crate) weight: f64,
+    /// The row of the port at each end (source, target), when that port sits on a side lateral to the flow. Edges
+    /// whose lateral ports differ go to different bundles, so each lateral port has its own port dummy.
+    pub(crate) ports: [Option<usize>; 2],
 }
 
 /// Everything ranking reads besides the graph itself.
@@ -276,9 +280,12 @@ pub(crate) fn layer(graph: &Indexed, edges: &[EdgeRule], ranks: &[f64]) -> Layer
     out
 }
 
+/// A bundle's identity: its kind, its ordered pair of nodes, and the ports at each end.
+type BundleKey = (usize, usize, usize, [Option<usize>; 2]);
+
 /// The non-self-loop edges, grouped by kind and ordered pair of nodes, in order of first appearance.
 fn group_bundles(graph: &Indexed, edges: &[EdgeRule]) -> Vec<Vec<usize>> {
-    let mut index: BTreeMap<(usize, usize, usize), usize> = BTreeMap::new();
+    let mut index: BTreeMap<BundleKey, usize> = BTreeMap::new();
     let mut groups: Vec<Vec<usize>> = Vec::new();
     for (id, rule) in edges.iter().enumerate() {
         let Some((source, target)) = graph.ends(id) else {
@@ -288,7 +295,7 @@ fn group_bundles(graph: &Indexed, edges: &[EdgeRule]) -> Vec<Vec<usize>> {
         if source == target {
             continue;
         }
-        let key = (rule.kind, source, target);
+        let key = (rule.kind, source, target, rule.ports);
         if let Some(&g) = index.get(&key) {
             groups[g].push(id);
         } else {
