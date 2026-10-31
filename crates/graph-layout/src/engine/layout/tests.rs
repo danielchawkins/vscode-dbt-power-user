@@ -5,6 +5,7 @@
 //! never has more crossings than its first search; `GRAPH_LAYOUT_THOROUGH_OUT` writes its frame for the thread sweep.
 
 use std::collections::BTreeMap;
+use std::fmt::Write;
 
 use proptest::prelude::*;
 
@@ -20,6 +21,10 @@ use crate::model::{
 use crate::order::order;
 use crate::rand::Mulberry32;
 use crate::route::same_coordinate;
+
+/// The cases of `layout_outputs_are_written_for_the_parity_comparison`: one line per case, `case <name> <effort> <seed>
+/// <nodes> <edges>`.
+const LAYOUT_CASES: &str = include_str!("../../../fixtures/parity/layout-cases.txt");
 
 /// The phases' random cases, with every edge kind valid for `validate`: a `plain` edge has no policy, so it takes the
 /// `info` kind, which does not rank and is routed.
@@ -259,17 +264,31 @@ fn assert_no_more_crossings_than_the_start(graph: &Graph, options: &Options) {
 /// The graph of the thread sweep: 60 nodes and 120 edges drawn from a fixed seed, all ranked and pointing down the
 /// ranks, at `thorough` with a seed, so that the restarts have work to share between threads.
 fn sweep_case() -> (Graph, Options) {
-    let names: Vec<String> = (0..60).map(|i| format!("n{i}")).collect();
-    let mut random = Mulberry32::new(11);
+    random_case(60, 120, 11, "thorough", 3.0)
+}
+
+/// A random graph of `nodes` nodes and `edges` ranked edges drawn from `graph_seed`, each pointing from its lower node
+/// index to its higher one, so that it ranks down. The options take `effort` and `seed`, with the kinds of
+/// `rank_and_note`.
+fn random_case(
+    nodes: usize,
+    edges: usize,
+    graph_seed: u32,
+    effort: &str,
+    seed: f64,
+) -> (Graph, Options) {
+    let modulus = u32::try_from(nodes).expect("a test size fits in u32");
+    let names: Vec<String> = (0..nodes).map(|i| format!("n{i}")).collect();
+    let mut random = Mulberry32::new(graph_seed);
     let mut pairs: Vec<(usize, usize)> = Vec::new();
-    while pairs.len() < 120 {
-        let a = usize::try_from(random.next_u32() % 60).expect("an index fits");
-        let b = usize::try_from(random.next_u32() % 60).expect("an index fits");
+    while pairs.len() < edges {
+        let a = usize::try_from(random.next_u32() % modulus).expect("an index fits");
+        let b = usize::try_from(random.next_u32() % modulus).expect("an index fits");
         if a != b {
             pairs.push((a.min(b), a.max(b)));
         }
     }
-    let edges: Vec<(String, String, String, String)> = pairs
+    let edge_rows: Vec<(String, String, String, String)> = pairs
         .iter()
         .enumerate()
         .map(|(k, &(a, b))| {
@@ -282,16 +301,47 @@ fn sweep_case() -> (Graph, Options) {
         })
         .collect();
     let ids: Vec<&str> = names.iter().map(String::as_str).collect();
-    let rows: Vec<(&str, &str, &str, &str)> = edges
+    let rows: Vec<(&str, &str, &str, &str)> = edge_rows
         .iter()
         .map(|e| (e.0.as_str(), e.1.as_str(), e.2.as_str(), e.3.as_str()))
         .collect();
     let options = Options {
-        effort: Some("thorough".to_owned()),
-        seed: Some(3.0),
+        effort: Some(effort.to_owned()),
+        seed: Some(seed),
         ..rank_and_note()
     };
     (graph_of(&ids, &rows), options)
+}
+
+/// The layout outputs: each case of `layout-cases.txt` laid out at its effort, as one line `layout <name> <effort> <hex>`
+/// with the bytes of `encode_layout` in hex. The test runs natively and under WASI and writes the output when
+/// `GRAPH_LAYOUT_LAYOUT_OUT` names a file; `just layout-parity` compares the two files byte for byte.
+#[test]
+fn layout_outputs_are_written_for_the_parity_comparison() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_LAYOUT_OUT") else {
+        return;
+    };
+    let mut text = String::new();
+    for line in LAYOUT_CASES
+        .lines()
+        .filter(|line| line.starts_with("case "))
+    {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        let [_, name, effort, seed, nodes, edges] = fields[..] else {
+            panic!("a layout case has five fields: {line}");
+        };
+        let seed: u32 = seed.parse().expect("a case seed is a u32");
+        let nodes: usize = nodes.parse().expect("a case node count is a usize");
+        let edges: usize = edges.parse().expect("a case edge count is a usize");
+        let (graph, options) = random_case(nodes, edges, seed, effort, f64::from(seed));
+        let laid_out = layout(&graph, &options).expect("a layout case lays out");
+        let mut hex = String::new();
+        for byte in encode_layout(&laid_out) {
+            write!(hex, "{byte:02x}").expect("a string takes a digit");
+        }
+        writeln!(text, "layout {name} {effort} {hex}").expect("a string takes a line");
+    }
+    std::fs::write(&path, text).expect("the layout output is writable");
 }
 
 /// The thorough layout of `sweep_case`, encoded and written to the file `GRAPH_LAYOUT_THOROUGH_OUT` names. The thread
