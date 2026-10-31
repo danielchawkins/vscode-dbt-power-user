@@ -1,0 +1,324 @@
+//! The layout on random graphs, and the refusal of invalid input. The gate of the routed edges, the measures, the
+//! finiteness of every number, the determinism of the encoded frame and the bounds run on the phases' random cases,
+//! made valid for `validate`. The deterministic cases fix the flags of a self-loop, an unrouted kind, the partition
+//! boxes and the refused input.
+
+use std::collections::BTreeMap;
+
+use proptest::prelude::*;
+
+use super::{LayoutError, layout};
+use crate::engine::phases::tests::{case, levels_case, opaque_case};
+use crate::model::{
+    Clusters, Direction, EdgeKindPolicy, Edges, Graph, IssueCode, Layout, NodeLayouts, Nodes,
+    Options, Partitions, Ports, Rect, encode_layout, validate,
+};
+use crate::route::same_coordinate;
+
+/// The phases' random cases, with every edge kind valid for `validate`: a `plain` edge has no policy, so it takes the
+/// `info` kind, which does not rank and is routed.
+fn valid((mut graph, options): (Graph, Options)) -> (Graph, Options) {
+    for kind in &mut graph.edges.kind {
+        if kind.as_str() == "plain" {
+            *kind = "info".to_owned();
+        }
+    }
+    (graph, options)
+}
+
+/// Whether two coordinates agree to a relative 1e-9. A centre is rebuilt from its rectangle, so it can be an ulp off.
+fn approx(a: f64, b: f64) -> bool {
+    (a - b).abs() <= 1e-9 * (1.0 + a.abs().max(b.abs()))
+}
+
+/// The index of the node named `id`.
+fn index_of(graph: &Graph, id: &str) -> usize {
+    graph
+        .nodes
+        .id
+        .iter()
+        .position(|n| n == id)
+        .expect("an edge names a node")
+}
+
+/// The rectangle of node `i` of the layout.
+fn node_rect(nodes: &NodeLayouts, i: usize) -> Rect {
+    Rect {
+        x: nodes.x[i],
+        y: nodes.y[i],
+        width: nodes.width[i],
+        height: nodes.height[i],
+    }
+}
+
+/// The layout gate. Each edge of a routed kind is drawn by an axis-aligned polyline that starts at its source's centre
+/// along the ranks and ends at its target's, or it is flagged with no points. An edge of an unrouted kind has no entry.
+/// No drawn edge breaches an opaque box. Every number is finite, the same input gives the same frame, and the bounds
+/// hold every node.
+fn assert_layout_gate(graph: &Graph, options: &Options) {
+    let laid_out = layout(graph, options).expect("a valid graph lays out");
+    assert_edges_gate(graph, options, &laid_out);
+    assert_eq!(
+        laid_out.metrics.opaque_breaches, 0.0,
+        "a drawn edge breaches an opaque box"
+    );
+    assert!(
+        all_finite(&laid_out),
+        "a number is not finite: {laid_out:?}"
+    );
+    let again = layout(graph, options).expect("a valid graph lays out");
+    assert_eq!(
+        encode_layout(&laid_out),
+        encode_layout(&again),
+        "the same input gives a different frame"
+    );
+    assert_bounds_hold_nodes(&laid_out);
+}
+
+/// The edge rows of the layout against the graph: one row per edge of a routed kind, in edge order.
+fn assert_edges_gate(graph: &Graph, options: &Options, laid_out: &Layout) {
+    let down = options.direction == Direction::Down;
+    // The coordinate along the ranks, as the route takes it: x going down, y going right.
+    let along = |(x, y): (f64, f64)| if down { x } else { y };
+    let edges = &laid_out.edges;
+    let mut row = 0;
+    for e in 0..graph.edges.id.len() {
+        let routed = options
+            .edge_kinds
+            .get(&graph.edges.kind[e])
+            .and_then(|policy| policy.routed)
+            != Some(false);
+        if !routed {
+            assert!(
+                !edges.id.contains(&graph.edges.id[e]),
+                "edge {} of an unrouted kind has an entry",
+                graph.edges.id[e]
+            );
+            continue;
+        }
+        assert_eq!(
+            edges.id[row], graph.edges.id[e],
+            "the rows follow the edges"
+        );
+        let start = usize::try_from(edges.point_start[row]).expect("a point index fits");
+        let end = usize::try_from(edges.point_start[row + 1]).expect("a point index fits");
+        let points: Vec<(f64, f64)> = (start..end)
+            .map(|p| (edges.point_x[p], edges.point_y[p]))
+            .collect();
+        let source = index_of(graph, &graph.edges.source[e]);
+        let target = index_of(graph, &graph.edges.target[e]);
+        if edges.route_failed[row] {
+            assert!(points.is_empty(), "flagged edge {row} has no points");
+        } else {
+            assert_ne!(source, target, "a self-loop is flagged, not drawn");
+            assert!(points.len() >= 2, "a drawn edge has two ends");
+            assert!(
+                points
+                    .windows(2)
+                    .all(|w| same_coordinate(w[0].0, w[1].0) || same_coordinate(w[0].1, w[1].1)),
+                "a drawn edge is axis-aligned"
+            );
+            let centre = |node: usize| {
+                let rect = node_rect(&laid_out.nodes, node);
+                along((rect.x + rect.width / 2.0, rect.y + rect.height / 2.0))
+            };
+            assert!(
+                approx(along(points[0]), centre(source)),
+                "a drawn edge starts at its source"
+            );
+            assert!(
+                approx(along(points[points.len() - 1]), centre(target)),
+                "a drawn edge ends at its target"
+            );
+        }
+        row += 1;
+    }
+    assert_eq!(row, edges.id.len(), "every row is an edge of a routed kind");
+}
+
+/// Whether every coordinate and every metric of the layout is finite.
+fn all_finite(laid_out: &Layout) -> bool {
+    let columns = [
+        &laid_out.nodes.x,
+        &laid_out.nodes.y,
+        &laid_out.nodes.width,
+        &laid_out.nodes.height,
+        &laid_out.clusters.x,
+        &laid_out.clusters.y,
+        &laid_out.clusters.width,
+        &laid_out.clusters.height,
+        &laid_out.partitions.partition,
+        &laid_out.partitions.x,
+        &laid_out.partitions.y,
+        &laid_out.partitions.width,
+        &laid_out.partitions.height,
+        &laid_out.edges.point_x,
+        &laid_out.edges.point_y,
+        &laid_out.hints.x,
+        &laid_out.hints.y,
+    ];
+    let m = &laid_out.metrics;
+    let b = &laid_out.bounds;
+    let scalars = [
+        b.x,
+        b.y,
+        b.width,
+        b.height,
+        m.crossings,
+        m.bends,
+        m.edge_length,
+        m.area,
+        m.density,
+        m.overlaps,
+        m.opaque_breaches,
+    ];
+    columns
+        .iter()
+        .all(|column| column.iter().all(|v| v.is_finite()))
+        && scalars.iter().all(|v| v.is_finite())
+}
+
+/// The bounds hold every node rectangle.
+fn assert_bounds_hold_nodes(laid_out: &Layout) {
+    let b = laid_out.bounds;
+    let at_most = |a: f64, c: f64| a <= c || approx(a, c);
+    for i in 0..laid_out.nodes.id.len() {
+        let r = node_rect(&laid_out.nodes, i);
+        assert!(
+            at_most(b.x, r.x)
+                && at_most(b.y, r.y)
+                && at_most(r.x + r.width, b.x + b.width)
+                && at_most(r.y + r.height, b.y + b.height),
+            "the bounds {b:?} hold node {i} at {r:?}"
+        );
+    }
+}
+
+proptest! {
+    #[test]
+    fn every_routed_edge_is_drawn_or_flagged_and_the_layout_is_finite_and_repeatable(
+        (graph, options) in case().prop_map(valid)
+    ) {
+        assert_layout_gate(&graph, &options);
+    }
+
+    #[test]
+    fn the_layout_keeps_clear_of_opaque_boxes((graph, options) in opaque_case().prop_map(valid)) {
+        assert_layout_gate(&graph, &options);
+    }
+
+    #[test]
+    fn the_levels_layout_passes_the_same_gate((graph, options) in levels_case().prop_map(valid)) {
+        assert_layout_gate(&graph, &options);
+    }
+}
+
+/// A graph of nodes `ids`, each ten by ten and in no cluster, and of edges `(id, source, target, kind)`.
+fn graph_of(ids: &[&str], edges: &[(&str, &str, &str, &str)]) -> Graph {
+    let n = ids.len();
+    Graph {
+        nodes: Nodes {
+            id: ids.iter().map(|id| (*id).to_owned()).collect(),
+            width: vec![10.0; n],
+            height: vec![10.0; n],
+            cluster: vec![None; n],
+            partition: vec![None; n],
+            ports: Ports::default(),
+        },
+        edges: Edges {
+            id: edges.iter().map(|e| e.0.to_owned()).collect(),
+            source: edges.iter().map(|e| e.1.to_owned()).collect(),
+            target: edges.iter().map(|e| e.2.to_owned()).collect(),
+            source_port: vec![None; edges.len()],
+            target_port: vec![None; edges.len()],
+            kind: edges.iter().map(|e| e.3.to_owned()).collect(),
+        },
+        clusters: Clusters::default(),
+    }
+}
+
+/// Options with the kinds `rank` (ranking), and `note` (not ranking, and not routed).
+fn rank_and_note() -> Options {
+    Options {
+        edge_kinds: BTreeMap::from([
+            (
+                "rank".to_owned(),
+                EdgeKindPolicy {
+                    ranks: true,
+                    ..EdgeKindPolicy::default()
+                },
+            ),
+            (
+                "note".to_owned(),
+                EdgeKindPolicy {
+                    routed: Some(false),
+                    ..EdgeKindPolicy::default()
+                },
+            ),
+        ]),
+        ..Options::default()
+    }
+}
+
+#[test]
+fn a_self_loop_is_flagged_and_an_unrouted_kind_has_no_entry() {
+    let graph = graph_of(
+        &["a", "b"],
+        &[
+            ("e0", "a", "b", "rank"),
+            ("e1", "a", "a", "rank"),
+            ("e2", "b", "a", "note"),
+        ],
+    );
+    let options = rank_and_note();
+    let laid_out = layout(&graph, &options).expect("a valid graph lays out");
+    assert_eq!(laid_out.edges.id, ["e0", "e1"]);
+    assert_eq!(laid_out.edges.route_failed, [false, true]);
+    let starts = &laid_out.edges.point_start;
+    assert_eq!(starts.len(), 3, "one start per entry, and the end");
+    assert_eq!(starts[1], starts[2], "the self-loop has no points");
+    assert_layout_gate(&graph, &options);
+}
+
+#[test]
+fn partition_boxes_hold_their_members_and_none_is_drawn_for_partitions_none() {
+    let mut graph = graph_of(&["a", "b"], &[("e0", "a", "b", "rank")]);
+    graph.nodes.partition = vec![Some(1.0), Some(0.0)];
+    let mut options = rank_and_note();
+    options.partitions = Some(Partitions::Soft);
+    let laid_out = layout(&graph, &options).expect("a valid graph lays out");
+    assert_eq!(laid_out.partitions.partition, [0.0, 1.0]);
+    // Node `b` is in partition 0, node `a` in partition 1: each box is its one member's rectangle.
+    assert!(approx(laid_out.partitions.x[0], laid_out.nodes.x[1]));
+    assert!(approx(laid_out.partitions.y[0], laid_out.nodes.y[1]));
+    assert!(approx(laid_out.partitions.x[1], laid_out.nodes.x[0]));
+    assert!(approx(laid_out.partitions.y[1], laid_out.nodes.y[0]));
+    options.partitions = Some(Partitions::None);
+    let laid_out = layout(&graph, &options).expect("a valid graph lays out");
+    assert_eq!(laid_out.partitions.partition, Vec::<f64>::new());
+}
+
+#[test]
+fn an_input_that_validate_refuses_is_refused_with_every_issue() {
+    let mut graph = graph_of(
+        &["a", "b"],
+        &[("e0", "a", "zz", "rank"), ("e1", "a", "b", "missing")],
+    );
+    graph.nodes.width[1] = -1.0;
+    let options = rank_and_note();
+    let expected = validate(&graph, &options).expect_err("the graph is invalid");
+    let refused = layout(&graph, &options).expect_err("the graph is refused");
+    let LayoutError::Input(error) = refused else {
+        panic!("a validation refusal is an input error, not {refused:?}");
+    };
+    assert_eq!(error.issues(), expected.issues());
+    let codes: Vec<IssueCode> = error.issues().iter().map(|issue| issue.code).collect();
+    assert_eq!(
+        codes,
+        [
+            IssueCode::BadSize,
+            IssueCode::UnknownNode,
+            IssueCode::UnknownKind
+        ]
+    );
+}

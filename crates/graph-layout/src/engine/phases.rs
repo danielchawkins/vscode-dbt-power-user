@@ -9,7 +9,7 @@
 
 mod routing;
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
 
 use std::collections::BTreeMap;
 
