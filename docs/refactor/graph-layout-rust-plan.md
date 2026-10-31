@@ -219,6 +219,8 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 **Baseline.** Before the port, record TypeScript's `metrics` (crossings, bends, edge length, bounds) and time once, on the finance graph and the 3,000-node DAG, in this section. It is a measurement, not a gate.
 
+Measured once on Node v24.18.1 (the repo pin), from the TypeScript sources through the parity resolve hook, one run each. Finance: the dump at `finance_general/target/manifest.json` (1,128 nodes, 1,297 edges), graph built as `/tmp/bench/full-graph.mjs` builds it. Synthetic: `syntheticDag(3000, seededRandom(1))` with 5,902 edges. Both use the options of that script (`rows`, soft partitions, spacing 28/36/6/28). Each cell: time, crossings, bends, edge length, bounds (width × height). Finance `fast`: 511 ms, 42,176, 3,458, 192,660,594, 358,754 × 5,731. Finance `balanced`: 3,833 ms, 35,332, 3,774, 174,709,525, 335,574 × 6,847. Synthetic `fast`: 6,436 ms, 954,655, 13,818, 95,923,285, 95,323 × 10,998. Synthetic `balanced`: 15,415 ms, 1,061,864, 32,198, 86,943,405, 114,120 × 36,564. Every TypeScript run has zero overlaps and zero opaque breaches.
+
 **Check.** Every edge routed or flagged; no edge crosses a foreign opaque box (roadmap Phase B oracle); output deterministic; native and WASM byte-identical; S2 thread sweep shows output equal across 1, 2, 4 and 8 threads. The Rust `metrics` and time are recorded next to the baseline; they are not compared case by case, and there is no TypeScript fixture.
 
 Phase 6 is the point at which the Rust core is a complete replacement for the TypeScript engine. It is not yet shipped or made the default.
