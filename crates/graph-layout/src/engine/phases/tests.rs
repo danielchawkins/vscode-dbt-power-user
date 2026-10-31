@@ -67,7 +67,7 @@ fn edges_of(count: usize, raw: &[(usize, usize, usize)]) -> Edges {
 
 /// A random graph with its options: up to eight nodes, with partition bands, sizes and clusters; up to 24 edges; and
 /// the direction, partition mode, effort, stability, hints and seed of the run.
-fn case() -> impl Strategy<Value = (Graph, Options)> {
+pub(in crate::engine) fn case() -> impl Strategy<Value = (Graph, Options)> {
     (
         prop::collection::vec(
             (
@@ -398,7 +398,7 @@ proptest! {
 
 /// A random placed graph whose two clusters are each opaque or not, by a coin each, so that the opaque gate has boxes to
 /// keep edges out of.
-fn opaque_case() -> impl Strategy<Value = (Graph, Options)> {
+pub(in crate::engine) fn opaque_case() -> impl Strategy<Value = (Graph, Options)> {
     (placed_case(), prop::collection::vec(prop::bool::ANY, 2)).prop_map(
         |((mut graph, options), opaque)| {
             graph.clusters.opaque = opaque.into_iter().map(Some).collect();
@@ -609,7 +609,7 @@ proptest! {
 }
 
 /// A random case under `ranks: "levels"`, with opaque boxes: the cases of `opaque_case`, with the levels across the ranks.
-fn levels_case() -> impl Strategy<Value = (Graph, Options)> {
+pub(in crate::engine) fn levels_case() -> impl Strategy<Value = (Graph, Options)> {
     opaque_case().prop_map(|(graph, mut options)| {
         options.ranks = Some(Ranks::Levels);
         (graph, options)

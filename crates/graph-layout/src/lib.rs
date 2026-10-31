@@ -9,8 +9,7 @@ pub mod pack;
 
 // `across` and `place` are compiled for the phases (`engine::phases`); route reads only `place::boxes`.
 mod across;
-// `metrics` is compiled for its tests only, until the layout carries its measures.
-#[cfg(test)]
+// `metrics` is compiled for the engine's layout (`engine::layout`).
 mod metrics;
 mod place;
 // `budget`, `constraints` (its `components`), `index`, `layering`, `order`, `rand` and `solve` are compiled for the

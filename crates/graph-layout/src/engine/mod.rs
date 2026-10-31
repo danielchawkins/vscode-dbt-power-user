@@ -2,9 +2,11 @@
 //! layered graph that ordering reads from the output of layering, and `phases` runs the phases on a model graph.
 
 pub(crate) mod layered;
+mod layout;
 mod phases;
 
 pub use crate::route::{ClusterBox, EdgeRoute, Point, Rect, RouteWork, Routing};
+pub use layout::{LayoutError, layout};
 pub use phases::{PhaseError, Phases, run_phases};
 
 use crate::model::{EdgeLayouts, FrameError, Layout, decode_graph, encode_layout};
