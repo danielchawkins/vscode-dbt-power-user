@@ -23,14 +23,16 @@ import {
   visibleOf,
 } from "./graph";
 import { combinedEdges } from "./groupEdges";
-import {
-  fetchHiddenCards,
-  fetchRelationships,
-  fetchSettings,
-  persistSettings,
-} from "./requests";
+import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import type { ExpansionOptions } from "./useLineageGraph";
 import { useLineageGraph } from "./useLineageGraph";
+import {
+  hiddenCardsOf,
+  type ScopeControls,
+  useHiddenCards,
+  useScopeControls,
+  useStoredScope,
+} from "./useStoredFilters";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, visibleRefs } from "./viewModel";
 import { lineageData } from "./visibility";
@@ -54,20 +56,6 @@ const useSettings = () => {
     );
   };
   return { settings, loaded, change };
-};
-
-/**
- * The hidden cards the host kept for the workspace, with `undefined` until they arrive. A failed read hides nothing.
- */
-const useHiddenCards = () => {
-  const [hidden, setHidden] = useState<lineage.HiddenCard[]>();
-  useEffect(() => {
-    fetchHiddenCards().then(setHidden, (error) => {
-      panelLogger.error("lineage hidden cards", error);
-      setHidden([]);
-    });
-  }, []);
-  return hidden;
 };
 
 /** The options the expansions are built with, from the settings: the cap, the grouping and the view. */
@@ -101,12 +89,6 @@ const useFitKeys = (flow: BuiltFlow, settings: ResolvedSettings) => {
     shapeKey: `${settings.engine}|${settings.connections}|${settings.defaultExpansion}`,
   };
 };
-
-/** The hidden cards by id, each with the label it was hidden with; the id stands in only when no label was stored. */
-const hiddenCardsOf = (
-  cards: lineage.HiddenCard[],
-): { id: string; name: string }[] =>
-  cards.map((card) => ({ id: card.id, name: card.label ?? card.id }));
 
 /**
  * The relationships of the Current Project, fetched while declared relationships are drawn and
@@ -328,6 +310,8 @@ interface GraphModel {
   hiddenCards: { id: string; name: string }[];
   restore: (table: string) => void;
   restoreAll: () => void;
+  /** The Scope control: the filters and what they take out. */
+  scope: ScopeControls;
   drawnKey: number;
   nodes: BuiltFlow["nodes"];
   edges: BuiltFlow["edges"];
@@ -390,6 +374,7 @@ export const useGraphModel = (
   const [detailsTable, setDetailsTable] = useState<string>();
   const { settings, loaded, change } = useSettings();
   const hiddenIds = useHiddenCards();
+  const storedScope = useStoredScope();
   const openDetails = useCallback(
     (table: string) => {
       setDetailsTable(table);
@@ -414,13 +399,16 @@ export const useGraphModel = (
   } = useLineageGraph(defaultExpansion, openDetails, {
     expansionOptions,
     raiseBudget,
-    ready: loaded && hiddenIds !== undefined,
+    // The first graph waits for the stored Scope too, so it is drawn with the filters already applied.
+    ready: loaded && hiddenIds !== undefined && storedScope.scope !== undefined,
     hidden: hiddenIds,
+    scope: storedScope.scope,
   });
   const hiddenCards = useMemo(
     () => hiddenCardsOf(graph.hiddenCards),
     [graph.hiddenCards],
   );
+  const scope = useScopeControls(graph, storedScope.scope, storedScope.change);
   const notice = rendered?.missingLineageMessage;
   const refs = useRefs(settings, drawnKey);
   const { hovered, hover } = useHoveredCard(settings);
@@ -450,6 +438,7 @@ export const useGraphModel = (
     hiddenCards,
     restore,
     restoreAll,
+    scope,
     drawnKey,
     nodes,
     edges,

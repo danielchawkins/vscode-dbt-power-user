@@ -20,6 +20,7 @@ export {
 export type {
   Direction,
   Expansion,
+  GraphScope,
   GraphState,
   TableColumn,
   ViewSettings,
@@ -27,6 +28,7 @@ export type {
 import type {
   Direction,
   Expansion,
+  GraphScope,
   GraphState,
   TableColumn,
   ViewSettings,
@@ -83,6 +85,7 @@ export const emptyGraph = (
   groupBy,
   groups: {},
   hiddenCards: [],
+  scope: { offTypes: [], offTags: [] },
 });
 
 /** Whether the `direction` neighbours of `table` are being fetched. */
@@ -398,6 +401,14 @@ export const withHidden = (
 ): GraphState => ({
   ...state,
   hiddenCards: [...new Map(hidden.map((card) => [card.id, card])).values()],
+});
+
+export const withScope = (
+  state: GraphState,
+  scope: GraphScope,
+): GraphState => ({
+  ...state,
+  scope,
 });
 
 export const selectTable = (

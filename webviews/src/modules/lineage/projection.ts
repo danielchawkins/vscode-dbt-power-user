@@ -1,6 +1,7 @@
 import { filteredOutTables } from "./filteredOut";
 import type { Direction, GraphState } from "./graphState";
 import { groupedNeighbours } from "./grouping";
+import { removedByScope } from "./scope";
 
 /**
  * The lineage projection: which cards the view draws, decided once from the graph state. The whole-project and the
@@ -54,6 +55,8 @@ export interface Visible {
   hasEdges: (id: string) => boolean;
   /** Per expansion key, how many neighbours the card budget left out; the card reports them as capped. */
   capped: Record<string, number>;
+  /** How many cards the Scope filters take out of the drawn graph: those drawn without them, and not with them. */
+  scopedOut: number;
 }
 
 /** The steps from a card to the cards next to it, given how many steps from the start it is. */
@@ -112,6 +115,24 @@ const pairSteps = (
 
 const hiddenIdsOf = (state: GraphState): Set<string> =>
   new Set(state.hiddenCards.map((card) => card.id));
+
+/**
+ * The cards the Scope filters remove. The start card is never one, so the view keeps its centre. The projection blocks
+ * them as it blocks hidden cards, so an edge through one is dropped and a card drawn only through one is not drawn.
+ */
+const scopedIdsOf = (state: GraphState): Set<string> =>
+  new Set(
+    Object.entries(state.known)
+      .filter(
+        ([id, table]) =>
+          id !== state.start && removedByScope(table, state.scope),
+      )
+      .map(([id]) => id),
+  );
+
+/** Every card the view leaves out: the hidden ones and the ones the Scope filters remove. */
+const blockedIdsOf = (state: GraphState): Set<string> =>
+  new Set([...hiddenIdsOf(state), ...scopedIdsOf(state)]);
 
 /** The start card, once the graph knows it; nothing is drawn before then. */
 const startOf = (state: GraphState): string | undefined =>
@@ -230,20 +251,24 @@ function neighbourhoodOf(
  * projection for both views: `state.view` decides which cards it keeps.
  */
 export function visibleOf(state: GraphState): Visible {
-  const hidden = hiddenIdsOf(state);
   const filteredOut = filteredOutTables(state);
   const start = startOf(state);
-  const { drawn, capped } =
+  const project = (blocked: ReadonlySet<string>) =>
     start === undefined
       ? { drawn: new Set<string>(), capped: {} }
       : state.view.viewMode === "whole"
-        ? wholeOf(state, start, hidden)
-        : neighbourhoodOf(state, start, hidden);
+        ? wholeOf(state, start, blocked)
+        : neighbourhoodOf(state, start, blocked);
+  const { drawn, capped } = project(blockedIdsOf(state));
+  const withoutScope =
+    scopedIdsOf(state).size === 0 ? drawn : project(hiddenIdsOf(state)).drawn;
+  const scopedOut = [...withoutScope].filter((id) => !drawn.has(id)).length;
   return {
     drawn,
     filteredOut,
     hasEdges: (id) => drawn.has(id) && !filteredOut.has(id),
     capped,
+    scopedOut,
   };
 }
 
@@ -257,17 +282,17 @@ export function framedCards(state: GraphState, levels: number): Set<string> {
     return new Set();
   }
   const steps = pairSteps(knownPairs(state));
-  const hidden = hiddenIdsOf(state);
+  const blocked = blockedIdsOf(state);
   const origin = new Map([[start, 0]]);
   const up = reachFrom(
     origin,
     (id, level) => (level < levels ? steps.parents(id) : []),
-    hidden,
+    blocked,
   );
   const down = reachFrom(
     origin,
     (id, level) => (level < levels ? steps.children(id) : []),
-    hidden,
+    blocked,
   );
   return new Set([...up.keys(), ...down.keys()]);
 }

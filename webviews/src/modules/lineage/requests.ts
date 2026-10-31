@@ -68,6 +68,14 @@ export const persistHiddenCards = (cards: lineage.HiddenCard[]): void => {
   executeRequestInAsync("persistHiddenCards", { args: { params: { cards } } });
 };
 
+/** The node types and tags the workspace has switched off, as the host kept them. */
+export const fetchLineageScope = async (): Promise<lineage.LineageScope> =>
+  (await executeRequestInSync("getLineageScope")).scope;
+
+export const persistLineageScope = (scope: lineage.LineageScope): void => {
+  executeRequestInAsync("persistLineageScope", { args: { params: { scope } } });
+};
+
 export const persistSettings = (
   settings: Partial<lineage.LineageSettings>,
 ): Promise<unknown> =>

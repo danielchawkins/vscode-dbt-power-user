@@ -101,6 +101,26 @@ interface SettingsState {
   help: string[];
 }
 
+/** The Scope popover's checkboxes, each with its name and whether it is checked, and the lines of its count. */
+const READ_SCOPE = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const section = document.querySelector("section[aria-label=Scope]");
+  return {
+    entry: "lineage",
+    checkboxes: [...(section?.querySelectorAll("input[type=checkbox]") ?? [])].map((input) => ({
+      name: input.closest("label").textContent.trim(),
+      checked: input.checked,
+    })),
+    lines: [...(section?.querySelectorAll("p") ?? [])].map((p) => p.textContent.trim()),
+  };
+})()`;
+
+interface ScopeState {
+  entry: string;
+  checkboxes: { name: string; checked: boolean }[];
+  lines: string[];
+}
+
 async function readExpanders(): Promise<Expanders | undefined> {
   return (
     await evaluatePanel<Expanders>(cdpPort(), LINEAGE.entry, READ_EXPANDERS)
@@ -111,6 +131,11 @@ async function readSettings(): Promise<SettingsState | undefined> {
   return (
     await evaluatePanel<SettingsState>(cdpPort(), LINEAGE.entry, READ_SETTINGS)
   )?.value;
+}
+
+async function readScope(): Promise<ScopeState | undefined> {
+  return (await evaluatePanel<ScopeState>(cdpPort(), LINEAGE.entry, READ_SCOPE))
+    ?.value;
 }
 
 async function nodeCount(): Promise<number> {
@@ -233,6 +258,25 @@ suite("Lineage interactions", function () {
     for (const name of RELATIONSHIP_CHECKBOXES) {
       await toggleTwice(name);
     }
+    await pressKeyInWebview(LINEAGE, "Escape");
+    await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });
+
+    // The Scope popover lists a checkbox per node type and per tag the graph holds, and the count the filters take out.
+    await clickInWebview(LINEAGE, { role: "button", name: "Scope" });
+    await expectWebviewDom(LINEAGE, { role: "dialog" });
+    await expectWebviewDom(LINEAGE, { role: "button", name: "Show all" });
+    const scope = await readScope();
+    assert.ok(
+      scope && scope.checkboxes.length > 0,
+      `the Scope popover lists no node type or tag: ${JSON.stringify(scope)}`,
+    );
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-scope-open",
+      expect:
+        "Whole project view. Scope popover open under its toolbar button, with a checkbox for each node type and tag " +
+        "the graph holds, a line counting the cards the filters take out, and a Show all button.",
+      measured: { popover: "scope", ...scope },
+    });
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });
 

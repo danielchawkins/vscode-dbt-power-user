@@ -106,11 +106,14 @@ const table = (
   ...(url ? { url } : {}),
 });
 
-/** `a` (a source) feeds `b`, the start table, which feeds `c`. */
+/**
+ * `a` (a source) feeds `b`, the start table, which feeds `c`. `c` is tagged `nightly` and `finance`, so a Scope filter
+ * that switches off one of them keeps it and one that switches off both removes it; `a` and `b` have no tags.
+ */
 const TABLES = {
   a: table("a", "source", 0, 1, "models/schema.yml"),
   b: table("b", "model", 1, 1, "models/b.sql"),
-  c: table("c", "model", 1, 0),
+  c: { ...table("c", "model", 1, 0), tags: ["nightly", "finance"] },
 };
 
 /** A model in `folder` of the root package, so the webview buckets it by that folder. */
@@ -195,6 +198,9 @@ let hostRefs: lineage.LineageRef[] = [];
 /** The hidden cards the host answers `getHiddenCards` with, as `openLineage` sets them. */
 let hostHidden: lineage.HiddenCard[] = [];
 
+/** The Scope filters the host answers `getLineageScope` with, as `openLineage` sets them: nothing switched off. */
+let hostScope: lineage.LineageScope = { offTypes: [], offTags: [] };
+
 /** Sets what the host answers `getLineageSettings` with, for a test that renders without `openLineage`. */
 export const setHostSettings = (settings: Partial<lineage.LineageSettings>) => {
   hostSettings = settings;
@@ -251,6 +257,8 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   getRelationships: () => ({ refs: hostRefs }),
   getHiddenCards: () => ({ cards: hostHidden }),
   persistHiddenCards: () => ({ ok: true }),
+  getLineageScope: () => ({ scope: hostScope }),
+  persistLineageScope: () => ({ ok: true }),
 };
 
 type Posted = {
@@ -310,6 +318,8 @@ export const openLineage = async (
     refs?: lineage.LineageRef[];
     /** The hidden cards the host answers `getHiddenCards` with: hidden in this workspace. */
     hidden?: lineage.HiddenCard[];
+    /** The Scope filters the host answers `getLineageScope` with: switched off in this workspace. */
+    scope?: lineage.LineageScope;
     renderFirst?: boolean;
     /**
      * How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. The whole
@@ -325,6 +335,7 @@ export const openLineage = async (
   hostSettings = { viewMode: "neighbourhood", ...options.settings };
   hostRefs = options.refs ?? [];
   hostHidden = options.hidden ?? [];
+  hostScope = options.scope ?? { offTypes: [], offTags: [] };
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
@@ -448,6 +459,12 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Reset",
   "button:Restore a",
   "button:Restore all",
+  "button:Scope",
+  "checkbox:source",
+  "checkbox:model",
+  "checkbox:nightly",
+  "checkbox:finance",
+  "button:Show all",
   "button:Help",
   "link:Help/Documentation",
   "button:Help/Close",

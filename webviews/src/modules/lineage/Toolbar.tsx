@@ -1,31 +1,15 @@
 import { lineage } from "@fusion-power-user/webview-contract";
 import { PopoverWithButton } from "@uicore";
 import { useEffect, useRef, useState } from "react";
+import { Check } from "./Check";
 import HelpButton from "./components/help/HelpButton";
 import styles from "./lineageGraph.module.css";
+import ScopeSettings from "./ScopeSettings";
+import type { ScopeControls } from "./useStoredFilters";
 import type { ResolvedSettings } from "./viewModel";
 import { REF_SOURCES } from "./viewModel";
 
 type Change = (settings: Partial<lineage.LineageSettings>) => void;
-
-const Check = ({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) => (
-  <label>
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    {label}
-  </label>
-);
 
 const VIEW_MODES: { value: lineage.ViewMode; label: string }[] = [
   { value: "whole", label: "Whole project" },
@@ -324,7 +308,7 @@ const HiddenCards = ({
   </section>
 );
 
-/** The toolbar: edge settings, the hidden cards, the connections choice, help and reset. */
+/** The toolbar: edge settings, the hidden cards, the Scope filters, the connections choice, help and reset. */
 const Toolbar = ({
   settings,
   change,
@@ -332,6 +316,7 @@ const Toolbar = ({
   hiddenCards,
   restore,
   restoreAll,
+  scope,
 }: {
   settings: ResolvedSettings;
   change: Change;
@@ -339,6 +324,7 @@ const Toolbar = ({
   hiddenCards: { id: string; name: string }[];
   restore: (table: string) => void;
   restoreAll: () => void;
+  scope: ScopeControls;
 }): React.JSX.Element => (
   <div className={styles.toolbar}>
     <PopoverWithButton
@@ -359,6 +345,23 @@ const Toolbar = ({
           />
         </EdgeSettings>
       )}
+    </PopoverWithButton>
+    <PopoverWithButton
+      width={260}
+      button={
+        <button
+          type="button"
+          aria-pressed={
+            scope.scope.offTypes.length + scope.scope.offTags.length > 0
+          }
+          title="Scope"
+        >
+          <span className="codicon codicon-filter" />
+          <span className={styles.buttonLabel}>Scope</span>
+        </button>
+      }
+    >
+      {() => <ScopeSettings scope={scope} />}
     </PopoverWithButton>
     <PopoverWithButton
       width={260}

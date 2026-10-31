@@ -60,6 +60,8 @@ export interface LineageTable {
   rootPackage?: boolean | undefined;
   /** The node's layer (staging, intermediate, marts…), from a tag, its folder or its name prefix. */
   layer?: string | undefined;
+  /** The node's dbt tags, which the Scope filter keeps or removes by; absent when it has none. */
+  tags?: string[] | undefined;
   /** True when the node sets `meta.lineage.hidden: true`: its table and column edges are not drawn. */
   hidden?: boolean | undefined;
   /** The node's configured `schema`; a card shows it in place of a schema that ends with `_<customSchema>`. */
@@ -280,7 +282,10 @@ export type PanelMessage =
   | Request<"persistLineageSettings", PersistedLineageSettings>
   /** The unique IDs of the cards the user hid in this workspace, for every start model. */
   | OptionalRequest<"getHiddenCards">
-  | Request<"persistHiddenCards", { cards: HiddenCard[] }>;
+  | Request<"persistHiddenCards", { cards: HiddenCard[] }>
+  /** The node types and tags the workspace has switched off in the Scope control, for every start model. */
+  | OptionalRequest<"getLineageScope">
+  | Request<"persistLineageScope", { scope: LineageScope }>;
 
 /**
  * A card the user hid: its unique ID, and the title the panel showed it by when it was hidden (`label`, absent when none
@@ -289,6 +294,15 @@ export type PanelMessage =
 export interface HiddenCard {
   id: string;
   label?: string | undefined;
+}
+
+/**
+ * What the Scope control keeps out of the panel. A card is removed when its node type is off, or when it has tags and
+ * every one of them is off; untagged cards follow their type only. The workspace keeps this for every start model.
+ */
+export interface LineageScope {
+  offTypes: string[];
+  offTags: string[];
 }
 
 /**
@@ -308,6 +322,8 @@ export interface ResponseBodies {
   persistLineageSettings: { ok: true };
   getHiddenCards: { cards: HiddenCard[] };
   persistHiddenCards: { ok: true };
+  getLineageScope: { scope: LineageScope };
+  persistLineageScope: { ok: true };
   getProjectGraph: { tables: LineageTable[]; edges: [string, string][] };
 }
 
@@ -340,6 +356,11 @@ const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
 const isHiddenCard = shape<HiddenCard>({
   id: isString,
   label: optional(isString),
+});
+
+const isLineageScope = shape<LineageScope>({
+  offTypes: arrayOf(isString),
+  offTags: arrayOf(isString),
 });
 
 const panelFields: CommandFields<PanelMessage> = {
@@ -385,6 +406,10 @@ const panelFields: CommandFields<PanelMessage> = {
   getHiddenCards: optionalRequest({}),
   persistHiddenCards: request<{ cards: HiddenCard[] }>({
     cards: arrayOf(isHiddenCard),
+  }),
+  getLineageScope: optionalRequest({}),
+  persistLineageScope: request<{ scope: LineageScope }>({
+    scope: isLineageScope,
   }),
 };
 
