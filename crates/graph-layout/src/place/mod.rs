@@ -10,6 +10,14 @@
 #[cfg(test)]
 mod alignment;
 #[cfg(test)]
+mod box_gaps;
+#[cfg(test)]
+mod box_order;
+#[cfg(test)]
+mod box_rects;
+#[cfg(test)]
+mod boxes;
+#[cfg(test)]
 mod brandes_koepf;
 #[cfg(test)]
 mod compaction;
