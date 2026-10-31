@@ -221,6 +221,25 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 Measured once on Node v24.18.1 (the repo pin), from the TypeScript sources through the parity resolve hook, one run each. Finance: the dump at `finance_general/target/manifest.json` (1,128 nodes, 1,297 edges), graph built as `/tmp/bench/full-graph.mjs` builds it. Synthetic: `syntheticDag(3000, seededRandom(1))` with 5,902 edges. Both use the options of that script (`rows`, soft partitions, spacing 28/36/6/28). Each cell: time, crossings, bends, edge length, bounds (width × height). Finance `fast`: 511 ms, 42,176, 3,458, 192,660,594, 358,754 × 5,731. Finance `balanced`: 3,833 ms, 35,332, 3,774, 174,709,525, 335,574 × 6,847. Synthetic `fast`: 6,436 ms, 954,655, 13,818, 95,923,285, 95,323 × 10,998. Synthetic `balanced`: 15,415 ms, 1,061,864, 32,198, 86,943,405, 114,120 × 36,564. Every TypeScript run has zero overlaps and zero opaque breaches.
 
+**Rust measurement.** Recorded, not a gate, and nothing here is compared with TypeScript case by case. Each graph is laid out with the baseline's options (rows, soft partitions, the `table` kind ranks, spacing 28/36/6/28, direction down), once per effort and target, by `layout_workload_is_measured` (`crates/graph-layout/src/engine/layout/bench.rs`), a release test that is skipped unless `GRAPH_LAYOUT_BENCH_GRAPH` names a flattened graph. `scripts/bench/flatten-graph.mjs` flattens the finance manifest and writes the seeded 3,000-node DAG, and `scripts/bench/layout-timings.mjs` runs both targets: time per pass is the slope between two repeat counts of whole test processes, each the fastest of three runs. Machine: Apple M5 Pro (arm64, macOS), shared with other load. The finance manifest had 1,129 nodes and 1,305 edges when measured, not the 1,128 and 1,297 of the TypeScript run, so the finance rows are not the same input. The synthetic DAG matches the baseline's 3,000 nodes and 5,902 edges. Native and WASM give the same metrics bit for bit in every cell. Times vary by up to about 2× between runs of this script on this machine (finance `fast` native read 12, 41 and 64 ms per pass in three runs), so read them as orders of magnitude.
+
+| Graph           | Effort   | Runtime     | ms per pass | Crossings |  Bends | Edge length |   Bounds (w × h) |
+| --------------- | -------- | ----------- | ----------: | --------: | -----: | ----------: | ---------------: |
+| finance         | fast     | TypeScript  |         511 |    42,176 |  3,458 | 192,660,594 |  358,754 × 5,731 |
+| finance         | fast     | Rust native |          64 |   309,563 |  3,518 | 201,280,707 |  374,652 × 9,511 |
+| finance         | fast     | Rust WASM   |          82 |   309,563 |  3,518 | 201,280,707 |  374,652 × 9,511 |
+| finance         | balanced | TypeScript  |       3,833 |    35,332 |  3,774 | 174,709,525 |  335,574 × 6,847 |
+| finance         | balanced | Rust native |       1,255 |   345,557 |  3,864 | 181,523,633 |  336,970 × 9,325 |
+| finance         | balanced | Rust WASM   |       1,487 |   345,557 |  3,864 | 181,523,633 |  336,970 × 9,325 |
+| synthetic 3,000 | fast     | TypeScript  |       6,436 |   954,655 | 13,818 |  95,923,285 |  95,323 × 10,998 |
+| synthetic 3,000 | fast     | Rust native |       1,084 |   989,337 | 13,818 |  93,429,847 |   95,323 × 9,840 |
+| synthetic 3,000 | fast     | Rust WASM   |       1,376 |   989,337 | 13,818 |  93,429,847 |   95,323 × 9,840 |
+| synthetic 3,000 | balanced | TypeScript  |      15,415 | 1,061,864 | 32,198 |  86,943,405 | 114,120 × 36,564 |
+| synthetic 3,000 | balanced | Rust native |       2,838 | 1,452,237 | 32,194 |  58,494,057 | 114,120 × 13,470 |
+| synthetic 3,000 | balanced | Rust WASM   |       3,373 | 1,452,237 | 32,194 |  58,494,057 | 114,120 × 13,470 |
+
+Every Rust cell has zero overlaps, zero opaque breaches, and no flagged edge. The TypeScript times are one in-process run each; the Rust times are slopes of whole processes, so they are not the same measurement.
+
 **Check.** Every edge routed or flagged; no edge crosses a foreign opaque box (roadmap Phase B oracle); output deterministic; native and WASM byte-identical; S2 thread sweep shows output equal across 1, 2, 4 and 8 threads. The Rust `metrics` and time are recorded next to the baseline; they are not compared case by case, and there is no TypeScript fixture.
 
 Phase 6 is the point at which the Rust core is a complete replacement for the TypeScript engine. It is not yet shipped or made the default.

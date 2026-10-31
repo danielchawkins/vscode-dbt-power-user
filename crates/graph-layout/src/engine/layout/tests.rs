@@ -66,7 +66,7 @@ fn node_rect(nodes: &NodeLayouts, i: usize) -> Rect {
 /// along the ranks and ends at its target's, or it is flagged with no points. An edge of an unrouted kind has no entry.
 /// No drawn edge breaches an opaque box. Every number is finite, the same input gives the same frame, and the bounds
 /// hold every node.
-fn assert_layout_gate(graph: &Graph, options: &Options) {
+pub(super) fn assert_layout_gate(graph: &Graph, options: &Options) {
     let laid_out = layout(graph, options).expect("a valid graph lays out");
     assert_edges_gate(graph, options, &laid_out);
     assert_eq!(

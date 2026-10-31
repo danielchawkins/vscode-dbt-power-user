@@ -3,6 +3,8 @@
 //! phase or changes its output: the result is a pure function of the graph and the options.
 
 #[cfg(test)]
+mod bench;
+#[cfg(test)]
 mod tests;
 
 use std::collections::{BTreeMap, BTreeSet};
