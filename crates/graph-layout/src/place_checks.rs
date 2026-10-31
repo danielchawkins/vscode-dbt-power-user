@@ -620,6 +620,36 @@ fn output_line(case: &Case) -> String {
     )
 }
 
+/// The timed placement workload: one finance or synthetic case, written by `scripts/bench/place-timings.mjs` from the
+/// TypeScript run. The test checks the first placement's points against TypeScript's bit for bit, then places the case
+/// `GRAPH_LAYOUT_PLACE_REPEATS` more times. The timed work is `solve` (the problem and the placement), as in TypeScript.
+#[test]
+fn place_timing_workload_runs() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_PLACE_TIMING") else {
+        return;
+    };
+    let repeats: u32 = std::env::var("GRAPH_LAYOUT_PLACE_REPEATS")
+        .expect("GRAPH_LAYOUT_PLACE_REPEATS is set with the workload")
+        .parse()
+        .expect("GRAPH_LAYOUT_PLACE_REPEATS is a count");
+    let text = std::fs::read_to_string(&path).expect("the timing workload is readable");
+    let cases = parse_cases(&text);
+    assert_eq!(cases.len(), 1, "a timing workload holds one case");
+    let case = &cases[0];
+    let (_, first) = solve(case);
+    let same = first.points.len() == case.expect.points.len()
+        && first
+            .points
+            .iter()
+            .zip(&case.expect.points)
+            .all(|(p, &(x, y))| p.x.to_bits() == x.to_bits() && p.y.to_bits() == y.to_bits());
+    assert!(same, "{}: the placement differs from TypeScript", case.name);
+    println!("place-timing: points match TypeScript");
+    for _ in 0..repeats {
+        std::hint::black_box(solve(case));
+    }
+}
+
 /// The placement outputs: each case of `place.txt` as `output_line` writes it. The test runs natively and under WASI and
 /// writes the output when `GRAPH_LAYOUT_PLACE_OUT` names a file; `just place-parity` compares the two files byte for byte.
 /// When `GRAPH_LAYOUT_PLACE_FINANCE` and `GRAPH_LAYOUT_PLACE_FINANCE_OUT` both name files, the finance cases are written
