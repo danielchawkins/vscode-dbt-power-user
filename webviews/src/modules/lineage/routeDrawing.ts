@@ -148,7 +148,7 @@ export function drawLayout(
   const roles = new Map(request.edges.map((edge) => [edge.id, edge.role]));
   const edges = Array.from(response.edges, ([id, geometry]) => ({
     id,
-    table: roles.get(id) === "table" || roles.get(id) === "group",
+    table: ["table", "group", "soft"].includes(roles.get(id) ?? ""),
     points: geometry.points,
     startsAt: geometry.startsAt,
   }));

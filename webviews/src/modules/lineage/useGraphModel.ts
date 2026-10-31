@@ -24,13 +24,14 @@ import {
 } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import { useBusyControls, useGraphScope } from "./useBusyControls";
+import { useDetailsDrawer } from "./useDetailsDrawer";
 import type { ExpansionOptions } from "./useLineageGraph";
 import { useLineageGraph } from "./useLineageGraph";
 import {
   hiddenCardsOf,
   type ScopeControls,
   useHiddenCards,
-  useScopeControls,
   useStoredScope,
 } from "./useStoredFilters";
 import type { ResolvedSettings } from "./viewModel";
@@ -170,6 +171,7 @@ const flowOf = ({
     connections: settings.connections,
     refs: visibleRefs(refs, settings, drawn),
     engine: settings.engine,
+    softened: graph.scope.softened,
   };
   const flow = toFlow(
     layout,
@@ -264,11 +266,13 @@ const useEmphasizedFlow = ({
   settings,
   built,
   hovered,
+  dimmed,
 }: {
   graph: GraphState;
   settings: ResolvedSettings;
   built: ReturnType<typeof useBuiltFlow>;
   hovered: string | undefined;
+  dimmed: readonly string[] | undefined;
 }) => {
   const degrees = useMemo(() => connectionCounts(knownPairs(graph)), [graph]);
   const focus = hovered ?? graph.selectedTable;
@@ -281,6 +285,7 @@ const useEmphasizedFlow = ({
         dimOffPath,
         hubDeemphasis,
         maxNeighbours,
+        dimmed,
       }),
     [
       built.pairs,
@@ -290,6 +295,7 @@ const useEmphasizedFlow = ({
       dimOffPath,
       hubDeemphasis,
       maxNeighbours,
+      dimmed,
     ],
   );
   return useMemo(() => emphasize(built.flow, view), [built.flow, view]);
@@ -371,17 +377,11 @@ const useSettingsRefs = (
 export const useGraphModel = (
   drawerRef: RefObject<DrawerRef | null>,
 ): GraphModel => {
-  const [detailsTable, setDetailsTable] = useState<string>();
   const { settings, loaded, change } = useSettings();
   const hiddenIds = useHiddenCards();
   const storedScope = useStoredScope();
-  const openDetails = useCallback(
-    (table: string) => {
-      setDetailsTable(table);
-      drawerRef.current?.open();
-    },
-    [drawerRef],
-  );
+  const graphScope = useGraphScope(storedScope.scope);
+  const { detailsTable, openDetails } = useDetailsDrawer(drawerRef);
   const { defaultExpansion, expansionOptions, raiseBudget } = useSettingsRefs(
     settings,
     change,
@@ -402,13 +402,18 @@ export const useGraphModel = (
     // The first graph waits for the stored Scope too, so it is drawn with the filters already applied.
     ready: loaded && hiddenIds !== undefined && storedScope.scope !== undefined,
     hidden: hiddenIds,
-    scope: storedScope.scope,
+    scope: graphScope,
   });
   const hiddenCards = useMemo(
     () => hiddenCardsOf(graph.hiddenCards),
     [graph.hiddenCards],
   );
-  const scope = useScopeControls(graph, storedScope.scope, storedScope.change);
+  const scope = useBusyControls({
+    graph,
+    threshold: settings.maxNeighbours,
+    stored: storedScope,
+    hide: actions.hide,
+  });
   const notice = rendered?.missingLineageMessage;
   const refs = useRefs(settings, drawnKey);
   const { hovered, hover } = useHoveredCard(settings);
@@ -423,6 +428,7 @@ export const useGraphModel = (
     settings,
     built,
     hovered,
+    dimmed: storedScope.scope?.dimmed,
   });
   const details = detailsTable ? graph.known[detailsTable] : undefined;
   const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);

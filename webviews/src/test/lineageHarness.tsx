@@ -110,7 +110,7 @@ const table = (
  * `a` (a source) feeds `b`, the start table, which feeds `c`. `c` is tagged `nightly` and `finance`, so a Scope filter
  * that switches off one of them keeps it and one that switches off both removes it; `a` and `b` have no tags.
  */
-const TABLES = {
+export const TABLES = {
   a: table("a", "source", 0, 1, "models/schema.yml"),
   b: table("b", "model", 1, 1, "models/b.sql"),
   c: { ...table("c", "model", 1, 0), tags: ["nightly", "finance"] },
@@ -198,8 +198,14 @@ let hostRefs: lineage.LineageRef[] = [];
 /** The hidden cards the host answers `getHiddenCards` with, as `openLineage` sets them. */
 let hostHidden: lineage.HiddenCard[] = [];
 
-/** The Scope filters the host answers `getLineageScope` with, as `openLineage` sets them: nothing switched off. */
-let hostScope: lineage.LineageScope = { offTypes: [], offTags: [] };
+/** The Scope settings the host answers `getLineageScope` with, as `openLineage` sets them: nothing switched off or set. */
+const NO_SCOPE: lineage.LineageScope = {
+  offTypes: [],
+  offTags: [],
+  softened: [],
+  dimmed: [],
+};
+let hostScope: lineage.LineageScope = NO_SCOPE;
 
 /** Sets what the host answers `getLineageSettings` with, for a test that renders without `openLineage`. */
 export const setHostSettings = (settings: Partial<lineage.LineageSettings>) => {
@@ -318,8 +324,8 @@ export const openLineage = async (
     refs?: lineage.LineageRef[];
     /** The hidden cards the host answers `getHiddenCards` with: hidden in this workspace. */
     hidden?: lineage.HiddenCard[];
-    /** The Scope filters the host answers `getLineageScope` with: switched off in this workspace. */
-    scope?: lineage.LineageScope;
+    /** The Scope settings the host answers `getLineageScope` with: switched off, softened or dimmed in this workspace. */
+    scope?: Partial<lineage.LineageScope>;
     renderFirst?: boolean;
     /**
      * How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. The whole
@@ -335,7 +341,7 @@ export const openLineage = async (
   hostSettings = { viewMode: "neighbourhood", ...options.settings };
   hostRefs = options.refs ?? [];
   hostHidden = options.hidden ?? [];
-  hostScope = options.scope ?? { offTypes: [], offTags: [] };
+  hostScope = { ...NO_SCOPE, ...options.scope };
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
@@ -465,6 +471,9 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "checkbox:nightly",
   "checkbox:finance",
   "button:Show all",
+  "button:Hide b",
+  "button:Soften b",
+  "button:Dim b",
   "button:Help",
   "link:Help/Documentation",
   "button:Help/Close",

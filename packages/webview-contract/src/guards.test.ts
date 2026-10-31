@@ -397,7 +397,14 @@ const lineagePanel: Fixture[] = [
   {
     message: {
       command: "persistLineageScope",
-      ...params({ scope: { offTypes: ["source"], offTags: ["nightly"] } }),
+      ...params({
+        scope: {
+          offTypes: ["source"],
+          offTags: ["nightly"],
+          softened: [],
+          dimmed: [],
+        },
+      }),
     },
     required: ["args.params.scope"],
   },

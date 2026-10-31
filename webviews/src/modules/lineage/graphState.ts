@@ -23,8 +23,14 @@ export type TableColumn = [table: string, column: string];
  * The lineage graph the panel draws. `known`, `neighbours` and `columns` cache host answers; the drawn graph is the
  * start table plus each entry of `expansions`, in order, whose table is drawn.
  */
-/** The Scope filters the projection reads: the node types and the tags switched off. */
-export type GraphScope = Pick<lineage.LineageScope, "offTypes" | "offTags">;
+/**
+ * The Scope settings the projection and the layout read: the node types and the tags switched off, and the cards whose
+ * edges are soft. The dimmed cards are not here: they restyle the built flow, so they never rebuild the graph.
+ */
+export type GraphScope = Pick<
+  lineage.LineageScope,
+  "offTypes" | "offTags" | "softened"
+>;
 
 export interface GraphState {
   start?: string | undefined;
@@ -45,7 +51,8 @@ export interface GraphState {
   hiddenCards: lineage.HiddenCard[];
   /**
    * The node types and tags the Scope control switched off, whatever the start model. A card they remove is not drawn,
-   * and neither is each card drawn only through it; the start card is never removed.
+   * and neither is each card drawn only through it; the start card is never removed. A softened card stays drawn, and
+   * its dependency edges are soft in the layout.
    */
   scope: GraphScope;
   /** Tooltip lines per table from the last trace. */

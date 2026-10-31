@@ -1,8 +1,12 @@
+import BusyCardList from "./BusyCardList";
 import { Check } from "./Check";
 import styles from "./lineageGraph.module.css";
 import type { ScopeControls } from "./useStoredFilters";
 
-/** The Scope filters: a checkbox per node type and per tag the graph holds, what they take out, and Show all. */
+/**
+ * The Scope settings: a checkbox per node type and per tag the graph holds, what they take out, and Show all; then the
+ * busy-node list.
+ */
 const ScopeSettings = ({
   scope,
 }: {
@@ -40,6 +44,7 @@ const ScopeSettings = ({
       <button type="button" disabled={!scope.ready} onClick={scope.showAll}>
         Show all
       </button>
+      <BusyCardList busy={scope.busy} />
     </section>
   );
 };

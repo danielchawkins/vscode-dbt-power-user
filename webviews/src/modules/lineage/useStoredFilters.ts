@@ -1,7 +1,8 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { type GraphScope, type GraphState, visibleOf } from "./graph";
+import type { BusyControls } from "./busyCards";
+import { type GraphState, visibleOf } from "./graph";
 import {
   fetchHiddenCards,
   fetchLineageScope,
@@ -29,25 +30,30 @@ export const hiddenCardsOf = (
 ): { id: string; name: string }[] =>
   cards.map((card) => ({ id: card.id, name: card.label ?? card.id }));
 
-/** No Scope filter: every node type and tag is on. */
-const ALL_ON: GraphScope = { offTypes: [], offTags: [] };
+/** No Scope filter, and no card softened or dimmed. */
+const ALL_ON: lineage.LineageScope = {
+  offTypes: [],
+  offTags: [],
+  softened: [],
+  dimmed: [],
+};
 
 /**
- * The Scope filters the host kept for the workspace, with `undefined` until they arrive. A failed read filters nothing.
+ * The Scope settings the host kept for the workspace, with `undefined` until they arrive. A failed read filters nothing.
  * A change is applied at once and persisted, as a hidden card is; it is not a rebuild, so nothing is fetched again.
  */
 export const useStoredScope = (): {
-  scope: GraphScope | undefined;
-  change: (scope: GraphScope) => void;
+  scope: lineage.LineageScope | undefined;
+  change: (scope: lineage.LineageScope) => void;
 } => {
-  const [stored, setStored] = useState<GraphScope>();
+  const [stored, setStored] = useState<lineage.LineageScope>();
   useEffect(() => {
     fetchLineageScope().then(setStored, (error) => {
       panelLogger.error("lineage scope", error);
       setStored(ALL_ON);
     });
   }, []);
-  const change = useCallback((scope: GraphScope) => {
+  const change = useCallback((scope: lineage.LineageScope) => {
     setStored(scope);
     persistLineageScope(scope);
   }, []);
@@ -58,25 +64,27 @@ export const useStoredScope = (): {
 export interface ScopeControls {
   /** False until the stored filters arrive; the graph is held until then, and the controls are disabled. */
   ready: boolean;
-  /** The node types and tags switched off. */
-  scope: GraphScope;
+  /** The Scope settings: the node types and tags switched off, and the cards softened or dimmed. */
+  scope: lineage.LineageScope;
   /** The node types the graph holds, each once and sorted. */
   types: string[];
   /** The tags the graph's cards carry, each once and sorted. */
   tags: string[];
   /** The cards the filters take out of the drawn graph. */
   filteredOut: number;
+  /** The busy-node list: the cards with more connections than the threshold, and their actions. */
+  busy: BusyControls;
   setType: (type: string, on: boolean) => void;
   setTag: (tag: string, on: boolean) => void;
-  /** Switches every type and tag back on. */
+  /** Switches every type and tag back on, and leaves the busy cards as they are. */
   showAll: () => void;
 }
 
 export const useScopeControls = (
   graph: GraphState,
-  stored: GraphScope | undefined,
-  change: (scope: GraphScope) => void,
-): ScopeControls => {
+  stored: lineage.LineageScope | undefined,
+  change: (scope: lineage.LineageScope) => void,
+): Omit<ScopeControls, "busy"> => {
   const { types, tags } = useMemo(
     () => scopeChoices(Object.values(graph.known)),
     [graph.known],
@@ -98,9 +106,10 @@ export const useScopeControls = (
     },
     [stored, change],
   );
+  // Show all switches the types and tags on; the softened and dimmed cards keep their own undo in the busy-node list.
   const showAll = useCallback(() => {
     if (stored) {
-      change(ALL_ON);
+      change({ ...stored, offTypes: [], offTags: [] });
     }
   }, [stored, change]);
   return {

@@ -174,3 +174,17 @@ describe("a hint edge", () => {
     expect(withHint.edges.has("a>b")).toBe(false);
   });
 });
+
+describe("graphLayoutEngine soft edges", () => {
+  it("accepts a soft edge and routes it", () => {
+    const request: LayoutRequest = {
+      ...REQUEST,
+      edges: [
+        ...REQUEST.edges,
+        { id: "soft:a>b", from: "a", to: "b", role: "soft" },
+      ],
+    };
+    const response = graphLayoutEngine("balanced").layout(request);
+    expect(response.edges.has("soft:a>b")).toBe(true);
+  });
+});

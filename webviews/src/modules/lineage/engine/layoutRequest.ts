@@ -32,21 +32,30 @@ export function layoutRequest(
   const known = new Set(cards.map((card) => card.id));
   const both = (parent: string, child: string) =>
     known.has(parent) && known.has(child);
+  const softened = new Set(input.softened ?? []);
+  // A dependency with a softened end is drawn as a soft edge: it pulls at a low weight and ranks nothing.
+  const soft = (parent: string, child: string) =>
+    softened.has(parent) || softened.has(child);
   const rowOf = (table: string, column: [string, string]) =>
     (listed(table) ?? []).find((c) => sameColumnName(c, column[1]))?.name;
   const tableEdges = drawsTableEdges(input);
+  const dependencyRole = (
+    parent: string,
+    child: string,
+    role: "table" | "group",
+  ): "table" | "group" | "soft" => (soft(parent, child) ? "soft" : role);
   const tableSpecs: LayoutEdgeSpec[] = [
     ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
       id: tableEdgeId(parent, child),
       from: parent,
       to: child,
-      role: "table" as const,
+      role: dependencyRole(parent, child, "table"),
     })),
     ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
       id: groupEdgeId(parent, child),
       from: parent,
       to: child,
-      role: "group" as const,
+      role: dependencyRole(parent, child, "group"),
     })),
   ].filter((edge) => both(edge.from, edge.to));
   const columnSpecs: LayoutEdgeSpec[] = data.columnEdges
@@ -71,8 +80,8 @@ export function layoutRequest(
     focus: data.start ?? "",
     cards,
     edges: [...tableSpecs, ...columnSpecs, ...relationshipSpecs],
-    rankPairs: rankingEdges(input).filter(([parent, child]) =>
-      both(parent, child),
+    rankPairs: rankingEdges(input).filter(
+      ([parent, child]) => both(parent, child) && !soft(parent, child),
     ),
     traceOn: data.columnEdges.length > 0,
   };
@@ -143,6 +152,8 @@ export interface LayoutInput {
   connections?: lineage.Connections | undefined;
   /** The relationships to draw, already filtered for the connections and the sources. */
   refs: readonly lineage.LineageRef[];
+  /** The cards whose dependency edges are soft: drawn, pulling at a low weight, and ranking nothing. */
+  softened?: readonly string[] | undefined;
   /** The engine that places and routes the cards; absent means `balanced`. */
   engine?: lineage.LineageEngine | undefined;
 }
