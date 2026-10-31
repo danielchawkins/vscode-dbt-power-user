@@ -33,6 +33,8 @@ mod order;
 #[cfg(test)]
 mod order_checks;
 #[cfg(test)]
+mod place_checks;
+#[cfg(test)]
 mod rand;
 mod route;
 #[cfg(test)]

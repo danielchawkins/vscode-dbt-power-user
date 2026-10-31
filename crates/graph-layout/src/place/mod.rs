@@ -27,6 +27,8 @@ mod gaps;
 #[cfg(test)]
 mod hints;
 #[cfg(test)]
+mod links;
+#[cfg(test)]
 mod offsets;
 #[cfg(test)]
 mod problem;
@@ -44,11 +46,18 @@ use crate::solve::SolveError;
 #[cfg(test)]
 use box_rects::{BoxFrame, BoxRect, box_rects};
 #[cfg(test)]
-use boxes::{BoxInput, ClusterSpec, initial_edges, plan_boxes, tighten_boxes};
+pub(crate) use boxes::ClusterSpec;
+#[cfg(test)]
+use boxes::{BoxInput, initial_edges, plan_boxes, tighten_boxes};
 #[cfg(test)]
 use brandes_koepf::brandes_koepf;
 #[cfg(test)]
-use hints::{Hint, HintedNode, hint_shift};
+pub(crate) use hints::Hint;
+#[cfg(test)]
+use hints::{HintedNode, hint_shift};
+// The types and entry of `links` that the outcome gate in `place_checks` states its problem with.
+#[cfg(test)]
+pub(crate) use links::{Layered, LayeredNode, LinkOptions, Segment, problem_of};
 #[cfg(test)]
 use problem::{Extension, Problem};
 #[cfg(test)]
@@ -235,12 +244,15 @@ fn in_rank_shift(input: &PlaceInput<'_>, x: &[f64], anchor: Option<usize>) -> f6
     if let Some(a) = anchor {
         return -x[a];
     }
-    let nodes: Vec<HintedNode> = x
+    // The layered nodes come first in `x`; the cluster boxes' variables follow them, and the hint fit reads only nodes.
+    let nodes: Vec<HintedNode> = input
+        .hints
         .iter()
-        .enumerate()
-        .map(|(i, &along)| HintedNode {
-            hint: input.hints[i],
-            half: input.in_rank_half[i],
+        .zip(input.in_rank_half)
+        .zip(x)
+        .map(|((&hint, &half), &along)| HintedNode {
+            hint,
+            half,
             x: along,
         })
         .collect();
