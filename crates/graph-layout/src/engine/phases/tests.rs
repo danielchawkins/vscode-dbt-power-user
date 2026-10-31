@@ -487,6 +487,37 @@ proptest! {
     }
 }
 
+/// A random case under `ranks: "levels"`, with opaque boxes: the cases of `opaque_case`, with the levels across the ranks.
+fn levels_case() -> impl Strategy<Value = (Graph, Options)> {
+    opaque_case().prop_map(|(graph, mut options)| {
+        options.ranks = Some(Ranks::Levels);
+        (graph, options)
+    })
+}
+
+#[test]
+fn levels_routes_keep_to_the_gate_and_draw_edges() {
+    // A deterministic runner, so the cases, and the count of drawn edges, are the same on every run. Without the count the
+    // gate would hold vacuously for an all-flagged route.
+    let drawn = std::cell::Cell::new(0_usize);
+    let mut runner = proptest::test_runner::TestRunner::deterministic();
+    runner
+        .run(&levels_case(), |(graph, options)| {
+            let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+            assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
+            let routed = phases
+                .routing
+                .edges
+                .iter()
+                .filter(|edge| matches!(edge, EdgeRoute::Routed(_)))
+                .count();
+            drawn.set(drawn.get() + routed);
+            Ok(())
+        })
+        .expect("every levels route keeps to the gate");
+    assert!(drawn.get() > 0, "no levels edge was drawn");
+}
+
 /// A graph of `ids` nodes (10 by 10) joined by dependency edges between the given pairs of ids.
 fn graph_of(ids: &[&str], pairs: &[(&str, &str)]) -> Graph {
     let (n, m) = (ids.len(), pairs.len());

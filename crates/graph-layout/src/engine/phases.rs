@@ -49,7 +49,8 @@ pub struct Phases {
     /// reads through `place::boxes`.
     pub placement: Placement,
     /// The routing: the polyline of each edge, the re-stacked ranks and the cluster boxes that route reads, with what it
-    /// did. Under `ranks: "levels"` no polyline is drawn yet (step 2b), so every drawn edge is `RouteFailed`.
+    /// did. Under `ranks: "levels"` the levels route draws each run between its two ends, and an edge it cannot draw is
+    /// `RouteFailed`.
     pub routing: Routing,
 }
 

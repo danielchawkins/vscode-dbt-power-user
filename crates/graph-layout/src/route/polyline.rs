@@ -50,7 +50,7 @@ pub(super) fn polyline(
 
 /// Appends `p` to `out`, unless it repeats the last point. When `p` carries on in the direction the last two points
 /// went, the last point is replaced by `p`, so a straight run keeps only its ends. A reversal is kept as a bend.
-fn push(out: &mut Vec<Point>, p: Point) {
+pub(super) fn push(out: &mut Vec<Point>, p: Point) {
     let Some(&last) = out.last() else {
         out.push(p);
         return;

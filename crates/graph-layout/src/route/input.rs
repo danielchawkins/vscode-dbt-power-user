@@ -2,14 +2,17 @@
 //! the options, so that route needs no other module of the crate. Indices refer to the graph: a node index is its index
 //! in `Graph::nodes`, a cluster index its index in `Graph::clusters`, and a box index the index of the plan's box.
 
-/// One real node: its rank, its centre along the ranks, its half-extent across them, and the boxes that hold it (its own
-/// cluster and each ancestor, as box indices).
+/// One real node: its rank, its centre along and across the ranks, its half-extent across them, and the boxes that hold it
+/// (its own cluster and each ancestor, as box indices).
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct NodeInput {
     /// The rank the node sits on.
     pub(crate) rank: usize,
     /// The node's centre along the ranks (its in-rank coordinate).
     pub(crate) along: f64,
+    /// The node's centre across the ranks, as placement solved it. Only the levels route reads it: the rows route stacks
+    /// the ranks itself.
+    pub(crate) across: f64,
     /// Half the node's extent across the ranks.
     pub(crate) half: f64,
     /// The indices of the cluster boxes that hold the node.
@@ -38,16 +41,21 @@ pub(crate) struct ClusterInput {
     pub(crate) parent: Option<usize>,
     /// Whether the box is opaque: no foreign edge may enter it.
     pub(crate) opaque: bool,
+    /// The box's top and bottom edges across the ranks, as placement solved them under `ranks: "levels"`. `None` under the
+    /// rows, where the ranks are re-stacked and the box takes its extent from them.
+    pub(crate) across: Option<(f64, f64)>,
 }
 
-/// A stop of an edge's chain: a real end or a dummy, with its rank, the in-rank coordinate where the edge is at it, and
-/// its half-extent across the ranks (zero for a dummy).
+/// A stop of an edge's chain: a real end or a dummy, with its rank, the in-rank coordinate where the edge is at it, the
+/// across coordinate of its centre, and its half-extent across the ranks (zero for a dummy).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Stop {
     /// The rank of the stop.
     pub(crate) rank: usize,
     /// The in-rank coordinate of the edge at the stop.
     pub(crate) along: f64,
+    /// The across coordinate of the stop's centre, as placement solved it. Only the levels route reads it.
+    pub(crate) across: f64,
     /// Half the stop's extent across the ranks; zero for a dummy.
     pub(crate) half: f64,
 }
