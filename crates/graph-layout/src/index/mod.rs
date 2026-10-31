@@ -103,6 +103,7 @@ impl Indexed {
         self.component.len()
     }
 
+    #[cfg(test)]
     /// The number of edges, including those with an end that is not a node.
     pub(crate) fn edge_count(&self) -> usize {
         self.ends.len()
@@ -118,21 +119,25 @@ impl Indexed {
         self.ends[edge]
     }
 
+    #[cfg(test)]
     /// The edges leaving `node`, in input order.
     pub(crate) fn out_edges(&self, node: usize) -> &[u32] {
         &self.out_edges[self.out_start[node]..self.out_start[node + 1]]
     }
 
+    #[cfg(test)]
     /// The edges entering `node`, in input order.
     pub(crate) fn in_edges(&self, node: usize) -> &[u32] {
         &self.in_edges[self.in_start[node]..self.in_start[node + 1]]
     }
 
+    #[cfg(test)]
     /// The component of `node`, numbered from zero in the order of each component's first node.
     pub(crate) fn component(&self, node: usize) -> u32 {
         self.component[node]
     }
 
+    #[cfg(test)]
     /// The number of components.
     pub(crate) fn component_count(&self) -> u32 {
         self.components

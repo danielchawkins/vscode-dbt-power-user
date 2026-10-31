@@ -16,7 +16,10 @@ pub(crate) mod layered;
 mod network;
 mod tree;
 
-pub(crate) use layered::{LayeredGraph, LayeredNode, Segment};
+pub(crate) use layered::LayeredGraph;
+
+#[cfg(test)]
+pub(crate) use layered::{LayeredNode, Segment};
 
 #[cfg(test)]
 mod key_tests;
@@ -77,7 +80,7 @@ pub(crate) struct Ranks {
 
 /// Why ranking failed. The constraints of a validated graph never trigger these; they guard the search.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RankError {
+pub enum RankError {
     /// The ranking constraints contain a cycle.
     Cycle,
     /// The ranking network is not connected.

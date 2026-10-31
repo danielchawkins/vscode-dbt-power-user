@@ -1,8 +1,10 @@
 //! Public entry: the engine handle, its progress and generations (stub until the engine lands). `layered` builds the
-//! layered graph that ordering reads from the output of layering.
+//! layered graph that ordering reads from the output of layering, and `phases` runs the phases on a model graph.
 
-#[cfg(test)]
 pub(crate) mod layered;
+mod phases;
+
+pub use phases::{PhaseError, Phases, run_phases};
 
 use crate::model::{EdgeLayouts, FrameError, Layout, decode_graph, encode_layout};
 
