@@ -2,17 +2,19 @@
 //! assignment is valid, each layer is a permutation of its units, dummy chains are contiguous, and the same input gives
 //! the same output. The failing seeds of proptest are committed under `proptest-regressions/`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use proptest::prelude::*;
 
 use super::{PhaseError, Phases, run_phases, to_uint32, whole_rank};
 use crate::layering::LayeredGraph;
+use crate::metrics::{Drawing, DrawnPath, Opaque, measure};
 use crate::model::{
     Clusters, Direction, EdgeKindPolicy, Edges, Graph, Hints, Nodes, Options, Partitions, Ports,
     Ranks,
 };
 use crate::route::{EdgeRoute, Point, Rect, breaches, same_coordinate};
+use crate::testkit::crossings::brute_crossings;
 
 /// A node number as a float. Test sizes are far below 2^32.
 fn f(n: usize) -> f64 {
@@ -484,6 +486,125 @@ proptest! {
         let first = run_phases(&graph, &options).map(|phases| phases.routing);
         let second = run_phases(&graph, &options).map(|phases| phases.routing);
         prop_assert_eq!(first, second);
+    }
+}
+
+/// The drawing the route drew, as `metrics` measures it: each node's box about its centre, each drawn edge's polyline, and
+/// the cluster boxes as opaque boxes. An edge may enter the boxes its route leaves it free to, which are the boxes that
+/// are not opaque and the boxes holding one of its ends (the route's own rule, `watched_boxes`).
+fn drawing_of(graph: &Graph, phases: &Phases) -> Drawing {
+    let routing = &phases.routing;
+    let boxes: Vec<crate::model::Rect> = routing
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(node, centre)| {
+            let (width, height) = (graph.nodes.width[node], graph.nodes.height[node]);
+            crate::model::Rect {
+                x: centre.x - width / 2.0,
+                y: centre.y - height / 2.0,
+                width,
+                height,
+            }
+        })
+        .collect();
+    let opaque_boxes: Vec<crate::model::Rect> = routing
+        .clusters
+        .iter()
+        .map(|b| crate::model::Rect {
+            x: b.rect.x,
+            y: b.rect.y,
+            width: b.rect.width,
+            height: b.rect.height,
+        })
+        .collect();
+    let mut paths = Vec::new();
+    let mut allowed = Vec::new();
+    for (edge, drawn) in routing.edges.iter().enumerate() {
+        let EdgeRoute::Routed(points) = drawn else {
+            continue;
+        };
+        let source = index_of(&graph.nodes.id, &graph.edges.source[edge]);
+        let target = index_of(&graph.nodes.id, &graph.edges.target[edge]);
+        let may_enter = |cluster: usize| {
+            let opaque = graph.clusters.opaque.get(cluster).copied().flatten() == Some(true);
+            !opaque || holds(graph, source, cluster) || holds(graph, target, cluster)
+        };
+        paths.push(DrawnPath {
+            points: points
+                .iter()
+                .map(|p| crate::model::Point { x: p.x, y: p.y })
+                .collect(),
+            source,
+            target,
+            trunk: None,
+        });
+        allowed.push(
+            routing
+                .clusters
+                .iter()
+                .enumerate()
+                .filter(|(_, b)| may_enter(b.cluster))
+                .map(|(boxed, _)| boxed)
+                .collect::<BTreeSet<usize>>(),
+        );
+    }
+    Drawing {
+        boxes,
+        paths,
+        opaque: Some(Opaque {
+            boxes: opaque_boxes,
+            allowed,
+        }),
+    }
+}
+
+/// The measures of a routed drawing: no drawn edge breaches an opaque box, the crossings are the ones the brute force
+/// counts, every measure is finite, and the same drawing measures the same.
+fn assert_measures(graph: &Graph, phases: &Phases) {
+    let drawing = drawing_of(graph, phases);
+    let measured = measure(&drawing);
+    let paths: Vec<Vec<crate::model::Point>> =
+        drawing.paths.iter().map(|p| p.points.clone()).collect();
+    let trunks: Vec<Option<usize>> = drawing.paths.iter().map(|p| p.trunk).collect();
+    assert_eq!(
+        measured.opaque_breaches, 0.0,
+        "a drawn edge breaches an opaque box"
+    );
+    assert_eq!(
+        measured.crossings,
+        f(brute_crossings(&paths, &trunks)),
+        "the sweep and the brute force count the same crossings"
+    );
+    for value in [
+        measured.crossings,
+        measured.bends,
+        measured.edge_length,
+        measured.area,
+        measured.density,
+        measured.overlaps,
+        measured.opaque_breaches,
+    ] {
+        assert!(value.is_finite(), "a measure is not finite: {measured:?}");
+    }
+    assert_eq!(
+        measure(&drawing),
+        measured,
+        "the same drawing measures the same"
+    );
+}
+
+proptest! {
+    #[test]
+    fn measured_routes_keep_to_the_gate_and_count_crossings_by_brute_force((graph, options) in opaque_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        assert_measures(&graph, &phases);
+    }
+
+    #[test]
+    fn measured_levels_routes_keep_to_the_gate_and_count_crossings_by_brute_force((graph, options) in levels_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        assert_measures(&graph, &phases);
     }
 }
 
