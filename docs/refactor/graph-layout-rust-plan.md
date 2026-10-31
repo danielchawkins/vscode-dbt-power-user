@@ -4,7 +4,7 @@
 
 ## How to read the gates
 
-- **Outcomes, not TypeScript parity** (O-6, answered). The goal is fast, robust layout and routing. TypeScript is the baseline to beat, not a target to copy: where a better or more robust algorithm exists, use it, and do not reproduce TypeScript behaviour only because TypeScript has it. A phase passes when, on the fixtures in its check, every result is valid (no overlap, separations met, every edge routed or flagged), it is deterministic, and crossings, bends, edge length and bounds are equal to or better than TypeScript's within a recorded tolerance. Each phase commits a discrepancy report listing where and why the result differs from TypeScript. Bit-identical output to TypeScript is not a goal; native and WASM builds are still compared bit for bit.
+- **Rust is the baseline, not TypeScript** (O-6, answered). The goal is fast, robust layout and routing; Phases 2 to 5 showed the Rust engine beats TypeScript on time with equal or better results, so TypeScript is not a target. Phases 2 to 5 carry TypeScript comparison checks from when they were built; they stay until every phase is done and are removed in Phase 10. A phase not yet built uses TypeScript only for a one-time baseline measurement (crossings, bends, edge length, bounds, time), recorded in its section; its gate carries no TypeScript fixture, comparison, bit-matching or discrepancy report. A phase passes when every result is valid (no overlap, separations met, every edge routed or flagged), output is deterministic, and native and WASM builds agree bit for bit. After the baseline the Rust design may change freely.
 - **Oracles.** `packages/graph-layout/src/testing/exactCrossings.ts` and `exactSeparations.ts` are the exact references for ordering and placement. Property tests in the package, the golden fingerprints in `src/route/rowsGolden.test.ts`, and `just smoke-engines` are the end-to-end gates.
 - **Finance fixture.** The graph in `/Users/daniel/projects/finance-pipelines/conformance-staging/transformation/dbt/finance_general/target/manifest.json` (the counts come from the dump at the time it is taken: 1,122 nodes and 1,241 edges in the original measurements, 1,127 and 1,291 in the dump taken for Phase 4), measured by `/tmp/bench/full-graph.mjs`. Current TypeScript numbers on Node v20.20.2 (repo pins 24.18, so re-measure on 24.18 before a gate that compares speed): `fast` 651 ms (five runs, 617 to 703 ms); `balanced` 34,640 ms (one run); placement 34,532 ms of that, 93.4% of self time.
 - **Speed gates are targets, not facts.** Only the Phase 0 VPSC patch has a measurement (below). Every other speed number here is a hypothesis until a spike measures it.
@@ -211,13 +211,17 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 **Check.** No overlap and every separation met on fixtures, the finance graph and the `rowsGolden` inputs; bounds and total edge length within tolerance of TypeScript; differences in the discrepancy report. Scout 6's boundary is in place: the restacking entry `place::boxes` is public and route uses only that.
 
+**Done.** Phase 5 is done. On the 312 fixture cases (156 in `rows`, 156 in `levels`) and the 4 finance cases, every placement is valid (no overlap, separations met), deterministic, and bit-identical to TypeScript, so no bound or edge length is worse (`place_checks.rs`, `place-discrepancies.md`). Native and WASI outputs are byte-identical on all 312 cases (`crates::parity`, `crates::parity-plant`). Native is 2.3x to 7.6x faster than TypeScript and WASI 1.9x to 6.7x, on finance and the 3,000-node DAG at fast and balanced (S6 row). `place::place` and `place::boxes` are the public entries. Rank chains project by exact pool-adjacent-violators; VPSC solves only when cluster boxes add constraints.
+
 ## Phase 6: `route`, `metrics` and the engines
 
 **Scope.** `route/*`, `drawingSegments.ts`, `lateral.ts`, `metrics.ts`; `balanced` and `thorough` (restarts; the only native-side rayon use, deterministic merge in index order, S2). `classic` is removed before this phase (roadmap Phase A) and is not ported.
 
-**Check.** Every edge routed or flagged; no edge crosses a foreign opaque box (roadmap Phase B oracle); `metrics` within tolerance of TypeScript; `just smoke-engines` compares Rust against TypeScript for each engine; S2 thread sweep shows output equal across 1, 2, 4 and 8 threads.
+**Baseline.** Before the port, record TypeScript's `metrics` (crossings, bends, edge length, bounds) and time once, on the finance graph and the 3,000-node DAG, in this section. It is a measurement, not a gate.
 
-Phase 6 is the point at which the Rust core is a complete replacement for the TypeScript engine, equal or better on every gate metric. It is not yet shipped or made the default.
+**Check.** Every edge routed or flagged; no edge crosses a foreign opaque box (roadmap Phase B oracle); output deterministic; native and WASM byte-identical; S2 thread sweep shows output equal across 1, 2, 4 and 8 threads. The Rust `metrics` and time are recorded next to the baseline; they are not compared case by case, and there is no TypeScript fixture.
+
+Phase 6 is the point at which the Rust core is a complete replacement for the TypeScript engine. It is not yet shipped or made the default.
 
 ## Phase 7: the `engine` handle
 
@@ -270,9 +274,9 @@ Order inside Phase 9: 9b and 9c first (small, they serve the hint and cache work
 
 ## Phase 10: retire the TypeScript engine (owner decision O-4)
 
-Remove the TypeScript engine from the product and from `packages/graph-layout`'s runtime. Keep the golden fixtures and the oracle tests either as a dev-only package that never ships (recommended) or as fixtures alone. Remove the `graphLayout.engine` TypeScript fallback when the owner agrees.
+Remove the TypeScript engine from the product and from `packages/graph-layout`'s runtime, and remove the `graphLayout.engine` TypeScript fallback. Remove every TypeScript comparison from the Rust crates: the fixture printers in `scripts/parity/`, the TypeScript outputs under `crates/graph-layout/fixtures/parity/`, the `*-discrepancies.md` reports, the TypeScript assertions and oracle-agreement tests in the `*_checks.rs` files, the TypeScript legs of `scripts/bench/`, and the recipes that run them. Keep the checks that need no TypeScript: validity, determinism, the Rust exact oracles run on Rust output, and native against WASM.
 
-**Check.** `just smoke-engines` on Rust only; the golden fixtures pass against the Rust engine; the package is absent from the VSIX.
+**Check.** `just smoke-engines` on Rust only; no file under `crates/` or `scripts/` reads TypeScript layout output; the package is absent from the VSIX.
 
 ## Spike list
 
