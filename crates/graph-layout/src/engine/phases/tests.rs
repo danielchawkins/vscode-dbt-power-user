@@ -12,6 +12,7 @@ use crate::model::{
     Clusters, Direction, EdgeKindPolicy, Edges, Graph, Hints, Nodes, Options, Partitions, Ports,
     Ranks,
 };
+use crate::route::{EdgeRoute, Point, Rect, breaches, same_coordinate};
 
 /// A node number as a float. Test sizes are far below 2^32.
 fn f(n: usize) -> f64 {
@@ -389,6 +390,99 @@ proptest! {
     fn the_same_input_gives_the_same_placement((graph, options) in placed_case()) {
         let first = run_phases(&graph, &options).map(|phases| phases.placement);
         let second = run_phases(&graph, &options).map(|phases| phases.placement);
+        prop_assert_eq!(first, second);
+    }
+}
+
+/// A random placed graph whose two clusters are each opaque or not, by a coin each, so that the opaque gate has boxes to
+/// keep edges out of.
+fn opaque_case() -> impl Strategy<Value = (Graph, Options)> {
+    (placed_case(), prop::collection::vec(prop::bool::ANY, 2)).prop_map(
+        |((mut graph, options), opaque)| {
+            graph.clusters.opaque = opaque.into_iter().map(Some).collect();
+            (graph, options)
+        },
+    )
+}
+
+/// Whether `node` is in `cluster`, or in one of its descendants: the cluster is on the chain from the node's own cluster
+/// up through the parents.
+fn holds(graph: &Graph, node: usize, cluster: usize) -> bool {
+    let index_named = |id: &str| graph.clusters.id.iter().position(|c| c == id);
+    let mut current = graph.nodes.cluster[node].as_deref().and_then(index_named);
+    for _ in 0..graph.clusters.id.len() {
+        let Some(c) = current else {
+            return false;
+        };
+        if c == cluster {
+            return true;
+        }
+        current = graph.clusters.parent[c].as_deref().and_then(index_named);
+    }
+    false
+}
+
+/// The routing gate: every edge is flagged, or drawn as an orthogonal polyline that starts at its source's position along
+/// the ranks and ends at its target's. No drawn edge breaches an opaque box that holds neither of its ends, by the
+/// route's own check.
+fn assert_routing_gate(graph: &Graph, down: bool, phases: &Phases) {
+    let routing = &phases.routing;
+    assert_eq!(routing.edges.len(), graph.edges.id.len());
+    let boxes: Vec<Rect> = routing.clusters.iter().map(|b| b.rect).collect();
+    let along = |p: &Point| if down { p.x } else { p.y };
+    for (edge, drawn) in routing.edges.iter().enumerate() {
+        let source = index_of(&graph.nodes.id, &graph.edges.source[edge]);
+        let target = index_of(&graph.nodes.id, &graph.edges.target[edge]);
+        let points = match drawn {
+            EdgeRoute::Routed(points) => points,
+            EdgeRoute::RouteFailed => continue,
+            EdgeRoute::NotRouted => panic!("edge {edge}: no kind is unrouted in this strategy"),
+        };
+        assert_ne!(source, target, "edge {edge}: a self-loop is not drawn");
+        assert!(points.len() >= 2, "edge {edge} has two ends");
+        assert!(
+            points
+                .windows(2)
+                .all(|w| same_coordinate(w[0].x, w[1].x) || same_coordinate(w[0].y, w[1].y)),
+            "edge {edge} is orthogonal"
+        );
+        assert_eq!(
+            along(&points[0]),
+            along(&routing.nodes[source]),
+            "edge {edge} starts at its source"
+        );
+        assert_eq!(
+            along(&points[points.len() - 1]),
+            along(&routing.nodes[target]),
+            "edge {edge} ends at its target"
+        );
+        let watched: Vec<bool> = routing
+            .clusters
+            .iter()
+            .map(|b| {
+                graph.clusters.opaque.get(b.cluster).copied().flatten() == Some(true)
+                    && !holds(graph, source, b.cluster)
+                    && !holds(graph, target, b.cluster)
+            })
+            .collect();
+        assert!(
+            breaches(points, &boxes, &watched).is_empty(),
+            "edge {edge} breaches an opaque box"
+        );
+    }
+}
+
+proptest! {
+    #[test]
+    fn every_routed_edge_keeps_to_the_gate((graph, options) in opaque_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
+    }
+
+    #[test]
+    fn the_same_input_gives_the_same_routing((graph, options) in placed_case()) {
+        let first = run_phases(&graph, &options).map(|phases| phases.routing);
+        let second = run_phases(&graph, &options).map(|phases| phases.routing);
         prop_assert_eq!(first, second);
     }
 }
