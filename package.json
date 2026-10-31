@@ -1155,7 +1155,9 @@
     "@vscode/test-cli": {
       "mocha": "$mocha"
     },
-    "@azure/msal-node": "^7.1.1"
+    "@azure/msal-node": "^7.1.1",
+    "minimatch": "^11.0.3",
+    "glob": "^14.0.3"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {
