@@ -53,3 +53,42 @@ pub(crate) fn total_crossings(model: &OrderModel<'_>) -> f64 {
     (0..model.layers.len().saturating_sub(1))
         .fold(0.0, |total, rank| total + rank_crossings(model, rank))
 }
+
+/// The weighted crossings that the links of two nodes of one rank make when `left` sits left of `right`: their links at
+/// the rank above and at the rank below are both counted. Swapping two neighbours changes the total by the difference of
+/// the two orders' pair counts, so the transpose and sifting searches read their gains from here.
+fn pair_crossings(model: &OrderModel<'_>, left: usize, right: usize) -> f64 {
+    let segments = &model.graph.segments;
+    let mut total = 0.0;
+    for &si in &model.down[left] {
+        for &sj in &model.down[right] {
+            let a = segments[si];
+            let b = segments[sj];
+            if model.slot(a.bottom, a.bottom_offset) > model.slot(b.bottom, b.bottom_offset) {
+                total += a.weight * b.weight;
+            }
+        }
+    }
+    for &si in &model.up[left] {
+        for &sj in &model.up[right] {
+            let a = segments[si];
+            let b = segments[sj];
+            if model.slot(a.top, a.top_offset) > model.slot(b.top, b.top_offset) {
+                total += a.weight * b.weight;
+            }
+        }
+    }
+    total
+}
+
+/// The weighted crossings that two units make when `left` sits left of `right`: the sum over their member pairs, since
+/// every pair of segments is counted once whichever units they belong to.
+pub(crate) fn group_crossings(model: &OrderModel<'_>, left: &[usize], right: &[usize]) -> f64 {
+    let mut total = 0.0;
+    for &a in left {
+        for &b in right {
+            total += pair_crossings(model, a, b);
+        }
+    }
+    total
+}
