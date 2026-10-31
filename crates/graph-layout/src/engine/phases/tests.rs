@@ -7,8 +7,10 @@ use std::collections::BTreeMap;
 use proptest::prelude::*;
 
 use super::{PhaseError, Phases, run_phases, to_uint32, whole_rank};
+use crate::layering::LayeredGraph;
 use crate::model::{
     Clusters, Direction, EdgeKindPolicy, Edges, Graph, Hints, Nodes, Options, Partitions, Ports,
+    Ranks,
 };
 
 /// A node number as a float. Test sizes are far below 2^32.
@@ -234,6 +236,79 @@ fn assert_chains_are_contiguous(phases: &Phases) {
     }
 }
 
+/// The node and edge gaps of the default spacing, which the runs of these tests leave in force.
+const NODE_GAP: f64 = 12.0;
+const EDGE_GAP: f64 = 4.0;
+
+/// The slack the solver's separations are held to, in drawing units.
+const TOLERANCE: f64 = 1e-6;
+
+/// A random case that also takes either the rows or the levels across the ranks, and an anchor: a node of the graph, or
+/// none.
+fn placed_case() -> impl Strategy<Value = (Graph, Options)> {
+    (case(), prop::bool::ANY, prop::option::of(0_usize..8)).prop_map(
+        |((graph, mut options), levels, anchor)| {
+            options.ranks = Some(if levels { Ranks::Levels } else { Ranks::Rows });
+            options.anchor = anchor
+                .filter(|_| !graph.nodes.id.is_empty())
+                .map(|a| format!("n{}", a % graph.nodes.id.len()));
+            (graph, options)
+        },
+    )
+}
+
+/// Each layered node's position along the ranks, by layered index: its `x` when the ranks run down, else its `y`.
+fn along_axis(phases: &Phases, down: bool) -> Vec<f64> {
+    phases
+        .placement
+        .points
+        .iter()
+        .map(|p| if down { p.x } else { p.y })
+        .collect()
+}
+
+/// Each layered node's position across the ranks, by layered index: its `y` when the ranks run down, else its `x`.
+fn across_axis(phases: &Phases, down: bool) -> Vec<f64> {
+    phases
+        .placement
+        .points
+        .iter()
+        .map(|p| if down { p.y } else { p.x })
+        .collect()
+}
+
+/// Each layered node's half-extent across the ranks: half its height going down and its width going right. A dummy has
+/// none.
+fn across_halves(graph: &Graph, phases: &Phases, down: bool) -> Vec<f64> {
+    phases
+        .layered
+        .nodes
+        .iter()
+        .map(|node| {
+            node.id.map_or(0.0, |n| {
+                let extent = if down {
+                    graph.nodes.height[n]
+                } else {
+                    graph.nodes.width[n]
+                };
+                extent / 2.0
+            })
+        })
+        .collect()
+}
+
+/// The least distance between the centres of `u` and `v` when `u` is left of `v` in their rank: half of each breadth plus
+/// the gap of `gapsLeft` (`place/gaps.ts`): the node gap between two real nodes of different blocks, else the edge gap.
+fn least_gap(layered: &LayeredGraph, u: usize, v: usize) -> f64 {
+    let anchored = |x: usize| layered.nodes[x].id.is_some();
+    let gap = if layered.block[u] != layered.block[v] && anchored(u) && anchored(v) {
+        NODE_GAP
+    } else {
+        EDGE_GAP
+    };
+    f64::midpoint(layered.nodes[u].breadth, layered.nodes[v].breadth) + gap
+}
+
 proptest! {
     #[test]
     fn every_rank_assignment_is_valid((graph, options) in case()) {
@@ -257,6 +332,63 @@ proptest! {
     fn the_same_input_gives_the_same_output((graph, options) in case()) {
         let first = run_phases(&graph, &options);
         let second = run_phases(&graph, &options);
+        prop_assert_eq!(first, second);
+    }
+
+    #[test]
+    fn every_placed_node_is_finite((graph, options) in placed_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let placement = &phases.placement;
+        prop_assert!(placement.points.iter().all(|p| p.x.is_finite() && p.y.is_finite()));
+        prop_assert!(placement.centres.iter().chain(&placement.rank_half).all(|v| v.is_finite()));
+    }
+
+    #[test]
+    fn no_two_nodes_overlap_in_a_rank((graph, options) in placed_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let along = along_axis(&phases, options.direction == Direction::Down);
+        for layer in &phases.layers {
+            for pair in layer.windows(2) {
+                let (u, v) = (pair[0], pair[1]);
+                let apart = along[v] - along[u];
+                prop_assert!(
+                    apart + TOLERANCE >= least_gap(&phases.layered, u, v),
+                    "nodes {u} and {v} sit {apart} apart in their rank"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn nodes_of_different_ranks_that_overlap_in_rank_stay_apart_across((graph, options) in placed_case()) {
+        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let down = options.direction == Direction::Down;
+        let along = along_axis(&phases, down);
+        let across = across_axis(&phases, down);
+        let half = across_halves(&graph, &phases, down);
+        let nodes = &phases.layered.nodes;
+        for u in 0..nodes.len() {
+            for v in u + 1..nodes.len() {
+                if nodes[u].rank == nodes[v].rank {
+                    continue;
+                }
+                let in_rank = f64::midpoint(nodes[u].breadth, nodes[v].breadth);
+                if (along[u] - along[v]).abs() + TOLERANCE >= in_rank {
+                    continue;
+                }
+                let apart = (across[u] - across[v]).abs();
+                prop_assert!(
+                    apart + TOLERANCE >= half[u] + half[v],
+                    "nodes {u} and {v} of different ranks sit {apart} apart across"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_same_input_gives_the_same_placement((graph, options) in placed_case()) {
+        let first = run_phases(&graph, &options).map(|phases| phases.placement);
+        let second = run_phases(&graph, &options).map(|phases| phases.placement);
         prop_assert_eq!(first, second);
     }
 }

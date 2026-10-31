@@ -7,71 +7,43 @@
 //! quadratic solve over the boxes, the hint shift, the across axis (the rows, or `levels` solved per node), and the box
 //! rectangles. `boxes` is the entry route reads (the restacking frame and the rectangles).
 
-#[cfg(test)]
 mod alignment;
-#[cfg(test)]
 mod box_gaps;
-#[cfg(test)]
 mod box_order;
-#[cfg(test)]
 mod box_rects;
-#[cfg(test)]
-mod boxes;
-#[cfg(test)]
+pub(crate) mod boxes;
 mod brandes_koepf;
-#[cfg(test)]
 mod compaction;
-#[cfg(test)]
 mod gaps;
-#[cfg(test)]
 mod hints;
-#[cfg(test)]
 mod level_boxes;
-#[cfg(test)]
 mod level_nodes;
-#[cfg(test)]
 mod levels;
-#[cfg(test)]
 mod links;
 #[cfg(test)]
 mod offsets;
-#[cfg(test)]
 mod problem;
-#[cfg(test)]
 mod projection;
-#[cfg(test)]
 mod quadratic;
-#[cfg(test)]
 mod terms;
 
-#[cfg(test)]
 use crate::across::{across_layout, across_of_rows, anchor_index};
-#[cfg(test)]
 use crate::solve::SolveError;
+use box_rects::BoxFrame;
 #[cfg(test)]
-use box_rects::{BoxFrame, BoxRect, box_rects};
-#[cfg(test)]
+use box_rects::{BoxRect, box_rects};
 pub(crate) use boxes::ClusterSpec;
-#[cfg(test)]
 use boxes::{BoxInput, initial_edges, plan_boxes, tighten_boxes};
-#[cfg(test)]
 use brandes_koepf::brandes_koepf;
-#[cfg(test)]
 pub(crate) use hints::Hint;
-#[cfg(test)]
 use hints::{HintedNode, hint_shift};
-#[cfg(test)]
 use levels::{LevelsInput, levels_across};
-// The types and entry of `links` that the outcome gate in `place_checks` states its problem with.
-#[cfg(test)]
+// The types and entry of `links`, which the driver states the problem with.
 pub(crate) use links::{Layered, LayeredNode, LinkOptions, Segment, problem_of};
-#[cfg(test)]
 use problem::{Extension, Problem};
-#[cfg(test)]
 use quadratic::solve_quadratic;
 
 /// A node's position in the drawing's frame.
-#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Point {
     pub(crate) x: f64,
@@ -80,7 +52,6 @@ pub(crate) struct Point {
 
 /// Spacing the placement reads: the node gap and edge gap, the rank gap between ranks, and the cluster gap between
 /// boxes. Each is a minimum, as in `Spacing`.
-#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Spacing {
     pub(crate) node: f64,
@@ -90,7 +61,6 @@ pub(crate) struct Spacing {
 }
 
 /// The across axis: each rank's row (`rows`), or each node solved across the ranks (`levels`, `levelsAcross`).
-#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Mode {
     Rows,
@@ -99,7 +69,6 @@ pub(crate) enum Mode {
 
 /// What the rows placement is built from. The caller states the layered graph in plain data: the in-rank problem, each
 /// node's rank, its half-extents, its clusters and the ids that anchor and hint it.
-#[cfg(test)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PlaceInput<'a> {
     /// The in-rank problem of the ordering: layers, gaps, links and pulls. Its extension is not set; `place` adds the
@@ -139,9 +108,8 @@ pub(crate) struct PlaceInput<'a> {
 }
 
 /// Where each layered node sits, the box frame that routing restacks from, and the work the solver did.
-#[cfg(test)]
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Placement {
+pub struct Placement {
     /// Centre of every layered node, indexed as in the layered graph.
     pub(crate) points: Vec<Point>,
     /// The boxes' edges along the ranks, in the drawing's frame.
@@ -162,7 +130,6 @@ pub(crate) struct Placement {
 /// # Errors
 ///
 /// Returns [`SolveError`] when the in-rank or the across solve rejects its problem.
-#[cfg(test)]
 pub(crate) fn place(input: &PlaceInput<'_>) -> Result<Placement, SolveError> {
     let problem = input.problem;
     let spacing = input.spacing;
@@ -262,7 +229,6 @@ pub(crate) fn boxes(placement: &Placement) -> Vec<BoxRect> {
 
 /// The in-rank solution and the iterations taken. The Brandes and Köpf start is improved by the quadratic solve over the
 /// boxes when there are any; with no iterations and no boxes the start is the answer.
-#[cfg(test)]
 fn solve_in_rank(
     problem: &Problem,
     plan: &boxes::BoxPlan,
@@ -292,7 +258,6 @@ fn solve_in_rank(
 }
 
 /// The translation along the ranks: the anchor at the origin, else the best fit to the hints, else the drawing's start.
-#[cfg(test)]
 fn in_rank_shift(input: &PlaceInput<'_>, x: &[f64], anchor: Option<usize>) -> f64 {
     if let Some(a) = anchor {
         return -x[a];

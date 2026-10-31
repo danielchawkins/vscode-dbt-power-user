@@ -7,16 +7,21 @@
 //! reduction can be read and tested apart from the solve loop.
 
 mod components;
+#[cfg(test)]
 mod cycles;
+#[cfg(test)]
 mod equalities;
 #[cfg(test)]
 mod tests;
 
 pub(crate) use components::components;
+#[cfg(test)]
 pub(crate) use cycles::cyclic_classes;
+#[cfg(test)]
 pub(crate) use equalities::reduce_equalities;
 
 /// A constraint between two variables: `x[to] - x[from] >= gap`, or `x[to] - x[from] = gap` when `equality` is set.
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Constraint {
     /// The variable on the low side.
@@ -29,6 +34,7 @@ pub(crate) struct Constraint {
     pub(crate) equality: bool,
 }
 
+#[cfg(test)]
 /// The variables of one axis and the constraints among them. `desired` and `weight` have one entry per variable.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct AxisProblem {
@@ -40,6 +46,7 @@ pub(crate) struct AxisProblem {
     pub(crate) constraints: Vec<Constraint>,
 }
 
+#[cfg(test)]
 /// Why an axis problem is refused.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ConstraintError {
@@ -66,6 +73,7 @@ pub(crate) enum ConstraintError {
     },
 }
 
+#[cfg(test)]
 impl std::fmt::Display for ConstraintError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

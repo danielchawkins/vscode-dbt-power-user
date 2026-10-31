@@ -29,6 +29,7 @@ fn two_ranks(
                 |&(top, bottom, weight, top_offset, bottom_offset)| Segment {
                     top,
                     bottom,
+                    bundle: 0,
                     weight,
                     top_offset,
                     bottom_offset,
@@ -114,6 +115,7 @@ fn dummy_graph() -> LayeredGraph {
     let segment = |top, bottom| Segment {
         top,
         bottom,
+        bundle: 0,
         weight: 1.0,
         top_offset: 0.0,
         bottom_offset: 0.0,
@@ -166,6 +168,7 @@ fn clustered_graph() -> LayeredGraph {
         .map(|&(top, bottom)| Segment {
             top,
             bottom,
+            bundle: 0,
             weight: 1.0,
             top_offset: 0.0,
             bottom_offset: 0.0,

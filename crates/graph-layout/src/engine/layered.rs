@@ -139,8 +139,8 @@ pub(crate) fn build(
         spines: Vec::new(),
         ranks: 0,
     };
-    for bundle in &layers.bundles {
-        add_bundle(&tables, spacing, bundle, rank, &mut out);
+    for (index, bundle) in layers.bundles.iter().enumerate() {
+        add_bundle(&tables, spacing, index, bundle, rank, &mut out);
     }
     out.block = out
         .nodes
@@ -166,6 +166,7 @@ pub(crate) fn build(
 fn add_bundle(
     tables: &Tables,
     spacing: f64,
+    index: usize,
     bundle: &Bundle,
     rank: &[usize],
     out: &mut LayeredGraph,
@@ -233,6 +234,7 @@ fn add_bundle(
         out.segments.push(Segment {
             top: chain[k],
             bottom: chain[k + 1],
+            bundle: index,
             weight: bundle.weight,
             top_offset: if k == 0 { upper_offset } else { 0.0 },
             bottom_offset: if k + 1 == last { lower_offset } else { 0.0 },

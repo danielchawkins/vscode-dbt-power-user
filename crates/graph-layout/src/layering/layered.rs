@@ -38,6 +38,8 @@ pub struct Segment {
     pub top: usize,
     /// Layered index of the lower end.
     pub bottom: usize,
+    /// Index, in `Layers::bundles`, of the bundle the segment belongs to.
+    pub bundle: usize,
     /// The weight of the bundle the segment belongs to.
     pub weight: f64,
     /// The port offset at the upper end, zero when no port faces the rank.

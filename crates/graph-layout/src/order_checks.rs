@@ -69,6 +69,7 @@ fn random_case(seed: u32) -> (LayeredGraph, Vec<Vec<usize>>) {
             segments.push(Segment {
                 top,
                 bottom,
+                bundle: 0,
                 weight,
                 top_offset,
                 bottom_offset,
