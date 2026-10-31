@@ -298,11 +298,15 @@ export interface HiddenCard {
 
 /**
  * What the Scope control keeps out of the panel. A card is removed when its node type is off, or when it has tags and
- * every one of them is off; untagged cards follow their type only. The workspace keeps this for every start model.
+ * every one of them is off; untagged cards follow their type only. `softened` cards keep their card but their edges
+ * rank nothing in the layout, and `dimmed` cards and their edges are drawn faded; both are card IDs from the busy-node
+ * list. The workspace keeps this for every start model.
  */
 export interface LineageScope {
   offTypes: string[];
   offTags: string[];
+  softened: string[];
+  dimmed: string[];
 }
 
 /**
@@ -361,6 +365,8 @@ const isHiddenCard = shape<HiddenCard>({
 const isLineageScope = shape<LineageScope>({
   offTypes: arrayOf(isString),
   offTags: arrayOf(isString),
+  softened: arrayOf(isString),
+  dimmed: arrayOf(isString),
 });
 
 const panelFields: CommandFields<PanelMessage> = {

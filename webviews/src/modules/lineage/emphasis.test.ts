@@ -145,3 +145,34 @@ describe("the stylesheet", () => {
     }
   });
 });
+
+describe("emphasisOf with cards dimmed by hand", () => {
+  it("dims a dimmed card and each edge it is an end of, and nothing else", () => {
+    const view = emphasisOf(EDGES, connectionCounts(EDGES), {
+      ...on,
+      focus: undefined,
+      pathHighlight: false,
+      dimOffPath: false,
+      dimmed: ["b"],
+    });
+    expect(["a", "b", "c", "d"].map(view.dimmedCard)).toEqual([
+      false,
+      true,
+      false,
+      false,
+    ]);
+    expect(view.dimmedEdge("a", "b")).toBe(true);
+    expect(view.dimmedEdge("b", "c")).toBe(true);
+    expect(view.dimmedEdge("a", "d")).toBe(false);
+  });
+
+  it("dims nothing when no card is dimmed by hand", () => {
+    const view = emphasisOf(EDGES, connectionCounts(EDGES), {
+      ...on,
+      focus: undefined,
+      dimmed: [],
+    });
+    expect(view.dimmedCard("b")).toBe(false);
+    expect(view.dimmedEdge("a", "b")).toBe(false);
+  });
+});

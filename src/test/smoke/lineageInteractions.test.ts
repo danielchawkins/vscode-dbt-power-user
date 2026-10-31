@@ -121,6 +121,27 @@ interface ScopeState {
   lines: string[];
 }
 
+/** The busy-node list in the Scope popover: its lines (the threshold, or that no card is busy) and each card's text and buttons. */
+const READ_BUSY = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const section = document.querySelector("section[aria-label='Busy cards']");
+  if (!section) return null;
+  return {
+    entry: "lineage",
+    lines: [...section.querySelectorAll("p")].map((p) => p.textContent.trim()),
+    cards: [...section.querySelectorAll("li")].map((item) => ({
+      text: item.textContent.trim(),
+      buttons: [...item.querySelectorAll("button")].map((button) => button.textContent.trim()),
+    })),
+  };
+})()`;
+
+interface BusyState {
+  entry: string;
+  lines: string[];
+  cards: { text: string; buttons: string[] }[];
+}
+
 async function readExpanders(): Promise<Expanders | undefined> {
   return (
     await evaluatePanel<Expanders>(cdpPort(), LINEAGE.entry, READ_EXPANDERS)
@@ -135,6 +156,11 @@ async function readSettings(): Promise<SettingsState | undefined> {
 
 async function readScope(): Promise<ScopeState | undefined> {
   return (await evaluatePanel<ScopeState>(cdpPort(), LINEAGE.entry, READ_SCOPE))
+    ?.value;
+}
+
+async function readBusy(): Promise<BusyState | undefined> {
+  return (await evaluatePanel<BusyState>(cdpPort(), LINEAGE.entry, READ_BUSY))
     ?.value;
 }
 
@@ -276,6 +302,34 @@ suite("Lineage interactions", function () {
         "Whole project view. Scope popover open under its toolbar button, with a checkbox for each node type and tag " +
         "the graph holds, a line counting the cards the filters take out, and a Show all button.",
       measured: { popover: "scope", ...scope },
+    });
+    // The busy-node list is in the same popover: each busy card ranked by connections, with Soften and Dim, and Hide
+    // unless it is the start card; or a line saying the threshold leaves no card busy.
+    const busy = await readBusy();
+    assert.ok(
+      busy && (busy.cards.length > 0 || busy.lines.length > 0),
+      `the Scope popover shows no busy-node list: ${JSON.stringify(busy)}`,
+    );
+    const degrees = busy.cards.map((card) =>
+      Number(/(\d+) connections/.exec(card.text)?.[1]),
+    );
+    assert.ok(
+      degrees.every((degree, i) => i === 0 || degrees[i - 1] >= degree),
+      `the busy cards are not ranked by connections: ${JSON.stringify(busy.cards)}`,
+    );
+    for (const card of busy.cards) {
+      assert.ok(
+        card.buttons.includes("Soften") && card.buttons.includes("Dim"),
+        `a busy card lacks Soften or Dim: ${JSON.stringify(card)}`,
+      );
+    }
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-busy-cards-open",
+      expect:
+        "Whole project view. Scope popover open with a Busy cards list under the filters: each busy card ranked by its " +
+        "connections, most first, with Soften and Dim, and Hide unless it is the start card; or a line saying no card " +
+        "has more connections than the cap.",
+      measured: { busy },
     });
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });

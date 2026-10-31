@@ -15,6 +15,8 @@ export interface Emphasis {
   hubDeemphasis: boolean;
   /** A card with more parents or more children than this is a hub; 0 draws every neighbour, so no card is one. */
   maxNeighbours: number;
+  /** The cards the busy-node list dims by hand: each is dimmed, and so is an edge with a dimmed end. */
+  dimmed?: readonly string[] | undefined;
 }
 
 /** What the emphasis draws for each card and each edge. */
@@ -104,6 +106,7 @@ export function emphasisOf(
       downstream.has(parent));
   const highlighting = focus !== undefined && emphasis.pathHighlight;
   const dimming = focus !== undefined && emphasis.dimOffPath;
+  const dimmedByHand = new Set(emphasis.dimmed ?? []);
   // A hub has more parents, or more children, than one expansion draws; a cap of 0 draws all, so no card is a hub.
   const isHub = ({ parents, children }: Neighbours) =>
     emphasis.maxNeighbours > 0 &&
@@ -116,10 +119,14 @@ export function emphasisOf(
       : [],
   );
   return {
-    dimmedCard: (table) => dimming && !onPath(table),
+    dimmedCard: (table) =>
+      dimmedByHand.has(table) || (dimming && !onPath(table)),
     pathCard: (table) => highlighting && onPath(table),
     pathEdge: (parent, child) => highlighting && pathEdge(parent, child),
-    dimmedEdge: (parent, child) => dimming && !pathEdge(parent, child),
+    dimmedEdge: (parent, child) =>
+      dimmedByHand.has(parent) ||
+      dimmedByHand.has(child) ||
+      (dimming && !pathEdge(parent, child)),
     hubEdge: (parent, child) => hubs.has(parent) || hubs.has(child),
   };
 }

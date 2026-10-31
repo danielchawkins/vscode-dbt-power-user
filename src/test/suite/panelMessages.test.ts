@@ -372,11 +372,18 @@ describe("lineage panel messages", () => {
       h.workspaceState.set("lineage.scope", {
         offTypes: ["source"],
         offTags: ["nightly"],
+        softened: ["model.a"],
+        dimmed: [],
       });
       await h.send({ command: "getLineageScope", syncRequestId: "s1" });
       expect(h.postMessage).toHaveBeenCalledWith(
         response("s1", {
-          scope: { offTypes: ["source"], offTags: ["nightly"] },
+          scope: {
+            offTypes: ["source"],
+            offTags: ["nightly"],
+            softened: ["model.a"],
+            dimmed: [],
+          },
         }),
       );
     },
@@ -386,7 +393,12 @@ describe("lineage panel messages", () => {
         command: "persistLineageScope",
         args: {
           params: {
-            scope: { offTypes: ["source", "source"], offTags: ["nightly"] },
+            scope: {
+              offTypes: ["source", "source"],
+              offTags: ["nightly"],
+              softened: [],
+              dimmed: ["model.b"],
+            },
           },
         },
         syncRequestId: "s2",
@@ -394,6 +406,8 @@ describe("lineage panel messages", () => {
       expect(h.workspaceState.get("lineage.scope")).toEqual({
         offTypes: ["source"],
         offTags: ["nightly"],
+        softened: [],
+        dimmed: ["model.b"],
       });
       expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
     },

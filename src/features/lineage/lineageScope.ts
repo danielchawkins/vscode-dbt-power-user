@@ -18,12 +18,20 @@ const names = (value: unknown): string[] => [
   ),
 ];
 
-/** The node types and tags switched off in workspace state; nothing stored means nothing switched off. */
+/**
+ * The scope in workspace state. Nothing stored means nothing switched off, softened or dimmed; a scope stored before the
+ * busy-node list existed has no softened or dimmed cards.
+ */
 export function readLineageScope(store: Store): lineage.LineageScope {
   const stored = store.getFromWorkspaceState<
     Partial<Record<keyof lineage.LineageScope, unknown>> | undefined
   >(SCOPE_KEY);
-  return { offTypes: names(stored?.offTypes), offTags: names(stored?.offTags) };
+  return {
+    offTypes: names(stored?.offTypes),
+    offTags: names(stored?.offTags),
+    softened: names(stored?.softened),
+    dimmed: names(stored?.dimmed),
+  };
 }
 
 /** Saves `scope` as the workspace's scope, each name once. */
@@ -34,5 +42,7 @@ export function persistLineageScope(
   store.setToWorkspaceState(SCOPE_KEY, {
     offTypes: names(scope.offTypes),
     offTags: names(scope.offTags),
+    softened: names(scope.softened),
+    dimmed: names(scope.dimmed),
   });
 }

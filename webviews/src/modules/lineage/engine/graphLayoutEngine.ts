@@ -49,13 +49,24 @@ const EDGE_KINDS: Readonly<Record<string, EdgeKindPolicy>> = {
  */
 const HINT_KIND: EdgeKindPolicy = { ranks: false, routed: false, weight: 0.5 };
 
+/**
+ * The soft kind: a dependency of a softened card, drawn and routed, pulling at a low weight and ranking nothing. It is
+ * offered only to a request that has one, for the same reason as the hint kind.
+ */
+const SOFT_KIND: EdgeKindPolicy = { ranks: false, weight: 0.2 };
+
 /** The edge kinds a request is laid out with. */
 function edgeKindsOf(
   request: LayoutRequest,
 ): Readonly<Record<string, EdgeKindPolicy>> {
-  return request.edges.some((edge) => edge.role === "hint")
-    ? { ...EDGE_KINDS, hint: HINT_KIND }
-    : EDGE_KINDS;
+  const kinds = { ...EDGE_KINDS };
+  if (request.edges.some((edge) => edge.role === "hint")) {
+    kinds.hint = HINT_KIND;
+  }
+  if (request.edges.some((edge) => edge.role === "soft")) {
+    kinds.soft = SOFT_KIND;
+  }
+  return kinds;
 }
 
 export type GraphLayoutEffort = NonNullable<LayoutOptions["effort"]>;

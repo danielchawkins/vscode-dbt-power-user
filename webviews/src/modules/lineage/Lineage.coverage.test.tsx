@@ -9,6 +9,7 @@ import {
   HUB,
   node,
   openLineage,
+  TABLES,
   TESTED_CONTROLS,
   zoomPast,
 } from "../../test/lineageHarness";
@@ -88,6 +89,15 @@ describe("Lineage control coverage", () => {
           activate(user, "button", "Connections"),
         ),
         "Scope open": stateOf(({ user }) => activate(user, "button", "Scope")),
+        "busy cards open": async () => {
+          const { user } = await openLineage(
+            { node: TABLES.b, publication: "s:1" },
+            { settings: { maxNeighbours: 1 } },
+          );
+          await activate(user, "button", "Scope");
+          await screen.findByRole("button", { name: "Dim b" });
+          return page();
+        },
         "Help open": stateOf(({ user }) => activate(user, "button", "Help")),
         "node expanded": stateOf(async ({ user, container }) => {
           await activate(user, "button", "Columns", node(container, "b"));

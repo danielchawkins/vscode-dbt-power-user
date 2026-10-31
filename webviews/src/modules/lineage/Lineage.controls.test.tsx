@@ -1,3 +1,4 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -21,6 +22,7 @@ import {
   openLineage,
   pane,
   PROJECT_IDS,
+  TABLES,
   tableIds,
   TESTED_CONTROLS,
   type User,
@@ -1498,7 +1500,16 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
     await waitFor(() => expect(tableIds(container)).toEqual(withoutSource));
     expect(screen.getByText(filteredOut)).toBeInTheDocument();
     await expectPosted("persistLineageScope", {
-      args: { params: { scope: { offTypes: ["source"], offTags: [] } } },
+      args: {
+        params: {
+          scope: {
+            offTypes: ["source"],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+          },
+        },
+      },
     });
   });
 
@@ -1582,8 +1593,172 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
     await waitFor(() => expect(tableIds(container)).toEqual(all));
     expect(screen.getByText("0 cards filtered out")).toBeInTheDocument();
     await expectPosted("persistLineageScope", {
-      args: { params: { scope: { offTypes: [], offTags: [] } } },
+      args: {
+        params: {
+          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+        },
+      },
     });
+  });
+});
+
+describe("Lineage busy-node list", () => {
+  /**
+   * The neighbourhood of `c`, which reaches `b` (two connections, `a` and `c`) and `a` through `b`. With a cap of one
+   * connection `b` is the busy card; `c` is the start, so `b` is not.
+   */
+  const openBusy = async (
+    scope: Partial<lineage.LineageScope> = {},
+    settings: Partial<lineage.LineageSettings> = {},
+  ) => {
+    const opened = await openLineage(
+      { node: TABLES.c, publication: "s:1" },
+      { settings: { maxNeighbours: 1, ...settings }, scope },
+    );
+    await press(opened.user, "button", "Scope");
+    return opened;
+  };
+
+  /** Every request the panel has posted that reads the graph from the host, which a relayout must not repeat. */
+  const fetches = () =>
+    ["childTables", "parentTables", "getProjectGraph", "tableEdges"].reduce(
+      (count, name) => count + commands(name).length,
+      0,
+    );
+
+  it("lists the busy cards with their connection count, and Hide, Soften and Dim for each", async () => {
+    const { container } = await openBusy();
+    const list = within(screen.getByRole("region", { name: "Busy cards" }));
+    expect(list.getByText("2 connections")).toBeInTheDocument();
+    expect(list.getByRole("button", { name: "Hide b" })).toBeInTheDocument();
+    expect(list.getByRole("button", { name: "Soften b" })).toBeInTheDocument();
+    expect(list.getByRole("button", { name: "Dim b" })).toBeInTheDocument();
+    expect(tableIds(container)).toEqual(["a", "b", "c"]);
+  });
+
+  it("says so when no card has more connections than the cap", async () => {
+    await openBusy({}, { maxNeighbours: 5 });
+    expect(
+      await screen.findByText("No card has more than 5 connections."),
+    ).toBeInTheDocument();
+  });
+
+  it("says so when no cap is set, so no card is busy", async () => {
+    await openBusy({}, { maxNeighbours: 0 });
+    expect(
+      await screen.findByText("No cap is set, so no card is busy."),
+    ).toBeInTheDocument();
+  });
+
+  it("is strict: a card with exactly the cap's connections is not busy", async () => {
+    await openBusy({}, { maxNeighbours: 2 });
+    expect(
+      await screen.findByText("No card has more than 2 connections."),
+    ).toBeInTheDocument();
+  });
+
+  it("ranks the busy cards by connections, most first, and keeps a softened card listed whatever its degree", async () => {
+    await openBusy({ softened: ["a"] });
+    const list = within(screen.getByRole("region", { name: "Busy cards" }));
+    expect(
+      list
+        .getAllByRole("button", { name: /^Soften / })
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(["Soften b", "Soften a"]);
+  });
+
+  it("keeps a softened start card listed, and gives it no Hide, since the start card cannot be hidden", async () => {
+    await openBusy({ softened: ["c"] });
+    const list = within(screen.getByRole("region", { name: "Busy cards" }));
+    expect(list.getByRole("button", { name: "Soften c" })).toBeInTheDocument();
+    expect(list.queryByRole("button", { name: "Hide c" })).toBeNull();
+  });
+
+  it("dims a card without calling the layout engine, and undoing it restores the card", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openBusy();
+    const laidOut = layout.mock.calls.length;
+    await press(user, "button", "Dim b");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: ["b"],
+          },
+        },
+      },
+    });
+    expect(
+      container
+        .querySelector<HTMLElement>('[data-table="b"]')!
+        .closest(".react-flow__node"),
+    ).toHaveClass("lineage-dimmed");
+    expect(layout.mock.calls.length).toBe(laidOut);
+    await press(user, "button", "Dim b");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+        },
+      },
+    });
+    expect(layout.mock.calls.length).toBe(laidOut);
+    layout.mockRestore();
+  });
+
+  it("softens a card by relaying out the layout, without fetching the graph again", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openBusy();
+    const laidOut = layout.mock.calls.length;
+    const fetched = fetches();
+    await press(user, "button", "Soften b");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: { offTypes: [], offTags: [], softened: ["b"], dimmed: [] },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
+    );
+    expect(fetches()).toBe(fetched);
+    expect(tableIds(container)).toEqual(["a", "b", "c"]);
+    await press(user, "button", "Soften b");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+        },
+      },
+    });
+    layout.mockRestore();
+  });
+
+  it("hides a busy card through the hide path, and drops it from the drawn cards", async () => {
+    const { user, container } = await openBusy();
+    await press(user, "button", "Hide b");
+    await waitFor(() => expect(tableIds(container)).not.toContain("b"));
+    await expectPosted("persistHiddenCards", {
+      args: { params: { cards: [{ id: "b", label: "b" }] } },
+    });
+  });
+
+  it("shows the softened and dimmed cards as pressed when the workspace has them stored", async () => {
+    await openBusy({ softened: ["b"], dimmed: ["b"] });
+    expect(screen.getByRole("button", { name: "Soften b" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Dim b" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
 
