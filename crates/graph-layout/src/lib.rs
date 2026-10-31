@@ -7,6 +7,8 @@ pub mod model;
 pub mod overview;
 pub mod pack;
 
+// `across` is compiled for its tests until route uses it.
+#[cfg(test)]
 mod across;
 mod metrics;
 mod place;
