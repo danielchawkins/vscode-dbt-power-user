@@ -431,20 +431,24 @@ export function printPlaceFinance(HEADER, manifestPath, deps) {
   }
   const graph = financeGraph(JSON.parse(readFileSync(manifestPath, "utf8")));
   const lines = HEADER_LINES(HEADER);
-  for (const effort of EFFORTS) {
-    lines.push(
-      ...caseLines(
-        {
-          name: `finance/${effort}`,
-          graph,
-          options: { ...LINEAGE_OPTIONS, ranks: "rows", direction: "down" },
-          seed: 7,
-          hinted: false,
-          effort,
-        },
-        deps,
-      ),
-    );
+  for (const ranks of ["rows", "levels"]) {
+    for (const effort of EFFORTS) {
+      const name =
+        ranks === "rows" ? `finance/${effort}` : `levels/finance/${effort}`;
+      lines.push(
+        ...caseLines(
+          {
+            name,
+            graph,
+            options: { ...LINEAGE_OPTIONS, ranks, direction: "down" },
+            seed: 7,
+            hinted: false,
+            effort,
+          },
+          deps,
+        ),
+      );
+    }
   }
   return lines;
 }
