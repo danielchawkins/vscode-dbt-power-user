@@ -1,84 +1,99 @@
-// The ordering fixtures of `print-fixtures.mjs order` and `order-finance`: the TypeScript `order` on seeded random layered
-// graphs (with hints on odd seeds) and on the finance lineage graph without clusters, at each effort. The Rust check
-// (order_checks.rs) replays the same inputs and compares the layers and the crossings bit for bit. Contributor tooling
-// only; it ships nothing.
+// The ordering fixtures of `print-fixtures.mjs order` and `order-finance`: the TypeScript `order` on the layering cases
+// (the package graphs, the negative-zero bands and seeded random graphs) and on the finance lineage graph without
+// clusters, each at every effort, unhinted and hinted. A case is written as its input (the layering encoding of
+// `edgeRules`, with the node widths, which set the breadth of the layered nodes) and TypeScript's crossing count per
+// effort and hint setting. It stores no order: the Rust check (order_checks.rs) ranks, lays out and orders the same input
+// and compares the crossings. Contributor tooling only; it ships nothing.
 //
 // The caller registers the TypeScript resolve hook before importing this module, so the sources load after it.
 
 import { readFileSync } from "node:fs";
-import { randomCrossingCase } from "./crossing-fixtures.mjs";
 import {
-  csv,
+  bitsCsv,
   bitsHex,
+  edgeRules,
   LINEAGE_OPTIONS,
   portedScope,
 } from "./layering-graphs.mjs";
 
 const { seededRandom } =
   await import("../../packages/graph-layout/src/random.ts");
-const { budgetOf } = await import("../../packages/graph-layout/src/budget.ts");
 const { order } =
   await import("../../packages/graph-layout/src/order/index.ts");
 
 const EFFORTS = ["fast", "balanced", "thorough"];
-const ORDER_CASES = 120;
 
 /**
- * Hints for a random case: node i gets its rank and an order drawn as `u32 % 4` from `seededRandom(seed + 1000003)`,
- * one draw per node in node order. The Rust check replays the draws (order_checks.rs).
+ * Hints for a case: each real node gets its rank and an order drawn as `u32 % 4` from `seededRandom(seed + 1000003)`,
+ * keyed by its layered node id (TypeScript looks hints up by id). The draws are one per layered node in node order,
+ * dummies included, so the Rust check replays the same draws (order_checks.rs).
  */
 function randomHints(seed, layered) {
   const random = seededRandom(seed + 1000003);
   const nodes = new Map();
-  layered.nodes.forEach((node, i) => {
+  layered.nodes.forEach((node) => {
     const drawn = Math.floor(random() * 4294967296) % 4;
-    nodes.set(String(i), { rank: node.rank, order: drawn, x: 0, y: 0 });
+    if (node.id !== undefined) {
+      nodes.set(node.id, { rank: node.rank, order: drawn, x: 0, y: 0 });
+    }
   });
   return { nodes };
 }
 
-/** The order of each seeded random case, at each effort, and of the same case with hints (odd seeds). */
-export function printOrder(HEADER) {
-  const lines = [
-    HEADER,
-    "# case <seed> <effort> <hinted> <layers> <crossings>: order(...) on the random layered graph of crossing-fixtures (seed), at the effort, with hints from randomHints on odd seeds; layers ';' between ranks, ',' between nodes, '-' for an empty rank; crossings as IEEE bits.",
-  ];
-  for (let seed = 0; seed < ORDER_CASES; seed++) {
-    const { layered } = randomCrossingCase(seed);
-    const effort = EFFORTS[seed % EFFORTS.length];
-    const hinted = seed % 2 === 1;
-    const options = {
-      seed,
-      effort,
-      ...(hinted ? { hints: randomHints(seed, layered) } : {}),
-    };
-    const result = order({}, options, {
-      budget: budgetOf({ effort }),
-      layered,
-    });
-    lines.push(
-      [
-        "case",
-        String(seed),
-        effort,
-        hinted ? "1" : "0",
-        result.layers.map((layer) => csv(layer)).join(";"),
-        bitsHex(result.crossings),
-      ].join(" "),
-    );
+/**
+ * One case's line: its name, seed, partition mode, bands (IEEE bits, `-` for none), widths (IEEE bits), edges (the
+ * `edgeRules` strings, `-` for none), and the results as `effort:hinted:crossings` with the crossings as IEEE bits.
+ */
+function caseLine({ name, seed, graph, options }, { rank, layer }) {
+  const scope = portedScope(graph);
+  const results = [];
+  for (const effort of EFFORTS) {
+    const base = { ...options, effort };
+    const ranking = rank(scope, base);
+    const layered = layer(scope, base, ranking);
+    for (const hinted of [false, true]) {
+      const hints = hinted ? randomHints(seed, layered) : undefined;
+      const result = order(
+        scope,
+        { ...base, seed, hints },
+        { ...ranking, layered },
+      );
+      results.push(`${effort}:${hinted ? 1 : 0}:${bitsHex(result.crossings)}`);
+    }
   }
-  return lines;
+  const edges = edgeRules(scope, options);
+  return [
+    "case",
+    name,
+    String(seed),
+    options.partitions ?? "soft",
+    scope.nodes
+      .map((node) =>
+        node.partition === undefined ? "-" : bitsHex(node.partition),
+      )
+      .join(","),
+    bitsCsv(scope.nodes.map((node) => node.width)),
+    edges.length > 0 ? edges.join(";") : "-",
+    results.join(","),
+  ].join("\t");
 }
 
-/**
- * The finance lineage graph without clusters, at each effort: the layered graph that `layer` builds (ranks, nodes,
- * segments, blocks and cluster paths, one line each, as the Rust check reads them), then the order `order` returns.
- */
-export function printOrderFinance(
-  HEADER,
-  manifestPath,
-  { rank, layer, financeGraph },
-) {
+/** The ordering fixture: one line per layering case, the case's index as its seed. */
+export function printOrder(HEADER, cases, deps) {
+  return [
+    HEADER,
+    "# case <name> <seed> <mode> <bands> <widths> <edges> <results>: the input of a layering case (see layeringLine), with the node widths as IEEE bits; the results are order's crossings as effort:hinted:IEEE bits, hinted 1 with randomHints(seed).",
+    ...cases.map((c, seed) =>
+      caseLine(
+        { name: c.name, seed, graph: c.graph, options: c.options },
+        deps,
+      ),
+    ),
+  ];
+}
+
+/** The finance lineage graph without clusters, at each effort: the same line as a layering case, seed 0. */
+export function printOrderFinance(HEADER, manifestPath, deps) {
   if (manifestPath === undefined) {
     process.stderr.write(
       "usage: print-fixtures.mjs order-finance <manifest.json>\n",
@@ -86,33 +101,17 @@ export function printOrderFinance(
     process.exit(2);
   }
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const scope = portedScope(financeGraph(manifest));
-  const scopeIndex = new Map(scope.nodes.map((node, i) => [node.id, i]));
-  const lines = [
+  return [
     HEADER,
-    "# effort <name>, then ranks, node <rank> <breadth> <scope index or ->, segment <top> <bottom> <weight> <top offset> <bottom offset>, block, paths, and the result: order <layers> <crossings>. Floats are IEEE bits.",
+    "# case <name> <seed> <mode> <bands> <widths> <edges> <results>: the finance lineage graph (scripts/parity/finance-graph.mjs) without clusters, as a layering case.",
+    caseLine(
+      {
+        name: "finance",
+        seed: 0,
+        graph: deps.financeGraph(manifest),
+        options: LINEAGE_OPTIONS,
+      },
+      deps,
+    ),
   ];
-  for (const effort of EFFORTS) {
-    const options = { ...LINEAGE_OPTIONS, effort };
-    const ranking = rank(scope, options);
-    const layered = layer(scope, options, ranking);
-    lines.push(`effort ${effort}`);
-    lines.push(`ranks ${layered.ranks}`);
-    for (const node of layered.nodes) {
-      const id = node.id === undefined ? "-" : String(scopeIndex.get(node.id));
-      lines.push(`node ${node.rank} ${bitsHex(node.breadth)} ${id}`);
-    }
-    for (const s of layered.segments) {
-      lines.push(
-        `segment ${s.top} ${s.bottom} ${bitsHex(s.weight)} ${bitsHex(s.topOffset)} ${bitsHex(s.bottomOffset)}`,
-      );
-    }
-    lines.push(`block ${csv(layered.block)}`);
-    lines.push(`paths ${layered.paths.map((path) => csv(path)).join(" ")}`);
-    const result = order(scope, options, { ...ranking, layered });
-    lines.push(
-      `order ${result.layers.map((layer) => csv(layer)).join(";")} ${bitsHex(result.crossings)}`,
-    );
-  }
-  return lines;
 }

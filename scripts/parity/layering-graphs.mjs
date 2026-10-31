@@ -53,12 +53,15 @@ export function portedScope(graph) {
  * indices, and the chain of each bundle joined by `;`: a chain is comma-separated nodes `n<index>` or dummies
  * `d<owner>:<rank>:<position>`, with the owner an edge index.
  */
-export function layeringLine(name, graph, { options, rank, layer }) {
-  const scope = portedScope(graph);
+/**
+ * Each edge of a ported scope as `source:target:kind:ranks:minLength:weight`, with the node indices of the scope, the
+ * kind numbered in order of first appearance, and the policy of the kind (or the defaults). Shared by the layering and
+ * ordering fixtures, so both read the same input.
+ */
+export function edgeRules(scope, options) {
   const nodeIndex = new Map(scope.nodes.map((node, i) => [node.id, i]));
-  const edgeIndex = new Map(scope.edges.map((edge, i) => [edge.id, i]));
   const kinds = new Map();
-  const edges = scope.edges.map((edge) => {
+  return scope.edges.map((edge) => {
     if (!kinds.has(edge.kind)) {
       kinds.set(edge.kind, kinds.size);
     }
@@ -72,6 +75,13 @@ export function layeringLine(name, graph, { options, rank, layer }) {
       String(policy?.weight ?? 1),
     ].join(":");
   });
+}
+
+export function layeringLine(name, graph, { options, rank, layer }) {
+  const scope = portedScope(graph);
+  const nodeIndex = new Map(scope.nodes.map((node, i) => [node.id, i]));
+  const edgeIndex = new Map(scope.edges.map((edge, i) => [edge.id, i]));
+  const edges = edgeRules(scope, options);
   const ranking = rank(scope, options);
   const layered = layer(scope, options, ranking);
   const token = (x) => {

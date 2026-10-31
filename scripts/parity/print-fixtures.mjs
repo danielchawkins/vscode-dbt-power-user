@@ -9,11 +9,14 @@
 //   mise exec -- node scripts/parity/print-fixtures.mjs solve-cases > crates/graph-layout/fixtures/parity/solve-cases.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs solve-random > crates/graph-layout/fixtures/parity/solve-random.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs layering > crates/graph-layout/fixtures/parity/layering-cases.txt
+//   mise exec -- node scripts/parity/print-fixtures.mjs layering > crates/graph-layout/fixtures/parity/layering-cases.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs layering-finance <manifest.json> > <dump.txt>
+//   mise exec -- node scripts/parity/print-fixtures.mjs order > crates/graph-layout/fixtures/parity/order.txt
+//   mise exec -- node scripts/parity/print-fixtures.mjs order-finance <manifest.json> > <dump.txt>
 //
-// The fixtures are committed; regenerate them only when the TypeScript source changes on purpose. The finance dump
-// names a manifest outside the repository, so it is not committed: the Rust check reads it from
-// GRAPH_LAYOUT_LAYERING_FINANCE, as the finance placement check reads its dump.
+// The fixtures are committed; regenerate them only when the TypeScript source changes on purpose. The finance dumps name
+// a manifest outside the repository, so they are not committed: the Rust checks read them from
+// GRAPH_LAYOUT_LAYERING_FINANCE and GRAPH_LAYOUT_ORDER_FINANCE, as the finance placement check reads its dump.
 
 import { readFileSync } from "node:fs";
 import { register } from "node:module";
@@ -291,7 +294,7 @@ function randomLayering(seed) {
   };
 }
 
-function printLayering() {
+function layeringCases() {
   const golden = {
     direction: "down",
     edgeKinds: { lineage: { ranks: true }, ref: { ranks: false } },
@@ -335,10 +338,14 @@ function printLayering() {
   for (let seed = 0; seed < LAYERING_RANDOM; seed++) {
     cases.push(randomLayering(seed));
   }
+  return cases;
+}
+
+function printLayering() {
   return [
     HEADER,
     "# case <name> <mode> <bands> <edges> <ranks> <reversed> <chains>: rank and layer of the graph without ports or clusters (see layeringLine in scripts/parity/layering-graphs.mjs); floats as IEEE bits.",
-    ...cases.map((c) =>
+    ...layeringCases().map((c) =>
       layeringLine(c.name, c.graph, { options: c.options, rank, layer }),
     ),
   ];
@@ -368,7 +375,7 @@ const sections = {
   budget: printBudget,
   fenwick: printFenwick,
   crossings: () => printCrossings(HEADER),
-  order: () => printOrder(HEADER),
+  order: () => printOrder(HEADER, layeringCases(), { rank, layer }),
   "order-finance": () =>
     printOrderFinance(HEADER, process.argv[3], { rank, layer, financeGraph }),
   frame: printFrame,
