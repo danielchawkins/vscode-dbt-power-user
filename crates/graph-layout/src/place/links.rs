@@ -33,6 +33,9 @@ pub(crate) struct Segment {
     pub(crate) weight: f64,
     pub(crate) top_offset: f64,
     pub(crate) bottom_offset: f64,
+    /// Whether the segment's bundle is directed across the ranks (`directedBundles`): only `levels` reads it, and the
+    /// caller states it, since `place` reads no graph.
+    pub(crate) directed: bool,
 }
 
 /// The layered graph of an ordering: its ranks in order, its nodes, segments and cluster spines.
@@ -186,6 +189,7 @@ mod tests {
                 weight: 1.0,
                 top_offset: 0.5,
                 bottom_offset: -0.5,
+                directed: false,
             },
             Segment {
                 top: 1,
@@ -193,6 +197,7 @@ mod tests {
                 weight: 1.0,
                 top_offset: 0.0,
                 bottom_offset: 0.0,
+                directed: false,
             },
         ];
         let spines = [vec![0, 1, 2]];

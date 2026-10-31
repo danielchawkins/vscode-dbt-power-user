@@ -3,10 +3,9 @@
 //! `index` (rule `rust-core-layer-imports-place`), so its input is the plain `Problem` of `problem`, which the caller
 //! states from the layered graph.
 //!
-//! `place` is the orchestrator of the rows path (`ranks: "rows"`): the Brandes and Köpf start, the box plan and its
-//! tightening, the quadratic solve over the boxes, the hint shift, the across axis of the rows, and the box rectangles.
-//! `boxes` is the entry route reads (the restacking frame and the rectangles). The levels path (`levelsAcross`) is not
-//! ported yet.
+//! `place` is the orchestrator of both ranks modes: the Brandes and Köpf start, the box plan and its tightening, the
+//! quadratic solve over the boxes, the hint shift, the across axis (the rows, or `levels` solved per node), and the box
+//! rectangles. `boxes` is the entry route reads (the restacking frame and the rectangles).
 
 #[cfg(test)]
 mod alignment;
@@ -26,6 +25,12 @@ mod compaction;
 mod gaps;
 #[cfg(test)]
 mod hints;
+#[cfg(test)]
+mod level_boxes;
+#[cfg(test)]
+mod level_nodes;
+#[cfg(test)]
+mod levels;
 #[cfg(test)]
 mod links;
 #[cfg(test)]
@@ -55,6 +60,8 @@ use brandes_koepf::brandes_koepf;
 pub(crate) use hints::Hint;
 #[cfg(test)]
 use hints::{HintedNode, hint_shift};
+#[cfg(test)]
+use levels::{LevelsInput, levels_across};
 // The types and entry of `links` that the outcome gate in `place_checks` states its problem with.
 #[cfg(test)]
 pub(crate) use links::{Layered, LayeredNode, LinkOptions, Segment, problem_of};
@@ -71,13 +78,23 @@ pub(crate) struct Point {
     pub(crate) y: f64,
 }
 
-/// Spacing the placement reads: the node gap and edge gap in `problem`, the rank gap between ranks, and the cluster gap
-/// between boxes. Each is a minimum, as in `Spacing`.
+/// Spacing the placement reads: the node gap and edge gap, the rank gap between ranks, and the cluster gap between
+/// boxes. Each is a minimum, as in `Spacing`.
 #[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Spacing {
+    pub(crate) node: f64,
+    pub(crate) edge: f64,
     pub(crate) rank: f64,
     pub(crate) cluster: f64,
+}
+
+/// The across axis: each rank's row (`rows`), or each node solved across the ranks (`levels`, `levelsAcross`).
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Mode {
+    Rows,
+    Levels,
 }
 
 /// What the rows placement is built from. The caller states the layered graph in plain data: the in-rank problem, each
@@ -92,6 +109,8 @@ pub(crate) struct PlaceInput<'a> {
     pub(crate) ranks: usize,
     /// The rank of each layered node.
     pub(crate) node_ranks: &'a [usize],
+    /// The layered segments: `levels` reads each one's direction, and its ends' ranks and extents.
+    pub(crate) segments: &'a [Segment],
     /// The clusters that contain each layered node, outermost first.
     pub(crate) paths: &'a [Vec<usize>],
     /// Every cluster, by index.
@@ -108,10 +127,15 @@ pub(crate) struct PlaceInput<'a> {
     pub(crate) anchor: Option<&'a str>,
     /// Whether the ranks run down the drawing.
     pub(crate) down: bool,
-    /// Spacing used by the box plan and the rank gaps.
+    /// Spacing used by the box plan, the rank gaps and (under `levels`) the across separations.
     pub(crate) spacing: Spacing,
     /// Gradient-projection iterations of the in-rank solve (`Budget::place_iterations`). Zero keeps the start.
     pub(crate) iterations: usize,
+    /// The across axis: the rows, or the levels.
+    pub(crate) mode: Mode,
+    /// How strongly a hint pulls its node across the ranks under `levels` (`LayoutOptions::stability`). A hint has no
+    /// pull when this is not positive.
+    pub(crate) stability: f64,
 }
 
 /// Where each layered node sits, the box frame that routing restacks from, and the work the solver did.
@@ -130,9 +154,14 @@ pub(crate) struct Placement {
     pub(crate) work: usize,
 }
 
-/// Places every node of the rows: along each rank, by minimising the weighted straightness of the segments under the
-/// ordered separation constraints, from the Brandes and Köpf coordinates. Ranks sit at the cumulative thickness of their
-/// nodes plus the rank gap. An anchor lands exactly at the origin; without one, the drawing starts at the origin.
+/// Places every node: along each rank, by minimising the weighted straightness of the segments under the ordered
+/// separation constraints, from the Brandes and Köpf coordinates. Across the ranks, each rank sits at the cumulative
+/// thickness of its nodes plus the rank gap (`Mode::Rows`), or every node is solved against its level and its neighbours
+/// (`Mode::Levels`). An anchor lands exactly at the origin; without one, the drawing starts at the origin.
+///
+/// # Errors
+///
+/// Returns [`SolveError`] when the in-rank or the across solve rejects its problem.
 #[cfg(test)]
 pub(crate) fn place(input: &PlaceInput<'_>) -> Result<Placement, SolveError> {
     let problem = input.problem;
@@ -162,6 +191,30 @@ pub(crate) fn place(input: &PlaceInput<'_>) -> Result<Placement, SolveError> {
     let in_shift = in_rank_shift(input, &x, anchor);
     let rows = across_of_rows(input.node_ranks, &layout.centres, anchor);
     let centres: Vec<f64> = layout.centres.iter().map(|c| c + rows.shift).collect();
+    let (across, solved_boxes) = match input.mode {
+        Mode::Rows => (rows.across, None),
+        Mode::Levels => {
+            let levels = levels_across(&LevelsInput {
+                plan: &plan,
+                segments: input.segments,
+                ranks: input.node_ranks,
+                rank_count: input.ranks,
+                real: &input.ids.iter().map(Option::is_some).collect::<Vec<_>>(),
+                hints: input.hints,
+                stability: input.stability,
+                down: input.down,
+                in_rank: &x,
+                half_in: input.in_rank_half,
+                half_across: &layout.half,
+                rank_gap: &gaps,
+                spacing_node: spacing.node,
+                spacing_edge: spacing.edge,
+                spacing_cluster: spacing.cluster,
+                anchor,
+            })?;
+            (levels.across, Some(levels.boxes))
+        }
+    };
 
     let frame = BoxFrame {
         edges: plan
@@ -171,11 +224,11 @@ pub(crate) fn place(input: &PlaceInput<'_>) -> Result<Placement, SolveError> {
             .collect(),
         plan,
         down: input.down,
-        across: None,
+        across: solved_boxes,
     };
     let points = x
         .iter()
-        .zip(&rows.across)
+        .zip(&across)
         .map(|(&along, &across)| {
             let along = along + in_shift;
             if input.down {
@@ -266,7 +319,7 @@ fn in_rank_shift(input: &PlaceInput<'_>, x: &[f64], anchor: Option<usize>) -> f6
 
 #[cfg(test)]
 mod tests {
-    use super::{PlaceInput, Point, Spacing, boxes, place};
+    use super::{Mode, PlaceInput, Point, Spacing, boxes, place};
     use crate::place::problem::{Link, Problem};
 
     /// Two ranks of one node each, joined by one link; the anchor is the upper node, so it lands at the origin and the
@@ -285,6 +338,7 @@ mod tests {
             problem: &problem,
             ranks: 2,
             node_ranks: &[0, 1],
+            segments: &[],
             paths: &[vec![], vec![]],
             clusters: &[],
             in_rank_half: &[5.0, 5.0],
@@ -294,10 +348,14 @@ mod tests {
             anchor: Some("a"),
             down: true,
             spacing: Spacing {
+                node: 12.0,
+                edge: 4.0,
                 rank: 28.0,
                 cluster: 12.0,
             },
             iterations: 0,
+            mode: Mode::Rows,
+            stability: 1.0,
         };
         let placement = place(&input).expect("the chain places");
         assert_eq!(placement.points[0], Point { x: 0.0, y: 0.0 });

@@ -15,8 +15,8 @@
 //! the variable is unset.
 
 use crate::place::{
-    ClusterSpec, Hint, Layered, LayeredNode, LinkOptions, PlaceInput, Placement, Point, Segment,
-    Spacing, place, problem_of,
+    ClusterSpec, Hint, Layered, LayeredNode, LinkOptions, Mode, PlaceInput, Placement, Point,
+    Segment, Spacing, place, problem_of,
 };
 use crate::solve::Separation;
 use crate::testkit::solve::exact_solution;
@@ -64,6 +64,7 @@ struct Expect {
 struct Case {
     name: String,
     down: bool,
+    mode: Mode,
     ranks: usize,
     iterations: usize,
     spacing_node: f64,
@@ -200,15 +201,25 @@ fn parse_cases(text: &str) -> Vec<Case> {
 fn parse_case_header(words: &[&str]) -> Case {
     let f = fields(words);
     let spacing = bits_list(value(&f, "spacing"));
-    let (rank, cluster) = (spacing[2], spacing[3]);
+    let (node, edge, rank, cluster) = (spacing[0], spacing[1], spacing[2], spacing[3]);
     Case {
         name: value(&f, "name").to_string(),
         down: value(&f, "direction") == "down",
+        mode: match value(&f, "mode") {
+            "rows" => Mode::Rows,
+            "levels" => Mode::Levels,
+            other => panic!("an unknown mode `{other}`"),
+        },
         ranks: value(&f, "ranks").parse().expect("a rank count"),
         iterations: value(&f, "iterations").parse().expect("an iteration count"),
-        spacing_node: spacing[0],
-        spacing_edge: spacing[1],
-        spacing: Spacing { rank, cluster },
+        spacing_node: node,
+        spacing_edge: edge,
+        spacing: Spacing {
+            node,
+            edge,
+            rank,
+            cluster,
+        },
         anchor: optional_id(value(&f, "anchor")),
         stability: optional_bits(value(&f, "stability")),
         clusters: Vec::new(),
@@ -261,6 +272,7 @@ fn parse_line(case: &mut Case, keyword: &str, words: &[&str]) {
                 weight: float(value(&f, "weight")),
                 top_offset: float(value(&f, "top_offset")),
                 bottom_offset: float(value(&f, "bottom_offset")),
+                directed: value(&f, "directed") == "1",
             });
         }
         "exact" => case.exact = parse_exact(words),
@@ -331,6 +343,7 @@ fn solve(case: &Case) -> (Vec<f64>, Placement) {
         problem: &problem,
         ranks: case.ranks,
         node_ranks: &node_ranks,
+        segments: &case.segments,
         paths: &paths,
         clusters: &case.clusters,
         in_rank_half: &in_rank_half,
@@ -341,6 +354,8 @@ fn solve(case: &Case) -> (Vec<f64>, Placement) {
         down: case.down,
         spacing: case.spacing,
         iterations: case.iterations,
+        mode: case.mode,
+        stability: case.stability.unwrap_or(1.0),
     };
     let placement =
         place(&input).unwrap_or_else(|e| panic!("{}: placement failed: {e:?}", case.name));
