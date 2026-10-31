@@ -29,7 +29,7 @@ const DEFAULT_MANIFEST =
 // Repeat counts for each workload and effort, two per runtime, so the slope spans a few seconds. TypeScript's pass
 // times are in the comments; Rust's are measured by the first run of this script and kept in the discrepancy report.
 const EFFORTS = {
-  finance: ["fast", "balanced", "thorough"],
+  finance: ["fast", "balanced"],
   synthetic: ["fast", "balanced"],
 };
 const TYPESCRIPT_REPEATS = {
