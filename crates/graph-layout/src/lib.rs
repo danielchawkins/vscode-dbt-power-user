@@ -11,10 +11,12 @@ mod across;
 mod metrics;
 mod order;
 mod place;
-// `budget`, `hash`, `index`, `layering`, `rand` and `solve` are compiled for their tests until the layout phases use them; a
-// non-test build would otherwise report their items as dead code.
+// `budget`, `fenwick`, `hash`, `index`, `layering`, `rand` and `solve` are compiled for their tests until the layout phases
+// use them; a non-test build would otherwise report their items as dead code.
 #[cfg(test)]
 mod budget;
+#[cfg(test)]
+mod fenwick;
 #[cfg(test)]
 mod hash;
 #[cfg(test)]

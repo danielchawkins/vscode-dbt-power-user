@@ -199,7 +199,7 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 ## Phase 4: `order`
 
-**Scope.** `order/*`, `fenwick.ts` (integer; may vectorise, S4), `spines.ts` ordering part. Ordering reads `budget.sweeps`, `siftRounds`, `restarts`, `seed`, and order hints (ADR "Live tuning", table). D-attr does not apply yet.
+**Scope.** `order/*`, `fenwick.ts` (`f64`, not integer: `countCrossings` adds fractional link weights such as `column: 0.5`, so an integer tree would round them; may vectorise, S4), `spines.ts` ordering part. Ordering reads `budget.sweeps`, `siftRounds`, `restarts`, `seed`, and order hints (ADR "Live tuning", table). D-attr does not apply yet.
 
 **Check.** `exactCrossings` passes; crossings equal or fewer than TypeScript on fixtures and the finance graph; differences in the discrepancy report.
 
