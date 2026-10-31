@@ -3,7 +3,7 @@
 //! checked bit for bit against `fixtures/parity/fenwick.txt`, which `fenwick.ts` wrote from the same draws in the same
 //! order, so a change in the order of the summation is caught.
 
-use super::Fenwick;
+use super::fenwick::Fenwick;
 use crate::rand::Mulberry32;
 
 /// The TypeScript prefix sums of `scripts/parity/print-fixtures.mjs fenwick`, one line per seed and size.
