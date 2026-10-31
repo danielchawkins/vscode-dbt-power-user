@@ -30,7 +30,5 @@ pub(crate) use crossings::total_crossings;
 pub(crate) use exact::exact_minimum_crossings;
 #[cfg(test)]
 pub(crate) use model::{OrderModel, units_of};
-#[cfg(test)]
 pub(crate) use run::order;
-#[cfg(test)]
 pub(crate) use seed::Hints;

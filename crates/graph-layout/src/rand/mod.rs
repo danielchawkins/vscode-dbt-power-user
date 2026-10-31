@@ -29,6 +29,7 @@ impl Mulberry32 {
         t ^ (t >> 14)
     }
 
+    #[cfg(test)]
     /// The next value in `[0, 1)`: `seededRandom`'s draw, exact in binary64.
     pub(crate) fn next_f64(&mut self) -> f64 {
         f64::from(self.next_u32()) / 4_294_967_296.0

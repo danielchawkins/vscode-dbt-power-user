@@ -316,6 +316,7 @@ fn spines(graph: &Graph, out: &mut LayeredGraph) {
                     breadth: 0.0,
                     port: None,
                 });
+                out.block.push(out.nodes.len() - 1);
                 out.paths.push(chain.clone());
                 run.push(out.nodes.len() - 1);
             }

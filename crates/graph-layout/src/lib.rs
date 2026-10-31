@@ -14,27 +14,22 @@ mod metrics;
 // `place` is compiled for its tests until route reads its boxes and placement.
 #[cfg(test)]
 mod place;
-// `budget`, `hash`, `index`, `layering`, `order`, `rand` and `solve` are compiled for their tests until the
-// layout phases use them; a non-test build would otherwise report their items as dead code.
-#[cfg(test)]
+// `budget`, `index`, `layering`, `order` and `rand` are compiled for the layout phases (`engine::phases`). `constraints`,
+// `hash` and `solve` are still compiled for their tests only, until a phase uses them.
 mod budget;
 #[cfg(test)]
 mod constraints;
 #[cfg(test)]
 mod hash;
-#[cfg(test)]
 mod index;
-#[cfg(test)]
 mod layering;
 #[cfg(test)]
 mod layering_checks;
-#[cfg(test)]
 mod order;
 #[cfg(test)]
 mod order_checks;
 #[cfg(test)]
 mod place_checks;
-#[cfg(test)]
 mod rand;
 mod route;
 #[cfg(test)]
