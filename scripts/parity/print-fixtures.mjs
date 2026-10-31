@@ -131,7 +131,8 @@ function printFenwick() {
       for (let k = 0; k < 4 * size + 10; k++) {
         // The draw times 2^32 is the u32 that `Mulberry32::next_u32` returns, so the index is the same integer.
         const index = Math.floor(random() * 4294967296) % size;
-        tree.add(index, random() * 4 - 1);
+        // Divided by 3, so each delta is not a dyadic rational: sums of them round, and the order of the sums shows.
+        tree.add(index, (random() * 4 - 1) / 3);
       }
       const prefixes = Array.from({ length: size + 1 }, (_, end) =>
         bitsHex(tree.prefix(end)),
