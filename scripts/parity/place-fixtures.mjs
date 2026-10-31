@@ -26,6 +26,8 @@ const { clusteredGraphArb, options: graphOptions } =
   await import("../../packages/graph-layout/src/testing/graphs.ts");
 const { exactSeparationOptimum } =
   await import("../../packages/graph-layout/src/testing/exactSeparations.ts");
+const { directedBundles } =
+  await import("../../packages/graph-layout/src/place/levelNodes.ts");
 
 const EFFORTS = ["fast", "balanced"];
 const DIRECTIONS = ["down", "right"];
@@ -114,6 +116,8 @@ function runCase({ graph, options, seed, hinted, effort }, deps) {
   const problem = problemOf(ordering, withHints, spacing);
   const warm = brandesKoepf(problem);
   const exact = exactInstance(ordering.layers, problem.gapLeft, warm);
+  // Which bundles the levels' across separations read: a plain function of the graph and the options, so it is stated.
+  const directed = directedBundles(graph, layered, base);
   return {
     input,
     budget,
@@ -123,6 +127,7 @@ function runCase({ graph, options, seed, hinted, effort }, deps) {
     spacing,
     withHints,
     exact,
+    directed,
   };
 }
 
@@ -205,6 +210,7 @@ function headerLine(name, run) {
     `name=${name}`,
     `effort=${withHints.effort}`,
     `direction=${withHints.direction}`,
+    `mode=${withHints.ranks}`,
     `ranks=${layered.ranks}`,
     `iterations=${budget.placeIterations}`,
     `spacing=${[spacing.node, spacing.edge, spacing.rank, spacing.cluster].map(bits).join(",")}`,
@@ -254,7 +260,7 @@ function nodeLines({ input, layered, withHints }) {
 }
 
 /** The rank, segment and spine lines of the layered graph. */
-function structureLines({ layered, ordering }) {
+function structureLines({ layered, ordering, directed }) {
   const lines = [];
   for (let r = 0; r < layered.ranks; r++) {
     const nodes = ordering.layers[r] ?? [];
@@ -269,6 +275,7 @@ function structureLines({ layered, ordering }) {
         `weight=${bits(s.weight)}`,
         `top_offset=${bits(s.topOffset)}`,
         `bottom_offset=${bits(s.bottomOffset)}`,
+        `directed=${directed[s.bundle] ? 1 : 0}`,
       ].join(" "),
     );
   });
@@ -371,21 +378,23 @@ function withVariations(variants) {
 
 const HEADER_LINES = (header) => [
   header,
-  "# case name=<name> effort=<effort> direction=<down|right> ranks=<n> iterations=<n> spacing=<node,edge,rank,cluster IEEE bits> anchor=<id|-> stability=<bits|-> hinted=<0|1> seed=<n>: a placement's full input.",
+  "# case name=<name> effort=<effort> direction=<down|right> mode=<rows|levels> ranks=<n> iterations=<n> spacing=<node,edge,rank,cluster IEEE bits> anchor=<id|-> stability=<bits|-> hinted=<0|1> seed=<n>: a placement's full input.",
   "# cluster index=<i> id=<id> parent=<index|-> padding=<bits|-> label=<bits|->; node index=<i> rank=<r> id=<id|-> breadth=<bits> width=<bits> height=<bits> block=<b> anchored=<0|1> path=<cluster indices|-> hint=<x,y bits|->: a layered node.",
-  "# layer <rank> <nodes|->; segment top=<i> bottom=<j> weight=<bits> top_offset=<bits> bottom_offset=<bits>; spine <nodes>; exact x0=<bits> weight=<bits> seps=<from>><to>@<gap bits> optimum=<bits> (or exact -): exactSeparations on one instance.",
+  "# layer <rank> <nodes|->; segment top=<i> bottom=<j> weight=<bits> top_offset=<bits> bottom_offset=<bits> directed=<0|1>; spine <nodes>; exact x0=<bits> weight=<bits> seps=<from>><to>@<gap bits> optimum=<bits> (or exact -): exactSeparations on one instance.",
   "# expect points=<x,y bits per layered node>; bounds=<minx,miny,maxx,maxy bits|->; edge_length=<bits>; work=<n>: TypeScript's outputs of the placement.",
 ];
 
-/** The placement fixture for the package and random layering cases and the rowsGolden graphs, in rows mode. */
+/** The placement fixture for the package and random layering cases and the rowsGolden graphs, in rows and levels mode. */
 export async function printPlace(HEADER, layeringCases, deps) {
   // The four package graphs, then every `RANDOM_STRIDE`th seeded random graph: the fixture stays small enough to commit.
   const chosen = layeringCases.filter(
     (_, k) => k < PACKAGE_CASES || (k - PACKAGE_CASES) % RANDOM_STRIDE === 0,
   );
+  const shapes = [...layeringVariants(chosen), ...(await rowsVariants())];
+  // Each shape runs in both modes; a levels case is named `levels/...` so the two modes' names never collide.
   const variants = withVariations([
-    ...layeringVariants(chosen),
-    ...(await rowsVariants()),
+    ...shapes.map((v) => withRanks(v, "rows")),
+    ...shapes.map((v) => withRanks(v, "levels")),
   ]);
   const lines = HEADER_LINES(HEADER);
   for (const v of variants) {
@@ -404,6 +413,12 @@ export async function printPlace(HEADER, layeringCases, deps) {
     );
   }
   return lines;
+}
+
+/** The variant in the given ranks mode: `rows`, or `levels` under its own `levels/` name. */
+function withRanks(variant, ranks) {
+  const name = ranks === "rows" ? variant.name : `levels/${variant.name}`;
+  return { ...variant, name, options: { ...variant.options, ranks } };
 }
 
 /** The placement of the finance lineage graph (the manifest is outside the repository, so it is not committed). */
