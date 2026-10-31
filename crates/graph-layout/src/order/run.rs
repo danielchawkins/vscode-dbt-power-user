@@ -60,23 +60,13 @@ pub(crate) fn order(
 }
 
 /// The search from one start, then from `budget.restarts` shuffles of it, keeping the order with the fewest crossings.
-/// Each shuffle draws one value per unit but its first, so the shuffles of a sequential run use the stream of `seed` in
-/// turn. Restart `r` takes its own generator at the place the sequential run would reach it, `r * draws` values in, so
-/// it does not depend on the others or on the thread that runs it, and it shuffles as the sequential run does. The
-/// results are merged in index order: a restart replaces the best only with strictly fewer crossings, so among equal
-/// orders the lowest index wins.
+/// Restart `r` takes its own generator, derived from `(seed, r)` (`Mulberry32::for_restart`), so it does not depend on
+/// the other restarts or on the thread that runs it. The results are merged in index order: a restart replaces the
+/// best only with strictly fewer crossings, so among equal orders the lowest index wins.
 fn search_from(layered: &LayeredGraph, start: &[Vec<usize>], budget: &Budget, seed: u32) -> Found {
     let mut best = refine(layered, start.to_vec(), budget);
-    let draws: u64 = start
-        .iter()
-        .map(|layer| {
-            let units = units_of(layer, &layered.block).len();
-            u64::try_from(units.saturating_sub(1)).unwrap_or(u64::MAX)
-        })
-        .sum();
     let restarts = restart_searches(budget.restarts, |index| {
-        let offset = u64::try_from(index).unwrap_or(u64::MAX).wrapping_mul(draws);
-        let mut random = Mulberry32::after(seed, offset);
+        let mut random = Mulberry32::for_restart(seed, index);
         let restart: Vec<Vec<usize>> = start
             .iter()
             .map(|layer| random.shuffled(&units_of(layer, &layered.block)).concat())

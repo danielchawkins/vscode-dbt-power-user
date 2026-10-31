@@ -15,6 +15,15 @@ const STEP: u32 = 0x6d2b_79f5;
 /// so the integer form below gives the same index; past it the product can round, and the two would part.
 pub(crate) const MAX_SHUFFLE_LEN: usize = 1 << 21;
 
+/// The splitmix64 mixer (Steele, Lea and Flood): a bijection on `u64` that spreads nearby inputs over all of it. It
+/// derives restart seeds, so a restart's stream does not sit a fixed step away from its neighbour's.
+const fn splitmix64(state: u64) -> u64 {
+    let mut z = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    z ^ (z >> 31)
+}
+
 impl Mulberry32 {
     /// A generator seeded with `seed`. `seededRandom` reduces its seed with `seed >>> 0`, so a seed wider than 32 bits
     /// reduces to the same `u32` on either side.
@@ -23,14 +32,14 @@ impl Mulberry32 {
         Self { state: seed }
     }
 
-    /// The generator a sequential run holds after `draws` draws, reached without making them: the state grows by
-    /// `STEP` per draw, so it is `seed + draws * STEP` modulo 2^32. A search gives restart `r` the draws of the shuffles
-    /// before it, `r * draws`, so each restart has its own generator and draws what a sequential run would draw.
+    /// The generator of restart `index` under `seed`. Its state is the high half of a splitmix64 of the pair, so each
+    /// restart has a stream of its own: it does not depend on how many draws the restarts before it used, nor on the
+    /// thread that runs it. Restart `index` is `index` as a `u64`, so the pair is a function of the two values alone.
     #[must_use]
-    pub(crate) fn after(seed: u32, draws: u64) -> Self {
-        // The low 32 bits of the product are the product modulo 2^32, which is the state's wrap.
-        let offset = draws.wrapping_mul(u64::from(STEP)) & u64::from(u32::MAX);
-        Self::new(seed.wrapping_add(u32::try_from(offset).unwrap_or(0)))
+    pub(crate) fn for_restart(seed: u32, index: usize) -> Self {
+        let index = u64::try_from(index).unwrap_or(u64::MAX);
+        let mixed = splitmix64(splitmix64(u64::from(seed)) ^ index);
+        Self::new(u32::try_from(mixed >> 32).unwrap_or(0))
     }
 
     /// The next 32-bit output: the integer `seededRandom` divides by 2^32.
@@ -171,18 +180,28 @@ mod tests {
     }
 
     #[test]
-    fn a_generator_after_k_draws_is_the_one_that_has_drawn_k_values() {
+    fn a_restart_generator_is_a_function_of_its_seed_and_index_alone() {
         for seed in [0, 7, u32::MAX] {
-            for draws in [0_u64, 1, 5, 1000] {
-                let mut stepped = Mulberry32::new(seed);
-                for _ in 0..draws {
-                    stepped.next_u32();
-                }
+            for index in 0..16 {
                 assert_eq!(
-                    Mulberry32::after(seed, draws),
-                    stepped,
-                    "seed {seed} draws {draws}"
+                    Mulberry32::for_restart(seed, index),
+                    Mulberry32::for_restart(seed, index),
+                    "seed {seed} restart {index}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn restarts_of_one_seed_have_distinct_generators() {
+        for seed in [0, 7, u32::MAX] {
+            let states: Vec<Mulberry32> = (0..64)
+                .map(|index| Mulberry32::for_restart(seed, index))
+                .collect();
+            for (i, a) in states.iter().enumerate() {
+                for b in &states[i + 1..] {
+                    assert_ne!(a, b, "seed {seed}");
+                }
             }
         }
     }
