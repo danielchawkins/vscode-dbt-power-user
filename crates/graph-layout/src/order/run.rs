@@ -64,20 +64,55 @@ pub(crate) fn order(
 }
 
 /// The search from one start, then from `budget.restarts` shuffles of it, keeping the order with the fewest crossings.
+/// Each shuffle draws one value per unit but its first, so the shuffles of a sequential run use the stream of `seed` in
+/// turn. Restart `r` takes its own generator at the place the sequential run would reach it, `r * draws` values in, so
+/// it does not depend on the others or on the thread that runs it, and it shuffles as the sequential run does. The
+/// results are merged in index order: a restart replaces the best only with strictly fewer crossings, so among equal
+/// orders the lowest index wins.
 fn search_from(layered: &LayeredGraph, start: &[Vec<usize>], budget: &Budget, seed: u32) -> Found {
-    let mut random = Mulberry32::new(seed);
     let mut best = refine(layered, start.to_vec(), budget);
-    for _ in 0..budget.restarts {
+    let draws: u64 = start
+        .iter()
+        .map(|layer| {
+            let units = units_of(layer, &layered.block).len();
+            u64::try_from(units.saturating_sub(1)).unwrap_or(u64::MAX)
+        })
+        .sum();
+    let restarts = restart_searches(budget.restarts, |index| {
+        let offset = u64::try_from(index).unwrap_or(u64::MAX).wrapping_mul(draws);
+        let mut random = Mulberry32::after(seed, offset);
         let restart: Vec<Vec<usize>> = start
             .iter()
             .map(|layer| random.shuffled(&units_of(layer, &layered.block)).concat())
             .collect();
-        let candidate = refine(layered, restart, budget);
+        refine(layered, restart, budget)
+    });
+    for candidate in restarts {
         if candidate.crossings < best.crossings {
             best = candidate;
         }
     }
     best
+}
+
+/// The searches of restarts `0..count`, in index order. With the `parallel` feature they run on rayon's global pool;
+/// an indexed collect keeps the index order, so the result is the one the sequential build gives.
+#[cfg(feature = "parallel")]
+fn restart_searches<F>(count: usize, search: F) -> Vec<Found>
+where
+    F: Fn(usize) -> Found + Sync + Send,
+{
+    use rayon::prelude::*;
+    (0..count).into_par_iter().map(search).collect()
+}
+
+/// The searches of restarts `0..count`, in index order, one after another.
+#[cfg(not(feature = "parallel"))]
+fn restart_searches<F>(count: usize, search: F) -> Vec<Found>
+where
+    F: Fn(usize) -> Found,
+{
+    (0..count).map(search).collect()
 }
 
 /// `found`'s order with each rank's real units put back in their `start` order, in the slots real units hold in
