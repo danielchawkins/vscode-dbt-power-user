@@ -87,6 +87,7 @@ describe("Lineage control coverage", () => {
         "Connections open": stateOf(({ user }) =>
           activate(user, "button", "Connections"),
         ),
+        "Scope open": stateOf(({ user }) => activate(user, "button", "Scope")),
         "Help open": stateOf(({ user }) => activate(user, "button", "Help")),
         "node expanded": stateOf(async ({ user, container }) => {
           await activate(user, "button", "Columns", node(container, "b"));
@@ -105,6 +106,6 @@ describe("Lineage control coverage", () => {
       },
       TESTED_CONTROLS,
     );
-    // Eleven renders of the whole panel: 1-3 s alone, past the 5 s default when the suite runs in parallel.
+    // Twelve renders of the whole panel: 1-3 s alone, past the 5 s default when the suite runs in parallel.
   }, 20_000);
 });

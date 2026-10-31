@@ -23,6 +23,7 @@ import {
   PROJECT_IDS,
   tableIds,
   TESTED_CONTROLS,
+  type User,
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
@@ -1468,6 +1469,121 @@ describe.each(MODES)("Lineage Hide control in the %s view", (viewMode) => {
     await press(user, "button", "Settings");
     expect(screen.getByText(/No cards are hidden/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Restore all" })).toBeNull();
+  });
+});
+
+describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
+  /**
+   * The cards the view draws with every filter on, and with each filter the tests switch off. The whole project also
+   * drops a card drawn only through a removed one, as the hiding rule does: `c` goes with `a`, and `a` with `c`.
+   */
+  const all = drawnIn(viewMode, ["a", "b", "c"]);
+  const withoutSource =
+    viewMode === "whole" ? projectWithout("a", "c") : ["b", "c"];
+  const withoutModels = viewMode === "whole" ? ["b"] : ["a", "b"];
+  const withoutC = viewMode === "whole" ? projectWithout("a", "c") : ["a", "b"];
+  /** The count the Scope popover shows for the cards the filters take out of the drawn graph. */
+  const filteredOut =
+    viewMode === "whole" ? "2 cards filtered out" : "1 card filtered out";
+
+  const openScope = (user: User) => press(user, "button", "Scope");
+
+  it("removes the cards of an unchecked node type, and the cards drawn only through them", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    await openScope(user);
+    await press(user, "checkbox", "source");
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutSource));
+    expect(screen.getByText(filteredOut)).toBeInTheDocument();
+    await expectPosted("persistLineageScope", {
+      args: { params: { scope: { offTypes: ["source"], offTags: [] } } },
+    });
+  });
+
+  it("removes every card of an unchecked node type", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    await openScope(user);
+    await press(user, "checkbox", "model");
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutModels));
+  });
+
+  it("removes a card only once every one of its tags is unchecked", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    await openScope(user);
+    await press(user, "checkbox", "nightly");
+    // `c` keeps its other tag, `finance`, so it stays drawn.
+    expect(tableIds(container)).toEqual(all);
+    await press(user, "checkbox", "finance");
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutC));
+  });
+
+  // In the whole project `a` is drawn only through `c`, so it goes with `c`; the neighbourhood draws it on its own.
+  it.runIf(viewMode === "neighbourhood")(
+    "keeps an untagged card drawn when every tag of the others is unchecked",
+    async () => {
+      const { user, container } = await openLineage(undefined, {
+        settings: { viewMode },
+      });
+      await waitFor(() => expect(tableIds(container)).toEqual(all));
+      await openScope(user);
+      await press(user, "checkbox", "nightly");
+      await press(user, "checkbox", "finance");
+      await waitFor(() => expect(tableIds(container)).toEqual(withoutC));
+      expect(tableIds(container)).toContain("a");
+    },
+  );
+
+  it("changes the drawn graph without fetching it again", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    const fetches = () =>
+      ["childTables", "parentTables", "getProjectGraph", "tableEdges"].map(
+        (command) => commands(command).length,
+      );
+    const before = fetches();
+    await openScope(user);
+    await press(user, "checkbox", "source");
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutSource));
+    expect(fetches()).toEqual(before);
+  });
+
+  it("applies the stored filters when the panel opens, and shows them unchecked", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+      scope: { offTypes: ["source"], offTags: [] },
+      flowNodes: withoutSource.length,
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutSource));
+    await openScope(user);
+    expect(screen.getByRole("checkbox", { name: "source" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "model" })).toBeChecked();
+    expect(screen.getByText(filteredOut)).toBeInTheDocument();
+  });
+
+  it("switches every filter back on with Show all, and saves that", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+      scope: { offTypes: ["source"], offTags: [] },
+      flowNodes: withoutSource.length,
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(withoutSource));
+    await openScope(user);
+    await press(user, "button", "Show all");
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    expect(screen.getByText("0 cards filtered out")).toBeInTheDocument();
+    await expectPosted("persistLineageScope", {
+      args: { params: { scope: { offTypes: [], offTags: [] } } },
+    });
   });
 });
 

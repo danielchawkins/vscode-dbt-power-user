@@ -23,6 +23,9 @@ export type TableColumn = [table: string, column: string];
  * The lineage graph the panel draws. `known`, `neighbours` and `columns` cache host answers; the drawn graph is the
  * start table plus each entry of `expansions`, in order, whose table is drawn.
  */
+/** The Scope filters the projection reads: the node types and the tags switched off. */
+export type GraphScope = Pick<lineage.LineageScope, "offTypes" | "offTags">;
+
 export interface GraphState {
   start?: string | undefined;
   known: Record<string, LineageTable>;
@@ -40,6 +43,11 @@ export interface GraphState {
    * not drawn; a card that is not in this graph does nothing here, and is kept for the other models.
    */
   hiddenCards: lineage.HiddenCard[];
+  /**
+   * The node types and tags the Scope control switched off, whatever the start model. A card they remove is not drawn,
+   * and neither is each card drawn only through it; the start card is never removed.
+   */
+  scope: GraphScope;
   /** Tooltip lines per table from the last trace. */
   errors: Record<string, string[]>;
   /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */

@@ -367,6 +367,36 @@ describe("lineage panel messages", () => {
       ]);
       expect(h.postMessage).toHaveBeenCalledWith(response("h1", { ok: true }));
     },
+    getLineageScope: async () => {
+      const h = lineageHarness();
+      h.workspaceState.set("lineage.scope", {
+        offTypes: ["source"],
+        offTags: ["nightly"],
+      });
+      await h.send({ command: "getLineageScope", syncRequestId: "s1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("s1", {
+          scope: { offTypes: ["source"], offTags: ["nightly"] },
+        }),
+      );
+    },
+    persistLineageScope: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "persistLineageScope",
+        args: {
+          params: {
+            scope: { offTypes: ["source", "source"], offTags: ["nightly"] },
+          },
+        },
+        syncRequestId: "s2",
+      });
+      expect(h.workspaceState.get("lineage.scope")).toEqual({
+        offTypes: ["source"],
+        offTags: ["nightly"],
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
+    },
   };
 
   it("has a row for every panelCommands entry", () => {

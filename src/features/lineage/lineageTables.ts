@@ -30,6 +30,13 @@ function testsOf(
  * `{ hidden: true }` when `meta.lineage.hidden: true` is set in any of `metas`, else nothing, so most tables
  * carry no flag.
  */
+/** `{ tags }` when the node has any, else nothing: most nodes have none, and the Scope filter reads only the ones that do. */
+function tagsPart(tags: readonly string[] | null | undefined): {
+  tags?: string[];
+} {
+  return tags && tags.length > 0 ? { tags: [...tags] } : {};
+}
+
 function hiddenPart(...metas: Meta[]): { hidden?: true } {
   const hidden = metas.some((meta) => {
     const lineage = meta?.lineage;
@@ -88,6 +95,7 @@ export function lineageTable(
         materialization: undefined,
         tests: [],
         ...hiddenPart(exposure?.meta, exposure?.config?.meta),
+        ...tagsPart(exposure?.tags),
       };
     }
     case RESOURCE_TYPE_FUNCTION: {
@@ -125,6 +133,7 @@ function sourceTable(
     ...base,
     label: tableName,
     tests: testsOf(manifest, base.table),
+    ...tagsPart(table.tags),
     description: table.description,
     packageName: source.package_name,
     rootPackage: source.package_name === options.rootPackage,
@@ -160,6 +169,7 @@ function nodeTable(
     packageName: node.package_name,
     rootPackage: node.package_name === options.rootPackage,
     meta: node.meta,
+    ...tagsPart(node.tags),
     ...hiddenPart(node.meta, node.config.meta),
     ...(node.config.schema ? { customSchema: node.config.schema } : {}),
     ...(node.name === node.alias ? {} : { refName: node.name }),

@@ -4,7 +4,7 @@ import { readViewState } from "@modules/app/viewState";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { traceColumn } from "./columnTrace";
 import { expandDepths, replayExpansions } from "./expansionBatch";
-import type { GraphState, GraphStore, ViewSettings } from "./graph";
+import type { GraphScope, GraphState, GraphStore, ViewSettings } from "./graph";
 import {
   emptyGraph,
   linkDrawn,
@@ -17,6 +17,7 @@ import {
   useHeldUntil,
   useHiddenSeed,
   useHostMessages,
+  useScopeSeed,
   useViewStateWriter,
   useWholeFrame,
 } from "./lineageHooks";
@@ -118,6 +119,7 @@ function useGraphStore(expansionOptions: () => ExpansionOptions) {
         ...emptyGraph(start, cap, groupBy),
         view,
         hiddenCards: graphRef.current.hiddenCards,
+        scope: graphRef.current.scope,
       };
       setGraph(graphRef.current);
       builtViewRef.current = shapeKeyOf(view);
@@ -166,6 +168,8 @@ interface LineageGraphOptions {
   ready?: boolean;
   /** The hidden cards the host sent for the workspace; undefined until they arrive. */
   hidden?: lineage.HiddenCard[] | undefined;
+  /** The Scope filters the host sent for the workspace, or the user changed since; undefined until they arrive. */
+  scope?: GraphScope | undefined;
 }
 
 /** What `useLineageGraph` returns. */
@@ -228,6 +232,7 @@ export function useLineageGraph(
     raiseBudget,
     ready = true,
     hidden,
+    scope,
   }: LineageGraphOptions = {},
 ): LineageGraphModel {
   const {
@@ -240,6 +245,7 @@ export function useLineageGraph(
     rebuild,
   } = useGraphStore(expansionOptions);
   useHiddenSeed(current, hidden);
+  useScopeSeed(current, scope);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);

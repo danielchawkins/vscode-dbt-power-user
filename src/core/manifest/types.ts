@@ -253,6 +253,8 @@ export interface SourceTable {
   meta?: Meta;
   /** This table's `config.meta`, which Fusion may place instead of `meta`. */
   configMeta?: Meta;
+  /** This table's own tags; the lineage Scope filter reads them. */
+  tags?: string[] | null;
 }
 
 interface DocMetaData {

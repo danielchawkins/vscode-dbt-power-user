@@ -393,6 +393,14 @@ const lineagePanel: Fixture[] = [
     required: ["args.params"],
   },
   { message: { command: "getHiddenCards", ...params({}) }, required: [] },
+  { message: { command: "getLineageScope", ...params({}) }, required: [] },
+  {
+    message: {
+      command: "persistLineageScope",
+      ...params({ scope: { offTypes: ["source"], offTags: ["nightly"] } }),
+    },
+    required: ["args.params.scope"],
+  },
   {
     message: {
       command: "persistHiddenCards",

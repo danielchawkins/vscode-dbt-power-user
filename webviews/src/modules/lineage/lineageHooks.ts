@@ -3,7 +3,7 @@ import { writeViewState } from "@modules/app/viewState";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { GraphState, GraphStore } from "./graph";
-import { framedCards, withHidden } from "./graph";
+import { framedCards, type GraphScope, withHidden, withScope } from "./graph";
 import { executeRequestInAsync } from "./requests";
 import { viewStateOf } from "./viewModel";
 
@@ -17,6 +17,18 @@ export function useHiddenSeed(
       current().update((s) => withHidden(s, hidden));
     }
   }, [hidden, current]);
+}
+
+/** Applies the Scope filters once the host sends them, and again each time the user changes them. */
+export function useScopeSeed(
+  current: () => GraphStore,
+  scope: GraphScope | undefined,
+): void {
+  useEffect(() => {
+    if (scope) {
+      current().update((s) => withScope(s, scope));
+    }
+  }, [scope, current]);
 }
 
 /** `handle`, except that while `ready` is false the latest call is held, and replayed once `ready` turns true. */
