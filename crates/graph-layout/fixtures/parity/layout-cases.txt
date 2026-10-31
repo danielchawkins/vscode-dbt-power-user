@@ -1,0 +1,12 @@
+# Rust-only cases for `layout_outputs_are_written_for_the_parity_comparison` (`just layout-parity`). Each line is
+# `case <name> <effort> <seed> <nodes> <edges>`: a random graph of <nodes> nodes and <edges> rank edges, drawn from
+# <seed> (see `random_case` in engine/layout/tests.rs), laid out at <effort> with the same seed. Native and WebAssembly
+# must write the same bytes; no TypeScript output is involved.
+case fast-small fast 1 40 80
+case fast-medium fast 2 150 300
+case fast-large fast 3 600 1200
+case balanced-small balanced 4 40 80
+case balanced-medium balanced 5 120 240
+case thorough-small thorough 6 40 80
+case thorough-medium thorough 7 120 240
+case thorough-dense thorough 8 60 240
