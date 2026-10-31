@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use super::spacing_of;
 use crate::index::Indexed;
-use crate::layering::{ChainNode, LayeredGraph, Layers};
+use crate::layering::{ChainNode, LayeredGraph, Layers, PortDummy};
 use crate::model::{Direction, Graph, Options, Ranks};
 use crate::place::Placement;
 use crate::route::{
@@ -289,15 +289,56 @@ struct Stops<'a> {
 }
 
 impl Stops<'_> {
-    /// The stops of a member edge along its bundle's chain, from the edge's source end to its target end.
+    /// The stops of a member edge along its bundle's chain, from the edge's source end to its target end. A chain end
+    /// that is a lateral port dummy gets its owner's stop before it: the edge leaves the owner's side there.
     fn of_chain(&self, chain: &[usize], member: &Member<'_>) -> Vec<Stop> {
-        let mut stops: Vec<Stop> = (0..chain.len())
-            .map(|k| self.stop(chain, k, member))
-            .collect();
-        if chain.first() != Some(&member.source) {
+        let mut stops: Vec<Stop> = Vec::with_capacity(chain.len() + 2);
+        let (Some(&first), Some(&last)) = (chain.first(), chain.last()) else {
+            return stops;
+        };
+        stops.extend(self.owner_stop(first));
+        stops.extend((0..chain.len()).map(|k| self.stop(chain, k, member)));
+        if chain.len() > 1 {
+            stops.extend(self.owner_stop(last));
+        }
+        if self.real_end(first) != Some(member.source) {
             stops.reverse();
         }
         stops
+    }
+
+    /// The real node a chain end stands for: the node itself, or the owner of a lateral port dummy.
+    fn real_end(&self, node: usize) -> Option<usize> {
+        let layered = &self.layered.nodes[node];
+        match layered.port {
+            Some(port) => self.layered.nodes[port.owner].id,
+            None => layered.id,
+        }
+    }
+
+    /// The across offset, from the rank's centre, at which a lateral port's edge leaves its owner: the port's offset
+    /// from the start of its side, measured from the owner's centre.
+    fn side_of(&self, port: PortDummy) -> f64 {
+        let half = self.layered.nodes[port.owner]
+            .id
+            .map_or(0.0, |real| across_half(self.graph, self.down, real));
+        port.offset - half
+    }
+
+    /// The stop of a lateral port's owner, when `node` is a port dummy: a point on the owner's side that the stub from
+    /// the owner meets. `None` for every other chain end.
+    fn owner_stop(&self, node: usize) -> Option<Stop> {
+        let port = self.layered.nodes[node].port?;
+        let owner = &self.layered.nodes[port.owner];
+        let breadth = owner.breadth / 2.0;
+        let edge = if port.after { breadth } else { -breadth };
+        Some(Stop {
+            rank: owner.rank,
+            along: along_of(self.placement, self.down, port.owner) + edge,
+            across: across_of(self.placement, self.down, port.owner),
+            half: 0.0,
+            side: self.side_of(port),
+        })
     }
 
     /// The stop at position `k` of the chain. A real end sits at its port when the port is on the side that faces the
@@ -315,6 +356,7 @@ impl Stops<'_> {
                     + (count_of(member.slot) + 0.5) * layered.breadth / count_of(member.count),
                 across,
                 half: 0.0,
+                side: layered.port.map_or(0.0, |port| self.side_of(port)),
             },
             Some(real) => {
                 let facing = chain
@@ -339,6 +381,7 @@ impl Stops<'_> {
                     along,
                     across,
                     half: across_half(self.graph, self.down, real),
+                    side: 0.0,
                 }
             }
         }

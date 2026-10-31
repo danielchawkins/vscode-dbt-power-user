@@ -2,10 +2,10 @@
 //! then rank and layering, then order, then place, then route (`routing`). This is the glue of those phases, written as
 //! plain Rust data. Order runs without restarts, which come in a later step.
 //!
-//! Three things are refused rather than run, because the ported phases do not handle them yet. A lateral port needs
-//! the lateral blocks of ordering, which are not ported. A rank that is not a whole number needs a fractional minimum
-//! length, which the layered graph (`usize` ranks) cannot hold. An effort that names no budget has no counts. Opaque
-//! clusters are not yet kept apart by `keepOutside`: ordering returns its layers unchanged, as `order/mod.rs` says.
+//! Two things are refused rather than run. A rank that is not a whole number needs a fractional minimum length, which
+//! the layered graph (`usize` ranks) cannot hold. An effort that names no budget has no counts. Lateral ports run:
+//! their dummies are ordered as units with their owners, and routed as stubs. Opaque clusters are not yet kept apart by
+//! `keepOutside`: ordering returns its layers unchanged, as `order/mod.rs` says, and routing flags what breaches.
 
 mod routing;
 #[cfg(test)]
@@ -59,8 +59,6 @@ pub struct Phases {
 pub enum PhaseError {
     /// The effort names no budget: it is not `fast`, `balanced` or `thorough`. The name is given as it was.
     UnknownEffort(String),
-    /// A lateral port has a dummy in the layered graph, which ordering does not handle yet.
-    LateralPort,
     /// A rank is not a whole number below 2^32, as a fractional minimum length gives.
     NonIntegerRank,
     /// Ranking failed. The constraints of a validated graph never cause this.
@@ -81,7 +79,7 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
     let budget = Budget::for_effort(options.effort.as_deref())
         .ok_or_else(|| PhaseError::UnknownEffort(options.effort.clone().unwrap_or_default()))?;
     let index = Indexed::new(graph, Some(options));
-    let rules = edge_rules(graph, options);
+    let rules = edge_rules(graph, options, &index);
     let (hint_ranks, hint_orders) = hints(graph, &index, options);
     let rank_options = RankOptions {
         partitions: partition_mode(options.partitions.unwrap_or_default()),
@@ -101,9 +99,6 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
         .ok_or(PhaseError::NonIntegerRank)?;
     let layers = layer(&index, &rules, &ranking.ranks);
     let layered = build(graph, options, &layers, &ranks);
-    if layered.nodes.iter().any(|node| node.port.is_some()) {
-        return Err(PhaseError::LateralPort);
-    }
     let seed = to_uint32(options.seed.unwrap_or(0.0));
     let ordered = order(&layered, hint_orders.as_ref(), &budget, seed);
     let placement = place_layout(
@@ -171,7 +166,7 @@ fn place_layout(
             id: ids[i],
             breadth: node.breadth,
             block: layered.block[i],
-            // Lateral ports are refused before placement, so a node is anchored exactly when it is real.
+            // A lateral port dummy is not anchored: placement solves its place like any dummy's.
             anchored: node.id.is_some(),
             hint: hints[i],
         })
@@ -327,24 +322,62 @@ fn directed_bundles(glue: &PlaceGlue<'_>, node_count: usize) -> Vec<bool> {
 
 /// The rule of each edge, by edge index: the dense id of its kind (numbered in order of first appearance), and its
 /// policy. A kind with no policy does not rank and has the default minimum length and weight of `rank/index.ts`.
-fn edge_rules(graph: &Graph, options: &Options) -> Vec<EdgeRule> {
+fn edge_rules(graph: &Graph, options: &Options, index: &Indexed) -> Vec<EdgeRule> {
     let mut kinds: BTreeMap<&str, usize> = BTreeMap::new();
     graph
         .edges
         .kind
         .iter()
-        .map(|kind| {
+        .enumerate()
+        .map(|(e, kind)| {
             let next = kinds.len();
             let kind_id = *kinds.entry(kind.as_str()).or_insert(next);
             let policy = options.edge_kinds.get(kind);
+            let (source, target) = index
+                .ends(e)
+                .map_or((0, 0), |(s, t)| (s as usize, t as usize));
             EdgeRule {
                 kind: kind_id,
                 ranks: policy.is_some_and(|p| p.ranks),
                 min_length: policy.and_then(|p| p.min_length).unwrap_or(1.0),
                 weight: policy.and_then(|p| p.weight).unwrap_or(1.0),
+                ports: [
+                    lateral_port(
+                        graph,
+                        options,
+                        source,
+                        graph.edges.source_port[e].as_deref(),
+                    ),
+                    lateral_port(
+                        graph,
+                        options,
+                        target,
+                        graph.edges.target_port[e].as_deref(),
+                    ),
+                ],
             }
         })
         .collect()
+}
+
+/// The row of the port `port` names on `node`, when that port sits on a side lateral to the flow: the west and east
+/// sides when ranks run down, the north and south sides when they run right. `None` for no port, or a flow-side port.
+fn lateral_port(
+    graph: &Graph,
+    options: &Options,
+    node: usize,
+    port: Option<&str>,
+) -> Option<usize> {
+    let port = port?;
+    let row = (0..graph.nodes.ports.id.len()).find(|&row| {
+        graph.nodes.ports.node[row] as usize == node && graph.nodes.ports.id[row] == port
+    })?;
+    let side = graph.nodes.ports.side[row].as_str();
+    let lateral = match options.direction {
+        Direction::Down => ["west", "east"],
+        Direction::Right => ["north", "south"],
+    };
+    lateral.contains(&side).then_some(row)
 }
 
 /// The hints the phases read: the hinted rank of each node, by node index (empty when the run has no hints), and the

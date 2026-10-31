@@ -372,6 +372,7 @@ mod tests {
         let g = graph();
         let indexed = Indexed::from_ends(2, vec![Some((0, 1))], &[true]);
         let rules = [EdgeRule {
+            ports: [None, None],
             kind: 0,
             ranks: true,
             min_length: 1.0,

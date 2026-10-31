@@ -4,7 +4,7 @@
 //! `order`), and the exact oracle (`exact`, test-only). Step 2: the clusters, starting order, sweeps, transposition,
 //! sifting and the run (`run`). The input is the layered graph that `layer()` builds: its spine dummies, cluster paths
 //! and blocks come from there (`spines.ts` builds the spines during layering, and `order` only reads them). Not yet
-//! ported: lateral port dummies (the run asserts there are none) and `keepOutside`, which returns its input unchanged
+//! ported: `keepOutside`, which returns its input unchanged
 //! here: the box-avoidance pass that needs opaque cluster boxes is not in this port.
 
 mod clusters;

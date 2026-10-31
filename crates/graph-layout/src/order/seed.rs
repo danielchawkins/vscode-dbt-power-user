@@ -2,7 +2,7 @@
 //! and a node they do not know sits where its neighbours sit along their ranks (North and Woodhull, GD 2001). Without
 //! hints the order is depth-first from the top rank, so a node follows the nodes it feeds. A port of `order/seed.ts`.
 //!
-//! Lateral port blocks are not ported: the graphs this phase reads have no port dummies (`order::order` checks).
+//! A lateral port's dummy is ordered as a unit with its owner (`model.rs`), so the hints need no port rule.
 
 use std::collections::BTreeMap;
 

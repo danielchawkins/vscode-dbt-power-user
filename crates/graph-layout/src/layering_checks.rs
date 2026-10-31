@@ -97,6 +97,7 @@ fn parse(text: &str) -> Vec<Case> {
                     let p: Vec<&str> = edge.split(':').collect();
                     ends.push((p[0].parse().expect("a node"), p[1].parse().expect("a node")));
                     rules.push(EdgeRule {
+                        ports: [None, None],
                         kind: p[2].parse().expect("a kind"),
                         ranks: p[3] == "1",
                         min_length: p[4].parse().expect("a minimum length"),

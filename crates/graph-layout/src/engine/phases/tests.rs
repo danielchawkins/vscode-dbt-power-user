@@ -315,19 +315,19 @@ fn least_gap(layered: &LayeredGraph, u: usize, v: usize) -> f64 {
 proptest! {
     #[test]
     fn every_rank_assignment_is_valid((graph, options) in case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_ranks_valid(&graph, &options, &phases);
     }
 
     #[test]
     fn every_layer_is_a_permutation_of_its_units((graph, options) in case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_layers_are_permutations(&phases);
     }
 
     #[test]
     fn dummy_chains_are_contiguous((graph, options) in case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_chains_are_contiguous(&phases);
     }
 
@@ -340,7 +340,7 @@ proptest! {
 
     #[test]
     fn every_placed_node_is_finite((graph, options) in placed_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         let placement = &phases.placement;
         prop_assert!(placement.points.iter().all(|p| p.x.is_finite() && p.y.is_finite()));
         prop_assert!(placement.centres.iter().chain(&placement.rank_half).all(|v| v.is_finite()));
@@ -348,7 +348,7 @@ proptest! {
 
     #[test]
     fn no_two_nodes_overlap_in_a_rank((graph, options) in placed_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         let along = along_axis(&phases, options.direction == Direction::Down);
         for layer in &phases.layers {
             for pair in layer.windows(2) {
@@ -364,7 +364,7 @@ proptest! {
 
     #[test]
     fn nodes_of_different_ranks_that_overlap_in_rank_stay_apart_across((graph, options) in placed_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         let down = options.direction == Direction::Down;
         let along = along_axis(&phases, down);
         let across = across_axis(&phases, down);
@@ -448,15 +448,31 @@ fn assert_routing_gate(graph: &Graph, down: bool, phases: &Phases) {
                 .all(|w| same_coordinate(w[0].x, w[1].x) || same_coordinate(w[0].y, w[1].y)),
             "edge {edge} is orthogonal"
         );
-        assert_eq!(
-            along(&points[0]),
-            along(&routing.nodes[source]),
-            "edge {edge} starts at its source"
-        );
-        assert_eq!(
-            along(&points[points.len() - 1]),
-            along(&routing.nodes[target]),
-            "edge {edge} ends at its target"
+        // An end with no port sits at its node's centre. A port's end sits on the node's side, within its along-extent.
+        let end_gate = |end: &Point, node: usize, port: Option<&String>| {
+            let extent = if down {
+                graph.nodes.width[node]
+            } else {
+                graph.nodes.height[node]
+            };
+            let delta = (along(end) - along(&routing.nodes[node])).abs();
+            if port.is_none() {
+                assert!(
+                    same_coordinate(delta, 0.0),
+                    "edge {edge} ends at its node's centre"
+                );
+            } else {
+                assert!(
+                    delta <= extent / 2.0 + 1e-9,
+                    "edge {edge} ends on its node's side"
+                );
+            }
+        };
+        end_gate(&points[0], source, graph.edges.source_port[edge].as_ref());
+        end_gate(
+            &points[points.len() - 1],
+            target,
+            graph.edges.target_port[edge].as_ref(),
         );
         let watched: Vec<bool> = routing
             .clusters
@@ -474,10 +490,79 @@ fn assert_routing_gate(graph: &Graph, down: bool, phases: &Phases) {
     }
 }
 
+/// `case`, with lateral and flow-side ports on random nodes and edge ends that name them.
+pub(in crate::engine) fn ported_case() -> impl Strategy<Value = (Graph, Options)> {
+    (
+        case(),
+        prop::collection::vec((0_u8..4, 0.0_f64..=1.0), 0..12),
+        prop::collection::vec(
+            (prop::option::of(0_usize..12), prop::option::of(0_usize..12)),
+            0..24,
+        ),
+    )
+        .prop_map(|((mut graph, options), ports, ends)| {
+            add_ports(&mut graph, &ports, &ends);
+            (graph, options)
+        })
+}
+
+/// `opaque_case`, with ports as `ported_case` adds them: lateral ports whose stubs may meet an opaque box.
+pub(in crate::engine) fn ported_opaque_case() -> impl Strategy<Value = (Graph, Options)> {
+    (
+        opaque_case(),
+        prop::collection::vec((0_u8..4, 0.0_f64..=1.0), 0..12),
+        prop::collection::vec(
+            (prop::option::of(0_usize..12), prop::option::of(0_usize..12)),
+            0..24,
+        ),
+    )
+        .prop_map(|((mut graph, options), ports, ends)| {
+            add_ports(&mut graph, &ports, &ends);
+            (graph, options)
+        })
+}
+
+/// Gives the nodes of `graph` ports, one per entry of `ports` (its side and its offset as a share of the node's smaller
+/// extent, so it lies on every side), and names one of each node's ports at the ends of the edges `ends` picks.
+fn add_ports(graph: &mut Graph, ports: &[(u8, f64)], ends: &[(Option<usize>, Option<usize>)]) {
+    const SIDES: [&str; 4] = ["north", "east", "south", "west"];
+    let count = graph.nodes.id.len();
+    if count == 0 {
+        return;
+    }
+    let mut table = Ports::default();
+    for (k, &(side, fraction)) in ports.iter().enumerate() {
+        let owner = k % count;
+        let limit = graph.nodes.width[owner].min(graph.nodes.height[owner]);
+        table.node.push(u32::try_from(owner).expect("small"));
+        table.id.push(format!("p{k}"));
+        table.side.push(SIDES[usize::from(side)].to_owned());
+        table.offset.push(fraction * limit);
+    }
+    graph.nodes.ports = table;
+    for e in 0..graph.edges.id.len() {
+        let (s, t) = ends.get(e).copied().unwrap_or((None, None));
+        let source = index_of(&graph.nodes.id, &graph.edges.source[e]);
+        let target = index_of(&graph.nodes.id, &graph.edges.target[e]);
+        graph.edges.source_port[e] = pick(ports.len(), count, source, s);
+        graph.edges.target_port[e] = pick(ports.len(), count, target, t);
+    }
+}
+
+/// The id of one of the ports `node` owns, chosen by `choice`; `None` when the edge names no port or the node has none.
+fn pick(ports: usize, count: usize, node: usize, choice: Option<usize>) -> Option<String> {
+    let owned: Vec<usize> = (0..ports).filter(|k| k % count == node).collect();
+    let i = choice?;
+    if owned.is_empty() {
+        return None;
+    }
+    Some(format!("p{}", owned[i % owned.len()]))
+}
+
 proptest! {
     #[test]
     fn every_routed_edge_keeps_to_the_gate((graph, options) in opaque_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
     }
 
@@ -597,13 +682,13 @@ fn assert_measures(graph: &Graph, phases: &Phases) {
 proptest! {
     #[test]
     fn measured_routes_keep_to_the_gate_and_count_crossings_by_brute_force((graph, options) in opaque_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_measures(&graph, &phases);
     }
 
     #[test]
     fn measured_levels_routes_keep_to_the_gate_and_count_crossings_by_brute_force((graph, options) in levels_case()) {
-        let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
         assert_measures(&graph, &phases);
     }
 }
@@ -624,7 +709,7 @@ fn levels_routes_keep_to_the_gate_and_draw_edges() {
     let mut runner = proptest::test_runner::TestRunner::deterministic();
     runner
         .run(&levels_case(), |(graph, options)| {
-            let phases = run_phases(&graph, &options).expect("a graph without lateral ports runs");
+            let phases = run_phases(&graph, &options).expect("a valid graph runs");
             assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
             let routed = phases
                 .routing
@@ -707,19 +792,25 @@ fn an_empty_graph_has_no_ranks_and_no_layers() {
 }
 
 #[test]
-fn a_lateral_port_that_an_edge_leaves_through_is_refused() {
+fn a_lateral_port_that_an_edge_leaves_through_is_drawn_as_a_stub() {
     let mut graph = graph_of(&["a", "b"], &[("a", "b")]);
     graph.nodes.ports = Ports {
         node: vec![0],
         id: vec!["p".to_owned()],
         side: vec!["east".to_owned()],
-        offset: vec![1.0],
+        offset: vec![7.0],
     };
     graph.edges.source_port = vec![Some("p".to_owned())];
-    assert_eq!(
-        run_phases(&graph, &dependency_options()),
-        Err(PhaseError::LateralPort)
-    );
+    let phases = run_phases(&graph, &dependency_options()).expect("a lateral port runs");
+    let EdgeRoute::Routed(points) = &phases.routing.edges[0] else {
+        panic!("the edge is drawn: {:?}", phases.routing.edges[0]);
+    };
+    // The east side of a 10-wide, 10-high node, at offset 7 from its top: the stub leaves the node's right edge at 2
+    // below its centre, and the first bend is on that line.
+    let centre = phases.routing.nodes[0];
+    assert_eq!(points[0].x, centre.x + 5.0);
+    assert_eq!(points[0].y, centre.y + 2.0);
+    assert_eq!(points[1].y, centre.y + 2.0, "the stub is horizontal");
 }
 
 #[test]
@@ -773,4 +864,18 @@ fn the_hints_of_a_graph_name_its_nodes_by_index() {
     assert_eq!(rows.id, vec!["n1".to_owned()]);
     assert_eq!(rows.rank, vec![1]);
     assert_eq!(rows.order, vec![0]);
+}
+
+proptest! {
+    #[test]
+    fn lateral_ports_are_routed_or_flagged_and_keep_to_the_gate((graph, options) in ported_case()) {
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
+        assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
+    }
+
+    #[test]
+    fn lateral_ports_beside_opaque_boxes_keep_to_the_gate((graph, options) in ported_opaque_case()) {
+        let phases = run_phases(&graph, &options).expect("a valid graph runs");
+        assert_routing_gate(&graph, options.direction == Direction::Down, &phases);
+    }
 }

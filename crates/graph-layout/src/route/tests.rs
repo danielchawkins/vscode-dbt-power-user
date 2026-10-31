@@ -24,6 +24,7 @@ fn stop(rank: usize, along: f64) -> Stop {
         along,
         across: 0.0,
         half: 5.0,
+        side: 0.0,
     }
 }
 
@@ -45,6 +46,7 @@ fn solved_stop(rank: usize, along: f64, across: f64, half: f64) -> Stop {
         along,
         across,
         half,
+        side: 0.0,
     }
 }
 
