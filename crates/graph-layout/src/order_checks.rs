@@ -19,6 +19,7 @@ use crate::layering::{
 use crate::model::{Clusters, Direction, Edges, Graph, Nodes, Options, Ports};
 use crate::order::{Hints, OrderModel, exact_minimum_crossings, order, total_crossings};
 use crate::rand::Mulberry32;
+use std::fmt::Write as _;
 
 const FIXTURE: &str = include_str!("../fixtures/parity/crossings.txt");
 const ORDER_FIXTURE: &str = include_str!("../fixtures/parity/order.txt");
@@ -466,6 +467,35 @@ fn banded_graph_reaches_its_exact_minimum_at_thorough() {
             "banded at thorough, seed {seed}"
         );
     }
+}
+
+/// The order outputs: each case of `order.txt` at every result's effort, with the crossings as IEEE bits and the order as
+/// `render` spells it. The test runs natively and under WASI and writes the output when `GRAPH_LAYOUT_ORDER_OUT` names a
+/// file; `just order-parity` compares the two files byte for byte.
+#[test]
+fn order_outputs_are_written_for_the_parity_comparison() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_ORDER_OUT") else {
+        return;
+    };
+    let mut text = String::new();
+    for case in parse_cases(ORDER_FIXTURE) {
+        let results: Vec<String> = case
+            .results
+            .iter()
+            .map(|expected| {
+                let ordered = run(&case, expected, case.seed);
+                format!(
+                    "{}:{}:{}:{}",
+                    expected.effort,
+                    expected.hinted,
+                    bits(ordered.crossings),
+                    render(&ordered.layers)
+                )
+            })
+            .collect();
+        writeln!(text, "{}\t{}", case.name, results.join(" ")).expect("writing to a string");
+    }
+    std::fs::write(&path, text).expect("the order output is writable");
 }
 
 #[test]
