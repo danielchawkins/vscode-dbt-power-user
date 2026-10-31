@@ -15,6 +15,8 @@ mod place;
 #[cfg(test)]
 mod budget;
 #[cfg(test)]
+mod constraints;
+#[cfg(test)]
 mod hash;
 #[cfg(test)]
 mod index;
