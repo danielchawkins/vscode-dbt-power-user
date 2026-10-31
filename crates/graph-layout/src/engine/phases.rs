@@ -104,13 +104,8 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
     if layered.nodes.iter().any(|node| node.port.is_some()) {
         return Err(PhaseError::LateralPort);
     }
-    // Restarts come in a later step, so ordering runs its first search only.
-    let without_restarts = Budget {
-        restarts: 0,
-        ..budget
-    };
     let seed = to_uint32(options.seed.unwrap_or(0.0));
-    let ordered = order(&layered, hint_orders.as_ref(), &without_restarts, seed);
+    let ordered = order(&layered, hint_orders.as_ref(), &budget, seed);
     let placement = place_layout(
         &PlaceGlue {
             graph,
@@ -389,7 +384,7 @@ fn whole_rank(r: f64) -> Option<usize> {
 
 /// `x >>> 0`, as the TypeScript engine reads a seed: `x` truncated and reduced modulo 2^32, and 0 when `x` is not
 /// finite. The bits are taken one at a time, since the core denies float-to-integer casts.
-fn to_uint32(x: f64) -> u32 {
+pub(crate) fn to_uint32(x: f64) -> u32 {
     if !x.is_finite() {
         return 0;
     }

@@ -1,18 +1,24 @@
 //! The layout on random graphs, and the refusal of invalid input. The gate of the routed edges, the measures, the
 //! finiteness of every number, the determinism of the encoded frame and the bounds run on the phases' random cases,
 //! made valid for `validate`. The deterministic cases fix the flags of a self-loop, an unrouted kind, the partition
-//! boxes and the refused input.
+//! boxes and the refused input. The thorough effort, with its restarts, passes the same gate, repeats byte for byte, and
+//! never has more crossings than its first search; `GRAPH_LAYOUT_THOROUGH_OUT` writes its frame for the thread sweep.
 
 use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 
 use super::{LayoutError, layout};
+use crate::budget::Budget;
+use crate::engine::phases::run_phases;
 use crate::engine::phases::tests::{case, levels_case, opaque_case};
+use crate::engine::phases::to_uint32;
 use crate::model::{
     Clusters, Direction, EdgeKindPolicy, Edges, Graph, IssueCode, Layout, NodeLayouts, Nodes,
     Options, Partitions, Ports, Rect, encode_layout, validate,
 };
+use crate::order::order;
+use crate::rand::Mulberry32;
 use crate::route::same_coordinate;
 
 /// The phases' random cases, with every edge kind valid for `validate`: a `plain` edge has no policy, so it takes the
@@ -211,6 +217,94 @@ proptest! {
     fn the_levels_layout_passes_the_same_gate((graph, options) in levels_case().prop_map(valid)) {
         assert_layout_gate(&graph, &options);
     }
+
+    #[test]
+    fn a_thorough_layout_passes_the_same_gate_and_repeats_byte_for_byte((graph, options) in thorough_case()) {
+        assert_layout_gate(&graph, &options);
+    }
+
+    #[test]
+    fn a_thorough_order_has_no_more_crossings_than_its_restart_zero_start((graph, options) in thorough_case()) {
+        assert_no_more_crossings_than_the_start(&graph, &options);
+    }
+}
+
+/// The random cases at `thorough`, with every edge kind valid for `validate`.
+fn thorough_case() -> impl Strategy<Value = (Graph, Options)> {
+    case().prop_map(valid).prop_map(|(graph, mut options)| {
+        options.effort = Some("thorough".to_owned());
+        (graph, options)
+    })
+}
+
+/// The thorough order keeps the order of its first search unless a restart has strictly fewer crossings, so it has no
+/// more crossings than that search. Both orders are taken of the layered graph `run_phases` builds, without hints, so
+/// the start is the unhinted depth-first order: the restart-zero search.
+fn assert_no_more_crossings_than_the_start(graph: &Graph, options: &Options) {
+    let phases = run_phases(graph, options).expect("a valid graph runs the phases");
+    let seed = to_uint32(options.seed.unwrap_or(0.0));
+    let thorough = Budget::for_effort(Some("thorough")).expect("thorough is an effort");
+    let first_search_only = Budget {
+        restarts: 0,
+        ..thorough
+    };
+    let with_restarts = order(&phases.layered, None, &thorough, seed).crossings;
+    let start = order(&phases.layered, None, &first_search_only, seed).crossings;
+    assert!(
+        with_restarts <= start,
+        "the restarts ended with {with_restarts} crossings, more than the start's {start}"
+    );
+}
+
+/// The graph of the thread sweep: 60 nodes and 120 edges drawn from a fixed seed, all ranked and pointing down the
+/// ranks, at `thorough` with a seed, so that the restarts have work to share between threads.
+fn sweep_case() -> (Graph, Options) {
+    let names: Vec<String> = (0..60).map(|i| format!("n{i}")).collect();
+    let mut random = Mulberry32::new(11);
+    let mut pairs: Vec<(usize, usize)> = Vec::new();
+    while pairs.len() < 120 {
+        let a = usize::try_from(random.next_u32() % 60).expect("an index fits");
+        let b = usize::try_from(random.next_u32() % 60).expect("an index fits");
+        if a != b {
+            pairs.push((a.min(b), a.max(b)));
+        }
+    }
+    let edges: Vec<(String, String, String, String)> = pairs
+        .iter()
+        .enumerate()
+        .map(|(k, &(a, b))| {
+            (
+                format!("e{k}"),
+                format!("n{a}"),
+                format!("n{b}"),
+                "rank".to_owned(),
+            )
+        })
+        .collect();
+    let ids: Vec<&str> = names.iter().map(String::as_str).collect();
+    let rows: Vec<(&str, &str, &str, &str)> = edges
+        .iter()
+        .map(|e| (e.0.as_str(), e.1.as_str(), e.2.as_str(), e.3.as_str()))
+        .collect();
+    let options = Options {
+        effort: Some("thorough".to_owned()),
+        seed: Some(3.0),
+        ..rank_and_note()
+    };
+    (graph_of(&ids, &rows), options)
+}
+
+/// The thorough layout of `sweep_case`, encoded and written to the file `GRAPH_LAYOUT_THOROUGH_OUT` names. The thread
+/// sweep runs it at 1, 2, 4 and 8 threads (rayon's global pool reads `RAYON_NUM_THREADS`) and compares the files byte
+/// for byte. Without the variable the test does nothing.
+#[test]
+fn thorough_layout_is_written_for_the_thread_sweep() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_THOROUGH_OUT") else {
+        return;
+    };
+    let (graph, options) = sweep_case();
+    let laid_out = layout(&graph, &options).expect("the sweep graph lays out");
+    std::fs::write(&path, encode_layout(&laid_out)).expect("the thorough output is writable");
 }
 
 /// A graph of nodes `ids`, each ten by ten and in no cluster, and of edges `(id, source, target, kind)`.

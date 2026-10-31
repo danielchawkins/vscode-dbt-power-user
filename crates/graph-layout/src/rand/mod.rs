@@ -2,11 +2,14 @@
 //! shuffle that draws from it. A seed gives the same sequence on every platform, so a layout is a pure function of its
 //! graph, options and seed. The fixtures in `fixtures/parity` are printed by `scripts/parity/print-fixtures.mjs`.
 
-/// The mulberry32 generator. Its state is one `u32`.
+/// The mulberry32 generator. Its state is one `u32`, which grows by `STEP` on every draw.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Mulberry32 {
     state: u32,
 }
+
+/// The constant mulberry32 adds to its state on every draw.
+const STEP: u32 = 0x6d2b_79f5;
 
 /// The largest slice `shuffled` takes. Up to here the TypeScript index `floor(random() * (i + 1))` is exact in binary64,
 /// so the integer form below gives the same index; past it the product can round, and the two would part.
@@ -20,9 +23,19 @@ impl Mulberry32 {
         Self { state: seed }
     }
 
+    /// The generator a sequential run holds after `draws` draws, reached without making them: the state grows by
+    /// `STEP` per draw, so it is `seed + draws * STEP` modulo 2^32. A search gives restart `r` the draws of the shuffles
+    /// before it, `r * draws`, so each restart has its own generator and draws what a sequential run would draw.
+    #[must_use]
+    pub(crate) fn after(seed: u32, draws: u64) -> Self {
+        // The low 32 bits of the product are the product modulo 2^32, which is the state's wrap.
+        let offset = draws.wrapping_mul(u64::from(STEP)) & u64::from(u32::MAX);
+        Self::new(seed.wrapping_add(u32::try_from(offset).unwrap_or(0)))
+    }
+
     /// The next 32-bit output: the integer `seededRandom` divides by 2^32.
     pub(crate) const fn next_u32(&mut self) -> u32 {
-        self.state = self.state.wrapping_add(0x6d2b_79f5);
+        self.state = self.state.wrapping_add(STEP);
         let mut t = self.state;
         t = (t ^ (t >> 15)).wrapping_mul(t | 1);
         t ^= t.wrapping_add((t ^ (t >> 7)).wrapping_mul(t | 0x3d));
@@ -155,5 +168,22 @@ mod tests {
     fn shuffling_the_longest_allowed_slice_is_accepted() {
         let items = vec![0_u8; MAX_SHUFFLE_LEN];
         assert_eq!(Mulberry32::new(1).shuffled(&items).len(), MAX_SHUFFLE_LEN);
+    }
+
+    #[test]
+    fn a_generator_after_k_draws_is_the_one_that_has_drawn_k_values() {
+        for seed in [0, 7, u32::MAX] {
+            for draws in [0_u64, 1, 5, 1000] {
+                let mut stepped = Mulberry32::new(seed);
+                for _ in 0..draws {
+                    stepped.next_u32();
+                }
+                assert_eq!(
+                    Mulberry32::after(seed, draws),
+                    stepped,
+                    "seed {seed} draws {draws}"
+                );
+            }
+        }
     }
 }
