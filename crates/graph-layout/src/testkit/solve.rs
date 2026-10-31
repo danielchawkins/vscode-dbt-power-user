@@ -273,9 +273,14 @@ pub(crate) fn chain(seed: u32) -> Instance {
 }
 
 /// The optimal cost of an instance, by exact enumeration.
-/// Port of `exactSeparationOptimum` in `testing/exactSeparations.ts`.
 pub(crate) fn exact_optimum(x0: &[f64], weight: &[f64], seps: &[Separation]) -> f64 {
-    let mut best: Option<f64> = None;
+    exact_solution(x0, weight, seps).1
+}
+
+/// The optimal point and cost of an instance, by exact enumeration.
+/// Port of `exactSeparationOptimum` in `testing/exactSeparations.ts`, which returns the same point and cost.
+pub(crate) fn exact_solution(x0: &[f64], weight: &[f64], seps: &[Separation]) -> (Vec<f64>, f64) {
+    let mut best: Option<(Vec<f64>, f64)> = None;
     for mask in 0u64..(1u64 << seps.len()) {
         let active: Vec<Separation> = seps
             .iter()
@@ -296,8 +301,8 @@ pub(crate) fn exact_optimum(x0: &[f64], weight: &[f64], seps: &[Separation]) -> 
             continue;
         }
         let cost = objective(x0, weight, &x);
-        if best.is_none_or(|b| cost < b) {
-            best = Some(cost);
+        if best.as_ref().is_none_or(|(_, b)| cost < *b) {
+            best = Some((x, cost));
         }
     }
     best.expect("no feasible active set: the separations contain a cycle")
