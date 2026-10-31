@@ -98,10 +98,6 @@ mod tests {
         (from..to).collect()
     }
 
-    fn link(top: usize, bottom: usize) -> Link {
-        Link { top, bottom }
-    }
-
     /// Every rank's neighbours sit at least their gap apart.
     fn assert_separated(problem: &Problem, x: &[f64]) {
         for layer in &problem.layers {
@@ -127,7 +123,9 @@ mod tests {
             ],
             gap_left: vec![1.0; 25],
             dummy: vec![false; 25],
-            links: vec![link(16, 21), link(14, 17)],
+            links: vec![Link::new(16, 21), Link::new(14, 17)],
+            pulls: Vec::new(),
+            extra: None,
         };
         let x = brandes_koepf(&problem);
         assert_separated(&problem, &x);
@@ -141,13 +139,15 @@ mod tests {
             gap_left: vec![0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 10.0, 10.0],
             dummy: vec![false, true, true, false, false, true, true, false],
             links: vec![
-                link(0, 1),
-                link(1, 2),
-                link(2, 3),
-                link(4, 5),
-                link(5, 6),
-                link(6, 7),
+                Link::new(0, 1),
+                Link::new(1, 2),
+                Link::new(2, 3),
+                Link::new(4, 5),
+                Link::new(5, 6),
+                Link::new(6, 7),
             ],
+            pulls: Vec::new(),
+            extra: None,
         };
         let x = brandes_koepf(&problem);
         for (a, b) in [(0, 1), (1, 2), (2, 3), (4, 5), (5, 6), (6, 7)] {
@@ -163,6 +163,8 @@ mod tests {
             gap_left: vec![0.0],
             dummy: vec![false],
             links: Vec::new(),
+            pulls: Vec::new(),
+            extra: None,
         };
         assert_eq!(brandes_koepf(&problem), vec![0.0]);
     }

@@ -1,6 +1,9 @@
-//! Projection of each rank onto its gaps, a port of `packages/graph-layout/src/place/projection.ts` (`projectRanks`).
+//! Projection onto the separations, a port of `packages/graph-layout/src/place/projection.ts`. Without cluster boxes the
+//! separations are the rank chains, and each rank is projected exactly by pool-adjacent-violators (`project_ranks`);
+//! with boxes every separation is one axis problem for the solver (`solve`).
 
 use super::problem::Problem;
+use crate::solve::{Problem as SolveProblem, Projector, SolveError};
 
 /// Floor on a node's projection weight, so a block's weighted mean is always defined.
 const MIN_WEIGHT: f64 = 1e-12;
@@ -11,6 +14,27 @@ struct Block {
     value: f64,
     weight: f64,
     size: usize,
+}
+
+/// Projects `x` onto the problem's separations in the metric of `weight`. Without cluster boxes these are the rank chains,
+/// and the per-rank projection is exact; with boxes, every separation, boxes included, is solved as one axis problem.
+pub(crate) fn project(
+    problem: &Problem,
+    projector: &mut Projector,
+    x: &mut [f64],
+    weight: &[f64],
+) -> Result<(), SolveError> {
+    let Some(extra) = &problem.extra else {
+        project_ranks(problem, x, weight);
+        return Ok(());
+    };
+    let solved = projector.solve(&SolveProblem {
+        x0: &*x,
+        weight,
+        separations: &extra.separations,
+    })?;
+    x.copy_from_slice(solved);
+    Ok(())
 }
 
 /// Projects the coordinates of each rank onto its gaps, in the metric of `weight`: the nearest point, by weighted squared
@@ -67,6 +91,8 @@ mod tests {
             gap_left: gaps.to_vec(),
             dummy: vec![false; gaps.len()],
             links: Vec::new(),
+            pulls: Vec::new(),
+            extra: None,
         }
     }
 

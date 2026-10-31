@@ -3,8 +3,9 @@
 //! `index` (rule `rust-core-layer-imports-place`), so its input is the plain `Problem` of `problem`, which the caller
 //! states from the layered graph.
 //!
-//! Built in steps. Step 2 (this one): the Brandes and Köpf start (`alignment`, `compaction`, `brandes_koepf`) and the
-//! rank projection (`projection`). Not yet ported: the quadratic and gradient projection, the boxes and `across`.
+//! Built in steps. Step 2: the Brandes and Köpf start (`alignment`, `compaction`, `brandes_koepf`) and the projection (`projection`).
+//! Step 3: the objective (`terms`) and the gradient-projection search (`quadratic`). Not yet ported: the boxes and
+//! `across`.
 
 #[cfg(test)]
 mod alignment;
@@ -18,3 +19,7 @@ mod offsets;
 mod problem;
 #[cfg(test)]
 mod projection;
+#[cfg(test)]
+mod quadratic;
+#[cfg(test)]
+mod terms;
