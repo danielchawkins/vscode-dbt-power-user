@@ -11,6 +11,8 @@ pub mod pack;
 #[cfg(test)]
 mod across;
 mod metrics;
+// `place` is compiled for its tests until route reads its boxes and placement.
+#[cfg(test)]
 mod place;
 // `budget`, `hash`, `index`, `layering`, `order`, `rand` and `solve` are compiled for their tests until the
 // layout phases use them; a non-test build would otherwise report their items as dead code.
