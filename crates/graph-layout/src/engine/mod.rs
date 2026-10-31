@@ -2,7 +2,7 @@
 //! layered graph that ordering reads from the output of layering.
 
 #[cfg(test)]
-mod layered;
+pub(crate) mod layered;
 
 use crate::model::{EdgeLayouts, FrameError, Layout, decode_graph, encode_layout};
 

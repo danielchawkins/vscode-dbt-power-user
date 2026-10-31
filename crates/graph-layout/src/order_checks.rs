@@ -1,23 +1,40 @@
-//! Crossings and orders against TypeScript. The crossings: `total_crossings` and `exact_minimum_crossings` on the seeded
+//! Ordering against TypeScript. The crossings oracle: `total_crossings` and `exact_minimum_crossings` on the seeded
 //! random layered graphs of `fixtures/parity/crossings.txt`, which `print-fixtures.mjs crossings` wrote from
-//! `totalCrossings` and `exactMinimumCrossings` on the same graphs. The orders: `order` on the same random graphs
-//! (`fixtures/parity/order.txt`, with hints on odd seeds) and on the finance lineage graph
-//! (`fixtures/parity/order-finance.txt`, the layered graph `layer` builds, at each effort). The Rust side replays the
-//! draws of `randomCrossingCase` and `randomHints`, so a difference in either side shows as a bit or order difference.
+//! `totalCrossings` and `exactMinimumCrossings` on the same graphs. The Rust side replays the draws of
+//! `randomCrossingCase`, so a difference shows as a bit difference.
+//!
+//! The order gate is an outcome gate (ADR 0011, O-6), not bit equality. Each case of `fixtures/parity/order.txt` (the
+//! layering cases: the package graphs, the negative-zero bands and seeded random graphs) and the finance graph, when
+//! `GRAPH_LAYOUT_ORDER_FINANCE` names its dump (`print-fixtures.mjs order-finance <manifest>`), is ranked, layered and
+//! built here (`rank`, `layer`, `engine::layered::build`), then ordered at each effort, unhinted and hinted. Every order
+//! must be valid and two runs must be equal, and its crossings, counted by the Fenwick count, must be no more than
+//! TypeScript's crossings for the same input. The order itself is not compared: a better order is allowed.
 
 use crate::budget::Budget;
-use crate::layering::{LayeredGraph, LayeredNode, Segment};
+use crate::engine::layered::build;
+use crate::index::Indexed;
+use crate::layering::{
+    EdgeRule, LayeredGraph, LayeredNode, PartitionMode, RankOptions, Scratch, Segment, layer, rank,
+};
+use crate::model::{Clusters, Direction, Edges, Graph, Nodes, Options, Ports};
 use crate::order::{Hints, OrderModel, exact_minimum_crossings, order, total_crossings};
 use crate::rand::Mulberry32;
 
 const FIXTURE: &str = include_str!("../fixtures/parity/crossings.txt");
 const ORDER_FIXTURE: &str = include_str!("../fixtures/parity/order.txt");
-const FINANCE_FIXTURE: &str = include_str!("../fixtures/parity/order-finance.txt");
+/// The finance dump of `print-fixtures.mjs order-finance`, read only when this variable names it.
+const FINANCE_VARIABLE: &str = "GRAPH_LAYOUT_ORDER_FINANCE";
 
-/// The number of seeded random cases of `order.txt`.
-const ORDER_CASES: usize = 120;
-/// The efforts of `order.txt` and `order-finance.txt`, and the number of finance cases (one per effort).
-const FINANCE_CASES: usize = 3;
+/// The cases of `order.txt`: the 4 package and negative-zero cases and the 300 seeded random layering cases.
+const ORDER_CASES: usize = 304;
+/// The results of one case: each of the three efforts, unhinted and hinted.
+const RESULTS_PER_CASE: usize = 6;
+/// The size of the finance dump: its nodes and its edges, as `financeGraph(manifest)` gives them. The test fails when the
+/// dump has another size, so the size of the graph the report quotes cannot drift from the dump.
+const FINANCE_NODES: usize = 1127;
+const FINANCE_EDGES: usize = 1291;
+/// Relative rounding allowed in a crossing count.
+const ROUNDING: f64 = 1e-12;
 
 /// The number of seeded cases in the fixture, and how many of them have a fractional crossing count (a `.5`-weight link
 /// makes one): the fractional sums are the reason the Fenwick tree stores `f64`.
@@ -156,35 +173,25 @@ fn random_hints(seed: u32, count: usize) -> Hints {
         .collect()
 }
 
-#[test]
-fn orders_match_typescript_bit_for_bit_on_random_graphs() {
-    let mut checked = 0;
-    for line in ORDER_FIXTURE
-        .lines()
-        .filter(|line| line.starts_with("case "))
-    {
-        let fields: Vec<&str> = line.split(' ').collect();
-        let seed: u32 = fields[1].parse().expect("fixture seed is a u32");
-        let effort = fields[2];
-        let hinted = fields[3] == "1";
-        let (graph, _) = random_case(seed);
-        let hints = hinted.then(|| random_hints(seed, graph.nodes.len()));
-        let budget = Budget::for_effort(Some(effort)).expect("a known effort");
-        let result = order(&graph, hints.as_ref(), &budget, seed);
-        let label = format!("seed {seed} {effort} hinted {hinted}");
-        assert_eq!(render(&result.layers), fields[4], "{label}: the order");
-        assert_eq!(bits(result.crossings), fields[5], "{label}: crossings");
-        checked += 1;
-    }
-    assert_eq!(checked, ORDER_CASES, "every case of the fixture is checked");
+/// One TypeScript result of a case: the effort, whether the order had hints, and TypeScript's crossings.
+#[derive(Debug)]
+struct Expected {
+    effort: String,
+    hinted: bool,
+    crossings: f64,
 }
 
-/// The finance lineage graph at one effort: the layered graph `layer` built, and the order TypeScript gave it.
-struct FinanceCase {
-    effort: String,
-    graph: LayeredGraph,
-    layers: String,
-    crossings: String,
+/// One case of an ordering fixture: its input as `order-fixtures.mjs` writes it, and TypeScript's results for it.
+#[derive(Debug)]
+struct Case {
+    name: String,
+    seed: u32,
+    mode: PartitionMode,
+    bands: Vec<Option<f64>>,
+    widths: Vec<f64>,
+    ends: Vec<(usize, usize)>,
+    rules: Vec<EdgeRule>,
+    results: Vec<Expected>,
 }
 
 /// A floating-point value as the IEEE bits `bitsHex` prints.
@@ -192,92 +199,274 @@ fn float(hex: &str) -> f64 {
     f64::from_bits(u64::from_str_radix(hex, 16).expect("hex bits"))
 }
 
-/// A comma-separated list of indices, as `csv` prints it.
-fn indices(text: &str) -> Vec<usize> {
-    text.split(',')
-        .map(|x| x.parse().expect("an index"))
+/// A decimal number as `String(number)` prints it, as the rules of `edgeRules` write their minimum length and weight.
+fn decimal(text: &str) -> f64 {
+    text.parse().expect("a decimal number")
+}
+
+fn parse_mode(text: &str) -> PartitionMode {
+    match text {
+        "none" => PartitionMode::None,
+        "soft" => PartitionMode::Soft,
+        "strict" => PartitionMode::Strict,
+        other => panic!("unknown partition mode {other}"),
+    }
+}
+
+/// One `case` line: `case<TAB>name<TAB>seed<TAB>mode<TAB>bands<TAB>widths<TAB>edges<TAB>results`, with `-` for an empty
+/// list. Bands and widths are comma-separated IEEE bits (a band of `-` is none); each edge is
+/// `source:target:kind:ranks:minLength:weight`; each result is `effort:hinted:crossings`.
+fn parse_case(line: &str) -> Case {
+    let fields: Vec<&str> = line.split('\t').collect();
+    assert_eq!(
+        fields.len(),
+        8,
+        "a case line has eight tab-separated fields"
+    );
+    let bands = fields[4]
+        .split(',')
+        .map(|band| (band != "-").then(|| float(band)))
+        .collect::<Vec<_>>();
+    let widths: Vec<f64> = fields[5].split(',').map(float).collect();
+    assert_eq!(widths.len(), bands.len(), "one width per node");
+    let (mut ends, mut rules) = (Vec::new(), Vec::new());
+    if fields[6] != "-" {
+        for edge in fields[6].split(';') {
+            let parts: Vec<&str> = edge.split(':').collect();
+            assert_eq!(parts.len(), 6, "an edge has six fields");
+            ends.push((
+                parts[0].parse().expect("a node index"),
+                parts[1].parse().expect("a node index"),
+            ));
+            rules.push(EdgeRule {
+                kind: parts[2].parse().expect("a kind index"),
+                ranks: parts[3] == "1",
+                min_length: decimal(parts[4]),
+                weight: decimal(parts[5]),
+            });
+        }
+    }
+    let results = fields[7]
+        .split(',')
+        .map(|result| {
+            let parts: Vec<&str> = result.split(':').collect();
+            assert_eq!(parts.len(), 3, "a result has three fields");
+            Expected {
+                effort: parts[0].to_owned(),
+                hinted: parts[1] == "1",
+                crossings: float(parts[2]),
+            }
+        })
+        .collect();
+    Case {
+        name: fields[1].to_owned(),
+        seed: fields[2].parse().expect("a seed is a u32"),
+        mode: parse_mode(fields[3]),
+        bands,
+        widths,
+        ends,
+        rules,
+        results,
+    }
+}
+
+fn parse_cases(text: &str) -> Vec<Case> {
+    text.lines()
+        .filter(|line| line.starts_with("case\t"))
+        .map(parse_case)
         .collect()
 }
 
-/// The finance cases of `order-finance.txt`: each `effort` section gives the layered graph line by line, then the order.
-fn finance_cases() -> Vec<FinanceCase> {
-    let mut cases = Vec::new();
-    let mut effort = String::new();
-    let mut ranks = 0;
-    let mut nodes = Vec::new();
-    let mut segments = Vec::new();
-    let mut block = Vec::new();
-    let mut paths = Vec::new();
-    for line in FINANCE_FIXTURE
-        .lines()
-        .filter(|line| !line.starts_with('#'))
-    {
-        let fields: Vec<&str> = line.split(' ').collect();
-        match fields[0] {
-            "effort" => {
-                effort = fields[1].to_owned();
-                nodes.clear();
-                segments.clear();
-                paths.clear();
-            }
-            "ranks" => ranks = fields[1].parse().expect("a rank count"),
-            "node" => nodes.push(LayeredNode {
-                id: match fields[3] {
-                    "-" => None,
-                    id => Some(id.parse().expect("a scope index")),
-                },
-                rank: fields[1].parse().expect("a rank"),
-                breadth: float(fields[2]),
-                port: None,
-            }),
-            "segment" => segments.push(Segment {
-                top: fields[1].parse().expect("a node index"),
-                bottom: fields[2].parse().expect("a node index"),
-                weight: float(fields[3]),
-                top_offset: float(fields[4]),
-                bottom_offset: float(fields[5]),
-            }),
-            "block" => block = indices(fields[1]),
-            "paths" => {
-                paths = fields[1..]
-                    .iter()
-                    .map(|&path| {
-                        if path == "-" {
-                            Vec::new()
-                        } else {
-                            indices(path)
-                        }
-                    })
-                    .collect();
-            }
-            "order" => cases.push(FinanceCase {
-                effort: effort.clone(),
-                graph: LayeredGraph {
-                    nodes: nodes.clone(),
-                    segments: segments.clone(),
-                    block: block.clone(),
-                    paths: paths.clone(),
-                    spines: Vec::new(),
-                    ranks,
-                },
-                layers: fields[1].to_owned(),
-                crossings: fields[2].to_owned(),
-            }),
-            other => panic!("unknown line in order-finance.txt: {other}"),
+/// The graph that `layering` and `order` read for a case: its nodes with bands and widths, and its edges with their
+/// kinds. The fixtures carry no ports and no clusters, so the graph has none. Heights are zero: only the right-to-left
+/// direction reads them, and the case is laid out downward.
+fn graph_of(case: &Case) -> Graph {
+    let count = case.bands.len();
+    let edges = case.ends.len();
+    Graph {
+        nodes: Nodes {
+            id: (0..count).map(|i| format!("n{i}")).collect(),
+            width: case.widths.clone(),
+            height: vec![0.0; count],
+            cluster: vec![None; count],
+            partition: case.bands.clone(),
+            ports: Ports::default(),
+        },
+        edges: Edges {
+            id: (0..edges).map(|k| format!("e{k}")).collect(),
+            source: case.ends.iter().map(|&(s, _)| format!("n{s}")).collect(),
+            target: case.ends.iter().map(|&(_, t)| format!("n{t}")).collect(),
+            source_port: vec![None; edges],
+            target_port: vec![None; edges],
+            kind: case.rules.iter().map(|r| format!("k{}", r.kind)).collect(),
+        },
+        clusters: Clusters::default(),
+    }
+}
+
+/// The whole rank of each node, as the builder takes it. Ranks are whole numbers, and may have gaps (an empty rank is
+/// a layer with no node); a rank that is not a whole number fails the check.
+fn whole_ranks(ranks: &[f64]) -> Vec<usize> {
+    ranks.iter().map(|&r| whole_rank(r)).collect()
+}
+
+fn whole_rank(r: f64) -> usize {
+    let mut k = 0;
+    while f64::from(u32::try_from(k).expect("a small rank")) < r {
+        k += 1;
+    }
+    assert!(
+        f64::from(u32::try_from(k).expect("a small rank")) - r == 0.0,
+        "a rank is a whole number, got {r}"
+    );
+    k
+}
+
+/// What one run of the pipeline gives: the layered graph, the ordered layers and their crossings.
+struct Run {
+    layered: LayeredGraph,
+    layers: Vec<Vec<usize>>,
+    crossings: f64,
+}
+
+/// Ranks, lays out and orders one case at one result's effort, with the hints of `randomHints` when it is hinted.
+fn run(case: &Case, expected: &Expected) -> Run {
+    let budget = Budget::for_effort(Some(&expected.effort)).expect("a known effort");
+    let graph = Indexed::from_ends(
+        case.bands.len(),
+        case.ends
+            .iter()
+            .map(|&(s, t)| {
+                Some((
+                    u32::try_from(s).expect("small"),
+                    u32::try_from(t).expect("small"),
+                ))
+            })
+            .collect(),
+        &vec![true; case.ends.len()],
+    );
+    let options = RankOptions {
+        partitions: case.mode,
+        node_partition: &case.bands,
+        edges: &case.rules,
+        hints: &[],
+        stability: 1.0,
+        budget: &budget,
+    };
+    let ranking = rank(&graph, &options, &mut Scratch::default()).expect("the case ranks");
+    let layers = layer(&graph, &case.rules, &ranking.ranks);
+    let layered = build(
+        &graph_of(case),
+        &Options {
+            direction: Direction::Down,
+            ..Options::default()
+        },
+        &layers,
+        &whole_ranks(&ranking.ranks),
+    );
+    let hints = expected
+        .hinted
+        .then(|| random_hints(case.seed, layered.nodes.len()));
+    let ordered = order(&layered, hints.as_ref(), &budget, case.seed);
+    let crossings = total_crossings(&OrderModel::new(&layered, ordered.layers.clone()));
+    Run {
+        layered,
+        layers: ordered.layers,
+        crossings,
+    }
+}
+
+/// Every node of the layered graph is in exactly one layer, the layer of its rank, and there is one layer per rank.
+fn assert_valid(layered: &LayeredGraph, layers: &[Vec<usize>], label: &str) {
+    assert_eq!(layers.len(), layered.ranks, "{label}: one layer per rank");
+    let mut seen = vec![false; layered.nodes.len()];
+    for (rank, layer) in layers.iter().enumerate() {
+        for &x in layer {
+            assert!(x < seen.len(), "{label}: node {x} does not exist");
+            assert!(!seen[x], "{label}: node {x} is in two layers");
+            assert_eq!(
+                layered.nodes[x].rank, rank,
+                "{label}: node {x} is in the wrong rank"
+            );
+            seen[x] = true;
         }
     }
-    cases
+    assert!(seen.iter().all(|&s| s), "{label}: a node is in no layer");
+}
+
+/// Checks one case at every result. Returns how many results have fewer crossings than TypeScript's.
+fn check_case(case: &Case) -> usize {
+    let mut fewer = 0;
+    for expected in &case.results {
+        let label = format!(
+            "{} seed {} {} hinted {}",
+            case.name, case.seed, expected.effort, expected.hinted
+        );
+        let first = run(case, expected);
+        let second = run(case, expected);
+        assert_eq!(
+            first.layers, second.layers,
+            "{label}: two runs give different orders"
+        );
+        assert_eq!(
+            bits(first.crossings),
+            bits(second.crossings),
+            "{label}: two runs give different crossings"
+        );
+        assert_valid(&first.layered, &first.layers, &label);
+        let theirs = expected.crossings;
+        let ours = first.crossings;
+        assert!(
+            ours <= theirs + ROUNDING * (1.0 + theirs.abs()),
+            "{label}: crossings {ours}, TypeScript {theirs}"
+        );
+        if ours < theirs {
+            fewer += 1;
+        }
+    }
+    fewer
 }
 
 #[test]
-fn order_matches_typescript_on_the_finance_graph() {
-    let cases = finance_cases();
-    assert_eq!(cases.len(), FINANCE_CASES, "one order per effort");
+fn orders_are_valid_deterministic_and_no_worse_than_typescript_on_the_fixture_cases() {
+    let cases = parse_cases(ORDER_FIXTURE);
+    assert_eq!(
+        cases.len(),
+        ORDER_CASES,
+        "every case of the fixture is checked"
+    );
+    let mut fewer = 0;
+    let mut results = 0;
     for case in &cases {
-        let budget = Budget::for_effort(Some(&case.effort)).expect("a known effort");
-        let result = order(&case.graph, None, &budget, 0);
-        let label = format!("finance {}", case.effort);
-        assert_eq!(render(&result.layers), case.layers, "{label}: the order");
-        assert_eq!(bits(result.crossings), case.crossings, "{label}: crossings");
+        assert_eq!(
+            case.results.len(),
+            RESULTS_PER_CASE,
+            "{}: every result",
+            case.name
+        );
+        results += case.results.len();
+        fewer += check_case(case);
     }
+    println!("order fixtures: {results} results, {fewer} with fewer crossings than TypeScript");
+}
+
+#[test]
+fn orders_are_valid_deterministic_and_no_worse_than_typescript_on_the_finance_graph() {
+    let Some(path) = std::env::var_os(FINANCE_VARIABLE) else {
+        return;
+    };
+    let text = std::fs::read_to_string(&path).expect("the finance dump is readable");
+    let cases = parse_cases(&text);
+    assert_eq!(cases.len(), 1, "the finance dump holds one case");
+    let case = &cases[0];
+    assert_eq!(
+        (case.bands.len(), case.ends.len()),
+        (FINANCE_NODES, FINANCE_EDGES),
+        "the finance dump does not have {FINANCE_NODES} nodes and {FINANCE_EDGES} edges; update the sizes"
+    );
+    let fewer = check_case(case);
+    println!(
+        "order finance: {} results, {fewer} with fewer crossings than TypeScript",
+        case.results.len()
+    );
 }
