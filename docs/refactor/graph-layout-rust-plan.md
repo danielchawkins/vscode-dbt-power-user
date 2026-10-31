@@ -244,6 +244,15 @@ Every Rust cell has zero overlaps, zero opaque breaches, and no flagged edge. Th
 
 Phase 6 is the point at which the Rust core is a complete replacement for the TypeScript engine. It is not yet shipped or made the default.
 
+**Done.** Every gate passes on this revision. `just check` exits 0, and `just crates::parity` and `just crates::parity-plant` were run on their own and both exit 0.
+
+- Every edge routed or flagged, and no opaque breach: the proptests `every_routed_edge_is_drawn_or_flagged_and_the_layout_is_finite_and_repeatable` (`engine/layout/tests.rs`), `every_routed_edge_keeps_to_the_gate` and `lateral_ports_are_routed_or_flagged_and_keep_to_the_gate` (`engine/phases/tests.rs`), and the breach tests in `metrics/tests.rs`. They run in the test step of `just check`.
+- Deterministic output: the layout proptest checks repeatability. Each thorough restart has its own generator derived from `(seed, index)`, so the restart's result does not depend on the other restarts. `order_checks` checks repeatability on every result.
+- Native and WASM byte-identical: `just crates::parity` prints `layout-parity: native and wasm outputs are byte-identical on 8 cases`. `parity-plant` plants a one-byte divergence and expects exit 1.
+- Thread sweep: `thorough_layout_is_written_for_the_thread_sweep` writes the thorough layout at 1, 2, 4 and 8 threads (`RAYON_NUM_THREADS`), and the four files are byte-identical (16,936 bytes each). The sweep is not part of `just check`; it was run by hand on this revision.
+
+The Rust numbers are in the table above, next to the TypeScript baseline, and are not a gate. Rust's crossings are higher than TypeScript's on both graphs (synthetic balanced 1,452,237 against 1,061,864). The router's simplifications, stated in `route/mod.rs`, are the candidate cause, and this is not verified. The simplifications that remain are: one track per run, no doglegs (TypeScript may jog a run to a second track), no pair budget, and no crossing count. The Rust engine also does not give the TypeScript crossing bound for `thorough` (see the restart change). The finance dump changed since the baseline, so its rows are not the same input.
+
 ## Phase 7: the `engine` handle
 
 **Scope.** `engine` module: `Engine`, `Progress`, `Generation`, `layout`. Phase caches keyed by FNV-1a 64 over canonical bytes of what each phase reads (ADR "Live tuning" key table); a change re-runs from the first phase whose key changed; `Budget` counts only, no clock; cancellation by generation; progressive results (a fast result, then refined). `layout(&Graph, &Options)` is a wrapper that runs the handle to its final stage. Invariant I1: the handle's final result equals the wrapper's. Carried from Phase 3: the layering `Scratch` reuses its three outer buffers, but `break_cycles`, `partition_constraints`, `hint_constraints` and `network_simplex` still allocate on every call; making them allocation-free is in this phase's S5 gate, not done yet.
