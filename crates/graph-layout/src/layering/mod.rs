@@ -12,8 +12,11 @@
 
 mod acyclic;
 mod constraints;
+mod layered;
 mod network;
 mod tree;
+
+pub(crate) use layered::{LayeredGraph, LayeredNode, Segment};
 
 #[cfg(test)]
 mod key_tests;

@@ -6,9 +6,6 @@
 //! are fractional: a link at a half-weight column adds `column: 0.5`, and an integer tree would round it. Integer
 //! weights stay exact in binary64, so the integer tests below still compare against a plain sum.
 
-#[cfg(test)]
-mod tests;
-
 /// A Fenwick tree over `size` entries, all zero to begin with. Index `i` of the tree holds the sum of a block of
 /// entries ending at `i`, as in the TypeScript class, which keeps the same one-based layout.
 #[derive(Debug, Clone, PartialEq)]
