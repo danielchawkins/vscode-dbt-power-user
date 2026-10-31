@@ -70,6 +70,7 @@ export const ExpandButton = ({
     <button
       type="button"
       className={`nodrag ${styles.expander} ${styles.bubble} ${placement}`}
+      data-card-control
       disabled={count === 0}
       aria-pressed={expanded}
       aria-busy={pending}
