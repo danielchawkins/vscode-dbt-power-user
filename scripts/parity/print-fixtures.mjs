@@ -3,6 +3,7 @@
 //
 //   mise exec -- node scripts/parity/print-fixtures.mjs random > crates/graph-layout/fixtures/parity/random.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs budget > crates/graph-layout/fixtures/parity/budget.txt
+//   mise exec -- node scripts/parity/print-fixtures.mjs fenwick > crates/graph-layout/fixtures/parity/fenwick.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs frame > crates/graph-layout/fixtures/parity/frame.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs solve-cases > crates/graph-layout/fixtures/parity/solve-cases.txt
 //   mise exec -- node scripts/parity/print-fixtures.mjs solve-random > crates/graph-layout/fixtures/parity/solve-random.txt
@@ -17,6 +18,7 @@ import { readFileSync } from "node:fs";
 import { register } from "node:module";
 import {
   bitsCsv,
+  bitsHex,
   csv,
   layeringLine,
   LINEAGE_OPTIONS,
@@ -30,6 +32,7 @@ const { encodeGraph, encodeLayout } =
   await import("../../packages/graph-layout/src/frame.ts");
 const { seededRandom, shuffled } =
   await import("../../packages/graph-layout/src/random.ts");
+const { Fenwick } = await import("../../packages/graph-layout/src/fenwick.ts");
 const { emptyLayout, goldenGraph, goldenLayout } =
   await import("../../packages/graph-layout/src/testing/frameGolden.ts");
 const { solveSeparations } =
@@ -102,6 +105,39 @@ function printBudget() {
       ...Object.entries(fallback).map(([name, count]) => `${name}=${count}`),
     ].join(" "),
   );
+  return lines;
+}
+
+const FENWICK_SEEDS = [1, 7, 42];
+const FENWICK_SIZES = [1, 2, 3, 8, 13, 64, 200];
+
+/**
+ * A Fenwick tree under fractional updates: for each seed and size, `4 * size + 10` updates, each drawing an index
+ * `u32 % size` and then a delta `random() * 4 - 1` (fractional, some negative), then every prefix in bits.
+ * The Rust test replays the same draws, so a change in the order of the summation shows in the bits.
+ */
+function printFenwick() {
+  const lines = [
+    HEADER,
+    "# fenwick <seed> <size> <prefix>...: prefix(end) for end 0 to size after the updates, as IEEE bits, comma-separated.",
+  ];
+  for (const seed of FENWICK_SEEDS) {
+    for (const size of FENWICK_SIZES) {
+      const random = seededRandom(seed);
+      const tree = new Fenwick(size);
+      for (let k = 0; k < 4 * size + 10; k++) {
+        // The draw times 2^32 is the u32 that `Mulberry32::next_u32` returns, so the index is the same integer.
+        const index = Math.floor(random() * 4294967296) % size;
+        tree.add(index, random() * 4 - 1);
+      }
+      const prefixes = Array.from({ length: size + 1 }, (_, end) =>
+        bitsHex(tree.prefix(end)),
+      );
+      lines.push(
+        ["fenwick", String(seed), String(size), prefixes.join(",")].join(" "),
+      );
+    }
+  }
   return lines;
 }
 
@@ -326,6 +362,7 @@ function printLayeringFinance(manifestPath) {
 const sections = {
   random: printRandom,
   budget: printBudget,
+  fenwick: printFenwick,
   frame: printFrame,
   "solve-cases": printSolveCases,
   "solve-random": printSolveRandom,

@@ -1,4 +1,7 @@
-# The solver fixtures are hexadecimal IEEE bit patterns, one per coordinate; `typos` reads runs such as `ba` as
-# misspelt words. Only those fixtures are excluded: every other file is checked as before.
+# The solver and Fenwick fixtures are hexadecimal IEEE bit patterns, one per coordinate; `typos` reads runs such as `ba`
+# or `daa` as misspelt words. Only those fixtures are excluded: every other file is checked as before.
 [files]
-extend-exclude = ["graph-layout/fixtures/parity/solve-*.txt"]
+extend-exclude = [
+  "graph-layout/fixtures/parity/solve-*.txt",
+  "graph-layout/fixtures/parity/fenwick.txt",
+]
