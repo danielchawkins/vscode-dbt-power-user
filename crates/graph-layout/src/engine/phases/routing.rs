@@ -11,11 +11,11 @@ use crate::layering::{ChainNode, LayeredGraph, Layers};
 use crate::model::{Direction, Graph, Options, Ranks};
 use crate::place::Placement;
 use crate::route::{
-    ClusterInput, EdgeInput, NodeInput, Point, RouteInput, Routing, Stop, pending_levels, route,
+    ClusterInput, EdgeInput, NodeInput, RouteInput, Routing, Stop, route, route_levels,
 };
 
-/// Routes the layout the phases placed. Under `ranks: "rows"` this is the rows route. Under `ranks: "levels"` the route is
-/// not ported yet (step 2b), so every drawn edge is flagged `RouteFailed` and the placement's points stand as the nodes.
+/// Routes the layout the phases placed: the rows route under `ranks: "rows"` (the default), the levels route under
+/// `ranks: "levels"`.
 pub(super) fn route_layout(
     graph: &Graph,
     options: &Options,
@@ -27,15 +27,7 @@ pub(super) fn route_layout(
     let input = route_input(graph, options, index, layers, layered, placement);
     match options.ranks.unwrap_or_default() {
         Ranks::Rows => route(&input),
-        Ranks::Levels => {
-            let nodes = placement
-                .points
-                .iter()
-                .take(graph.nodes.id.len())
-                .map(|p| Point { x: p.x, y: p.y })
-                .collect();
-            pending_levels(&input.edges, nodes)
-        }
+        Ranks::Levels => route_levels(&input),
     }
 }
 
@@ -55,6 +47,7 @@ fn route_input(
         .map(|i| NodeInput {
             rank: layered.nodes[i].rank,
             along: along_of(placement, down, i),
+            across: across_of(placement, down, i),
             half: across_half(graph, down, i),
             holders: holders_of(graph, &plan.by_cluster, i),
         })
@@ -83,6 +76,13 @@ fn route_input(
 fn along_of(placement: &Placement, down: bool, node: usize) -> f64 {
     let point = &placement.points[node];
     if down { point.x } else { point.y }
+}
+
+/// The across-the-ranks coordinate of a layered node's centre, as placement solved it: its `y` when the ranks run down,
+/// else its `x`.
+fn across_of(placement: &Placement, down: bool, node: usize) -> f64 {
+    let point = &placement.points[node];
+    if down { point.y } else { point.x }
 }
 
 /// Half the extent of a real node across the ranks: its height going down, its width going right.
@@ -151,6 +151,12 @@ fn cluster_inputs(graph: &Graph, placement: &Placement) -> Vec<ClusterInput> {
                 .copied()
                 .flatten()
                 == Some(true),
+            across: placement.boxes.across.as_ref().map(|solved| {
+                (
+                    solved.get(2 * b).copied().unwrap_or(0.0),
+                    solved.get(2 * b + 1).copied().unwrap_or(0.0),
+                )
+            }),
         })
         .collect()
 }
@@ -300,12 +306,14 @@ impl Stops<'_> {
         let node = chain[k];
         let layered = &self.layered.nodes[node];
         let centre = along_of(self.placement, self.down, node);
+        let across = across_of(self.placement, self.down, node);
         let left = centre - layered.breadth / 2.0;
         match layered.id {
             None => Stop {
                 rank: layered.rank,
                 along: left
                     + (count_of(member.slot) + 0.5) * layered.breadth / count_of(member.count),
+                across,
                 half: 0.0,
             },
             Some(real) => {
@@ -329,6 +337,7 @@ impl Stops<'_> {
                 Stop {
                     rank: layered.rank,
                     along,
+                    across,
                     half: across_half(self.graph, self.down, real),
                 }
             }

@@ -1,8 +1,9 @@
-//! Routing of the rows layout (`ranks: "rows"`, the default): the orthogonal polyline of each edge, the bands between
-//! ranks that carry them, and the re-stacked ranks and cluster boxes they are drawn against. A port of the rows route of
-//! `packages/graph-layout/src/route/` (`index.ts`, `polylines.ts`, `pieces.ts`, `channel*.ts`, `drawingSegments.ts` and
-//! `opaque.ts`). It reads plain data only (`RouteInput`), which the driver states in `engine/phases/routing.rs`, so this
-//! module imports nothing from the crate (ADR 0011, module table; rule `rust-core-layer-imports-route`).
+//! Routing of a layout: the orthogonal polyline of each edge, the bands between ranks that carry them, and the ranks and
+//! cluster boxes they are drawn against. Two routes, one per `ranks` option. The rows route (`ranks: "rows"`, the default)
+//! is a port of the rows route of `packages/graph-layout/src/route/` (`index.ts`, `polylines.ts`, `pieces.ts`,
+//! `channel*.ts`, `drawingSegments.ts` and `opaque.ts`); the levels route (`ranks: "levels"`) is in `levels`. Both read
+//! plain data only (`RouteInput`), which the driver states in `engine/phases/routing.rs`, so this module imports nothing
+//! from the crate (ADR 0011, module table; rule `rust-core-layer-imports-route`).
 //!
 //! Each edge is a chain of stops from its source end to its target end: its two real ends and the dummies between
 //! them. A run joins two adjacent stops and lies in a band: the band below the upper stop's rank, or below the rank
@@ -21,14 +22,12 @@
 //! self-loop. An edge of a kind with `routed: false` is `NotRouted`: it is a pure layout constraint and has no entry.
 //! Every other edge is `Routed`, or `RouteFailed` when it has no valid stops, or when one of its segments enters an
 //! opaque cluster box it may not enter, or comes within `OPAQUE_CLEARANCE` of its border (`opaque`). A failed edge is
-//! flagged and not re-routed.
-//!
-//! Not yet: `ranks: "levels"` (`levelRoutes.ts`) is step 2b. `pending_levels` flags every drawn edge `RouteFailed`,
-//! keeps the placement's points as the nodes, and returns no cluster boxes.
+//! flagged and not re-routed. The levels route draws its edges by the same rule, against the boxes it draws.
 
 mod bands;
 mod clusters;
 mod input;
+mod levels;
 mod opaque;
 mod polyline;
 mod stack;
@@ -36,6 +35,7 @@ mod stack;
 mod tests;
 
 pub(crate) use input::{ClusterInput, EdgeInput, NodeInput, RouteInput, Stop};
+pub(crate) use levels::route_levels;
 pub(crate) use opaque::{breaches, same_coordinate};
 
 use bands::assign;
@@ -101,8 +101,7 @@ pub struct Routing {
     pub nodes: Vec<Point>,
     /// The route of each edge, by edge index in `Graph::edges`.
     pub edges: Vec<EdgeRoute>,
-    /// The rectangle of each cluster box, in the order of the plan's boxes. Empty when there are no clusters, and under
-    /// `ranks: "levels"` until that route lands.
+    /// The rectangle of each cluster box, in the order of the plan's boxes. Empty when there are no clusters.
     pub clusters: Vec<ClusterBox>,
     /// What routing did.
     pub work: RouteWork,
@@ -165,26 +164,6 @@ pub(crate) fn route(input: &RouteInput) -> Routing {
         edges,
         clusters,
         work,
-    }
-}
-
-/// The routing of a layout under `ranks: "levels"`, until its route lands (step 2b): every drawn edge is `RouteFailed`,
-/// every other is `NotRouted`, the nodes are the given points, and there are no cluster boxes and no tracks.
-pub(crate) fn pending_levels(edges: &[EdgeInput], nodes: Vec<Point>) -> Routing {
-    Routing {
-        nodes,
-        edges: edges
-            .iter()
-            .map(|edge| {
-                if edge.routed {
-                    EdgeRoute::RouteFailed
-                } else {
-                    EdgeRoute::NotRouted
-                }
-            })
-            .collect(),
-        clusters: Vec::new(),
-        work: RouteWork::default(),
     }
 }
 
