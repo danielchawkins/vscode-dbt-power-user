@@ -4,7 +4,7 @@
 
 ## How to read the gates
 
-- **Parity is on outcomes** (O-6, answered). A phase passes when, on the fixtures in its check, ranks and orders match TypeScript (or the difference is explained), every result is valid (no overlap, separations met, every edge routed or flagged), and crossings, bends, edge length and bounds are equal or better within a recorded tolerance. Each phase commits a discrepancy report listing every difference from TypeScript. A Rust redesign that is more robust is preferred to a literal port. Native and WASM builds are compared bit for bit.
+- **Outcomes, not TypeScript parity** (O-6, answered). The goal is fast, robust layout and routing. TypeScript is the baseline to beat, not a target to copy: where a better or more robust algorithm exists, use it, and do not reproduce TypeScript behaviour only because TypeScript has it. A phase passes when, on the fixtures in its check, every result is valid (no overlap, separations met, every edge routed or flagged), it is deterministic, and crossings, bends, edge length and bounds are equal to or better than TypeScript's within a recorded tolerance. Each phase commits a discrepancy report listing where and why the result differs from TypeScript. Bit-identical output to TypeScript is not a goal; native and WASM builds are still compared bit for bit.
 - **Oracles.** `packages/graph-layout/src/testing/exactCrossings.ts` and `exactSeparations.ts` are the exact references for ordering and placement. Property tests in the package, the golden fingerprints in `src/route/rowsGolden.test.ts`, and `just smoke-engines` are the end-to-end gates.
 - **Finance fixture.** The 1,122-node / 1,241-edge graph in `/Users/daniel/projects/finance-pipelines/conformance-staging/transformation/dbt/finance_general/target/manifest.json`, measured by `/tmp/bench/full-graph.mjs`. Current TypeScript numbers on Node v20.20.2 (repo pins 24.18, so re-measure on 24.18 before a gate that compares speed): `fast` 651 ms (five runs, 617 to 703 ms); `balanced` 34,640 ms (one run); placement 34,532 ms of that, 93.4% of self time.
 - **Speed gates are targets, not facts.** Only the Phase 0 VPSC patch has a measurement (below). Every other speed number here is a hypothesis until a spike measures it.
@@ -193,7 +193,7 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 **Scope.** `index` (component ids, excluded filter, CSR adjacency, dense `u32` ids; scout 5) and `layering` (`rank/*`, `acyclic.ts`, ranks and dummy chains from `layering.ts`). Dummy keys are (edge or cluster id, rank, position) from Phase 9c, generated in input order here.
 
-**Check.** Ranks equal to TypeScript on every package fixture, random DAGs and the finance graph, or each difference explained in the discrepancy report with total edge length no worse.
+**Check.** On every package fixture, random DAGs and the finance graph, every rank assignment is valid and its total edge length is no worse than TypeScript's; differences are in the discrepancy report.
 
 **Done.** Phase 3 is done. Ranks and dummy chains equal TypeScript bit for bit on every fixture case (the package graphs, the negative-zero bands and 300 seeded random graphs; `KNOWN_DIFFERENCES` is 0), and on the finance graph from its dump (1,126 nodes, 1,273 edges; `ranks_and_chains_match_typescript_on_the_finance_graph` passes against it). The timing workload is checked against TypeScript on its first run. S6 is measured on the finance graph and the 3,000-node synthetic DAG: native and WASI are at least 3.1x faster than TypeScript on both, above the 1.5x threshold (S6 row). The 300-node cell of S6 is not measured. The four per-call allocations in `layering` remain, and are Phase 7's S5 work.
 
@@ -201,7 +201,7 @@ Step 1b is done. The core, the WASM and napi bindings, and `crates::check` are i
 
 **Scope.** `order/*`, `fenwick.ts` (`f64`, not integer: `countCrossings` adds fractional link weights such as `column: 0.5`, so an integer tree would round them; may vectorise, S4), `spines.ts` ordering part. Ordering reads `budget.sweeps`, `siftRounds`, `restarts`, `seed`, and order hints (ADR "Live tuning", table). D-attr does not apply yet.
 
-**Check.** `exactCrossings` passes; crossings equal or fewer than TypeScript on fixtures and the finance graph; differences in the discrepancy report.
+**Check.** `exact_crossings` agrees with `exactCrossings` on the same layouts (it is the oracle, so this one must match exactly); crossings equal to or fewer than TypeScript's on the package fixtures, seeded random graphs and the finance graph, at equal or lower time; differences in the discrepancy report.
 
 ## Phase 5: `place` and `across` (Rows, Levels)
 
