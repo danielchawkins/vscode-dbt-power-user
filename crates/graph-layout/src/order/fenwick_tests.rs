@@ -46,12 +46,12 @@ fn fractional_prefixes_match_the_typescript_fixture_bit_for_bit() {
         let fields: Vec<&str> = line.split(' ').collect();
         let seed: u32 = fields[1].parse().expect("fixture seed is a u32");
         let size: usize = fields[2].parse().expect("fixture size is an integer");
-        // The same draws as `print-fixtures.mjs`: an index from the u32, then a delta in [-1, 3).
+        // The same draws as `print-fixtures.mjs`: an index from the u32, then a delta in [-1, 3) divided by 3.
         let mut random = Mulberry32::new(seed);
         let mut tree = Fenwick::new(size);
         for _ in 0..(4 * size + 10) {
             let index = usize::try_from(random.next_u32()).unwrap_or(0) % size;
-            tree.add(index, random.next_f64() * 4.0 - 1.0);
+            tree.add(index, (random.next_f64() * 4.0 - 1.0) / 3.0);
         }
         let expected: Vec<&str> = fields[3].split(',').collect();
         assert_eq!(expected.len(), size + 1, "seed {seed}, size {size}");
