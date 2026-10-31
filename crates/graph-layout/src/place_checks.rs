@@ -622,15 +622,29 @@ fn output_line(case: &Case) -> String {
 
 /// The placement outputs: each case of `place.txt` as `output_line` writes it. The test runs natively and under WASI and
 /// writes the output when `GRAPH_LAYOUT_PLACE_OUT` names a file; `just place-parity` compares the two files byte for byte.
+/// When `GRAPH_LAYOUT_PLACE_FINANCE` and `GRAPH_LAYOUT_PLACE_FINANCE_OUT` both name files, the finance cases are written
+/// the same way, so a discrepancy report can read their bounds, edge lengths and work against TypeScript's.
 #[test]
 fn place_outputs_are_written_for_the_parity_comparison() {
-    let Some(path) = std::env::var_os("GRAPH_LAYOUT_PLACE_OUT") else {
+    if let Some(path) = std::env::var_os("GRAPH_LAYOUT_PLACE_OUT") {
+        let mut text = String::new();
+        for case in parse_cases(FIXTURE) {
+            text.push_str(&output_line(&case));
+            text.push('\n');
+        }
+        std::fs::write(&path, text).expect("the place output is writable");
+    }
+    let (Some(dump), Some(out)) = (
+        std::env::var_os(FINANCE_VARIABLE),
+        std::env::var_os("GRAPH_LAYOUT_PLACE_FINANCE_OUT"),
+    ) else {
         return;
     };
-    let mut text = String::new();
-    for case in parse_cases(FIXTURE) {
-        text.push_str(&output_line(&case));
-        text.push('\n');
+    let text = std::fs::read_to_string(&dump).expect("the finance placement dump is readable");
+    let mut lines = String::new();
+    for case in parse_cases(&text) {
+        lines.push_str(&output_line(&case));
+        lines.push('\n');
     }
-    std::fs::write(&path, text).expect("the place output is writable");
+    std::fs::write(&out, lines).expect("the finance placement output is writable");
 }
