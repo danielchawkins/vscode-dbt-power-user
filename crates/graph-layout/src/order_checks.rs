@@ -330,10 +330,9 @@ struct Run {
     crossings: f64,
 }
 
-/// Ranks, lays out and orders one case at one result's effort and seed, with the hints of `randomHints` when it is
-/// hinted.
-fn run(case: &Case, expected: &Expected, seed: u32) -> Run {
-    let budget = Budget::for_effort(Some(&expected.effort)).expect("a known effort");
+/// Ranks, layers and builds one case at an effort: the layered graph that `order` runs on.
+fn laid_out(case: &Case, effort: &str) -> LayeredGraph {
+    let budget = Budget::for_effort(Some(effort)).expect("a known effort");
     let graph = Indexed::from_ends(
         case.bands.len(),
         case.ends
@@ -357,7 +356,7 @@ fn run(case: &Case, expected: &Expected, seed: u32) -> Run {
     };
     let ranking = rank(&graph, &options, &mut Scratch::default()).expect("the case ranks");
     let layers = layer(&graph, &case.rules, &ranking.ranks);
-    let layered = build(
+    build(
         &graph_of(case),
         &Options {
             direction: Direction::Down,
@@ -365,7 +364,14 @@ fn run(case: &Case, expected: &Expected, seed: u32) -> Run {
         },
         &layers,
         &whole_ranks(&ranking.ranks),
-    );
+    )
+}
+
+/// Ranks, lays out and orders one case at one result's effort and seed, with the hints of `randomHints` when it is
+/// hinted.
+fn run(case: &Case, expected: &Expected, seed: u32) -> Run {
+    let budget = Budget::for_effort(Some(&expected.effort)).expect("a known effort");
+    let layered = laid_out(case, &expected.effort);
     let hints = expected
         .hinted
         .then(|| random_hints(case.seed, layered.nodes.len()));
@@ -496,6 +502,48 @@ fn order_outputs_are_written_for_the_parity_comparison() {
         writeln!(text, "{}\t{}", case.name, results.join(" ")).expect("writing to a string");
     }
     std::fs::write(&path, text).expect("the order output is writable");
+}
+
+/// The timing workload: the one case of the file `GRAPH_LAYOUT_ORDER_TIMING` names, at the effort of
+/// `GRAPH_LAYOUT_ORDER_EFFORT`. It is ranked, layered and built once, then `order` runs `GRAPH_LAYOUT_ORDER_REPEATS`
+/// times, as `scripts/bench/order-timings.mjs` times it. The first run must be valid and have no more crossings than
+/// TypeScript's; it prints its crossings, which the script records. The core reads no clock, so the script times the
+/// whole process from outside.
+#[test]
+fn order_timing_workload_runs() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_ORDER_TIMING") else {
+        return;
+    };
+    let effort = std::env::var("GRAPH_LAYOUT_ORDER_EFFORT")
+        .expect("GRAPH_LAYOUT_ORDER_EFFORT is set with the workload");
+    let repeats: u32 = std::env::var("GRAPH_LAYOUT_ORDER_REPEATS")
+        .expect("GRAPH_LAYOUT_ORDER_REPEATS is set with the workload")
+        .parse()
+        .expect("GRAPH_LAYOUT_ORDER_REPEATS is a count");
+    let text = std::fs::read_to_string(&path).expect("the timing workload is readable");
+    let cases = parse_cases(&text);
+    assert_eq!(cases.len(), 1, "a timing workload holds one case");
+    let case = &cases[0];
+    let expected = case
+        .results
+        .iter()
+        .find(|result| result.effort == effort && !result.hinted)
+        .expect("the workload has an unhinted result at this effort");
+    let budget = Budget::for_effort(Some(&effort)).expect("a known effort");
+    let layered = laid_out(case, &effort);
+    let first = order(&layered, None, &budget, case.seed);
+    let label = format!("{} at {effort}", case.name);
+    assert_valid(&layered, &first.layers, &label);
+    let crossings = total_crossings(&OrderModel::new(&layered, first.layers.clone()));
+    assert!(
+        crossings <= expected.crossings + ROUNDING * (1.0 + expected.crossings.abs()),
+        "{label}: crossings {crossings}, TypeScript {}",
+        expected.crossings
+    );
+    println!("order-timing: crossings {crossings}");
+    for _ in 0..repeats {
+        std::hint::black_box(order(&layered, None, &budget, case.seed));
+    }
 }
 
 #[test]

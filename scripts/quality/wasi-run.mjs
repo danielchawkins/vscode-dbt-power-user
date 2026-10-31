@@ -2,8 +2,9 @@
 // The runner for `cargo test --target wasm32-wasip1`, set in crates/.cargo/config.toml. It runs the test binary under
 // Node's own WASI (node:wasi, preview 1), so no separate runtime is installed: the repository already pins Node.
 // The process environment is passed through. When GRAPH_LAYOUT_SOLVE_OUT, GRAPH_LAYOUT_LAYERING_OUT,
-// GRAPH_LAYOUT_LAYERING_TIMING or GRAPH_LAYOUT_ORDER_OUT names a file, its directory is preopened at the same path, so
-// the test can write the output files or read the timing workload. Contributor tooling only; it ships nothing.
+// GRAPH_LAYOUT_LAYERING_TIMING, GRAPH_LAYOUT_ORDER_OUT or GRAPH_LAYOUT_ORDER_TIMING names a file, its directory is
+// preopened at the same path, so the test can write the output files or read the timing workload. Contributor tooling
+// only; it ships nothing.
 //
 //   node scripts/quality/wasi-run.mjs <test.wasm> [test arguments...]
 
@@ -23,6 +24,7 @@ for (const name of [
   "GRAPH_LAYOUT_LAYERING_OUT",
   "GRAPH_LAYOUT_LAYERING_TIMING",
   "GRAPH_LAYOUT_ORDER_OUT",
+  "GRAPH_LAYOUT_ORDER_TIMING",
 ]) {
   const output = process.env[name];
   if (output !== undefined) {
