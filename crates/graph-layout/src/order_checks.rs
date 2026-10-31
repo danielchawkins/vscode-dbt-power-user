@@ -80,6 +80,7 @@ fn random_case(seed: u32) -> (LayeredGraph, Vec<Vec<usize>>) {
         segments,
         block: (0..count).collect(),
         paths: vec![Vec::new(); count],
+        spines: Vec::new(),
         ranks,
     };
     (graph, layers)
@@ -256,6 +257,7 @@ fn finance_cases() -> Vec<FinanceCase> {
                     segments: segments.clone(),
                     block: block.clone(),
                     paths: paths.clone(),
+                    spines: Vec::new(),
                     ranks,
                 },
                 layers: fields[1].to_owned(),

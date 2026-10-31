@@ -47,6 +47,8 @@ pub(crate) struct LayeredGraph {
     pub(crate) segments: Vec<Segment>,
     pub(crate) block: Vec<usize>,
     pub(crate) paths: Vec<Vec<usize>>,
+    /// The spines: each runs from a cluster member through its spine dummies to the next member, as layered indices.
+    pub(crate) spines: Vec<Vec<usize>>,
     /// Number of ranks, from 0 up to the highest rank.
     pub(crate) ranks: usize,
 }

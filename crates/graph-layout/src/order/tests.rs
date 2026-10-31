@@ -37,6 +37,7 @@ fn two_ranks(
             .collect(),
         block: (0..upper + lower).collect(),
         paths: vec![Vec::new(); upper + lower],
+        spines: Vec::new(),
         ranks: 2,
     }
 }
@@ -122,6 +123,7 @@ fn dummy_graph() -> LayeredGraph {
         segments: vec![segment(0, 3), segment(3, 1), segment(2, 1)],
         block: (0..5).collect(),
         paths: vec![Vec::new(); 5],
+        spines: Vec::new(),
         ranks: 3,
     }
 }
@@ -174,6 +176,7 @@ fn clustered_graph() -> LayeredGraph {
         segments,
         block: (0..6).collect(),
         paths: vec![vec![0], Vec::new(), vec![0], vec![0], Vec::new(), vec![0]],
+        spines: Vec::new(),
         ranks: 2,
     }
 }
