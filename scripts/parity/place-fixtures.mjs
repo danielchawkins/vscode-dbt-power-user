@@ -88,7 +88,7 @@ function exactInstance(layers, gapLeft, warm) {
 }
 
 /** Runs the TypeScript pipeline on one case: rank, layer, order and place, with the case's hints when it has them. */
-function runCase({ graph, options, seed, hinted, effort }, deps) {
+export function runCase({ graph, options, seed, hinted, effort }, deps) {
   const {
     indexed,
     budgetOf,
@@ -298,7 +298,7 @@ function exactLine(exact) {
 }
 
 /** One case's lines: its `case` header, clusters, nodes, ranks, segments, spines, the exact instance and the outputs. */
-function caseLines({ name, ...spec }, deps) {
+export function caseLines({ name, ...spec }, deps) {
   const run = runCase(spec, deps);
   const { placement, input } = run;
   const rects = rectsOf(run);
