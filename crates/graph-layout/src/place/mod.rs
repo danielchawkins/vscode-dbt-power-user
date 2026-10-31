@@ -14,6 +14,10 @@ mod brandes_koepf;
 #[cfg(test)]
 mod compaction;
 #[cfg(test)]
+mod gaps;
+#[cfg(test)]
+mod hints;
+#[cfg(test)]
 mod offsets;
 #[cfg(test)]
 mod problem;
