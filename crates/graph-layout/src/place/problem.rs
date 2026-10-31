@@ -4,6 +4,12 @@
 
 use crate::solve::Separation;
 
+/// The solver's number of a variable: a node's index, or a box edge's index after the nodes. The count stays far below
+/// 2^32, so the conversion does not fail for any drawing that fits in memory.
+pub(crate) fn variable(index: usize) -> u32 {
+    u32::try_from(index).expect("a variable index fits in u32")
+}
+
 /// The in-rank placement problem: nodes are numbered `0..dummy.len()`, and the variables after them are the cluster
 /// box edges of `extra`.
 #[derive(Debug, Clone, PartialEq)]
