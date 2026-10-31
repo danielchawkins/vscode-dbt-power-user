@@ -4,6 +4,7 @@
 pub(crate) mod layered;
 mod phases;
 
+pub use crate::route::{ClusterBox, EdgeRoute, Point, Rect, RouteWork, Routing};
 pub use phases::{PhaseError, Phases, run_phases};
 
 use crate::model::{EdgeLayouts, FrameError, Layout, decode_graph, encode_layout};

@@ -1,12 +1,13 @@
 //! The phases run on a model graph, in the order `runPhases` runs them (`packages/graph-layout/src/phases.ts`): `index`,
-//! then rank and layering, then order, then place. This is the glue of those phases up to placement, written as plain
-//! Rust data. Route does not run here. Order runs without restarts, which come in a later step.
+//! then rank and layering, then order, then place, then route (`routing`). This is the glue of those phases, written as
+//! plain Rust data. Order runs without restarts, which come in a later step.
 //!
 //! Three things are refused rather than run, because the ported phases do not handle them yet. A lateral port needs
 //! the lateral blocks of ordering, which are not ported. A rank that is not a whole number needs a fractional minimum
 //! length, which the layered graph (`usize` ranks) cannot hold. An effort that names no budget has no counts. Opaque
 //! clusters are not yet kept apart by `keepOutside`: ordering returns its layers unchanged, as `order/mod.rs` says.
 
+mod routing;
 #[cfg(test)]
 mod tests;
 
@@ -25,6 +26,8 @@ use crate::place::{
     ClusterSpec, Hint, Layered, LayeredNode, LinkOptions, Mode, PlaceInput, Placement, Segment,
     Spacing, place, problem_of,
 };
+use crate::route::Routing;
+use routing::route_layout;
 
 /// Two to the 32nd, the modulus of the 32-bit seed and the range of a rank.
 const TWO_POW_32: f64 = 4_294_967_296.0;
@@ -45,6 +48,9 @@ pub struct Phases {
     /// The placement: each layered node's point, each rank's centre across the drawing, and the box plan that route
     /// reads through `place::boxes`.
     pub placement: Placement,
+    /// The routing: the polyline of each edge, the re-stacked ranks and the cluster boxes that route reads, with what it
+    /// did. Under `ranks: "levels"` no polyline is drawn yet (step 2b), so every drawn edge is `RouteFailed`.
+    pub routing: Routing,
 }
 
 /// Why the phases did not run on a graph.
@@ -116,6 +122,7 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
         &ordered.layers,
         budget.place_iterations,
     )?;
+    let routing = route_layout(graph, options, &index, &layers, &layered, &placement);
     Ok(Phases {
         ranks,
         reversed: ranking.reversed,
@@ -123,6 +130,7 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
         layers: ordered.layers,
         crossings: ordered.crossings,
         placement,
+        routing,
     })
 }
 
