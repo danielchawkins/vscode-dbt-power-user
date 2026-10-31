@@ -44,14 +44,24 @@ function randomHints(seed, layered) {
  * One case's line: its name, seed, partition mode, bands (IEEE bits, `-` for none), widths (IEEE bits), edges (the
  * `edgeRules` strings, `-` for none), and the results as `effort:hinted:crossings` with the crossings as IEEE bits.
  */
-function caseLine({ name, seed, graph, options }, { rank, layer }) {
+export function caseLine(
+  {
+    name,
+    seed,
+    graph,
+    options,
+    efforts = EFFORTS,
+    hintSettings = [false, true],
+  },
+  { rank, layer },
+) {
   const scope = portedScope(graph);
   const results = [];
-  for (const effort of EFFORTS) {
+  for (const effort of efforts) {
     const base = { ...options, effort };
     const ranking = rank(scope, base);
     const layered = layer(scope, base, ranking);
-    for (const hinted of [false, true]) {
+    for (const hinted of hintSettings) {
       const hints = hinted ? randomHints(seed, layered) : undefined;
       const result = order(
         scope,
