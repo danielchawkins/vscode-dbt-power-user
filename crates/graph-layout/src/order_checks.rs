@@ -329,8 +329,9 @@ struct Run {
     crossings: f64,
 }
 
-/// Ranks, lays out and orders one case at one result's effort, with the hints of `randomHints` when it is hinted.
-fn run(case: &Case, expected: &Expected) -> Run {
+/// Ranks, lays out and orders one case at one result's effort and seed, with the hints of `randomHints` when it is
+/// hinted.
+fn run(case: &Case, expected: &Expected, seed: u32) -> Run {
     let budget = Budget::for_effort(Some(&expected.effort)).expect("a known effort");
     let graph = Indexed::from_ends(
         case.bands.len(),
@@ -367,7 +368,7 @@ fn run(case: &Case, expected: &Expected) -> Run {
     let hints = expected
         .hinted
         .then(|| random_hints(case.seed, layered.nodes.len()));
-    let ordered = order(&layered, hints.as_ref(), &budget, case.seed);
+    let ordered = order(&layered, hints.as_ref(), &budget, seed);
     let crossings = total_crossings(&OrderModel::new(&layered, ordered.layers.clone()));
     Run {
         layered,
@@ -402,8 +403,8 @@ fn check_case(case: &Case) -> usize {
             "{} seed {} {} hinted {}",
             case.name, case.seed, expected.effort, expected.hinted
         );
-        let first = run(case, expected);
-        let second = run(case, expected);
+        let first = run(case, expected, case.seed);
+        let second = run(case, expected, case.seed);
         assert_eq!(
             first.layers, second.layers,
             "{label}: two runs give different orders"
@@ -425,6 +426,46 @@ fn check_case(case: &Case) -> usize {
         }
     }
     fewer
+}
+
+/// The banded graph's exact minimum weighted crossings, from `testing/exactCrossings.ts` on `exactGolden.test.ts`.
+const BANDED_EXACT_MINIMUM: f64 = 1.0;
+/// The seeds at which `thorough` must reach the exact minimum on the banded graph.
+const BANDED_SEEDS: [u32; 4] = [0, 1, 7, 42];
+
+#[test]
+fn banded_graph_reaches_its_exact_minimum_at_thorough() {
+    let cases = parse_cases(ORDER_FIXTURE);
+    let case = cases
+        .iter()
+        .find(|case| case.name == "banded")
+        .expect("the fixture has the banded case");
+    let expected = case
+        .results
+        .iter()
+        .find(|result| result.effort == "thorough" && !result.hinted)
+        .expect("the banded case has a thorough result");
+    let first = run(case, expected, case.seed);
+    let exact = exact_minimum_crossings(&first.layered, &first.layers)
+        .expect("the banded graph is within the exact limit");
+    assert_eq!(
+        bits(exact.crossings),
+        bits(BANDED_EXACT_MINIMUM),
+        "the exact minimum"
+    );
+    for seed in BANDED_SEEDS {
+        let ordered = run(case, expected, seed);
+        assert_valid(
+            &ordered.layered,
+            &ordered.layers,
+            &format!("banded seed {seed}"),
+        );
+        assert_eq!(
+            bits(ordered.crossings),
+            bits(BANDED_EXACT_MINIMUM),
+            "banded at thorough, seed {seed}"
+        );
+    }
 }
 
 #[test]
