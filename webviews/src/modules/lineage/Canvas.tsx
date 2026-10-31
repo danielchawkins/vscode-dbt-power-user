@@ -9,6 +9,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { type RefObject, use } from "react";
+import { CONTROL_CLICK_SELECTS_CARD, isCardControl } from "./cardControls";
 import { MIN_ZOOM } from "./fit";
 import type { toFlow } from "./flow";
 import { GroupNode } from "./GroupNode";
@@ -42,7 +43,7 @@ const edgeTypes = {
 
 /**
  * Selects the table a click lands on, and opens its Details while zoomed out hides the card's own button. A group
- * card has no table to select.
+ * card has no table to select. A click on a card's control selects nothing when CONTROL_CLICK_SELECTS_CARD is off.
  */
 const useNodeClick = (
   select: (table: string | undefined) => void,
@@ -50,7 +51,13 @@ const useNodeClick = (
 ) => {
   const enabled = use(SemanticZoomContext);
   const store = useStoreApi();
-  return (_event: unknown, node: { id: string; type?: string }) => {
+  return (
+    event: { target: EventTarget | null },
+    node: { id: string; type?: string },
+  ) => {
+    if (!CONTROL_CLICK_SELECTS_CARD && isCardControl(event.target)) {
+      return;
+    }
     if (node.type === "table") {
       select(node.id);
       if (isZoomedOut(store.getState().transform[2], enabled)) {

@@ -26,12 +26,22 @@ import {
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
+import type * as CardControls from "./cardControls";
 import { engineFor } from "./engine/engines";
 import { resolveSettings } from "./viewModel";
 
 vi.mock("./fit", async (importOriginal) =>
   (await import("../../test/fitRecorder")).recordingFit(importOriginal),
 );
+
+/** The switch the card controls read; a test sets it to the value it checks, and the default is the production one. */
+const controlClicks = vi.hoisted(() => ({ selects: true }));
+vi.mock("./cardControls", async (importOriginal) => ({
+  ...(await importOriginal<typeof CardControls>()),
+  get CONTROL_CLICK_SELECTS_CARD() {
+    return controlClicks.selects;
+  },
+}));
 
 const { clicked, press, pressElement, typeInto } = controlRecorder();
 
@@ -1225,6 +1235,47 @@ describe("Lineage card strip", () => {
     });
     await press(user, "button", "Details", node(container, "a"));
     await screen.findByRole("complementary", { name: "Details" });
+  });
+
+  it("selects the card a click on its control lands on, as the default does", async () => {
+    const { user, container } = await openLineage();
+    expect(
+      container.querySelector('.react-flow__node[data-id="c"]'),
+    ).not.toHaveClass("selected");
+    await press(user, "button", "Columns", node(container, "c"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="c"]'),
+      ).toHaveClass("selected"),
+    );
+  });
+
+  it("leaves the selection as it was on a click on a control, and a click on the body still selects", async () => {
+    controlClicks.selects = false;
+    try {
+      const { user, container } = await openLineage();
+      await user.click(node(container, "a").getByText("a"));
+      await waitFor(() =>
+        expect(
+          container.querySelector('.react-flow__node[data-id="a"]'),
+        ).toHaveClass("selected"),
+      );
+      await press(user, "button", "Columns", node(container, "c"));
+      expect(
+        container.querySelector('.react-flow__node[data-id="c"]'),
+      ).not.toHaveClass("selected");
+      expect(
+        container.querySelector('.react-flow__node[data-id="a"]'),
+      ).toHaveClass("selected");
+      await user.click(node(container, "c").getByText("c"));
+      await waitFor(() =>
+        expect(
+          container.querySelector('.react-flow__node[data-id="c"]'),
+        ).toHaveClass("selected"),
+      );
+    } finally {
+      controlClicks.selects = true;
+    }
   });
 
   it("reaches the strip's buttons from the keyboard and clicks them on a hovered card", async () => {

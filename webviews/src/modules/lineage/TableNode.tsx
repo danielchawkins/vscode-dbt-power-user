@@ -184,7 +184,7 @@ const Actions = ({
           {relation || "\u00a0"}
         </span>
       )}
-      <div className={styles.actions}>
+      <div className={styles.actions} data-card-control>
         <MoreButton
           table={table.table}
           direction="parents"
@@ -286,6 +286,7 @@ const ColumnList = ({
   return (
     <div
       className={`nodrag nowheel ${styles.columns}`}
+      data-card-control
       data-testid="lineage-columns"
     >
       {columns.length === 0 ? (
