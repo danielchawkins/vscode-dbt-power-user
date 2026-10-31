@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
 import { readDrawnCrossings } from "./lineageProbes";
+import { setLineageViewMode } from "./lineageViewMode";
 import { evaluatePanel, waitForPanelGone } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
 import { cdpPort, smokeHost } from "./smokeEnv";
@@ -276,110 +277,116 @@ suite("Lineage grouping", function () {
     const evidence = interactionEvidence(host());
 
     await openModel(HUB);
-    if (
-      (await waitForChildrenExpander(HUB_CHILDREN)) ===
-      `Show ${HUB_CHILDREN} children`
-    ) {
-      await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
-    }
-    const grouped = await waitForSnapshot(
-      "the hub's children should draw two group nodes and the marts card, with no +N button",
-      (current) =>
-        current.groups.length === 2 && current.cards.includes("mart_summary"),
-    );
-    assert.deepStrictEqual(grouped.groups, [
-      { label: "a", count: "3" },
-      { label: "b", count: "3" },
-    ]);
-    assert.deepStrictEqual(grouped.more, []);
-    assert.deepStrictEqual(grouped.chips, []);
-    // After the expansion the group nodes can sit past the right edge of the narrow panel; Fit View brings them into view.
-    await clickInWebview(LINEAGE, { role: "button", name: "Fit View" });
-    const styles = await groupStyles();
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-groups-closed",
-      expect:
-        "Hub with its children expanded: two closed group nodes, 'a' with 3 and 'b' with 3, and one marts card; no +K button anywhere. Each group's border, fill and the band behind it are recorded.",
-      measured: {
-        groups: grouped.groups,
-        cards: grouped.cards,
-        more: grouped.more,
-        groupStyles: styles,
-      },
-    });
+    // The children expander is a button only in the neighbourhood view; the whole project shows a plain count.
+    try {
+      await setLineageViewMode("neighbourhood");
+      if (
+        (await waitForChildrenExpander(HUB_CHILDREN)) ===
+        `Show ${HUB_CHILDREN} children`
+      ) {
+        await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
+      }
+      const grouped = await waitForSnapshot(
+        "the hub's children should draw two group nodes and the marts card, with no +N button",
+        (current) =>
+          current.groups.length === 2 && current.cards.includes("mart_summary"),
+      );
+      assert.deepStrictEqual(grouped.groups, [
+        { label: "a", count: "3" },
+        { label: "b", count: "3" },
+      ]);
+      assert.deepStrictEqual(grouped.more, []);
+      assert.deepStrictEqual(grouped.chips, []);
+      // After the expansion the group nodes can sit past the right edge of the narrow panel; Fit View brings them into view.
+      await clickInWebview(LINEAGE, { role: "button", name: "Fit View" });
+      const styles = await groupStyles();
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-closed",
+        expect:
+          "Hub with its children expanded: two closed group nodes, 'a' with 3 and 'b' with 3, and one marts card; no +K button anywhere. Each group's border, fill and the band behind it are recorded.",
+        measured: {
+          groups: grouped.groups,
+          cards: grouped.cards,
+          more: grouped.more,
+          groupStyles: styles,
+        },
+      });
 
-    await clickInWebview(LINEAGE, { role: "button", name: "Open a" });
-    const opened = await waitForSnapshot(
-      "opening group a should draw its three cards and an 'a' chip on the hub",
-      (current) =>
-        ["stg_a_1", "stg_a_2", "stg_a_3"].every((name) =>
-          current.cards.includes(name),
-        ) && current.chips.some((chip) => chip.label === "a"),
-    );
-    assert.deepStrictEqual(
-      opened.groups.map((group) => group.label),
-      ["b"],
-    );
-    const chip = opened.chips.find((candidate) => candidate.label === "a");
-    assert.ok(chip?.text.includes("3/3"), `chip text was ${chip?.text}`);
-    assert.deepStrictEqual(opened.more, []);
-    await expectWebviewDom(LINEAGE, { role: "button", name: "Open b" });
-    // The lineage layout draws a band per layer behind the cards; the checkpoint records the band labels and titles.
-    const bands = await bandLabels();
-    assert.ok(bands.length > 0, "the lineage layout should draw layer bands");
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-groups-opened",
-      expect:
-        "After opening group a, drawn by the default balanced engine: three stg_a cards, the group b node still " +
-        "closed, the marts card, and an 'a' chip on the hub reading 3/3 with no +K button. A labelled band sits " +
-        "behind each layer's cards, no two bands overlap, and no edge runs along a band's border.",
-      measured: {
-        cards: opened.cards,
-        groups: opened.groups,
-        chips: opened.chips,
-        more: opened.more,
-        bands,
-        titles: await cardTitles(),
-        drawn: await readDrawnCrossings(),
-      },
-    });
+      await clickInWebview(LINEAGE, { role: "button", name: "Open a" });
+      const opened = await waitForSnapshot(
+        "opening group a should draw its three cards and an 'a' chip on the hub",
+        (current) =>
+          ["stg_a_1", "stg_a_2", "stg_a_3"].every((name) =>
+            current.cards.includes(name),
+          ) && current.chips.some((chip) => chip.label === "a"),
+      );
+      assert.deepStrictEqual(
+        opened.groups.map((group) => group.label),
+        ["b"],
+      );
+      const chip = opened.chips.find((candidate) => candidate.label === "a");
+      assert.ok(chip?.text.includes("3/3"), `chip text was ${chip?.text}`);
+      assert.deepStrictEqual(opened.more, []);
+      await expectWebviewDom(LINEAGE, { role: "button", name: "Open b" });
+      // The lineage layout draws a band per layer behind the cards; the checkpoint records the band labels and titles.
+      const bands = await bandLabels();
+      assert.ok(bands.length > 0, "the lineage layout should draw layer bands");
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-opened",
+        expect:
+          "After opening group a, drawn by the default balanced engine: three stg_a cards, the group b node still " +
+          "closed, the marts card, and an 'a' chip on the hub reading 3/3 with no +K button. A labelled band sits " +
+          "behind each layer's cards, no two bands overlap, and no edge runs along a band's border.",
+        measured: {
+          cards: opened.cards,
+          groups: opened.groups,
+          chips: opened.chips,
+          more: opened.more,
+          bands,
+          titles: await cardTitles(),
+          drawn: await readDrawnCrossings(),
+        },
+      });
 
-    // Zoomed out, cards keep their size and show a larger title and a wider layer stripe only.
-    const before = await zoomState(LINEAGE);
-    const zoomed = await zoomPastHalf(LINEAGE, "out");
-    assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
-    assert.ok(zoomed.cards.length > 0, "the zoomed-out canvas draws cards");
-    assert.deepStrictEqual(
-      zoomed.cards.map(({ width, height }) => [width, height]),
-      before.cards.map(({ width, height }) => [width, height]),
-      "each card keeps its size",
-    );
-    for (const card of zoomed.cards) {
-      assert.ok(card.title >= 26, `title was ${card.title}px`);
-      assert.ok(
-        card.stripe === 0 || card.stripe >= 12,
-        `the layer stripe was ${card.stripe}px`,
+      // Zoomed out, cards keep their size and show a larger title and a wider layer stripe only.
+      const before = await zoomState(LINEAGE);
+      const zoomed = await zoomPastHalf(LINEAGE, "out");
+      assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
+      assert.ok(zoomed.cards.length > 0, "the zoomed-out canvas draws cards");
+      assert.deepStrictEqual(
+        zoomed.cards.map(({ width, height }) => [width, height]),
+        before.cards.map(({ width, height }) => [width, height]),
+        "each card keeps its size",
       );
-      assert.ok(
-        card.subtitle === "hidden" || card.subtitle === "absent",
-        `the subtitle was ${card.subtitle}`,
-      );
-      assert.ok(
-        card.rows.every((visibility) => visibility === "hidden"),
-        `rows under the header were ${card.rows.join(",")}`,
-      );
+      for (const card of zoomed.cards) {
+        assert.ok(card.title >= 26, `title was ${card.title}px`);
+        assert.ok(
+          card.stripe === 0 || card.stripe >= 12,
+          `the layer stripe was ${card.stripe}px`,
+        );
+        assert.ok(
+          card.subtitle === "hidden" || card.subtitle === "absent",
+          `the subtitle was ${card.subtitle}`,
+        );
+        assert.ok(
+          card.rows.every((visibility) => visibility === "hidden"),
+          `rows under the header were ${card.rows.join(",")}`,
+        );
+      }
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-zoomed-out",
+        expect:
+          "The same graph zoomed out below 50%: every card keeps its size and shows only a larger title and a wider " +
+          "layer stripe, with no subtitle line, action row, expander bubble or columns.",
+        measured: {
+          zoom: zoomed.zoom,
+          sizesBefore: before.cards.map(({ width, height }) => [width, height]),
+          cards: zoomed.cards,
+        },
+      });
+    } finally {
+      await setLineageViewMode("whole");
     }
-    await evidence?.capture(LINEAGE, {
-      name: "lineage-groups-zoomed-out",
-      expect:
-        "The same graph zoomed out below 50%: every card keeps its size and shows only a larger title and a wider " +
-        "layer stripe, with no subtitle line, action row, expander bubble or columns.",
-      measured: {
-        zoom: zoomed.zoom,
-        sizesBefore: before.cards.map(({ width, height }) => [width, height]),
-        cards: zoomed.cards,
-      },
-    });
   });
 
   // With lineage.title set to name, cards show the dbt name, not the alias.
@@ -391,29 +398,8 @@ suite("Lineage grouping", function () {
     const config = vscode.workspace.getConfiguration("fusionPowerUser");
     // In alias mode, the default, the fixture's aliased marts model is titled by its alias.
     await reopenModel(HUB);
-    if (
-      (await waitForChildrenExpander(HUB_CHILDREN)) ===
-      `Show ${HUB_CHILDREN} children`
-    ) {
-      await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
-    }
-    await waitForSnapshot(
-      "the hub's children should draw the marts card",
-      (current) => current.cards.includes("mart_summary"),
-    );
-    const aliasTitles = await cardTitles();
-    assert.strictEqual(
-      aliasTitles.mart_summary,
-      "summary_mart",
-      `in alias mode the titles were ${JSON.stringify(aliasTitles)}`,
-    );
     try {
-      await config.update(
-        "lineage.title",
-        "name",
-        vscode.ConfigurationTarget.Workspace,
-      );
-      await reopenModel(HUB);
+      await setLineageViewMode("neighbourhood");
       if (
         (await waitForChildrenExpander(HUB_CHILDREN)) ===
         `Show ${HUB_CHILDREN} children`
@@ -424,25 +410,51 @@ suite("Lineage grouping", function () {
         "the hub's children should draw the marts card",
         (current) => current.cards.includes("mart_summary"),
       );
-      const titles = await pollUntil(
-        cardTitles,
-        (current) => current.mart_summary === "mart_summary",
-        {
-          timeoutMs: 10_000,
-          intervalMs: 250,
-          describe: (last) => `the titles were ${JSON.stringify(last)}`,
-        },
+      const aliasTitles = await cardTitles();
+      assert.strictEqual(
+        aliasTitles.mart_summary,
+        "summary_mart",
+        `in alias mode the titles were ${JSON.stringify(aliasTitles)}`,
       );
-      assert.ok(
-        !Object.values(titles).includes("summary_mart"),
-        `the alias still titled a card: ${JSON.stringify(titles)}`,
-      );
+      try {
+        await config.update(
+          "lineage.title",
+          "name",
+          vscode.ConfigurationTarget.Workspace,
+        );
+        await reopenModel(HUB);
+        if (
+          (await waitForChildrenExpander(HUB_CHILDREN)) ===
+          `Show ${HUB_CHILDREN} children`
+        ) {
+          await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
+        }
+        await waitForSnapshot(
+          "the hub's children should draw the marts card",
+          (current) => current.cards.includes("mart_summary"),
+        );
+        const titles = await pollUntil(
+          cardTitles,
+          (current) => current.mart_summary === "mart_summary",
+          {
+            timeoutMs: 10_000,
+            intervalMs: 250,
+            describe: (last) => `the titles were ${JSON.stringify(last)}`,
+          },
+        );
+        assert.ok(
+          !Object.values(titles).includes("summary_mart"),
+          `the alias still titled a card: ${JSON.stringify(titles)}`,
+        );
+      } finally {
+        await config.update(
+          "lineage.title",
+          undefined,
+          vscode.ConfigurationTarget.Workspace,
+        );
+      }
     } finally {
-      await config.update(
-        "lineage.title",
-        undefined,
-        vscode.ConfigurationTarget.Workspace,
-      );
+      await setLineageViewMode("whole");
     }
   });
 
@@ -462,6 +474,7 @@ suite("Lineage grouping", function () {
         vscode.ConfigurationTarget.Workspace,
       );
       await reopenModel(FANOUT);
+      await setLineageViewMode("neighbourhood");
       if (
         (await waitForChildrenExpander(FANOUT_CHILDREN)) ===
         `Show ${FANOUT_CHILDREN} children`
@@ -514,11 +527,15 @@ suite("Lineage grouping", function () {
           card.expander === `Show ${FANOUT_CHILDREN} children`,
       );
     } finally {
-      await config.update(
-        "lineage.groupBy",
-        undefined,
-        vscode.ConfigurationTarget.Workspace,
-      );
+      try {
+        await setLineageViewMode("whole");
+      } finally {
+        await config.update(
+          "lineage.groupBy",
+          undefined,
+          vscode.ConfigurationTarget.Workspace,
+        );
+      }
     }
   });
 });
