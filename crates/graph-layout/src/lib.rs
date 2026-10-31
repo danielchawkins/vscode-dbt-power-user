@@ -7,17 +7,13 @@ pub mod model;
 pub mod overview;
 pub mod pack;
 
-// `across` is compiled for its tests until route uses it.
-#[cfg(test)]
+// `across` and `place` are compiled for the phases (`engine::phases`); route reads only `place::boxes`.
 mod across;
 mod metrics;
-// `place` is compiled for its tests until route reads its boxes and placement.
-#[cfg(test)]
 mod place;
-// `budget`, `index`, `layering`, `order` and `rand` are compiled for the layout phases (`engine::phases`). `constraints`,
-// `hash` and `solve` are still compiled for their tests only, until a phase uses them.
+// `budget`, `constraints` (its `components`), `index`, `layering`, `order`, `rand` and `solve` are compiled for the
+// layout phases (`engine::phases`). `hash` is still compiled for its tests only, until a phase uses it.
 mod budget;
-#[cfg(test)]
 mod constraints;
 #[cfg(test)]
 mod hash;
@@ -32,7 +28,6 @@ mod order_checks;
 mod place_checks;
 mod rand;
 mod route;
-#[cfg(test)]
 mod solve;
 #[cfg(test)]
 mod solve_checks;

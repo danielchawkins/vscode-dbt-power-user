@@ -88,6 +88,7 @@ pub(crate) struct BoxPlan {
 }
 
 /// The across-rank extent of one box: its top and bottom edge.
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Extent {
     pub(crate) top: f64,
@@ -323,6 +324,7 @@ pub(crate) fn initial_edges(plan: &BoxPlan, x: &[f64], half: &[f64]) -> Vec<f64>
 
 /// The across-rank extent of each box, from the centres and half-heights of its first and last ranks, widened by its
 /// padding and label; a parent is widened to hold each child box with the parent's padding.
+#[cfg(test)]
 pub(crate) fn across_extents(plan: &BoxPlan, centres: &[f64], rank_half: &[f64]) -> Vec<Extent> {
     let mut extent: Vec<Extent> = plan
         .boxes

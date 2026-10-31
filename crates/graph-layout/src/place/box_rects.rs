@@ -1,7 +1,9 @@
 //! The rectangle of each cluster box, a port of `packages/graph-layout/src/place/boxRects.ts`. Routing re-stacks the ranks and
 //! recomputes the boxes from the frame, so the frame carries the box edges along the ranks.
 
-use super::boxes::{BoxPlan, across_extents};
+use super::boxes::BoxPlan;
+#[cfg(test)]
+use super::boxes::across_extents;
 
 /// The cluster boxes of a placement: their plan, and each box's edge along the ranks in the drawing's frame.
 #[derive(Debug, Clone, PartialEq)]
@@ -17,6 +19,7 @@ pub(crate) struct BoxFrame {
 }
 
 /// A cluster box's rectangle in the drawing, named by its cluster id.
+#[cfg(test)]
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct BoxRect {
     pub(crate) id: String,
@@ -29,6 +32,7 @@ pub(crate) struct BoxRect {
 /// The rectangle of each cluster box, in box order. Its edges along the ranks come from the frame; its extent across the
 /// ranks comes from the frame's solved edges when it has them, and otherwise from the ranks' centres and half-heights,
 /// so that a re-stacked drawing gets its boxes recomputed.
+#[cfg(test)]
 pub(crate) fn box_rects(frame: &BoxFrame, centres: &[f64], rank_half: &[f64]) -> Vec<BoxRect> {
     let extents = across_extents(&frame.plan, centres, rank_half);
     frame
@@ -48,6 +52,7 @@ pub(crate) fn box_rects(frame: &BoxFrame, centres: &[f64], rank_half: &[f64]) ->
 }
 
 /// A rectangle from its extents along the rank direction and across it; `down` ranks run top to bottom.
+#[cfg(test)]
 fn rect_of(down: bool, along: (f64, f64), across: (f64, f64), id: String) -> BoxRect {
     let (a0, a1) = along;
     let (c0, c1) = across;
