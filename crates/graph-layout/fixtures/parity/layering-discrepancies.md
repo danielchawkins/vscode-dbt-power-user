@@ -23,8 +23,7 @@ recorded here.
 - **Seeded random graphs** (`random-dag-0` to `random-dag-199`, DAGs; `random-cyclic-200` to `random-cyclic-299`, with
   cycles and self-loops; each graph one of `none`, `soft` and `strict` partitions, with free nodes and unknown kinds):
   **300 of 300 equal**.
-- **Finance graph** (1,126 nodes, 1,273 edges, soft partitions, `table` edges that rank; the counts are the dump's own,
-  pinned by `FINANCE_NODES` and `FINANCE_EDGES` in `layering_checks.rs`, which fail when the dump differs): **equal** when the dump is
+- **Finance graph** (the counts come from the dump at the time it is taken: 1,127 nodes and 1,291 edges in the dump taken for Phase 4, 1,126 and 1,273 in the Phase 3 dump, soft partitions, `table` edges that rank; the test prints the counts it reads and does not pin them): **equal** when the dump is
   read (`GRAPH_LAYOUT_LAYERING_FINANCE`; `finance_general/target/manifest.json`).
   Ranks and every dummy chain are bit-identical to TypeScript.
 

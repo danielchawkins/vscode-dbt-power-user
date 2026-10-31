@@ -16,7 +16,7 @@ TypeScript output is stored as the hex of its IEEE 754 bits, so -0 and every ulp
 - **Finance placement solves** (`record-finance-solves.mjs` on `finance_general/target/manifest.json`): the TypeScript
   layout makes 102 solves (fast 1, balanced 101), none of them with zero variables and none throwing. Every separation
   holds, and every output is bit-identical to TypeScript: **102 of 102**, 0 values differ.
-  The manifest now has 1,126 nodes and 1,273 edges (`financeGraph`, one edge per parent-child pair); the plan's figures (1,122 and 1,241) describe an earlier export.
+  The counts come from the dump at the time it is taken: the manifest's dump has 1,126 nodes and 1,273 edges (`financeGraph`, one edge per parent-child pair) at the Phase 2 and 3 dumps, and 1,127 and 1,291 at the Phase 4 dump; the plan's earlier figures (1,122 and 1,241) describe an earlier export.
 
 ## Discrepancies
 
