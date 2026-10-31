@@ -567,3 +567,55 @@ fn placements_are_valid_deterministic_and_no_worse_than_typescript_on_the_financ
         findings.len()
     );
 }
+
+/// The bits of each value, `;`-free and comma-separated, or `-` for none.
+fn bits_text(values: &[f64]) -> String {
+    if values.is_empty() {
+        return "-".to_string();
+    }
+    values
+        .iter()
+        .map(|v| format!("{:016x}", v.to_bits()))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// One output line: the case's name, then its placement as IEEE bits: the points, the bounds, the placement edge length,
+/// the work count and the exact optimum (when the case has an instance).
+fn output_line(case: &Case) -> String {
+    let (_, placement) = solve(case);
+    let points: Vec<String> = placement
+        .points
+        .iter()
+        .map(|p| format!("{:016x},{:016x}", p.x.to_bits(), p.y.to_bits()))
+        .collect();
+    let bounds = bounds_of(case, &placement).map_or_else(|| "-".to_string(), |b| bits_text(&b));
+    let exact = case.exact.as_ref().map_or_else(
+        || "-".to_string(),
+        |e| bits_text(&exact_solution(&e.x0, &e.weight, &e.seps).0),
+    );
+    let length = edge_length(case, &placement.points).to_bits();
+    format!(
+        "{}\tpoints={}\tbounds={}\tedge_length={length:016x}\twork={}\texact={}",
+        case.name,
+        points.join(";"),
+        bounds,
+        placement.work,
+        exact
+    )
+}
+
+/// The placement outputs: each case of `place.txt` as `output_line` writes it. The test runs natively and under WASI and
+/// writes the output when `GRAPH_LAYOUT_PLACE_OUT` names a file; `just place-parity` compares the two files byte for byte.
+#[test]
+fn place_outputs_are_written_for_the_parity_comparison() {
+    let Some(path) = std::env::var_os("GRAPH_LAYOUT_PLACE_OUT") else {
+        return;
+    };
+    let mut text = String::new();
+    for case in parse_cases(FIXTURE) {
+        text.push_str(&output_line(&case));
+        text.push('\n');
+    }
+    std::fs::write(&path, text).expect("the place output is writable");
+}
