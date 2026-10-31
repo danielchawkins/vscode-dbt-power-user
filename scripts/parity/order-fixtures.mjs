@@ -102,6 +102,65 @@ export function printOrder(HEADER, cases, deps) {
   ];
 }
 
+/** The layering's spelling of an order: ranks joined by `;`, nodes by `,`, an empty rank as `-`. */
+function renderLayers(layers) {
+  return layers
+    .map((layer) => (layer.length > 0 ? layer.join(",") : "-"))
+    .join(";");
+}
+
+/**
+ * One case's order line, as the Rust test `order_outputs_are_written_for_the_parity_comparison` writes it: the name,
+ * a tab, then each result as `effort:hinted:crossings:order`, hinted `true` or `false`, the crossings as IEEE bits and
+ * the order as `renderLayers`. The orders are compared with `diff`, so a line differs only where the orders differ.
+ */
+export function orderOutputLine(
+  { name, seed, graph, options },
+  { rank, layer },
+) {
+  const scope = portedScope(graph);
+  const results = [];
+  for (const effort of EFFORTS) {
+    const base = { ...options, effort };
+    const ranking = rank(scope, base);
+    const layered = layer(scope, base, ranking);
+    for (const hinted of [false, true]) {
+      const hints = hinted ? randomHints(seed, layered) : undefined;
+      const result = order(
+        scope,
+        { ...base, seed, hints },
+        { ...ranking, layered },
+      );
+      results.push(
+        `${effort}:${hinted}:${bitsHex(result.crossings)}:${renderLayers(result.layers)}`,
+      );
+    }
+  }
+  return `${name}\t${results.join(" ")}`;
+}
+
+/** The finance lineage graph without clusters, as `orderOutputLine` writes it, seed 0. */
+export function printOrderFinanceOutput(manifestPath, deps) {
+  if (manifestPath === undefined) {
+    process.stderr.write(
+      "usage: print-fixtures.mjs order-finance-outputs <manifest.json>\n",
+    );
+    process.exit(2);
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  return [
+    orderOutputLine(
+      {
+        name: "finance",
+        seed: 0,
+        graph: deps.financeGraph(manifest),
+        options: LINEAGE_OPTIONS,
+      },
+      deps,
+    ),
+  ];
+}
+
 /** The finance lineage graph without clusters, at each effort: the same line as a layering case, seed 0. */
 export function printOrderFinance(HEADER, manifestPath, deps) {
   if (manifestPath === undefined) {

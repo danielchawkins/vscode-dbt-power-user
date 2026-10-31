@@ -471,6 +471,26 @@ fn banded_graph_reaches_its_exact_minimum_at_thorough() {
     }
 }
 
+/// One case's order line: the name, a tab, then each result as `effort:hinted:crossings:order`, with the crossings as IEEE
+/// bits and the order as `render` spells it. `scripts/parity/print-fixtures.mjs order-outputs` writes the same lines.
+fn output_line(case: &Case) -> String {
+    let results: Vec<String> = case
+        .results
+        .iter()
+        .map(|expected| {
+            let ordered = run(case, expected, case.seed);
+            format!(
+                "{}:{}:{}:{}",
+                expected.effort,
+                expected.hinted,
+                bits(ordered.crossings),
+                render(&ordered.layers)
+            )
+        })
+        .collect();
+    format!("{}\t{}", case.name, results.join(" "))
+}
+
 /// The order outputs: each case of `order.txt` at every result's effort, with the crossings as IEEE bits and the order as
 /// `render` spells it. The test runs natively and under WASI and writes the output when `GRAPH_LAYOUT_ORDER_OUT` names a
 /// file; `just order-parity` compares the two files byte for byte.
@@ -481,21 +501,7 @@ fn order_outputs_are_written_for_the_parity_comparison() {
     };
     let mut text = String::new();
     for case in parse_cases(ORDER_FIXTURE) {
-        let results: Vec<String> = case
-            .results
-            .iter()
-            .map(|expected| {
-                let ordered = run(&case, expected, case.seed);
-                format!(
-                    "{}:{}:{}:{}",
-                    expected.effort,
-                    expected.hinted,
-                    bits(ordered.crossings),
-                    render(&ordered.layers)
-                )
-            })
-            .collect();
-        writeln!(text, "{}\t{}", case.name, results.join(" ")).expect("writing to a string");
+        writeln!(text, "{}", output_line(&case)).expect("writing to a string");
     }
     std::fs::write(&path, text).expect("the order output is writable");
 }
@@ -580,6 +586,10 @@ fn orders_are_valid_deterministic_and_no_worse_than_typescript_on_the_finance_gr
         case.ends.len()
     );
     let fewer = check_case(case);
+    if let Some(out) = std::env::var_os("GRAPH_LAYOUT_ORDER_FINANCE_OUT") {
+        std::fs::write(&out, format!("{}\n", output_line(case)))
+            .expect("the finance order output is writable");
+    }
     println!(
         "order finance: {} results, {fewer} with fewer crossings than TypeScript",
         case.results.len()
