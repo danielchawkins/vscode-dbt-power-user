@@ -23,7 +23,7 @@ const CROSSING_CASES = 200;
  * (a node one rank down, when there is one), a weight, and the two port offsets; then each rank's nodes shuffled. The
  * Rust check (order_checks.rs) replays the same draws.
  */
-function randomCrossingCase(seed) {
+export function randomCrossingCase(seed) {
   const random = seededRandom(seed);
   const pick = (k) => Math.floor(random() * 4294967296) % k;
   const ranks = 2 + pick(3);
@@ -63,7 +63,11 @@ function randomCrossingCase(seed) {
     ),
   );
   const layered = {
-    nodes: nodes.map(({ rank, breadth }) => ({ id: undefined, rank, breadth })),
+    nodes: nodes.map(({ rank, breadth }, i) => ({
+      id: String(i),
+      rank,
+      breadth,
+    })),
     bundles: [],
     segments,
     block: nodes.map((_, i) => i),

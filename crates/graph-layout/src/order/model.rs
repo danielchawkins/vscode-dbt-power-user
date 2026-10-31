@@ -18,6 +18,8 @@ pub(crate) struct OrderModel<'a> {
     pub(crate) index: Vec<usize>,
     /// Segments whose upper end is the node: its links to the rank below.
     pub(crate) down: Vec<Vec<usize>>,
+    /// Segments whose lower end is the node: its links to the rank above.
+    pub(crate) up: Vec<Vec<usize>>,
 }
 
 impl<'a> OrderModel<'a> {
@@ -25,14 +27,17 @@ impl<'a> OrderModel<'a> {
     pub(crate) fn new(graph: &'a LayeredGraph, layers: Vec<Vec<usize>>) -> Self {
         let count = graph.nodes.len();
         let mut down = vec![Vec::new(); count];
+        let mut up = vec![Vec::new(); count];
         for (si, s) in graph.segments.iter().enumerate() {
             down[s.top].push(si);
+            up[s.bottom].push(si);
         }
         let mut model = Self {
             graph,
             layers,
             index: vec![0; count],
             down,
+            up,
         };
         for rank in 0..model.layers.len() {
             model.reindex(rank);
