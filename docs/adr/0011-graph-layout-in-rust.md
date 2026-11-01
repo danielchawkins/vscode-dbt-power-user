@@ -132,25 +132,28 @@ The Rust engine is deterministic: the same input and options give the same bits 
 
 ## Live tuning: the engine handle
 
-Rust sketch, final names decided in Phase 7:
+Rust, as built in Phase 7 (`crates/graph-layout/src/engine/handle.rs`):
 
 ```rust
-pub struct Engine { /* indexed graph, phase outputs and keys, scratch, generation */ }
+pub struct Engine { /* the outputs of the last completed run, by stage; the newest generation */ }
 
 impl Engine {
     pub fn new() -> Self;
-    /// Indexes the graph once. Excluded nodes are filtered here.
-    pub fn set_graph(&mut self, graph: Graph) -> Result<(), InputError>;
-    /// Diffs the new options against the phase keys. Cheap. Returns the new generation.
-    pub fn set_options(&mut self, options: Options) -> Generation;
-    /// Consumes up to `units` work units, then returns. Deterministic in the units consumed.
-    pub fn run(&mut self, units: u64) -> Progress;
-    /// The latest result for the current generation, if one is complete.
-    pub fn layout(&self) -> Option<&Layout>;
+    /// Validates the graph and the options, runs the stages whose key differs from the cache's, and replaces the cache
+    /// when the run completes. `Ok(None)` when a newer generation has started before the run finishes.
+    pub fn layout(&self, graph: &Graph, options: &Options, generation: Generation)
+        -> Result<Option<Progress>, LayoutError>;
 }
+
+/// `generation()`, `reran()` (the stages this request ran, in order) and `layout()` / `into_layout()`.
+pub struct Progress { /* ... */ }
+pub struct Generation(u64);  // `Generation::new`, `get`
+
+/// The wrapper: a fresh engine run to the end.
+pub fn layout(graph: &Graph, options: &Options) -> Result<Layout, LayoutError>;
 ```
 
-`Progress` carries the generation, the stage (`Fast`, `Refined` or `Final`) and whether the run is done. The WASM wrapper exposes the same methods. Its loop yields between `run` calls, so a Worker's `onmessage` can deliver `set_options` between steps. That is cooperative cancellation, and it needs no thread interruption.
+The graph and the options are passed to each call, not set once. The keys make the reuse: an unchanged input re-runs no stage. Staged budgets (`Fast`, `Refined`, `Final`), a unit-counted `run`, and the yielding loop of the WASM wrapper are future work; `layout` runs every stage to the budget of its `effort`.
 
 **Phase keys.** Each stage's key is FNV-1a 64 over the canonical bytes of the key of the stage before it and of what the stage reads (`crates/graph-layout/src/engine/keys.rs`). Keys chain, so a change that reaches a stage reaches every stage after it. The table below is the output of the S7 probe (`crates/graph-layout/src/engine/keys/tests.rs`). The probe starts from a base that sets every option, changes one option at a time, and marks each stage whose key changes. The test fails when this table differs from its output. A dot marks a stage whose key changes. Index is the graph and the edge kinds' joins; the stages after it read the graph only through it.
 
@@ -203,14 +206,14 @@ Not probed: the attraction weight, the attraction edges, and the excluded flags,
 | Effort change | from Rank (the budget counts reach Rank and Order) | Index |
 | Node excluded or restored | Index, then only the components it touches | every other component |
 
-**Progressive results.** Stages are budget constants, not elapsed time. `Fast` is the first complete placement with a small budget; `Refined` continues the same engine state with a larger budget; `Final` is the `thorough` budget. The unit size is one sweep, one projection iteration, or one routing batch, chosen so the maximum single step stays small enough for a Worker's event loop (S12 measures it). Whether a Brandes–Köpf-only placement is legal enough to serve as `Fast` is open (S12). If it is not, `Fast` is placement with a capped number of projection iterations.
+**Progressive results.** Not built. The stages are budget constants (`effort`), not elapsed time, and `layout` runs them all. Staged results (`Fast` as a first complete placement with a small budget, then `Refined` and `Final`, in units of one sweep, one projection iteration or one routing batch) remain future work, with the open question of whether a Brandes–Köpf-only placement can serve as `Fast`.
 
 **Invariants the tests enforce (Phase 7):**
 
-- **I1.** After any sequence of `set_options` calls, running to `Final` gives the same `Layout`, bit for bit, as `layout(graph, final_options)`.
-- **I2.** Splitting a run changes nothing: `run(a)` then `run(b)` equals `run(a + b)`.
-- **I3.** After `set_options`, no result of an earlier generation is returned by `layout()`.
-- **I4.** A steady placement-only relayout allocates nothing after warm-up (S5 measures it).
+- **I1.** After any sequence of requests, the handle's layout equals `layout(graph, options)` on the same inputs, bit for bit (`handle::tests`).
+- **I2.** Not built with the staged budgets; a run is not split. Future work.
+- **I3.** A request superseded by a newer generation returns `None`, and the cache it would have replaced stays as it was.
+- **I4.** A steady placement-only relayout allocates nothing after warm-up. Not met: no counting-allocator test covers the engine yet (`tests/alloc.rs` covers the solver and layering), and the phase's S5 status is in the plan.
 
 ## New core features
 
