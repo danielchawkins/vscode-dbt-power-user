@@ -39,6 +39,7 @@ export class Engine {
 
   layout(frame, options = {}, generation = 0) {
     const id = this.#bigint ? BigInt(generation) : generation;
-    return this.#handle.layout(frame, encodeOptions(options), id);
+    // napi returns `null` for a superseded generation and wasm-bindgen returns `undefined`; the wrapper says `undefined`.
+    return this.#handle.layout(frame, encodeOptions(options), id) ?? undefined;
   }
 }
