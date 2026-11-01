@@ -15,6 +15,18 @@ struct Step {
     to: f64,
 }
 
+/// The crossings of the routed `paths` of the router, whose trunks are `trunks`, counted as `brute_crossings` counts them.
+pub(crate) fn brute_crossings_of_routes(
+    paths: &[Vec<crate::route::Point>],
+    trunks: &[Option<usize>],
+) -> usize {
+    let model: Vec<Vec<Point>> = paths
+        .iter()
+        .map(|path| path.iter().map(|p| Point { x: p.x, y: p.y }).collect())
+        .collect();
+    brute_crossings(&model, trunks)
+}
+
 /// The crossings of `paths`, whose trunks are `trunks` (aligned with `paths`; `None` shares with no path). It is
 /// quadratic in the paths and in their steps, and it shares no code with the sweep.
 pub(crate) fn brute_crossings(paths: &[Vec<Point>], trunks: &[Option<usize>]) -> usize {

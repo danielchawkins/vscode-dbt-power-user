@@ -75,6 +75,9 @@ pub(crate) struct EdgeInput {
     pub(crate) target: usize,
     /// The stops from the source end to the target end.
     pub(crate) stops: Vec<Stop>,
+    /// The trunk of the edge: the source port it leaves from, keyed by its source node and that port. Edges with one trunk
+    /// never count as crossing each other, as `measure` counts them. `None` for an edge with no source port.
+    pub(crate) trunk: Option<usize>,
 }
 
 /// Everything the rows route reads.
@@ -100,4 +103,6 @@ pub(crate) struct RouteInput {
     pub(crate) clusters: Vec<ClusterInput>,
     /// The edges, by edge index.
     pub(crate) edges: Vec<EdgeInput>,
+    /// The most overlapping pairs of runs the track assignment examines in a band (`Budget::route_pairs`).
+    pub(crate) route_pairs: usize,
 }

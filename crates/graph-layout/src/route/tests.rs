@@ -1,10 +1,13 @@
 //! Unit tests of the routes on hand-built inputs: the tracks of overlapping runs, the drawn and refused edges, the levels
 //! runs, and the opaque gate. The properties on random graphs, through the phases, are in `engine/phases/tests.rs`.
 
+use proptest::prelude::*;
+
 use super::{
     ClusterBox, ClusterInput, EdgeInput, EdgeRoute, NodeInput, Point, Rect, RouteInput, Stop,
     route, route_levels, same_coordinate,
 };
+use crate::testkit::crossings::brute_crossings_of_routes;
 
 /// A node of `rank` centred at `along`, with half-extent `half`, held by no box.
 fn node(rank: usize, along: f64) -> NodeInput {
@@ -62,6 +65,7 @@ fn edge(source: usize, target: usize, stops: Vec<Stop>) -> EdgeInput {
         source,
         target,
         stops,
+        trunk: None,
     }
 }
 
@@ -78,6 +82,7 @@ fn input(nodes: Vec<NodeInput>, edges: Vec<EdgeInput>, clusters: Vec<ClusterInpu
         nodes,
         clusters,
         edges,
+        route_pairs: 100_000,
     }
 }
 
@@ -272,4 +277,89 @@ fn a_diagonal_step_through_an_opaque_box_is_a_breach() {
     assert_eq!(breaches(&through, &[rect], &[true]), vec![0]);
     let beside = [Point { x: 50.0, y: -5.0 }, Point { x: 60.0, y: 15.0 }];
     assert_eq!(breaches(&beside, &[rect], &[true]), Vec::<usize>::new());
+}
+
+#[test]
+fn a_run_whose_verticals_are_struck_takes_the_track_above() {
+    // X runs from 0 to 10 and Y from 5 to 20 in one band. Put X above Y and two verticals are struck: Y's upper vertical
+    // at 5 and X's lower vertical at 10. Put Y above X and nothing is struck, so the order must be Y above X.
+    let nodes = vec![node(0, 0.0), node(0, 5.0), node(1, 10.0), node(1, 20.0)];
+    let edges = vec![
+        edge(0, 2, vec![stop(0, 0.0), stop(1, 10.0)]),
+        edge(1, 3, vec![stop(0, 5.0), stop(1, 20.0)]),
+    ];
+    let routing = route(&input(nodes, edges, Vec::new()));
+    let paths: Vec<Vec<Point>> = routing.edges.iter().map(|e| points(e).to_vec()).collect();
+    let track = |path: &Vec<Point>| path[path.len() / 2].y;
+    assert!(
+        track(&paths[1]) < track(&paths[0]),
+        "Y takes the track above X"
+    );
+    assert_eq!(brute_crossings_of_routes(&paths, &[None, None]), 0);
+    assert_eq!(routing.work.tracks, 2);
+}
+
+proptest! {
+    #[test]
+    fn a_band_whose_runs_do_not_overlap_takes_one_track_and_no_crossing(
+        blocks in proptest::collection::vec((0u8..3, 5u8..8), 1..10),
+    ) {
+        // Each run lies in its own block of 20 units, so no two spans overlap or come within the clearance of one track.
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        for (i, &(up, down)) in blocks.iter().enumerate() {
+            let base = 20.0 * f64::from(u32::try_from(i).unwrap_or(0));
+            let (up, down) = (base + f64::from(up), base + f64::from(down));
+            nodes.push(node(0, up));
+            nodes.push(node(1, down));
+            edges.push(edge(2 * i, 2 * i + 1, vec![stop(0, up), stop(1, down)]));
+        }
+        let routing = route(&input(nodes, edges, Vec::new()));
+        let drawn: Vec<Vec<Point>> = routing.edges.iter().map(|e| points(e).to_vec()).collect();
+        let trunks: Vec<Option<usize>> = vec![None; drawn.len()];
+        prop_assert_eq!(routing.work.tracks, 1);
+        prop_assert_eq!(brute_crossings_of_routes(&drawn, &trunks), 0);
+    }
+
+    #[test]
+    fn reversing_the_edge_order_gives_the_same_routes(
+        runs in proptest::collection::vec((0u8..5, 0u8..5), 1..12),
+    ) {
+        // Small whole coordinates, so that many runs share a point, a span or a track.
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        for (i, &(up, down)) in runs.iter().enumerate() {
+            nodes.push(node(0, f64::from(up)));
+            nodes.push(node(1, f64::from(down)));
+            edges.push(edge(2 * i, 2 * i + 1, vec![stop(0, f64::from(up)), stop(1, f64::from(down))]));
+        }
+        let forward = route(&input(nodes.clone(), edges.clone(), Vec::new()));
+        let reversed_edges: Vec<EdgeInput> = edges.iter().rev().cloned().collect();
+        let backward = route(&input(nodes, reversed_edges, Vec::new()));
+        let mut expected = forward.edges.clone();
+        expected.reverse();
+        prop_assert_eq!(backward.edges, expected);
+        prop_assert_eq!(backward.work, forward.work);
+    }
+
+    #[test]
+    fn with_no_pair_budget_every_run_is_still_drawn_orthogonally(
+        runs in proptest::collection::vec((0u8..5, 0u8..5), 1..12),
+    ) {
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        for (i, &(up, down)) in runs.iter().enumerate() {
+            nodes.push(node(0, f64::from(up)));
+            nodes.push(node(1, f64::from(down)));
+            edges.push(edge(2 * i, 2 * i + 1, vec![stop(0, f64::from(up)), stop(1, f64::from(down))]));
+        }
+        let mut unbudgeted = input(nodes, edges, Vec::new());
+        unbudgeted.route_pairs = 0;
+        let routing = route(&unbudgeted);
+        for (i, drawn) in routing.edges.iter().enumerate() {
+            let pts = points(drawn);
+            prop_assert!(is_orthogonal(pts), "edge {i} is not orthogonal");
+            prop_assert_eq!((pts[0].x, pts[pts.len() - 1].x), (f64::from(runs[i].0), f64::from(runs[i].1)));
+        }
+    }
 }

@@ -23,8 +23,17 @@ pub(super) fn route_layout(
     layers: &Layers,
     layered: &LayeredGraph,
     placement: &Placement,
+    route_pairs: usize,
 ) -> Routing {
-    let input = route_input(graph, options, index, layers, layered, placement);
+    let input = route_input(
+        graph,
+        options,
+        index,
+        layers,
+        layered,
+        placement,
+        route_pairs,
+    );
     match options.ranks.unwrap_or_default() {
         Ranks::Rows => route(&input),
         Ranks::Levels => route_levels(&input),
@@ -39,6 +48,7 @@ fn route_input(
     layers: &Layers,
     layered: &LayeredGraph,
     placement: &Placement,
+    route_pairs: usize,
 ) -> RouteInput {
     let down = options.direction == Direction::Down;
     let spacing = spacing_of(options);
@@ -69,6 +79,7 @@ fn route_input(
         nodes,
         clusters: cluster_inputs(graph, placement),
         edges: edges_of(graph, options, index, layers, layered, placement, down),
+        route_pairs,
     }
 }
 
@@ -212,6 +223,8 @@ fn edges_of(
 ) -> Vec<EdgeInput> {
     let count = graph.edges.id.len();
     let chains = chains_of(layers, layered);
+    // A trunk is the source port an edge leaves from, keyed by its source node and that port, as `layout` keys it.
+    let mut trunks: BTreeMap<(&str, &str), usize> = BTreeMap::new();
     let mut bundle_of: Vec<Option<(usize, usize, usize)>> = vec![None; count];
     for (b, bundle) in layers.bundles.iter().enumerate() {
         for (slot, &e) in bundle.edges.iter().enumerate() {
@@ -251,11 +264,18 @@ fn edges_of(
                 }
                 None => Vec::new(),
             };
+            let trunk = graph.edges.source_port[e].as_deref().map(|port| {
+                let next = trunks.len();
+                *trunks
+                    .entry((graph.edges.source[e].as_str(), port))
+                    .or_insert(next)
+            });
             EdgeInput {
                 routed,
                 source,
                 target,
                 stops,
+                trunk,
             }
         })
         .collect()

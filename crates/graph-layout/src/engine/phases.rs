@@ -113,7 +113,15 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
         &ordered.layers,
         budget.place_iterations,
     )?;
-    let routing = route_layout(graph, options, &index, &layers, &layered, &placement);
+    let routing = route_layout(
+        graph,
+        options,
+        &index,
+        &layers,
+        &layered,
+        &placement,
+        budget.route_pairs,
+    );
     Ok(Phases {
         ranks,
         reversed: ranking.reversed,
