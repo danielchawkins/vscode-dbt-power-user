@@ -36,6 +36,12 @@ export const fetchProjectGraph = (): Promise<{
   edges: [string, string][];
 }> => executeRequestInSync("getProjectGraph");
 
+/** The host's Rust layout of the graph frame in `params`, or `superseded` when a newer generation overtook it. */
+export const fetchLayout = (
+  params: lineage.LayoutParams,
+): Promise<lineage.LayoutBody> =>
+  executeRequestInSync("layout", { args: { params } });
+
 /** The `getColumns` body of `table`; `refresh` asks the warehouse for a source's columns. */
 export const fetchTableColumns = (
   table: string,

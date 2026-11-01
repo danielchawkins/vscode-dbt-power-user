@@ -1,5 +1,7 @@
 import {
+  decodeLayout,
   type EdgeKindPolicy,
+  encodeGraph,
   type LayoutEdge,
   type LayoutGraph,
   type LayoutHints as PackageHints,
@@ -90,21 +92,11 @@ export function graphLayoutEngine(effort: GraphLayoutEffort): LayoutEngine {
   return {
     id: "graph-layout",
     layout(request: LayoutRequest, generation: number): Promise<LayoutAnswer> {
-      const tags = layerTags(request.cards);
-      const graph = toGraph(request, tags);
-      const result = layout(graph, optionsFor(request, effort));
-      const response: LayoutResponse = {
-        positions: positionsOf(result),
-        bands: bandsOf(result),
-        edges: edgesOf(result, graph),
-        hints: { engine: "graph-layout", data: result.hints },
-        metrics: {
-          crossings: result.metrics.crossings,
-          bends: result.metrics.bends,
-          edgeLength: result.metrics.edgeLength,
-          area: result.metrics.area,
-        },
-      };
+      const graph = graphOf(request);
+      const response = responseOf(
+        layout(graph, optionsFor(request, effort)),
+        graph,
+      );
       return Promise.resolve(
         isSuperseded(generation)
           ? { superseded: true }
@@ -112,6 +104,11 @@ export function graphLayoutEngine(effort: GraphLayoutEffort): LayoutEngine {
       );
     },
   };
+}
+
+/** The request as the package's graph, with its layer tags in partition order. */
+function graphOf(request: LayoutRequest): LayoutGraph {
+  return toGraph(request, layerTags(request.cards));
 }
 
 /** The package's options for one request: downward ranks, layers as soft partitions, the focus card as anchor. */
@@ -132,6 +129,22 @@ function optionsFor(
     effort,
     spacing: SPACING[request.spacing ?? lineage.DEFAULT_SPACING_PRESET],
     ...(previous ? { hints: previous } : {}),
+  };
+}
+
+/** The panel's answer for a laid-out `graph`: cards, bands, routed edges, hints and measures. */
+function responseOf(result: LayoutResult, graph: LayoutGraph): LayoutResponse {
+  return {
+    positions: positionsOf(result),
+    bands: bandsOf(result),
+    edges: edgesOf(result, graph),
+    hints: { engine: "graph-layout", data: result.hints },
+    metrics: {
+      crossings: result.metrics.crossings,
+      bends: result.metrics.bends,
+      edgeLength: result.metrics.edgeLength,
+      area: result.metrics.area,
+    },
   };
 }
 
@@ -265,3 +278,96 @@ function edgesOf(
   }
   return edges;
 }
+
+/** Sends a layout to the host and resolves to its answer: the layout frame, or `superseded`. */
+export type LayoutTransport = (
+  params: lineage.LayoutParams,
+) => Promise<lineage.LayoutBody>;
+
+/** The Rust engine's hints are columns, one per field, where the package's are a map keyed by node. */
+interface ColumnarHints {
+  id: string[];
+  rank: number[];
+  order: number[];
+  x: number[];
+  y: number[];
+}
+
+/** The options as the Rust engine reads them. */
+type WireOptions = Omit<LayoutOptions, "hints"> & {
+  hints?: ColumnarHints | undefined;
+};
+
+/** The options as JSON the engine reads: the package's options, with the previous hints in columns. */
+function wireOptions({ hints, ...options }: LayoutOptions): WireOptions {
+  if (hints === undefined) {
+    return options;
+  }
+  const nodes = [...hints.nodes];
+  return {
+    ...options,
+    hints: {
+      id: nodes.map(([id]) => id),
+      rank: nodes.map(([, hint]) => hint.rank),
+      order: nodes.map(([, hint]) => hint.order),
+      x: nodes.map(([, hint]) => hint.x),
+      y: nodes.map(([, hint]) => hint.y),
+    },
+  };
+}
+
+/**
+ * The Rust engine for `effort`: the same package graph and options as the TypeScript engine, laid out in the host
+ * through `transport`. The transport is the one thing that differs: the layout runs in the host, not in the webview.
+ */
+export function rustLayoutEngine(
+  effort: GraphLayoutEffort,
+  transport: LayoutTransport,
+): LayoutEngine {
+  return {
+    id: "graph-layout",
+    async layout(
+      request: LayoutRequest,
+      generation: number,
+    ): Promise<LayoutAnswer> {
+      const graph = graphOf(request);
+      const body = await transport({
+        frame: encodeGraphFrame(graph),
+        options: JSON.stringify(wireOptions(optionsFor(request, effort))),
+        generation,
+      });
+      if (body.superseded || isSuperseded(generation)) {
+        return { superseded: true };
+      }
+      return {
+        superseded: false,
+        response: responseOf(decodeLayoutFrame(body.frame), graph),
+      };
+    },
+  };
+}
+
+/** The bytes per `String.fromCharCode` call, so a large frame does not overflow the argument list. */
+const CHUNK = 0x8000;
+
+const toBase64 = (bytes: Uint8Array): string => {
+  let binary = "";
+  for (let at = 0; at < bytes.length; at += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
+  }
+  return btoa(binary);
+};
+
+const fromBase64 = (text: string): Uint8Array =>
+  Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
+
+/**
+ * The graph frame the host's Rust engine reads, as base64 text, since a webview message is JSON. The codec is the
+ * package's `frame.ts`, which the Rust core matches byte for byte; this adapter is the only webview module that calls it.
+ */
+const encodeGraphFrame = (graph: LayoutGraph): string =>
+  toBase64(encodeGraph(graph));
+
+/** The layout a host answered as base64 text: the same result the TypeScript engine returns. */
+const decodeLayoutFrame = (text: string): LayoutResult =>
+  decodeLayout(fromBase64(text));

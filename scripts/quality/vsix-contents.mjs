@@ -25,15 +25,12 @@ const SHIPPED = [
 ];
 
 /**
- * Build outputs under a shipped directory that package.json `files` does not name yet: the WebAssembly and Node-API
- * bindings. Phase 8 adds them to `files`, and then this list shrinks.
+ * Whether `entry` is a file the extension loads: under a shipped directory and not a source map or a Node-API binding.
+ * The host loads the WebAssembly engine from dist/graph-layout/; the `.node` binding is for contributor tooling only.
  */
-const UNSHIPPED = ["extension/dist/graph-layout/"];
-
-/** Whether `entry` is a file the extension loads: under a shipped directory and not a source map or an unshipped output. */
 const shippedFile = (entry, shipped) =>
   !entry.endsWith(".map") &&
-  !UNSHIPPED.some((dir) => entry.startsWith(dir)) &&
+  !entry.endsWith(".node") &&
   shipped.some((dir) => entry.startsWith(dir));
 
 /** Returns each entry that is neither a fixed vsce entry nor a shipped file. */

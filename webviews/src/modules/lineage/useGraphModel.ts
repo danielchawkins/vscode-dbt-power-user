@@ -12,10 +12,16 @@ import {
 } from "react";
 import { flowOf } from "./builtFlow";
 import { connectionCounts, emphasisOf } from "./emphasis";
+import { engineFor } from "./engine/engines";
 import { createLayouter } from "./engine/layoutCache";
 import { type BuiltFlow, emphasize } from "./flow";
 import { type GraphState, knownPairs, type ViewSettings } from "./graph";
-import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import {
+  fetchLayout,
+  fetchRelationships,
+  fetchSettings,
+  persistSettings,
+} from "./requests";
 import { useBusyControls, useGraphScope } from "./useBusyControls";
 import { useDetailsDrawer } from "./useDetailsDrawer";
 import type { ExpansionOptions } from "./useLineageGraph";
@@ -137,7 +143,9 @@ const useBuiltFlow = ({
   columnsNeedStrict: boolean;
 }): Built => {
   // One layouter for the panel: its cache and the result on screen seed each layout.
-  const [layouter] = useState(() => createLayouter());
+  const [layouter] = useState(() =>
+    createLayouter((engine) => engineFor(engine, fetchLayout)),
+  );
   const [built, setBuilt] = useState<Built>(NOTHING_DRAWN);
   const {
     showSelectEdges,

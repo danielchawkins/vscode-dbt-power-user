@@ -15,14 +15,15 @@
     "statements": 35
   },
   "size": {
-    "dist/extension.js": 1250000,
-    "vsix": 800000,
+    "dist/extension.js": 450000,
+    "dist/r.js": 820000,
+    "vsix": 1100000,
     "dist/graph-layout/graph_layout_wasm_bg.wasm": 750000,
     "dist/webview/assets/chunk-shared.js": 282300,
     "dist/webview/assets/documentationEditor.css": 8760,
     "dist/webview/assets/documentationEditor.js": 39770,
     "dist/webview/assets/lineage.css": 36000,
-    "dist/webview/assets/lineage.js": 340000,
+    "dist/webview/assets/lineage.js": 350000,
     "dist/webview/assets/queryResults.css": 9800,
     "dist/webview/assets/queryResults.js": 102700,
     "dist/webview/assets/shared.css": 12200

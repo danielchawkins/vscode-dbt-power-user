@@ -418,6 +418,17 @@ const lineagePanel: Fixture[] = [
     },
     required: ["args.params.layout"],
   },
+  {
+    message: {
+      command: "layout",
+      ...params({ frame: "AQI=", options: "{}", generation: 1 }),
+    },
+    required: [
+      "args.params.frame",
+      "args.params.options",
+      "args.params.generation",
+    ],
+  },
   { message: { command: "getExclusions", ...params({}) }, required: [] },
   {
     message: {

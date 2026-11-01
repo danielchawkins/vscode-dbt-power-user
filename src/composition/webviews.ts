@@ -3,6 +3,7 @@ import { ColumnProposalService } from "../features/docs/columnProposals";
 import { DocGenService } from "../features/docs/docGenService";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
 import { ModelTestService } from "../features/docs/modelTestService";
+import type { GraphLayoutWorker } from "../features/lineage/graphLayoutWorker";
 import { LineagePanel } from "../features/lineage/lineagePanel";
 import type { LineageService } from "../features/lineage/lineageService";
 import { LineageViewProvider } from "../features/lineage/lineageViewProvider";
@@ -13,9 +14,13 @@ import type { ProjectsGraph } from "./projects";
 
 export function composeWebviews(
   graph: ProjectsGraph,
-  lineageService: LineageService,
-  columnProposalRequests: ColumnProposalRequests,
+  deps: {
+    lineageService: LineageService;
+    columnProposalRequests: ColumnProposalRequests;
+    layouts: GraphLayoutWorker;
+  },
 ): WebviewViewProviders {
+  const { lineageService, columnProposalRequests, layouts } = deps;
   const {
     extensionContextStore,
     terminal,
@@ -30,6 +35,7 @@ export function composeWebviews(
     queryManifestService,
     currentProject: graph.currentProject,
     metadataDemand: graph.metadataDemand,
+    layouts,
   });
   if (graph.clients.pool) {
     lineagePanel.renderOn(

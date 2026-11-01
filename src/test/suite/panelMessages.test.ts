@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 /** A lineage panel built as the extension builds it, with stubbed services; `postMessage` collects what it posts. */
-function lineageHarness() {
+function lineageHarness(layouts?: unknown) {
   const lineageService = {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
@@ -86,6 +86,7 @@ function lineageHarness() {
     lineageService,
     queryManifestService,
     currentProject,
+    layouts,
   }) as any;
   // `details` is a getter that builds a LineageDetails on each read; shadow it with one stub.
   Object.defineProperty(panel, "details", {
@@ -204,6 +205,26 @@ describe("lineage panel messages", () => {
           tables: [{ table: "model.p.a" }, { table: "model.p.z" }],
           edges: [["model.p.z", "model.p.a"]],
         }),
+      );
+    },
+    layout: async () => {
+      const layoutSession = {
+        layout: vi.fn().mockResolvedValue(Uint8Array.from([3, 4])),
+        dispose: vi.fn(),
+      };
+      const h = lineageHarness({ session: () => layoutSession });
+      await h.send({
+        command: "layout",
+        args: { params: { frame: "AQI=", options: "{}", generation: 1 } },
+        syncRequestId: "l1",
+      });
+      expect(layoutSession.layout).toHaveBeenCalledWith(
+        expect.any(Uint8Array),
+        "{}",
+        1,
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("l1", { superseded: false, frame: "AwQ=" }),
       );
     },
     getColumns: async () => {

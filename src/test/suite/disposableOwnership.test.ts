@@ -154,6 +154,7 @@ describe("disposable ownership", () => {
       subscriptions: [] as { dispose(): unknown }[],
       workspaceState: { get: vi.fn(), update: vi.fn() },
       globalState: { get: vi.fn(), update: vi.fn() },
+      extensionUri: { path: "/ext", fsPath: "/ext" },
     } as unknown as ExtensionContext;
 
     const { ready } = activate(context);
