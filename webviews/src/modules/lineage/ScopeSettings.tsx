@@ -1,19 +1,20 @@
 import BusyCardList from "./BusyCardList";
 import { Check } from "./Check";
+import { EDGE_GROUP_LABELS } from "./edgeGroups";
 import styles from "./lineageGraph.module.css";
 import ScopeExclusions from "./ScopeExclusions";
 import type { ScopeControls } from "./useStoredFilters";
 
 /**
- * The Scope settings: a checkbox per node type and per tag the graph holds, what they take out, and Show all; then the
- * busy-node list.
+ * The Scope settings: a checkbox per node type and per tag the graph holds, what they take out, a checkbox per edge
+ * group the drawn graph has, and Show all; then the busy-node list.
  */
 const ScopeSettings = ({
   scope,
 }: {
   scope: ScopeControls;
 }): React.JSX.Element => {
-  const { offTypes, offTags } = scope.scope;
+  const { offTypes, offTags, offEdgeGroups } = scope.scope;
   return (
     <section className={styles.menu} aria-label="Scope">
       <span>Node types</span>
@@ -36,6 +37,17 @@ const ScopeSettings = ({
           checked={!offTags.includes(tag)}
           disabled={!scope.ready}
           onChange={(on) => scope.setTag(tag, on)}
+        />
+      ))}
+      <span>Edge groups</span>
+      {scope.edgeGroups.length === 0 ? <p>No edge is drawn.</p> : null}
+      {scope.edgeGroups.map((group) => (
+        <Check
+          key={group}
+          label={EDGE_GROUP_LABELS[group]}
+          checked={!offEdgeGroups.includes(group)}
+          disabled={!scope.ready}
+          onChange={(on) => scope.setEdgeGroup(group, on)}
         />
       ))}
       <p>

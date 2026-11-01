@@ -20,7 +20,13 @@ const workspaceWith = (initial?: unknown) => {
   return { store, state };
 };
 
-const NOTHING_ON = { offTypes: [], offTags: [], softened: [], dimmed: [] };
+const NOTHING_ON = {
+  offTypes: [],
+  offTags: [],
+  softened: [],
+  dimmed: [],
+  offEdgeGroups: [],
+};
 
 describe("lineage scope in workspace state", () => {
   it("reads nothing switched off when the workspace holds no scope", () => {
@@ -34,6 +40,7 @@ describe("lineage scope in workspace state", () => {
       offTags: ["nightly"],
       softened: ["model.a"],
       dimmed: ["model.b"],
+      offEdgeGroups: ["source"],
     };
     persistLineageScope(store, scope);
     expect(state.get("lineage.scope")).toEqual(scope);
@@ -46,11 +53,13 @@ describe("lineage scope in workspace state", () => {
       offTags: "nightly",
       softened: ["model.a", "model.a"],
       dimmed: [{ id: "model.b" }],
+      offEdgeGroups: ["model", "model", 4],
     });
     expect(readLineageScope(store)).toEqual({
       ...NOTHING_ON,
       offTypes: ["seed"],
       softened: ["model.a"],
+      offEdgeGroups: ["model"],
     });
   });
 
@@ -60,6 +69,16 @@ describe("lineage scope in workspace state", () => {
       ...NOTHING_ON,
       offTypes: ["seed"],
     });
+  });
+
+  it("reads a scope stored before the edge groups with every edge group on", () => {
+    const { store } = workspaceWith({
+      offTypes: [],
+      offTags: [],
+      softened: [],
+      dimmed: [],
+    });
+    expect(readLineageScope(store)).toEqual(NOTHING_ON);
   });
 
   it("tolerates a stored value that is not an object", () => {

@@ -20,7 +20,7 @@ const names = (value: unknown): string[] => [
 
 /**
  * The scope in workspace state. Nothing stored means nothing switched off, softened or dimmed; a scope stored before the
- * busy-node list existed has no softened or dimmed cards.
+ * busy-node list existed has no softened or dimmed cards, and one stored before the edge groups has none switched off.
  */
 export function readLineageScope(store: Store): lineage.LineageScope {
   const stored = store.getFromWorkspaceState<
@@ -31,6 +31,7 @@ export function readLineageScope(store: Store): lineage.LineageScope {
     offTags: names(stored?.offTags),
     softened: names(stored?.softened),
     dimmed: names(stored?.dimmed),
+    offEdgeGroups: names(stored?.offEdgeGroups),
   };
 }
 
@@ -44,5 +45,6 @@ export function persistLineageScope(
     offTags: names(scope.offTags),
     softened: names(scope.softened),
     dimmed: names(scope.dimmed),
+    offEdgeGroups: names(scope.offEdgeGroups),
   });
 }

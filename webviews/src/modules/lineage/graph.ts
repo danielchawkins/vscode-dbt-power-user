@@ -85,7 +85,7 @@ export const emptyGraph = (
   groupBy,
   groups: {},
   hiddenCards: [],
-  scope: { offTypes: [], offTags: [], softened: [] },
+  scope: { offTypes: [], offTags: [], softened: [], offEdgeGroups: [] },
 });
 
 /** Whether the `direction` neighbours of `table` are being fetched. */

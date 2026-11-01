@@ -2,6 +2,7 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BusyControls } from "./busyCards";
+import type { EdgeGroup } from "./edgeGroups";
 import { type GraphState, visibleOf } from "./graph";
 import {
   fetchHiddenCards,
@@ -30,12 +31,13 @@ export const hiddenCardsOf = (
 ): { id: string; name: string }[] =>
   cards.map((card) => ({ id: card.id, name: card.label ?? card.id }));
 
-/** No Scope filter, and no card softened or dimmed. */
+/** No Scope filter, no card softened or dimmed, and every edge group on. */
 const ALL_ON: lineage.LineageScope = {
   offTypes: [],
   offTags: [],
   softened: [],
   dimmed: [],
+  offEdgeGroups: [],
 };
 
 /**
@@ -70,13 +72,16 @@ export interface ScopeControls {
   types: string[];
   /** The tags the graph's cards carry, each once and sorted. */
   tags: string[];
+  /** The edge groups the drawn graph has, in the order the control lists them. */
+  edgeGroups: EdgeGroup[];
   /** The cards the filters take out of the drawn graph. */
   filteredOut: number;
   /** The busy-node list: the cards with more connections than the threshold, and their actions. */
   busy: BusyControls;
   setType: (type: string, on: boolean) => void;
   setTag: (tag: string, on: boolean) => void;
-  /** Switches every type and tag back on, and leaves the busy cards as they are. */
+  setEdgeGroup: (group: EdgeGroup, on: boolean) => void;
+  /** Switches every type, tag and edge group back on, and leaves the busy cards as they are. */
   showAll: () => void;
 }
 
@@ -84,7 +89,7 @@ export const useScopeControls = (
   graph: GraphState,
   stored: lineage.LineageScope | undefined,
   change: (scope: lineage.LineageScope) => void,
-): Omit<ScopeControls, "busy"> => {
+): Omit<ScopeControls, "busy" | "edgeGroups"> => {
   const { types, tags } = useMemo(
     () => scopeChoices(Object.values(graph.known)),
     [graph.known],
@@ -106,10 +111,21 @@ export const useScopeControls = (
     },
     [stored, change],
   );
-  // Show all switches the types and tags on; the softened and dimmed cards keep their own undo in the busy-node list.
+  const setEdgeGroup = useCallback(
+    (group: EdgeGroup, on: boolean) => {
+      if (stored) {
+        change({
+          ...stored,
+          offEdgeGroups: withName(stored.offEdgeGroups, group, on),
+        });
+      }
+    },
+    [stored, change],
+  );
+  // Show all switches the types, tags and edge groups on; the softened and dimmed cards keep their own undo in the busy-node list.
   const showAll = useCallback(() => {
     if (stored) {
-      change({ ...stored, offTypes: [], offTags: [] });
+      change({ ...stored, offTypes: [], offTags: [], offEdgeGroups: [] });
     }
   }, [stored, change]);
   return {
@@ -120,6 +136,7 @@ export const useScopeControls = (
     filteredOut,
     setType,
     setTag,
+    setEdgeGroup,
     showAll,
   };
 };

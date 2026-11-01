@@ -403,6 +403,7 @@ const lineagePanel: Fixture[] = [
           offTags: ["nightly"],
           softened: [],
           dimmed: [],
+          offEdgeGroups: [],
         },
       }),
     },
