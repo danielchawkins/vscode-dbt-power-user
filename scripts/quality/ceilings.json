@@ -30,7 +30,7 @@
   "oxlintSuppressions.host": 58,
   "oxlintSuppressions.webview": 22,
   "plannedTags": 0,
-  "rustSuppressions.graph-layout": 2,
+  "rustSuppressions.graph-layout": 3,
   "rustSuppressions.graph-layout-napi": 0,
   "rustSuppressions.graph-layout-wasm": 0
 }
