@@ -263,14 +263,34 @@ Next steps, in order: (1) doglegs, so that a run may change track where its trac
 
 **Scope.** `engine` module: `Engine`, `Progress`, `Generation`, `layout`. Phase caches keyed by FNV-1a 64 over canonical bytes of what each phase reads (ADR "Live tuning" key table); a change re-runs from the first phase whose key changed; `Budget` counts only, no clock; cancellation by generation; progressive results (a fast result, then refined). `layout(&Graph, &Options)` is a wrapper that runs the handle to its final stage. Invariant I1: the handle's final result equals the wrapper's. Carried from Phase 3: the layering `Scratch` reuses its three outer buffers, but `break_cycles`, `partition_constraints`, `hint_constraints` and `network_simplex` still allocate on every call; making them allocation-free is in this phase's S5 gate, not done yet.
 
+**Status: not done.** I1, S7, the cache tests and the cancel tests are in place. S5 is not met, and S12 is measured but its harness is not committed (see the S12 measurement), so the phase stays open.
+
 **Check.**
 
-- I1 property test: for random graphs and option sequences, the handle after a sequence of changes equals a fresh `layout` on the final inputs, bit for bit.
-- S7 passes: the key table matches the TypeScript code's real dependencies, checked against the code and a scripted probe that perturbs each option and reports which phases change.
-- Cache test: a placement-weight change re-runs placement and routing only; a spacing change re-runs routing only (ADR "Live tuning" examples).
-- Cancel test: a superseded generation returns without a result and does not corrupt the cache.
-- S5: placement-only relayout allocates nothing after warm-up (target; the counting-allocator test measures it).
-- S12 recorded: relayout p50 for placement-only and routing-only changes on the finance graph, native and WASM. The ADR targets (about 50 ms placement-only native; about 100 ms `fast`) are checked here and either kept or changed in writing.
+- I1 property test: `handle::tests::the_handle_after_a_sequence_of_changes_equals_a_fresh_layout` (proptest: after each change of a random sequence, the handle's layout equals a fresh `layout`, byte for byte). Passing.
+- S7 passes: `keys::tests::the_adr_key_table_is_the_probes_output` checks the ADR key table against the probe, and `every_stage_after_a_reached_stage_is_reached` checks the chaining. Passing.
+- Cache test: `a_placement_only_change_reruns_placement_and_routing` and `a_build_read_change_reruns_from_build`. Passing.
+- Cancel test: `an_older_generation_returns_nothing_once_a_newer_one_has_started` and `a_run_superseded_mid_way_leaves_the_cache_as_it_was`. Passing.
+- S5 (open): placement-only relayout allocates nothing after warm-up. Not met, and no code for it is in this phase yet. Measured on 2026-11-01 with the counting allocator (`tests/alloc.rs`, a probe that was not committed): one `spacing.node` relayout of a 60-node, 150-edge test graph at `balanced`, after one warm-up relayout, makes 7,596 allocations. An unchanged relayout (no stage re-runs, so only validation, the keys, result assembly and the progress record) makes 1,928. Zero needs reuse of buffers through `place/` (about 264 allocation sites outside the tests), `route/` (about 56) and the result assembly in `engine/layout.rs`, with the returned `Layout` as the one allowed allocation. Layering is not re-run by this relayout, so its scratch does not reach this path. The four per-call allocations in `layering` (`break_cycles`, `partition_constraints`, `hint_constraints`, `network_simplex`) are also still open, under this same item.
+- S12 measured, not recorded in the repository (open; below). Native only: WASM was not measured in this run. The ADR targets (about 50 ms placement-only native; about 100 ms `fast`) are not met at `balanced`; `fast` was not measured.
+
+**S12 measurement (open).** The harness is a release test that times single calls in process with `std::time::Instant`, skipped unless `GRAPH_LAYOUT_BENCH_GRAPH` names a flattened graph. It is not committed. `clippy.toml` bans `Instant::now` across the workspace, the `rust-graph-layout-deterministic` ast-grep rule bans it in `crates/graph-layout/src/**`, and its `#[expect]` would raise `rustSuppressions.graph-layout` above its ceiling of 2, which is set in `scripts/quality/ceilings.json` and needs a `Ratchet-Loosen` trailer. The decision is open: a test-only clock exemption, or timing from outside the process as the earlier phases did. Nothing timed reaches the layout. Each kind is timed on a warm engine, after one untimed warm-up of the same kind; each call checks which stages it re-ran. A full layout uses a fresh engine per sample. A placement-only relayout alternates `spacing.node` between 28 and 30, so it re-runs Place and Route. A build-onward relayout alternates `spacing.edge` between 6 and 7, so it re-runs Build, Order, Place and Route (`spacing.edge` is read raw by `build`, and the keys chain). Percentiles are nearest-rank over 30 samples.
+
+| Fixture, `balanced`, native | Full, p50 / p95 | Placement-only (`spacing.node`), p50 / p95 | Build-onward (`spacing.edge`), p50 / p95 |
+| --- | --- | --- | --- |
+| Finance manifest (1,139 nodes, 1,316 edges) | 1,560 / 1,674 ms | 1,429 / 1,550 ms | 1,554 / 1,781 ms |
+| Synthetic DAG (300 nodes, 597 edges, seed 1) | 45.9 / 48.6 ms | 6.0 / 7.8 ms | 43.6 / 45.2 ms |
+
+Machine: Apple M5 Pro, macOS 26.5.2, rustc 1.99.1, release profile, default features, nothing else running on purpose. Command used for these numbers, from `crates/`, after the flatten step (the harness is not in the repository):
+
+```text
+node scripts/bench/flatten-graph.mjs finance <manifest.json> /tmp/s12/finance.txt
+node scripts/bench/flatten-graph.mjs synthetic 300 1 /tmp/s12/synthetic-300.txt
+GRAPH_LAYOUT_BENCH_GRAPH=/tmp/s12/finance.txt GRAPH_LAYOUT_BENCH_EFFORT=balanced GRAPH_LAYOUT_BENCH_SAMPLES=30 \
+  cargo test --release -p graph-layout --lib relayout_workload_is_timed -- --nocapture
+```
+
+The finance manifest had 1,139 nodes and 1,316 edges this time, not the 1,129 and 1,305 of Phase 6, so the rows are not the Phase 6 input. Another run of the 300-node fixture with 10 samples read 32 ms full, 5 ms placement-only and 29 ms build-onward, so read the numbers as order-of-magnitude, as Phase 6 does. Placement is about 90% of a finance `balanced` layout: a placement-only relayout is nearly as slow as a full one, so the placement is the lever for live tuning at this effort. The ADR's 50 ms placement-only target is not met on finance at `balanced`; it is kept as written, and the owner decides whether to change it or the effort it applies to.
 
 **Undo.** The handle is additive; the wrapper path remains.
 
