@@ -32,7 +32,7 @@ import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import { readSetting } from "../../settings";
 import { type Direction, LineageAdjacency } from "./lineageAdjacency";
-import type { LineageExclusions } from "./lineageExclusion";
+import type { LineageExclusions, RuleResolution } from "./lineageExclusion";
 import { lineageTable } from "./lineageTables";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
@@ -123,8 +123,10 @@ export class LineageService {
 
   readonly exclusions: LineageExclusions;
 
-  /** Each manifest's adjacency, built on first use; see {@link adjacencyOf}. */
-  private adjacencies: WeakMap<Manifest, LineageAdjacency> | undefined;
+  /** Each manifest's adjacency and the excluded IDs it was built without; see {@link adjacencyOf}. */
+  private adjacencies:
+    | WeakMap<Manifest, { key: string; adjacency: LineageAdjacency }>
+    | undefined;
 
   /**
    * Answers the panel's column click from the Fusion Client's `dbt.listNodes`, one request per distinct target
@@ -244,28 +246,28 @@ export class LineageService {
   }
 
   /** Returns the tables that depend on `table` (its dbt children). */
-  getChildTables({ table }: { table: string }) {
-    return { tables: this.getConnectedTables("children", table) };
+  async getChildTables({ table }: { table: string }) {
+    return { tables: await this.getConnectedTables("children", table) };
   }
 
   /** Returns the tables `table` depends on (its dbt parents). */
-  getParentTables({ table }: { table: string }) {
-    return { tables: this.getConnectedTables("parents", table) };
+  async getParentTables({ table }: { table: string }) {
+    return { tables: await this.getConnectedTables("parents", table) };
   }
 
   /**
    * Returns every data-flow `[parent, child]` pair among `tables`, so the panel can draw an edge between two drawn
    * tables whichever expansion drew them. Foreign-key-only edges are left out, as in `getConnectedTables`.
    */
-  getTableEdges({ tables }: { tables: readonly string[] }): {
+  async getTableEdges({ tables }: { tables: readonly string[] }): Promise<{
     edges: [string, string][];
-  } {
+  }> {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       return { edges: [] };
     }
     return {
-      edges: this.adjacencyOf(manifest).edgesAmong(tables),
+      edges: (await this.adjacencyOf(manifest)).edgesAmong(tables),
     };
   }
 
@@ -273,18 +275,23 @@ export class LineageService {
    * Every table of the project's lineage graph and the data-flow pairs among them, for the whole-project view. A
    * table's URL is the one a neighbour's edge carries for it, when one does.
    */
-  getProjectGraph(): {
+  async getProjectGraph(): Promise<{
     tables: lineage.LineageTable[];
     edges: [string, string][];
-  } {
+  }> {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       return { tables: [], edges: [] };
     }
-    const adjacency = this.adjacencyOf(manifest);
+    const adjacency = await this.adjacencyOf(manifest);
     const tables: lineage.LineageTable[] = [];
     for (const key of adjacency.tableKeys()) {
-      const table = this.createTable(manifest, adjacency.urlOf(key), key);
+      const table = this.tableOf({
+        manifest,
+        url: adjacency.urlOf(key),
+        key,
+        adjacency,
+      });
       if (table) {
         tables.push(table);
       }
@@ -295,21 +302,21 @@ export class LineageService {
     };
   }
 
-  private getConnectedTables(
+  private async getConnectedTables(
     direction: Direction,
     table: string,
-  ): lineage.LineageTable[] | undefined {
+  ): Promise<lineage.LineageTable[] | undefined> {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       return;
     }
-    const adjacency = this.adjacencyOf(manifest);
+    const adjacency = await this.adjacencyOf(manifest);
     if (!adjacency.has(direction, table)) {
       return;
     }
     const tables = new Map<string, lineage.LineageTable>();
     for (const { url, key } of adjacency.neighbours(direction, table)) {
-      const node = this.createTable(manifest, url, key);
+      const node = this.tableOf({ manifest, url, key, adjacency });
       if (!node) {
         continue;
       }
@@ -320,17 +327,38 @@ export class LineageService {
     return [...tables.values()].sort((a, b) => a.table.localeCompare(b.table));
   }
 
+  /** The `lineage.exclude` rules resolved against `manifest`, and the nodes they exclude together. */
+  private async resolveExclusions(manifest: Manifest): Promise<{
+    resolutions: RuleResolution[];
+    excluded: Set<string>;
+  }> {
+    const resolutions = await this.exclusions.resolveRules(
+      manifest,
+      exclusionRules(),
+    );
+    const excluded = new Set(
+      resolutions.flatMap((resolution) =>
+        "ids" in resolution ? resolution.ids : [],
+      ),
+    );
+    return { resolutions, excluded };
+  }
+
   /**
-   * The data-flow adjacency the lineage requests answer from; see {@link LineageAdjacency}. Built once per manifest,
-   * so a request does not rebuild the graph for each card it draws.
+   * The data-flow adjacency the lineage requests answer from; see {@link LineageAdjacency}. It leaves out the nodes
+   * the exclusion rules select, so it is rebuilt only when that set changes. A request does not rebuild the graph for
+   * each card it draws.
    */
-  private adjacencyOf(manifest: Manifest): LineageAdjacency {
+  private async adjacencyOf(manifest: Manifest): Promise<LineageAdjacency> {
+    const { excluded } = await this.resolveExclusions(manifest);
+    const key = [...excluded].toSorted().join("\u0000");
     this.adjacencies ??= new WeakMap();
-    let adjacency = this.adjacencies.get(manifest);
-    if (!adjacency) {
-      adjacency = new LineageAdjacency(manifest.graphMetaMap);
-      this.adjacencies.set(manifest, adjacency);
+    const built = this.adjacencies.get(manifest);
+    if (built?.key === key) {
+      return built.adjacency;
     }
+    const adjacency = new LineageAdjacency(manifest.graphMetaMap, excluded);
+    this.adjacencies.set(manifest, { key, adjacency });
     return adjacency;
   }
 
@@ -338,21 +366,48 @@ export class LineageService {
    * The lineage table for the node `key`; see {@link lineageTable}. The card's counts come from the manifest's
    * adjacency, the same one the edge requests read.
    */
-  createTable(
+  async createTable(
     manifest: Manifest,
     tableUrl: string | undefined,
     key: string,
-  ): lineage.LineageTable | undefined {
-    return lineageTable(manifest, key, {
+  ): Promise<lineage.LineageTable | undefined> {
+    return this.tableOf({
+      manifest,
       url: tableUrl,
+      key,
+      adjacency: await this.adjacencyOf(manifest),
+    });
+  }
+
+  /** The lineage table for `key`, counted in the adjacency the caller already has. */
+  private tableOf({
+    manifest,
+    url,
+    key,
+    adjacency,
+  }: {
+    manifest: Manifest;
+    url: string | undefined;
+    key: string;
+    adjacency: LineageAdjacency;
+  }): lineage.LineageTable | undefined {
+    return lineageTable(manifest, key, {
+      url,
       rootPackage: this.currentProject.current?.getProjectName(),
       layer: {
         tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
         fromPath: readSetting("lineage.layer.inferFromPath") ?? true,
       },
-      adjacency: this.adjacencyOf(manifest),
+      adjacency,
     });
   }
+}
+
+/** The exclusion rules the user set, without blank ones. */
+function exclusionRules(): string[] {
+  return (readSetting("lineage.exclude") ?? [])
+    .map((rule) => rule.trim())
+    .filter((rule) => rule !== "");
 }
 
 const columnKey = (table: string, column: string) =>

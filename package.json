@@ -124,6 +124,16 @@
             "description": "The most nodes one expansion draws; a `+N more` marker draws the rest on request. 0 draws every neighbour.",
             "default": 20
           },
+          "fusionPowerUser.lineage.exclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "dbt selectors for nodes that lineage leaves out, with their edges. A node's parents are not linked to its children. Each rule is resolved by dbt. Fusion 2.0.6 returns no macros for `resource_type:macro` today, so a rule that names macros excludes none.",
+            "default": [
+              "resource_type:function resource_type:macro"
+            ]
+          },
           "fusionPowerUser.lineage.groupBy": {
             "type": "string",
             "enum": [

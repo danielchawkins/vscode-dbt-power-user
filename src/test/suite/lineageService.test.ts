@@ -29,11 +29,13 @@ function makeService(graphMetaMap: any): LineageService {
   ) => ({
     table: key,
   });
+  (svc as any).tableOf = ({ key }: { key: string }) => ({ table: key });
+  (svc as any).exclusions = unavailableExclusions();
   return svc;
 }
 
 describe("LineageService — foreign-key-only edge hiding", () => {
-  it("getChildTables hides constraint edges and keeps data edges", () => {
+  it("getChildTables hides constraint edges and keeps data edges", async () => {
     const children = new Map([
       [
         "model.p.fact",
@@ -47,14 +49,14 @@ describe("LineageService — foreign-key-only edge hiding", () => {
     ]);
     const svc = makeService({ children, parents: new Map() });
 
-    const tables = svc
-      .getChildTables({ table: "model.p.fact" })
-      .tables!.map((t) => t.table);
+    const tables = (
+      await svc.getChildTables({ table: "model.p.fact" })
+    ).tables!.map((t) => t.table);
     expect(tables).toContain("model.p.int");
     expect(tables).not.toContain("model.p.dim");
   });
 
-  it("getParentTables hides constraint edges", () => {
+  it("getParentTables hides constraint edges", async () => {
     const parents = new Map([
       ["model.p.dim", { nodes: [node("model.p.fact", "constraint")] }],
       ["model.p.int", { nodes: [node("model.p.fact", "data")] }],
@@ -62,20 +64,26 @@ describe("LineageService — foreign-key-only edge hiding", () => {
     const svc = makeService({ parents, children: new Map() });
 
     // fact is only a constraint-parent of dim → dim has no data-flow parents
-    expect(svc.getParentTables({ table: "model.p.dim" }).tables).toEqual([]);
+    expect(
+      (await svc.getParentTables({ table: "model.p.dim" })).tables,
+    ).toEqual([]);
     // but it's a real parent of int
     expect(
-      svc.getParentTables({ table: "model.p.int" }).tables!.map((t) => t.table),
+      (await svc.getParentTables({ table: "model.p.int" })).tables!.map(
+        (t) => t.table,
+      ),
     ).toEqual(["model.p.fact"]);
   });
 
-  it("treats untagged edges (no edgeType) as data-flow", () => {
+  it("treats untagged edges (no edgeType) as data-flow", async () => {
     const children = new Map([
       ["model.p.fact", { nodes: [node("model.p.int")] }],
     ]);
     const svc = makeService({ children, parents: new Map() });
     expect(
-      svc.getChildTables({ table: "model.p.fact" }).tables!.map((t) => t.table),
+      (await svc.getChildTables({ table: "model.p.fact" })).tables!.map(
+        (t) => t.table,
+      ),
     ).toEqual(["model.p.int"]);
   });
 
@@ -104,7 +112,7 @@ describe("LineageService — foreign-key-only edge hiding", () => {
     expect(table).toMatchObject({ childCount: 1, parentCount: 0 });
   });
 
-  it("getTableEdges returns the data-flow pairs among the given tables only", () => {
+  it("getTableEdges returns the data-flow pairs among the given tables only", async () => {
     // a -> b, b -> c, a -> c (the diamond shortcut), a -> d (FK only), a -> x (x not asked for).
     const children = new Map([
       [
@@ -122,7 +130,7 @@ describe("LineageService — foreign-key-only edge hiding", () => {
     ]);
     const svc = makeService({ children, parents: new Map() });
 
-    expect(svc.getTableEdges({ tables: ["a", "b", "c", "d"] })).toEqual({
+    expect(await svc.getTableEdges({ tables: ["a", "b", "c", "d"] })).toEqual({
       edges: [
         ["a", "b"],
         ["a", "c"],
@@ -133,7 +141,7 @@ describe("LineageService — foreign-key-only edge hiding", () => {
 });
 
 describe("LineageService.getProjectGraph", () => {
-  it("draws every table that has a parent or a child, and the data-flow pairs among them", () => {
+  it("draws every table that has a parent or a child, and the data-flow pairs among them", async () => {
     // Parents of b: a (data) and d (FK only). Parents of c: b. Children of a: b and d. Children of b: c.
     // A table is drawn if it is a key of either map, so c (a parent key only) and a (a child key only) both count.
     const parents = new Map([
@@ -146,7 +154,7 @@ describe("LineageService.getProjectGraph", () => {
     ]);
     const svc = makeService({ parents, children, tests: new Map() });
 
-    const graph = svc.getProjectGraph();
+    const graph = await svc.getProjectGraph();
 
     expect(graph.tables.map((table) => table.table).toSorted()).toEqual([
       "a",
@@ -161,10 +169,10 @@ describe("LineageService.getProjectGraph", () => {
     ]);
   });
 
-  it("is empty when no project is loaded", () => {
+  it("is empty when no project is loaded", async () => {
     const svc = Object.create(LineageService.prototype) as LineageService;
     (svc as any).currentProject = { current: undefined };
-    expect(svc.getProjectGraph()).toEqual({ tables: [], edges: [] });
+    expect(await svc.getProjectGraph()).toEqual({ tables: [], edges: [] });
   });
 });
 
@@ -687,7 +695,7 @@ describe("LineageService — merged value", () => {
     expect(eph).not.toHaveProperty("schema");
   });
 
-  it("draws a server node the parse lacks with no tests", () => {
+  it("draws a server node the parse lacks with no tests", async () => {
     const svc = new LineageService({
       exclusions: unavailableExclusions(),
       currentProject: { current: undefined } as any,
@@ -718,7 +726,7 @@ describe("LineageService — merged value", () => {
       },
     };
     expect(
-      svc.createTable(event, "/p/models/new.sql", "model.p.new"),
+      await svc.createTable(event, "/p/models/new.sql", "model.p.new"),
     ).toMatchObject({
       table: "model.p.new",
       label: "new",

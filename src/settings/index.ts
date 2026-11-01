@@ -20,6 +20,7 @@ export interface SettingsSchema {
   "lineage.layer.inferFromPath": boolean;
   "lineage.maxNeighbours": number;
   "lineage.groupBy": string;
+  "lineage.exclude": readonly string[];
   "lineage.engine": string;
   "lineage.semanticZoom": boolean;
   "lineage.title": string;
@@ -90,6 +91,7 @@ export const SETTING_SCOPES = {
   "lineage.layer.inferFromPath": "window",
   "lineage.maxNeighbours": "window",
   "lineage.groupBy": "window",
+  "lineage.exclude": "window",
   "lineage.engine": "window",
   "lineage.semanticZoom": "window",
   "lineage.title": "window",
