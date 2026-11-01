@@ -19,6 +19,9 @@ vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   panelHtml: () => "<html>lineage</html>",
 }));
 
+/** Waits for the starting-node render, which is async, to post. */
+const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 describe("LineagePanel", () => {
   let panel: LineagePanel;
   let mockPostMessage: Mock;
@@ -65,13 +68,14 @@ describe("LineagePanel", () => {
   });
 
   describe("manifestChanged", () => {
-    it("offers one action, naming an explicit setting that overrides the project", () => {
+    it("offers one action, naming an explicit setting that overrides the project", async () => {
       (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "baseline" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
 
       panel.manifestChanged(undefined);
+      await settle();
 
       const args = mockPostMessage.mock.lastCall![0].args;
       expect(args.columnsNeedStrict).toBe(true);
@@ -86,13 +90,14 @@ describe("LineagePanel", () => {
       ]);
     });
 
-    it("offers the same action, naming the project default under project mode", () => {
+    it("offers the same action, naming the project default under project mode", async () => {
       (panel as any).lineageService.columnsNeedStrict = vi
         .fn()
         .mockReturnValue({ mode: "baseline", setting: "project" });
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
 
       panel.manifestChanged(undefined);
+      await settle();
 
       const { message, actions } =
         mockPostMessage.mock.lastCall![0].args.missingLineageMessage;
@@ -104,10 +109,11 @@ describe("LineagePanel", () => {
       ]);
     });
 
-    it("shows no notice under strict analysis", () => {
+    it("shows no notice under strict analysis", async () => {
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
 
       panel.manifestChanged(undefined);
+      await settle();
 
       const args = mockPostMessage.mock.lastCall![0].args;
       expect(args.columnsNeedStrict).toBeUndefined();
@@ -127,7 +133,7 @@ describe("LineagePanel", () => {
       );
     });
 
-    it("re-renders when the project's client state or mode changes", () => {
+    it("re-renders when the project's client state or mode changes", async () => {
       let fire = () => {};
       (panel as any)._disposables = [];
       (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
@@ -137,13 +143,15 @@ describe("LineagePanel", () => {
       });
 
       fire();
+      await settle();
 
       expect(mockPostMessage).toHaveBeenCalledWith(
         expect.objectContaining({ command: "render" }),
       );
     });
-    it("should re-render the starting node when a manifest changes", () => {
+    it("should re-render the starting node when a manifest changes", async () => {
       panel.manifestChanged(undefined);
+      await settle();
 
       // renderStartingNode posts a "render" command to the webview
       expect(mockPostMessage).toHaveBeenCalledWith(
@@ -679,7 +687,7 @@ function resolvedLineage() {
 }
 
 describe("LineagePanel — after a save", () => {
-  it("tells the webview when the current project's manifest is replaced", () => {
+  it("tells the webview when the current project's manifest is replaced", async () => {
     const { panel, postMessage } = resolvedLineage();
     panel.lineageService = { columnsNeedStrict: () => undefined };
     const current = {
@@ -695,16 +703,19 @@ describe("LineagePanel — after a save", () => {
     };
 
     panel.manifestChanged(current as any);
+    await settle();
     expect(postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ command: "render" }),
     );
     other.manifest = { publicationEpoch: 2 };
     panel.manifestChanged(other);
+    await settle();
     expect(postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ command: "render" }),
     );
     current.manifest = { publicationEpoch: 2 };
     panel.manifestChanged(current as any);
+    await settle();
     expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
   });
 
@@ -713,7 +724,7 @@ describe("LineagePanel — after a save", () => {
     ["different", 3, 7],
   ])(
     "re-renders on a project switch with %s epochs",
-    (_label, epochA, epochB) => {
+    async (_label, epochA, epochB) => {
       const { panel, postMessage } = resolvedLineage();
       panel.lineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
@@ -735,13 +746,16 @@ describe("LineagePanel — after a save", () => {
       };
 
       panel.manifestChanged(a as any);
+      await settle();
       current = b;
       panel.manifestChanged(b as any);
+      await settle();
       expect(postMessage).toHaveBeenLastCalledWith(
         expect.objectContaining({ command: "render" }),
       );
       b.manifest = { publicationEpoch: epochB + 1 };
       panel.manifestChanged(b as any);
+      await settle();
       expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
     },
   );
@@ -832,7 +846,7 @@ describe("LineagePanel — source YAML rooting", () => {
     );
   });
 
-  it("roots automatically at the only source table in the file", () => {
+  it("roots automatically at the only source table in the file", async () => {
     const filePath = "/proj/models/sources/identifies.yml";
     const sourceMetaMap = new Map([
       [
@@ -854,7 +868,7 @@ describe("LineagePanel — source YAML rooting", () => {
       "sources:\n  - name: segment_website_production\n    tables:\n      - name: identifies\n",
     );
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
@@ -866,7 +880,7 @@ describe("LineagePanel — source YAML rooting", () => {
     );
   });
 
-  it("roots the same way for a .yaml file (not just .yml)", () => {
+  it("roots the same way for a .yaml file (not just .yml)", async () => {
     const filePath = "/proj/models/sources/identifies.yaml";
     const sourceMetaMap = new Map([
       [
@@ -888,7 +902,7 @@ describe("LineagePanel — source YAML rooting", () => {
       "sources:\n  - name: segment_website_production\n    tables:\n      - name: identifies\n",
     );
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({
       table: "source.proj.segment_website_production.identifies",
@@ -900,7 +914,7 @@ describe("LineagePanel — source YAML rooting", () => {
     );
   });
 
-  it("picks the source table the cursor sits within when the file has many", () => {
+  it("picks the source table the cursor sits within when the file has many", async () => {
     const filePath = "/proj/models/sources/multi.yml";
     const body = [
       "sources:",
@@ -930,12 +944,12 @@ describe("LineagePanel — source YAML rooting", () => {
     // Cursor on line 4 → the "tracks" table.
     (window as any).activeTextEditor = makeEditor(filePath, body, 4);
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({ table: "source.proj.seg.tracks" });
   });
 
-  it("falls back to the first table when the cursor is above every declaration", () => {
+  it("falls back to the first table when the cursor is above every declaration", async () => {
     const filePath = "/proj/models/sources/multi.yml";
     const body = [
       "sources:",
@@ -963,12 +977,12 @@ describe("LineagePanel — source YAML rooting", () => {
     // Cursor on line 0 (the `sources:` line), above any table name.
     (window as any).activeTextEditor = makeEditor(filePath, body, 0);
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({ table: "source.proj.seg.identifies" });
   });
 
-  it("does not mistake a source-level name for a table declaration", () => {
+  it("does not mistake a source-level name for a table declaration", async () => {
     const filePath = "/proj/models/sources/pages.yml";
     // The SOURCE is named "pages" and one of its TABLES is also named
     // "pages". With a plain line regex the source-level `- name: pages`
@@ -1001,12 +1015,12 @@ describe("LineagePanel — source YAML rooting", () => {
     };
     (window as any).activeTextEditor = makeEditor(filePath, body, 2);
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({ table: "source.proj.pages.identifies" });
   });
 
-  it("disambiguates the same table name declared under two sources in one file", () => {
+  it("disambiguates the same table name declared under two sources in one file", async () => {
     const filePath = "/proj/models/sources/events.yml";
     const body = [
       "sources:",
@@ -1042,12 +1056,12 @@ describe("LineagePanel — source YAML rooting", () => {
     // would find seg's declaration line for both candidates).
     (window as any).activeTextEditor = makeEditor(filePath, body, 6);
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toEqual({ table: "source.proj.ga.events" });
   });
 
-  it("records lastRenderedSourceKey even when createTable returns undefined", () => {
+  it("records lastRenderedSourceKey even when createTable returns undefined", async () => {
     const filePath = "/proj/models/sources/identifies.yml";
     const sourceMetaMap = new Map([
       [
@@ -1070,7 +1084,7 @@ describe("LineagePanel — source YAML rooting", () => {
       "sources:\n  - name: seg\n    tables:\n      - name: identifies\n",
     );
 
-    (panel as any).getStartingNode();
+    await (panel as any).getStartingNode();
 
     // The selection guard compares against this key; leaving it undefined on
     // a failed createTable would re-trigger a full render on every cursor
@@ -1080,7 +1094,7 @@ describe("LineagePanel — source YAML rooting", () => {
     );
   });
 
-  it("resolves the source only once per cursor-move render", () => {
+  it("resolves the source only once per cursor-move render", async () => {
     const filePath = "/proj/models/sources/identifies.yml";
     const sourceMetaMap = new Map([
       [
@@ -1104,6 +1118,7 @@ describe("LineagePanel — source YAML rooting", () => {
     const lookups = vi.spyOn(sourceMetaMap, "values");
 
     (panel as any).changedTextEditorSelection(editor);
+    await settle();
 
     // The guard's resolution is threaded into the render path; without the
     // threading this is 2 (guard + getStartingNode), iterating
@@ -1119,7 +1134,7 @@ describe("LineagePanel — source YAML rooting", () => {
     );
   });
 
-  it("shows the missing-lineage message for a YAML that defines no source in this file", () => {
+  it("shows the missing-lineage message for a YAML that defines no source in this file", async () => {
     const filePath = "/proj/models/staging/schema.yml";
     // The only source lives in a different file.
     const sourceMetaMap = new Map([
@@ -1142,7 +1157,7 @@ describe("LineagePanel — source YAML rooting", () => {
       "models:\n  - name: stg_orders\n",
     );
 
-    const result = (panel as any).getStartingNode();
+    const result = await (panel as any).getStartingNode();
 
     expect(result.node).toBeUndefined();
     expect(result.missingLineageMessage).toEqual(

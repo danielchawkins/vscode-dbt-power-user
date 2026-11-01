@@ -88,6 +88,8 @@ export class LineagePanel
     | undefined;
   // The column trace whose requests are in flight; a new trace, a cancel, or the end of a page ends them.
   private readonly columnTraces = new ColumnTraceRequests();
+  /** The latest starting-node render; see {@link renderStartingNode}. */
+  private renderGeneration = 0;
 
   public constructor({
     extensionContext,
@@ -134,7 +136,7 @@ export class LineagePanel
 
   /** Re-renders the starting node on every `event`, so the static-analysis notice follows the client. */
   renderOn(event: Event<void>): void {
-    this._disposables.push(event(() => this.renderStartingNode()));
+    this._disposables.push(event(() => void this.renderStartingNode()));
   }
 
   private get details(): LineageDetails {
@@ -155,7 +157,7 @@ export class LineagePanel
     // A different file is now active; forget the previously rooted source so a
     // source YAML re-rooted later (or on return) is always re-rendered.
     this.lastRenderedSourceKey = undefined;
-    this.renderStartingNode();
+    void this.renderStartingNode();
   }
 
   // Re-root the lineage when the cursor moves to a different source table
@@ -185,7 +187,7 @@ export class LineagePanel
     }
     // Thread the resolution into the render so getStartingNode doesn't have
     // to traverse sourceMetaMap a second time for the same cursor position.
-    this.renderStartingNode(resolved);
+    void this.renderStartingNode(resolved);
   }
 
   manifestChanged(_project: Project | undefined): void {
@@ -204,12 +206,12 @@ export class LineagePanel
       this.post({ command: "projectSaved" });
       return;
     }
-    this.renderStartingNode();
+    void this.renderStartingNode();
   }
 
   protected override onWebviewReady(page: WebviewView | WebviewPanel) {
     super.onWebviewReady(page);
-    this.renderStartingNode();
+    void this.renderStartingNode();
   }
 
   /** A page that ends takes its column trace's requests with it, so no answer goes to a page that is gone. */
@@ -220,14 +222,22 @@ export class LineagePanel
 
   init() {
     this.terminal.debug("lineagePanel:init", "init", this._panel);
-    this.renderStartingNode();
+    void this.renderStartingNode();
   }
 
-  private renderStartingNode(resolvedSource?: ResolvedSourceTable) {
+  /**
+   * Posts the starting node. Its counts wait on the exclusions, so a render that starts after this one wins: an older
+   * answer that arrives late is dropped.
+   */
+  private async renderStartingNode(resolvedSource?: ResolvedSourceTable) {
     if (!this._panel) {
       return;
     }
-    const start = this.getStartingNode(resolvedSource);
+    const generation = ++this.renderGeneration;
+    const start = await this.getStartingNode(resolvedSource);
+    if (generation !== this.renderGeneration) {
+      return;
+    }
     const needs = this.lineageService.columnsNeedStrict();
     this.post({
       command: "render",
@@ -255,29 +265,29 @@ export class LineagePanel
     | "getRelationships"
   > {
     return {
-      getProjectGraph: ({ syncRequestId }) =>
+      getProjectGraph: async ({ syncRequestId }) =>
         this.respond(
           "getProjectGraph",
           syncRequestId,
-          this.lineageService.getProjectGraph(),
+          await this.lineageService.getProjectGraph(),
         ),
-      childTables: ({ args, syncRequestId }) =>
+      childTables: async ({ args, syncRequestId }) =>
         this.respond(
           "childTables",
           syncRequestId,
-          this.lineageService.getChildTables(args.params),
+          await this.lineageService.getChildTables(args.params),
         ),
-      parentTables: ({ args, syncRequestId }) =>
+      parentTables: async ({ args, syncRequestId }) =>
         this.respond(
           "parentTables",
           syncRequestId,
-          this.lineageService.getParentTables(args.params),
+          await this.lineageService.getParentTables(args.params),
         ),
-      tableEdges: ({ args, syncRequestId }) =>
+      tableEdges: async ({ args, syncRequestId }) =>
         this.respond(
           "tableEdges",
           syncRequestId,
-          this.lineageService.getTableEdges(args.params),
+          await this.lineageService.getTableEdges(args.params),
         ),
       getColumns: async ({ args, syncRequestId }) =>
         this.respond(
@@ -366,9 +376,9 @@ export class LineagePanel
     return { message, type: "warning" };
   }
 
-  private getStartingNode(
+  private async getStartingNode(
     resolvedSource?: ResolvedSourceTable,
-  ): lineage.RenderArgs {
+  ): Promise<lineage.RenderArgs> {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       this.log.info("Lineage:getStartingNode", "No event found");
@@ -392,7 +402,7 @@ export class LineagePanel
     if (ext === ".py") {
       const fn = functionMetaMap.get(tableName);
       if (fn) {
-        const node = this.lineageService.createTable(
+        const node = await this.lineageService.createTable(
           manifest,
           url,
           fn.unique_id,
@@ -404,14 +414,18 @@ export class LineagePanel
     const _node = nodeMetaMap.lookupByBaseName(tableName);
     if (_node) {
       const key = _node.unique_id;
-      const node = this.lineageService.createTable(manifest, url, key);
+      const node = await this.lineageService.createTable(manifest, url, key);
       return { node };
     }
 
     // Non-.py fallback: check if the active file is a dbt function.
     const fn = functionMetaMap.get(tableName);
     if (fn) {
-      const node = this.lineageService.createTable(manifest, url, fn.unique_id);
+      const node = await this.lineageService.createTable(
+        manifest,
+        url,
+        fn.unique_id,
+      );
       return { node };
     }
 
@@ -426,7 +440,7 @@ export class LineagePanel
         // fails for this key, the selection guard must still short-circuit
         // instead of re-triggering a full render on every cursor move.
         this.lastRenderedSourceKey = resolved.key;
-        const node = this.lineageService.createTable(
+        const node = await this.lineageService.createTable(
           manifest,
           resolved.table.path ?? url,
           resolved.key,
