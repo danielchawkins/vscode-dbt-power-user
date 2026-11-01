@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { inferLayer } from "../../core/manifest/modelLayer";
-import type { Meta, NodeGraphMap } from "../../core/manifest/types";
+import type { Meta } from "../../core/manifest/types";
 import {
   RESOURCE_TYPE_EXPOSURE,
   RESOURCE_TYPE_FUNCTION,
@@ -8,12 +8,7 @@ import {
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
-
-/** A node's data-flow neighbour count; foreign-key-only edges are left out, as the panel never draws them. */
-function connectedNodeCount(g: NodeGraphMap, key: string): number {
-  return (g.get(key)?.nodes ?? []).filter((n) => n.edgeType !== "constraint")
-    .length;
-}
+import { LineageAdjacency } from "./lineageAdjacency";
 
 /** The tests on `key`, as the lineage table lists them. */
 function testsOf(
@@ -57,6 +52,8 @@ export interface CardOptions {
   /** The current project's package name; a node in it shows no package. */
   rootPackage?: string | undefined;
   layer: { tagPrefix: string; fromPath: boolean };
+  /** The graph the card's neighbour counts come from; built from the manifest when not given. */
+  adjacency?: LineageAdjacency | undefined;
 }
 
 const NO_LAYERS: CardOptions = { layer: { tagPrefix: "", fromPath: false } };
@@ -70,11 +67,13 @@ export function lineageTable(
   const splits = key.split(".");
   const at = (index: number) => splits[index] ?? "";
   const nodeType = at(0);
+  const adjacency =
+    options.adjacency ?? new LineageAdjacency(manifest.graphMetaMap);
   const base = {
     table: key,
     url: options.url,
-    childCount: connectedNodeCount(manifest.graphMetaMap.children, key),
-    parentCount: connectedNodeCount(manifest.graphMetaMap.parents, key),
+    childCount: adjacency.count("children", key),
+    parentCount: adjacency.count("parents", key),
     nodeType,
   };
   switch (nodeType) {
