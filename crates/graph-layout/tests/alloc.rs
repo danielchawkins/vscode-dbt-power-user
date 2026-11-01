@@ -1,9 +1,10 @@
 //! S5: a `Projector` that has solved a problem allocates nothing when it re-solves the same constraints with new desired
-//! positions, and ranking and layering allocate nothing once their scratch has warmed up. `solve` is `pub(crate)`, so
-//! this test includes its source with a path attribute; `solve` imports nothing from the crate (ADR 0011). Layering
-//! reaches `budget`, `index` and `model`, so those are included too. The counting allocator needs an
-//! `unsafe impl GlobalAlloc`, which the core forbids; this integration test is its own crate and the one place that
-//! allows it.
+//! positions, and ranking and layering allocate nothing once their scratch has warmed up. An `Engine` relayout that
+//! re-runs placement and routing allocates a bounded amount that does not grow (S5, Phase 7; zero is not the target, see
+//! Phase 8 in the plan). `solve` is `pub(crate)`, so this test includes its source with a path attribute; `solve`
+//! imports nothing from the crate (ADR 0011). Layering reaches `budget`, `index` and `model`, so those are included too.
+//! The counting allocator needs an `unsafe impl GlobalAlloc`, which the core forbids; this integration test is its own
+//! crate and the one place that allows it.
 
 #![expect(
     unsafe_code,
@@ -56,8 +57,13 @@ mod layering;
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
+use std::collections::BTreeMap;
 
 use budget::Budget;
+use graph_layout::engine::{Engine, Generation, Progress, Stage};
+use graph_layout::model::{
+    Clusters, EdgeKindPolicy, Edges, Graph, Nodes, Options, PartialSpacing, Ports,
+};
 use index::Indexed;
 use layering::{
     EdgeRule, Layers, PartitionMode, RankOptions, Ranks, Scratch, layer_into, rank_into,
@@ -345,4 +351,173 @@ fn ranking_and_layering_re_run_without_allocating() {
             "{mode:?}: second layer differs from the first"
         );
     }
+}
+
+fn number(n: usize) -> f64 {
+    f64::from(u32::try_from(n).unwrap_or(0))
+}
+
+/// A graph of 60 nodes and 150 edges, fixed by the generator. Nodes are 40 to 60 wide and 20 to 40 high. A quarter of the
+/// edges are `info` (routed, not ranked, and either way round); the rest are `rank` edges that point forward, so they
+/// cannot close a cycle.
+fn engine_graph() -> Graph {
+    const NODES: usize = 60;
+    const EDGES: usize = 150;
+    let mut state: u64 = 0x6a09_e667_f3bc_c908;
+    let mut draw = |bound: usize| -> usize {
+        state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        usize::try_from((state >> 33) % u64::try_from(bound).unwrap_or(1)).unwrap_or(0)
+    };
+    let width: Vec<f64> = (0..NODES).map(|_| 40.0 + 5.0 * number(draw(5))).collect();
+    let height: Vec<f64> = (0..NODES).map(|_| 20.0 + 5.0 * number(draw(5))).collect();
+    let mut source = Vec::with_capacity(EDGES);
+    let mut target = Vec::with_capacity(EDGES);
+    let mut kind = Vec::with_capacity(EDGES);
+    for _ in 0..EDGES {
+        let a = draw(NODES);
+        let mut b = draw(NODES - 1);
+        if b >= a {
+            b += 1;
+        }
+        let info = draw(4) == 0;
+        let (from, to) = if info { (a, b) } else { (a.min(b), a.max(b)) };
+        source.push(format!("n{from}"));
+        target.push(format!("n{to}"));
+        kind.push(if info { "info" } else { "rank" }.to_owned());
+    }
+    Graph {
+        nodes: Nodes {
+            id: (0..NODES).map(|node| format!("n{node}")).collect(),
+            width,
+            height,
+            cluster: vec![None; NODES],
+            partition: vec![None; NODES],
+            ports: Ports::default(),
+        },
+        edges: Edges {
+            id: (0..EDGES).map(|edge| format!("e{edge}")).collect(),
+            source,
+            target,
+            source_port: vec![None; EDGES],
+            target_port: vec![None; EDGES],
+            kind,
+        },
+        clusters: Clusters::default(),
+    }
+}
+
+/// The options of the engine test: `balanced`, the `rank` kind ranks, the `info` kind is routed, and `spacing.node` is
+/// `node`. Only placement reads `spacing.node`, so a change of it re-runs placement and routing and nothing else.
+fn engine_options(node: f64) -> Options {
+    Options {
+        edge_kinds: BTreeMap::from([
+            (
+                "rank".to_owned(),
+                EdgeKindPolicy {
+                    ranks: true,
+                    min_length: Some(1.0),
+                    weight: Some(1.0),
+                    ..EdgeKindPolicy::default()
+                },
+            ),
+            (
+                "info".to_owned(),
+                EdgeKindPolicy {
+                    routed: Some(true),
+                    ..EdgeKindPolicy::default()
+                },
+            ),
+        ]),
+        spacing: Some(PartialSpacing {
+            node: Some(node),
+            ..PartialSpacing::default()
+        }),
+        effort: Some("balanced".to_owned()),
+        ..Options::default()
+    }
+}
+
+/// The request of `generation` on `engine`, run to the end, with the allocations the request made.
+fn request(
+    engine: &Engine,
+    graph: &Graph,
+    options: &Options,
+    generation: u64,
+) -> (Progress, usize) {
+    let mut progress = None;
+    let allocated = allocations_during(|| {
+        progress = Some(
+            engine
+                .layout(graph, options, Generation::new(generation))
+                .expect("the options are valid")
+                .expect("no newer generation has started"),
+        );
+    });
+    (progress.expect("the request ran"), allocated)
+}
+
+/// The most a placement-only relayout of `engine_graph` may allocate. Measured when the test was written, on this test's
+/// own graph (60 nodes, 150 edges, `balanced`): the warm-up made 7,254 allocations, and the 20 relayouts after it made
+/// 7,234 or 7,254, so none grew. The limit is about 10% above the measured 7,254.
+const RELAYOUT_LIMIT: usize = 7_980;
+
+/// S5 (Phase 7): after a full layout, one warm-up `spacing.node` relayout and then 20 more with `spacing.node`
+/// alternating, every one re-running placement and routing. No relayout after the warm-up allocates more than the warm-up
+/// did, each is under `RELAYOUT_LIMIT`, and an unchanged request, which re-runs no stage, allocates fewer than a
+/// placement-only relayout.
+#[test]
+fn an_engine_relayout_after_warm_up_allocates_a_bounded_amount_that_does_not_grow() {
+    let graph = engine_graph();
+    let engine = Engine::new();
+    let (first, _) = request(&engine, &graph, &engine_options(28.0), 1);
+    assert_eq!(
+        first.reran(),
+        Stage::ALL.as_slice(),
+        "a fresh engine runs every stage"
+    );
+
+    let placed = [Stage::Place, Stage::Route];
+    let (warm, warm_allocs) = request(&engine, &graph, &engine_options(30.0), 2);
+    assert_eq!(
+        warm.reran(),
+        placed.as_slice(),
+        "the warm-up re-runs placement and routing"
+    );
+    assert!(
+        warm_allocs < RELAYOUT_LIMIT,
+        "warm-up: {warm_allocs} allocations, limit {RELAYOUT_LIMIT}"
+    );
+
+    let mut last = engine_options(30.0);
+    for generation in 3..=22 {
+        let options = engine_options(if generation % 2 == 1 { 28.0 } else { 30.0 });
+        let (progress, allocs) = request(&engine, &graph, &options, generation);
+        assert_eq!(
+            progress.reran(),
+            placed.as_slice(),
+            "relayout {generation} re-runs other stages"
+        );
+        assert!(
+            allocs <= warm_allocs,
+            "relayout {generation} allocated {allocs}, more than the warm-up's {warm_allocs}"
+        );
+        assert!(
+            allocs < RELAYOUT_LIMIT,
+            "relayout {generation}: {allocs} allocations, limit {RELAYOUT_LIMIT}"
+        );
+        last = options;
+    }
+
+    let (unchanged, unchanged_allocs) = request(&engine, &graph, &last, 23);
+    assert_eq!(
+        unchanged.reran(),
+        &[] as &[Stage],
+        "an unchanged request re-runs no stage"
+    );
+    assert!(
+        unchanged_allocs < warm_allocs,
+        "an unchanged request allocated {unchanged_allocs}, not fewer than the placement-only relayout's {warm_allocs}"
+    );
 }
