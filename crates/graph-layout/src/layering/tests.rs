@@ -4,7 +4,7 @@
 
 use proptest::prelude::*;
 
-use super::acyclic::reversed_arcs;
+use super::acyclic::CycleScratch;
 use super::constraints::partition_constraints;
 use super::{ChainNode, EdgeRule, Layers, PartitionMode, RankOptions, Ranks, Scratch, layer, rank};
 use crate::budget::Budget;
@@ -425,15 +425,28 @@ proptest! {
     }
 }
 
+/// The reversed arcs of `arcs`, with fresh buffers.
+fn reversed_arcs(arcs: &[(usize, usize)]) -> Vec<usize> {
+    CycleScratch::default().reversed_arcs(arcs).to_vec()
+}
+
 #[test]
 fn negative_zero_is_the_band_of_zero() {
     // TypeScript keys bands by SameValueZero, so -0 and +0 are one band: the constraints must match with either sign.
-    let with_negative =
-        partition_constraints(&[Some(-0.0), Some(0.0), Some(1.0)], PartitionMode::Strict);
-    let with_positive =
-        partition_constraints(&[Some(0.0), Some(0.0), Some(1.0)], PartitionMode::Strict);
-    assert_eq!(with_negative.count, with_positive.count);
-    assert_eq!(with_negative.edges, with_positive.edges);
+    let constraints = |partitions: &[Option<f64>]| {
+        let mut edges = Vec::new();
+        let count = partition_constraints(
+            partitions,
+            PartitionMode::Strict,
+            &mut Vec::new(),
+            &mut edges,
+        );
+        (count, edges)
+    };
+    assert_eq!(
+        constraints(&[Some(-0.0), Some(0.0), Some(1.0)]),
+        constraints(&[Some(0.0), Some(0.0), Some(1.0)])
+    );
 }
 
 #[test]

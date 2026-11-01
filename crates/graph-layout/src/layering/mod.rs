@@ -6,9 +6,9 @@
 //! Imports: `index`, `budget`, `rand` and `solve` only (ADR 0011). This phase needs none of `rand` and `solve`, since
 //! network simplex is deterministic and has no random tie-breaks.
 //!
-//! Allocation: [`Scratch`] reuses three outer buffers across calls. Four steps still allocate on every call (cycle
-//! breaking, the partition and hint constraints, and network simplex). Making them allocation-free is Phase 7's
-//! zero-allocation gate, and this module does not claim it before then.
+//! Allocation: [`Scratch`] holds every buffer that ranking and layering use. [`rank_into`] and [`layer_into`] write
+//! into outputs the caller owns, so once the buffers have grown to the graph they allocate nothing for the same graph.
+//! [`rank`] and [`layer`] return fresh outputs, for callers that do not keep them.
 
 mod acyclic;
 mod constraints;
@@ -28,14 +28,12 @@ mod network_tests;
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeMap;
-
 use crate::budget::Budget;
 use crate::index::Indexed;
 
-use acyclic::reversed_arcs;
-use constraints::{Extension, hint_constraints, partition_constraints};
-use network::{NetworkEdge, network_simplex};
+use acyclic::CycleScratch;
+use constraints::{hint_constraints, partition_constraints};
+use network::{NetworkEdge, Simplex, network_simplex};
 
 /// How nodes in bands are kept in order (`LayoutOptions.partitions`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,7 +74,7 @@ pub(crate) struct RankOptions<'a> {
 
 /// The rank of each node (lowest real node at 0) and the indices of the ranking edges that are laid out against their
 /// direction, in edge order.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub(crate) struct Ranks {
     pub(crate) ranks: Vec<f64>,
     pub(crate) reversed: Vec<usize>,
@@ -104,19 +102,22 @@ struct RankingEdge {
     reversed: bool,
 }
 
-/// The buffers that ranking reuses between calls. Keep one per thread and pass it to every [`rank`] call, as `solve`'s
-/// projector does: the buffers grow to the largest graph seen and are cleared, not reallocated, on the next call. The
-/// ranks and reversed edges are still allocated per call, since they are returned.
-///
-/// Three outer buffers are held here: `edges`, `partitions` and `network`. Not yet reused, and still allocated on every
-/// call: the arc list of [`break_cycles`] (and what `reversed_arcs` builds from it), the results of
-/// `partition_constraints` and `hint_constraints`, and the working vectors of `network_simplex`. Removing those is
-/// Phase 7's zero-allocation gate (S5), so this phase does not claim zero allocations.
+/// The buffers that ranking and layering reuse between calls. Keep one per thread and pass it to every call, as
+/// `solve`'s projector does: the buffers grow to the largest graph seen and are cleared, not reallocated, on the next
+/// call. A [`Layers`] that is reused keeps its bundles' buffers too, up to the bundle count of the largest graph.
 #[derive(Debug, Default)]
 pub(crate) struct Scratch {
     edges: Vec<RankingEdge>,
+    arcs: Vec<(usize, usize)>,
+    cycles: CycleScratch,
     partitions: Vec<Option<f64>>,
+    bands: Vec<f64>,
+    hinted: Vec<(usize, u32)>,
     network: Vec<NetworkEdge>,
+    simplex: Simplex,
+    keyed: Vec<(BundleKey, usize)>,
+    members: Vec<usize>,
+    spans: Vec<(usize, usize, usize)>,
 }
 
 /// Chooses the ranks of the nodes: the weighted length of the ranking edges is least, every ranking edge spans its
@@ -127,16 +128,27 @@ pub(crate) fn rank(
     options: &RankOptions<'_>,
     scratch: &mut Scratch,
 ) -> Result<Ranks, RankError> {
+    let mut out = Ranks::default();
+    rank_into(graph, options, scratch, &mut out)?;
+    Ok(out)
+}
+
+/// [`rank`], writing into `out`. Allocates nothing once `scratch` and `out` have grown to the graph.
+pub(crate) fn rank_into(
+    graph: &Indexed,
+    options: &RankOptions<'_>,
+    scratch: &mut Scratch,
+    out: &mut Ranks,
+) -> Result<(), RankError> {
+    out.ranks.clear();
+    out.reversed.clear();
     let nodes = graph.node_count();
     if nodes == 0 {
-        return Ok(Ranks {
-            ranks: Vec::new(),
-            reversed: Vec::new(),
-        });
+        return Ok(());
     }
     let strict = options.partitions == PartitionMode::Strict;
     ranking_edges(graph, options, strict, &mut scratch.edges);
-    break_cycles(&mut scratch.edges);
+    break_cycles(&mut scratch.edges, &mut scratch.arcs, &mut scratch.cycles);
     scratch.network.clear();
     scratch
         .network
@@ -146,11 +158,8 @@ pub(crate) fn rank(
             min_length: e.min_length,
             weight: e.weight,
         }));
-    let bands = match options.partitions {
-        PartitionMode::None => Extension {
-            count: nodes,
-            edges: Vec::new(),
-        },
+    let count = match options.partitions {
+        PartitionMode::None => nodes,
         mode => {
             scratch.partitions.clear();
             scratch.partitions.extend(
@@ -159,7 +168,12 @@ pub(crate) fn rank(
                     .iter()
                     .map(|p| if strict { Some(p.unwrap_or(0.0)) } else { *p }),
             );
-            partition_constraints(&scratch.partitions, mode)
+            partition_constraints(
+                &scratch.partitions,
+                mode,
+                &mut scratch.bands,
+                &mut scratch.network,
+            )
         }
     };
     let stability = options.stability;
@@ -168,21 +182,25 @@ pub(crate) fn rank(
     } else {
         options.hints
     };
-    let hints = hint_constraints(bands.count, hint_ranks, stability);
-    scratch.network.extend(bands.edges);
-    scratch.network.extend(hints.edges);
-    let solved = network_simplex(hints.count, &scratch.network, options.budget.rank_pivots)?;
+    let count = hint_constraints(
+        count,
+        hint_ranks,
+        stability,
+        &mut scratch.hinted,
+        &mut scratch.network,
+    );
+    let solved = network_simplex(
+        count,
+        &scratch.network,
+        options.budget.rank_pivots,
+        &mut scratch.simplex,
+    )?;
     let real = &solved[..nodes];
     let low = real.iter().fold(f64::INFINITY, |least, &r| least.min(r));
-    Ok(Ranks {
-        ranks: real.iter().map(|&r| r - low).collect(),
-        reversed: scratch
-            .edges
-            .iter()
-            .filter(|e| e.reversed)
-            .map(|e| e.id)
-            .collect(),
-    })
+    out.ranks.extend(real.iter().map(|&r| r - low));
+    out.reversed
+        .extend(scratch.edges.iter().filter(|e| e.reversed).map(|e| e.id));
+    Ok(())
 }
 
 /// The ranking edges, oriented: an edge of a kind that does not rank, an edge with unknown ends, or a self-loop, takes
@@ -220,13 +238,30 @@ fn ranking_edges(
     }
 }
 
-/// Flips the edges that the greedy order of `acyclic` reports, so the ranking graph has no cycle.
-fn break_cycles(edges: &mut [RankingEdge]) {
-    let arcs: Vec<(usize, usize)> = edges.iter().map(|e| (e.from, e.to)).collect();
-    for i in reversed_arcs(&arcs) {
+/// Flips the edges that the greedy order of `acyclic` reports, so the ranking graph has no cycle. `arcs` is scratch for
+/// the edges' ends.
+fn break_cycles(
+    edges: &mut [RankingEdge],
+    arcs: &mut Vec<(usize, usize)>,
+    cycles: &mut CycleScratch,
+) {
+    arcs.clear();
+    arcs.extend(edges.iter().map(|e| (e.from, e.to)));
+    for &i in cycles.reversed_arcs(arcs.as_slice()) {
         let e = &mut edges[i];
         std::mem::swap(&mut e.from, &mut e.to);
         e.reversed = !e.reversed;
+    }
+}
+
+/// Clears the first `count` adjacency lists, growing the outer list when it is short. The inner lists keep their
+/// capacity, so a list that has held its edges before does not allocate again.
+fn reset_lists(lists: &mut Vec<Vec<usize>>, count: usize) {
+    if lists.len() < count {
+        lists.resize_with(count, Vec::new);
+    }
+    for list in &mut lists[..count] {
+        list.clear();
     }
 }
 
@@ -248,7 +283,7 @@ pub(crate) struct DummyKey {
 
 /// One bundle: the parallel edges of one kind between one ordered pair of nodes, and the chain that carries them from
 /// the upper end to the lower one.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub(crate) struct Bundle {
     pub(crate) kind: usize,
     pub(crate) source: usize,
@@ -261,7 +296,7 @@ pub(crate) struct Bundle {
 }
 
 /// The bundles of a graph, and the keys of their dummies in creation order.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub(crate) struct Layers {
     pub(crate) bundles: Vec<Bundle>,
     pub(crate) dummies: Vec<DummyKey>,
@@ -270,23 +305,60 @@ pub(crate) struct Layers {
 /// Lays the graph out in ranks: one bundle per kind and ordered pair of nodes, with a dummy chain across each rank the
 /// bundle spans. Self-loops and edges with unknown ends take no part. Bundles are in order of their first edge.
 pub(crate) fn layer(graph: &Indexed, edges: &[EdgeRule], ranks: &[f64]) -> Layers {
-    let mut out = Layers {
-        bundles: Vec::new(),
-        dummies: Vec::new(),
-    };
-    for members in group_bundles(graph, edges) {
-        add_bundle(graph, &mut out, edges, ranks, &members);
-    }
+    let mut out = Layers::default();
+    layer_into(graph, edges, ranks, &mut Scratch::default(), &mut out);
     out
+}
+
+/// [`layer`], writing into `out`. Bundles that `out` already holds are reused in place; a surplus is dropped. Allocates
+/// nothing once `scratch` and `out` have grown to the graph.
+pub(crate) fn layer_into(
+    graph: &Indexed,
+    edges: &[EdgeRule],
+    ranks: &[f64],
+    scratch: &mut Scratch,
+    out: &mut Layers,
+) {
+    group_bundles(
+        graph,
+        edges,
+        &mut scratch.keyed,
+        &mut scratch.members,
+        &mut scratch.spans,
+    );
+    let Layers { bundles, dummies } = out;
+    dummies.clear();
+    let mut count = 0;
+    for &(_, start, end) in &scratch.spans {
+        if count == bundles.len() {
+            bundles.push(Bundle::default());
+        }
+        add_bundle(
+            graph,
+            &mut bundles[count],
+            dummies,
+            edges,
+            ranks,
+            &scratch.members[start..end],
+        );
+        count += 1;
+    }
+    bundles.truncate(count);
 }
 
 /// A bundle's identity: its kind, its ordered pair of nodes, and the ports at each end.
 type BundleKey = (usize, usize, usize, [Option<usize>; 2]);
 
-/// The non-self-loop edges, grouped by kind and ordered pair of nodes, in order of first appearance.
-fn group_bundles(graph: &Indexed, edges: &[EdgeRule]) -> Vec<Vec<usize>> {
-    let mut index: BTreeMap<BundleKey, usize> = BTreeMap::new();
-    let mut groups: Vec<Vec<usize>> = Vec::new();
+/// The non-self-loop edges, grouped by kind and ordered pair of nodes. `members` holds the groups' edges, each group one
+/// run in input order, and `spans` the `(first edge, start, end)` of each group, in order of first appearance.
+fn group_bundles(
+    graph: &Indexed,
+    edges: &[EdgeRule],
+    keyed: &mut Vec<(BundleKey, usize)>,
+    members: &mut Vec<usize>,
+    spans: &mut Vec<(usize, usize, usize)>,
+) {
+    keyed.clear();
     for (id, rule) in edges.iter().enumerate() {
         let Some((source, target)) = graph.ends(id) else {
             continue;
@@ -295,21 +367,33 @@ fn group_bundles(graph: &Indexed, edges: &[EdgeRule]) -> Vec<Vec<usize>> {
         if source == target {
             continue;
         }
-        let key = (rule.kind, source, target, rule.ports);
-        if let Some(&g) = index.get(&key) {
-            groups[g].push(id);
-        } else {
-            index.insert(key, groups.len());
-            groups.push(vec![id]);
-        }
+        keyed.push(((rule.kind, source, target, rule.ports), id));
     }
-    groups
+    // Sorting by key and then edge makes each key's edges one run, in input order.
+    keyed.sort_unstable();
+    members.clear();
+    spans.clear();
+    let mut k = 0;
+    while k < keyed.len() {
+        let key = keyed[k].0;
+        let first = keyed[k].1;
+        let start = members.len();
+        while k < keyed.len() && keyed[k].0 == key {
+            members.push(keyed[k].1);
+            k += 1;
+        }
+        spans.push((first, start, members.len()));
+    }
+    // The first edges are distinct, so the order is total.
+    spans.sort_unstable_by_key(|&(first, _, _)| first);
 }
 
-/// Adds the bundle of one group of parallel edges and, unless it is flat, the dummy chain that carries it.
+/// Sets the bundle of one group of parallel edges and, unless it is flat, the dummy chain that carries it. The bundle's
+/// buffers are reused.
 fn add_bundle(
     graph: &Indexed,
-    out: &mut Layers,
+    bundle: &mut Bundle,
+    dummies: &mut Vec<DummyKey>,
     edges: &[EdgeRule],
     ranks: &[f64],
     members: &[usize],
@@ -326,32 +410,27 @@ fn add_bundle(
     };
     let flat = ranks[upper].to_bits() == ranks[lower].to_bits();
     let count = u32::try_from(members.len()).unwrap_or(u32::MAX);
-    let mut bundle = Bundle {
-        kind: edges[first].kind,
-        source,
-        target,
-        edges: members.to_vec(),
-        chain: Vec::new(),
-        reversed,
-        flat,
-        weight: edges[first].weight * f64::from(count).sqrt(),
-    };
-    if flat {
-        bundle.chain = vec![ChainNode::Node(upper), ChainNode::Node(lower)];
-    } else {
-        let mut chain = vec![ChainNode::Node(upper)];
+    bundle.kind = edges[first].kind;
+    bundle.source = source;
+    bundle.target = target;
+    bundle.edges.clear();
+    bundle.edges.extend_from_slice(members);
+    bundle.reversed = reversed;
+    bundle.flat = flat;
+    bundle.weight = edges[first].weight * f64::from(count).sqrt();
+    bundle.chain.clear();
+    bundle.chain.push(ChainNode::Node(upper));
+    if !flat {
         let mut r = ranks[upper] + 1.0;
         while r < ranks[lower] {
-            out.dummies.push(DummyKey {
+            dummies.push(DummyKey {
                 owner: first,
                 rank: r,
-                position: chain.len(),
+                position: bundle.chain.len(),
             });
-            chain.push(ChainNode::Dummy(out.dummies.len() - 1));
+            bundle.chain.push(ChainNode::Dummy(dummies.len() - 1));
             r += 1.0;
         }
-        chain.push(ChainNode::Node(lower));
-        bundle.chain = chain;
     }
-    out.bundles.push(bundle);
+    bundle.chain.push(ChainNode::Node(lower));
 }
