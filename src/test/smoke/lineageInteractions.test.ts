@@ -2,7 +2,11 @@ import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
-import { expectEdgeGroups, expectExclusions } from "./lineageExclusions";
+import {
+  expectEdgeGroups,
+  expectExclusions,
+  expectTransitiveReduction,
+} from "./lineageExclusions";
 import { setLineageViewMode } from "./lineageViewMode";
 import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -349,6 +353,14 @@ suite("Lineage interactions", function () {
       expect:
         "Whole project view. Scope popover open with an Edge groups heading and one on/off checkbox per edge kind the graph draws, all on by default.",
       measured: { edgeGroups },
+    });
+    // The Transitive reduction checkbox sits under the edge groups, off by default.
+    const transitiveReduction = await expectTransitiveReduction();
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-transitive-reduction-open",
+      expect:
+        "Whole project view. Scope popover open with a Transitive reduction checkbox under the edge groups, off by default.",
+      measured: { transitiveReduction },
     });
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });

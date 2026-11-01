@@ -26,6 +26,7 @@ const NOTHING_ON = {
   softened: [],
   dimmed: [],
   offEdgeGroups: [],
+  transitiveReduction: false,
 };
 
 describe("lineage scope in workspace state", () => {
@@ -41,6 +42,7 @@ describe("lineage scope in workspace state", () => {
       softened: ["model.a"],
       dimmed: ["model.b"],
       offEdgeGroups: ["source"],
+      transitiveReduction: true,
     };
     persistLineageScope(store, scope);
     expect(state.get("lineage.scope")).toEqual(scope);
@@ -79,6 +81,20 @@ describe("lineage scope in workspace state", () => {
       dimmed: [],
     });
     expect(readLineageScope(store)).toEqual(NOTHING_ON);
+  });
+
+  it("reads a scope stored before transitive reduction with it off", () => {
+    const { store } = workspaceWith({
+      offTypes: [],
+      offTags: [],
+      softened: [],
+      dimmed: [],
+      offEdgeGroups: ["source"],
+    });
+    expect(readLineageScope(store)).toEqual({
+      ...NOTHING_ON,
+      offEdgeGroups: ["source"],
+    });
   });
 
   it("tolerates a stored value that is not an object", () => {

@@ -94,6 +94,43 @@ export interface EdgeGroupsState {
   groups: { text: string; on: boolean }[];
 }
 
+/** The Transitive reduction checkbox of the Scope popover: whether it is there, and whether it is on. */
+const READ_TRANSITIVE_REDUCTION = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const section = document.querySelector("section[aria-label=Scope]");
+  if (!section) return null;
+  const label = [...section.querySelectorAll("label")].find(
+    (item) => item.textContent.trim() === "Transitive reduction",
+  );
+  return {
+    entry: "lineage",
+    found: label !== undefined,
+    on: label?.querySelector("input[type=checkbox]")?.checked === true,
+  };
+})()`;
+
+export interface TransitiveReductionState {
+  entry: string;
+  found: boolean;
+  on: boolean;
+}
+
+/** Reads the Transitive reduction checkbox of the Scope popover and asserts it is there; the state it reports is `on`. */
+export async function expectTransitiveReduction(): Promise<TransitiveReductionState> {
+  const toggle = (
+    await evaluatePanel<TransitiveReductionState>(
+      cdpPort(),
+      LINEAGE.entry,
+      READ_TRANSITIVE_REDUCTION,
+    )
+  )?.value;
+  assert.ok(
+    toggle?.found,
+    `the Scope popover shows no Transitive reduction checkbox: ${JSON.stringify(toggle)}`,
+  );
+  return toggle;
+}
+
 /**
  * Reads the Edge groups section of the Scope popover and asserts it has its heading, and that every listed group is one
  * of the webview's edge groups with an on/off checkbox. A graph with no edge lists none, so the list may be empty.

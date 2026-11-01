@@ -307,7 +307,8 @@ export interface HiddenCard {
  * every one of them is off; untagged cards follow their type only. `softened` cards keep their card but their edges
  * rank nothing in the layout, and `dimmed` cards and their edges are drawn faded; both are card IDs from the busy-node
  * list. `offEdgeGroups` names the edge groups switched off (`model`, `source`, `grouped`, `column`, `relationship`), whose
- * edges leave the layout and the drawing. The workspace keeps this for every start model.
+ * edges leave the layout and the drawing. `transitiveReduction` drops each dependency edge that another path of two or
+ * more edges already implies, and draws it as a dim hint. The workspace keeps this for every start model.
  */
 export interface LineageScope {
   offTypes: string[];
@@ -315,6 +316,7 @@ export interface LineageScope {
   softened: string[];
   dimmed: string[];
   offEdgeGroups: string[];
+  transitiveReduction: boolean;
 }
 
 /**
@@ -394,6 +396,7 @@ const isLineageScope = shape<LineageScope>({
   softened: arrayOf(isString),
   dimmed: arrayOf(isString),
   offEdgeGroups: arrayOf(isString),
+  transitiveReduction: isBoolean,
 });
 
 const panelFields: CommandFields<PanelMessage> = {

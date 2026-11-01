@@ -83,9 +83,9 @@ const projectWithout = (...ids: string[]): string[] =>
 
 /**
  * The edges the whole project thins with a cap of one: every edge of `hub` (six), of `fanout` (ten), of `filter`
- * (one drawn, to `kept`) and of `wide` (three). `a`, `b` and `c` have no hub end.
+ * (one drawn, to `kept`), of `wide` (three) and of the `shortcut_*` triangle (three). `a`, `b` and `c` have no hub end.
  */
-const WHOLE_HUB_EDGES = 20;
+const WHOLE_HUB_EDGES = 23;
 
 // ---- the tests ----
 
@@ -1515,6 +1515,7 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
             softened: [],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1543,6 +1544,7 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
             softened: [],
             dimmed: [],
             offEdgeGroups: ["source"],
+            transitiveReduction: false,
           },
         },
       },
@@ -1564,6 +1566,7 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
             softened: [],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1675,6 +1678,7 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
             softened: [],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1876,6 +1880,7 @@ describe("Lineage busy-node list", () => {
             softened: [],
             dimmed: ["b"],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1896,6 +1901,7 @@ describe("Lineage busy-node list", () => {
             softened: [],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1920,6 +1926,7 @@ describe("Lineage busy-node list", () => {
             softened: ["b"],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1939,6 +1946,7 @@ describe("Lineage busy-node list", () => {
             softened: [],
             dimmed: [],
             offEdgeGroups: [],
+            transitiveReduction: false,
           },
         },
       },
@@ -1965,6 +1973,82 @@ describe("Lineage busy-node list", () => {
       "aria-pressed",
       "true",
     );
+  });
+});
+
+describe("Lineage transitive reduction", () => {
+  const openScope = (user: User) => press(user, "button", "Scope");
+
+  it("drops a shortcut by relaying out without it, draws it as a hint, and back on restores it", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(PROJECT_IDS.toSorted()),
+    );
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).toEqual(
+        expect.arrayContaining([
+          "t:shortcut_p->shortcut_q",
+          "t:shortcut_p->shortcut_r",
+        ]),
+      ),
+    );
+    const drawnBefore = drawnEdgeIds(container);
+    await openScope(user);
+    const laidOut = layout.mock.calls.length;
+    await press(user, "checkbox", "Transitive reduction");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+            transitiveReduction: true,
+          },
+        },
+      },
+    });
+    // The toggle lays the graph out again, as an edge group does; it is not a restyle of the drawn flow.
+    await waitFor(() =>
+      expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
+    );
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).toContain("h:shortcut_p->shortcut_r"),
+    );
+    expect(drawnEdgeIds(container)).not.toContain("t:shortcut_p->shortcut_r");
+    expect(drawnEdgeIds(container)).toEqual(
+      expect.arrayContaining([
+        "t:shortcut_p->shortcut_q",
+        "t:shortcut_q->shortcut_r",
+      ]),
+    );
+    await press(user, "checkbox", "Transitive reduction");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+            transitiveReduction: false,
+          },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).toContain("t:shortcut_p->shortcut_r"),
+    );
+    expect(drawnEdgeIds(container)).not.toContain("h:shortcut_p->shortcut_r");
+    expect(drawnEdgeIds(container)).toEqual(drawnBefore);
+    layout.mockRestore();
   });
 });
 

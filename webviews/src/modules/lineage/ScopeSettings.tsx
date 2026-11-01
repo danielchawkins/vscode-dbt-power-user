@@ -7,14 +7,14 @@ import type { ScopeControls } from "./useStoredFilters";
 
 /**
  * The Scope settings: a checkbox per node type and per tag the graph holds, what they take out, a checkbox per edge
- * group the drawn graph has, and Show all; then the busy-node list.
+ * group the drawn graph has, the transitive reduction checkbox, and Show all; then the busy-node list.
  */
 const ScopeSettings = ({
   scope,
 }: {
   scope: ScopeControls;
 }): React.JSX.Element => {
-  const { offTypes, offTags, offEdgeGroups } = scope.scope;
+  const { offTypes, offTags, offEdgeGroups, transitiveReduction } = scope.scope;
   return (
     <section className={styles.menu} aria-label="Scope">
       <span>Node types</span>
@@ -50,6 +50,12 @@ const ScopeSettings = ({
           onChange={(on) => scope.setEdgeGroup(group, on)}
         />
       ))}
+      <Check
+        label="Transitive reduction"
+        checked={transitiveReduction}
+        disabled={!scope.ready}
+        onChange={(on) => scope.setTransitiveReduction(on)}
+      />
       <p>
         {scope.filteredOut} {scope.filteredOut === 1 ? "card" : "cards"}{" "}
         filtered out

@@ -25,12 +25,12 @@ export type TableColumn = [table: string, column: string];
  */
 /**
  * The Scope settings the projection and the layout read: the node types and the tags switched off, the cards whose
- * edges are soft, and the edge groups switched off. The dimmed cards are not here: they restyle the built flow, so they
- * never rebuild the graph.
+ * edges are soft, the edge groups switched off, and whether transitive reduction is on. The dimmed cards are not here:
+ * they restyle the built flow, so they never rebuild the graph.
  */
 export type GraphScope = Pick<
   lineage.LineageScope,
-  "offTypes" | "offTags" | "softened" | "offEdgeGroups"
+  "offTypes" | "offTags" | "softened" | "offEdgeGroups" | "transitiveReduction"
 >;
 
 export interface GraphState {

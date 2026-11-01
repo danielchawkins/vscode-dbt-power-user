@@ -166,6 +166,15 @@ const AUDIT: lineage.LineageTable = {
   hidden: true,
 };
 
+/**
+ * `shortcut_p` feeds `shortcut_q` and `shortcut_r`, and `shortcut_q` feeds `shortcut_r`: the edge from `shortcut_p` to
+ * `shortcut_r` is the one transitive reduction drops. The cluster touches no card of the chain, so only the whole
+ * project draws it.
+ */
+const SHORTCUT_P = table("shortcut_p", "model", 0, 2);
+const SHORTCUT_Q = table("shortcut_q", "model", 1, 1);
+const SHORTCUT_R = table("shortcut_r", "model", 2, 0);
+
 const CHILDREN: Record<string, lineage.LineageTable[]> = {
   a: [TABLES.b],
   b: [TABLES.c],
@@ -173,6 +182,8 @@ const CHILDREN: Record<string, lineage.LineageTable[]> = {
   fanout: FANOUT_CHILDREN,
   filter: [KEPT, AUDIT],
   wide: WIDE_CHILDREN,
+  shortcut_p: [SHORTCUT_Q, SHORTCUT_R],
+  shortcut_q: [SHORTCUT_R],
 };
 
 const PARENTS: Record<string, lineage.LineageTable[]> = {
@@ -185,6 +196,8 @@ const PARENTS: Record<string, lineage.LineageTable[]> = {
   kept: [FILTER],
   audit: [FILTER],
   ...Object.fromEntries(WIDE_CHILDREN.map((child) => [child.table, [WIDE]])),
+  shortcut_q: [SHORTCUT_P],
+  shortcut_r: [SHORTCUT_P, SHORTCUT_Q],
 };
 
 type Params = Record<string, unknown>;
@@ -205,6 +218,7 @@ const NO_SCOPE: lineage.LineageScope = {
   softened: [],
   dimmed: [],
   offEdgeGroups: [],
+  transitiveReduction: false,
 };
 let hostScope: lineage.LineageScope = NO_SCOPE;
 
@@ -501,6 +515,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "checkbox:model",
   "checkbox:Model dependencies",
   "checkbox:Source dependencies",
+  "checkbox:Transitive reduction",
   "checkbox:nightly",
   "checkbox:finance",
   "button:Show all",

@@ -8,13 +8,15 @@ import { type BuiltFlow, drawnPairs, toFlow } from "./flow";
 import type { GraphState } from "./graph";
 import { visibleOf } from "./graph";
 import { combinedEdges } from "./groupEdges";
+import { hintEdges, withoutTransitiveEdges } from "./transitiveReduction";
 import type { ResolvedSettings } from "./viewModel";
 import { visibleRefs } from "./viewModel";
 import { lineageData } from "./visibility";
 
 /**
  * The React Flow nodes and edges of the drawn graph, with no emphasis, and the drawn pairs the emphasis follows. The
- * layout input drops the edges of the edge groups the Scope switched off, so they reach neither the layout nor the drawing.
+ * layout input drops the edges of the edge groups the Scope switched off, and then the dependencies transitive reduction
+ * removes; the removed ones are drawn as hints, which no layout sees.
  */
 /**
  * The settings a flow is built from: each one that places, labels or filters a card or edge. The emphasis settings are
@@ -83,8 +85,10 @@ export const flowOf = ({
   // The edge groups are listed from the whole input, so a group switched off stays in the Scope control.
   const edgeGroups = edgeGroupsOf(layout);
   const kept = withoutEdgeGroups(layout, graph.scope.offEdgeGroups);
-  const flow = toFlow(
-    kept,
+  // Transitive reduction runs last, on the edges the filters, exclusions and edge groups left.
+  const reduced = withoutTransitiveEdges(kept, graph.scope.transitiveReduction);
+  const placed = toFlow(
+    reduced.layout,
     {
       title: settings.title,
       expansions: graph.expansions,
@@ -102,5 +106,20 @@ export const flowOf = ({
     },
     layouter,
   );
-  return { flow, pairs: drawnPairs(kept), edgeGroups };
+  // The dropped edges are drawn as hints between their cards, after the routed edges, which no layout sees.
+  const flow = {
+    ...placed,
+    edges: [
+      ...placed.edges,
+      ...hintEdges(
+        reduced.dropped,
+        new Set(placed.nodes.map((node) => node.id)),
+      ),
+    ],
+  };
+  return {
+    flow,
+    pairs: [...drawnPairs(reduced.layout), ...reduced.dropped],
+    edgeGroups,
+  };
 };

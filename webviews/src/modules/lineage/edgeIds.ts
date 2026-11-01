@@ -2,8 +2,9 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 
 /**
  * The React Flow ids of lineage edges. An id names the edge's kind with a prefix: `t:` a dbt table edge, `g:` a group
- * edge, `c:` a column edge, `r:` a declared relationship. `toFlow` draws each edge under its id, and the layered layout
- * routes it under the same id, so both build ids here and nowhere else.
+ * edge, `c:` a column edge, `r:` a declared relationship, `h:` a dependency that transitive reduction dropped and draws
+ * as a hint. `toFlow` draws each edge under its id, and the layered layout routes it under the same id, so both build
+ * ids here and nowhere else.
  *
  * graph.ts's `expansionKey` also uses `c:` and `p:`, for a table's children and parents. That namespace is the
  * expansion state, not edge ids, so it keeps its own prefixes.
@@ -18,6 +19,10 @@ export const tableEdgeId = (parent: string, child: string): string =>
 /** The id of the group edge from `parent` to `child`, where a folder group stands for some of the neighbours. */
 export const groupEdgeId = (parent: string, child: string): string =>
   `g:${parent}->${child}`;
+
+/** The id of the hint drawn for the dependency from `parent` to `child` that transitive reduction dropped. */
+export const hintEdgeId = (parent: string, child: string): string =>
+  `h:${parent}->${child}`;
 
 /** The id of the column edge from one `[table, column]` to another. */
 export const columnEdgeId = (
