@@ -420,6 +420,26 @@ describe("lineage panel messages", () => {
       });
       expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
     },
+    getLineageLayout: async () => {
+      const h = lineageHarness();
+      h.workspaceState.set("lineage.layout", { spacing: "compact" });
+      await h.send({ command: "getLineageLayout", syncRequestId: "l1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("l1", { layout: { spacing: "compact" } }),
+      );
+    },
+    persistLineageLayout: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "persistLineageLayout",
+        args: { params: { layout: { spacing: "compact" } } },
+        syncRequestId: "l2",
+      });
+      expect(h.workspaceState.get("lineage.layout")).toEqual({
+        spacing: "compact",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(response("l2", { ok: true }));
+    },
     getExclusions: async () => {
       const h = lineageHarness();
       await h.send({ command: "getExclusions", syncRequestId: "x1" });

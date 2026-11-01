@@ -410,6 +410,14 @@ const lineagePanel: Fixture[] = [
     },
     required: ["args.params.scope"],
   },
+  { message: { command: "getLineageLayout", ...params({}) }, required: [] },
+  {
+    message: {
+      command: "persistLineageLayout",
+      ...params({ layout: { spacing: "compact" } }),
+    },
+    required: ["args.params.layout"],
+  },
   { message: { command: "getExclusions", ...params({}) }, required: [] },
   {
     message: {

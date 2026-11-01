@@ -1686,6 +1686,75 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
   });
 });
 
+describe("Lineage Layout control", () => {
+  const openLayout = (user: User) => press(user, "button", "Layout");
+
+  it("shows the default spacing checked, and posts the compact spacing once it is chosen", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    await openLayout(user);
+    expect(screen.getByRole("radio", { name: "Default" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Compact" })).not.toBeChecked();
+    const laidOut = layout.mock.calls.length;
+    await press(user, "radio", "Compact");
+    await expectPosted("persistLineageLayout", {
+      args: { params: { layout: { spacing: "compact" } } },
+    });
+    await waitFor(() =>
+      expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
+    );
+    expect(layout.mock.calls.at(-1)?.[0].spacing).toBe("compact");
+    expect(screen.getByRole("radio", { name: "Compact" })).toBeChecked();
+    layout.mockRestore();
+  });
+
+  it("switches back to the default spacing, and the cards are drawn as they were", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    const defaultDrawn = drawnEdgeIds(container);
+    await openLayout(user);
+    await press(user, "radio", "Compact");
+    await expectPosted("persistLineageLayout", {
+      args: { params: { layout: { spacing: "compact" } } },
+    });
+    await press(user, "radio", "Default");
+    await expectPosted("persistLineageLayout", {
+      args: { params: { layout: { spacing: "default" } } },
+    });
+    expect(screen.getByRole("radio", { name: "Default" })).toBeChecked();
+    expect(tableIds(container)).toEqual(projectWithout());
+    expect(drawnEdgeIds(container)).toEqual(defaultDrawn);
+    layout.mockRestore();
+  });
+
+  it("lays the first graph out at the compact spacing the workspace stored", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+      layout: { spacing: "compact" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    // The graph is held until the stored layout arrives, so only the requests that lay out cards count.
+    const drawn = layout.mock.calls.filter(
+      ([request]) => request.cards.length > 0,
+    );
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn.every(([request]) => request.spacing === "compact")).toBe(
+      true,
+    );
+    layout.mockRestore();
+  });
+});
+
 describe("Lineage exclusions in the Scope popover", () => {
   /** Opens the Scope popover with `exclusions` as the host's rules; the list is the section's region. */
   const openExclusions = async (exclusions?: lineage.ExclusionRule[]) => {

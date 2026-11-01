@@ -76,6 +76,16 @@ export const persistLineageScope = (scope: lineage.LineageScope): void => {
   executeRequestInAsync("persistLineageScope", { args: { params: { scope } } });
 };
 
+/** The Layout control's settings, as the host kept them for the workspace. */
+export const fetchLineageLayout = async (): Promise<lineage.LineageLayout> =>
+  (await executeRequestInSync("getLineageLayout")).layout;
+
+export const persistLineageLayout = (layout: lineage.LineageLayout): void => {
+  executeRequestInAsync("persistLineageLayout", {
+    args: { params: { layout } },
+  });
+};
+
 /** The `lineage.exclude` rules, each with the nodes it excludes or the failure dbt gave. */
 export const fetchExclusions = async (): Promise<lineage.ExclusionRule[]> =>
   (await executeRequestInSync("getExclusions")).rules;

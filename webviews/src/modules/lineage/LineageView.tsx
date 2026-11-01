@@ -44,6 +44,7 @@ const Graph = (): React.JSX.Element => {
             restore={model.restore}
             restoreAll={model.restoreAll}
             scope={model.scope}
+            layout={model.layout}
           />
         </div>
         <SemanticZoomContext value={settings.semanticZoom}>

@@ -20,7 +20,8 @@ import { lineageData } from "./visibility";
  */
 /**
  * The settings a flow is built from: each one that places, labels or filters a card or edge. The emphasis settings are
- * not among them, so changing one restyles the built flow instead of rebuilding it.
+ * not among them, so changing one restyles the built flow instead of rebuilding it. The spacing is the Layout control's,
+ * kept apart from the view settings, and it places the cards.
  */
 export type FlowSettings = Pick<
   ResolvedSettings,
@@ -32,7 +33,7 @@ export type FlowSettings = Pick<
   | "layerColors"
   | "enabledRefSources"
   | "inferenceConfidenceThreshold"
->;
+> & { spacing: lineage.SpacingPreset };
 
 /** The counts of `extra` added to those of `base`, key by key. */
 const sumCounts = (
@@ -80,6 +81,7 @@ export const flowOf = ({
     connections: settings.connections,
     refs: visibleRefs(refs, settings, drawn),
     engine: settings.engine,
+    spacing: settings.spacing,
     softened: graph.scope.softened,
   };
   // The edge groups are listed from the whole input, so a group switched off stays in the Scope control.
