@@ -10,9 +10,11 @@ version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-graph-layout = { path = "../graph-layout" }
+graph-layout = { path = "../graph-layout", features = ["serde"] }
 napi = "3"
 napi-derive = "3"
+# The options are JSON text on the boundary (ADR 0011, Decision 6).
+serde_json = "1"
 
 [lints]
 workspace = true

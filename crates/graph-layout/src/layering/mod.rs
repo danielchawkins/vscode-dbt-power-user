@@ -91,6 +91,16 @@ pub enum RankError {
     Unbounded,
 }
 
+impl std::fmt::Display for RankError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Cycle => write!(f, "the ranking constraints contain a cycle"),
+            Self::Disconnected => write!(f, "the ranking network is not connected"),
+            Self::Unbounded => write!(f, "the ranking network has no edge that lowers its cost"),
+        }
+    }
+}
+
 /// A ranking edge in the direction it is ranked, which can differ from its source and target.
 #[derive(Debug, Clone, Copy)]
 struct RankingEdge {
