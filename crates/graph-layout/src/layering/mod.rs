@@ -100,6 +100,9 @@ struct RankingEdge {
     min_length: f64,
     weight: f64,
     reversed: bool,
+    /// Under strict partitions, whether the edge joins two bands. Its band order already orients it, and it lies on no
+    /// cycle, so cycle breaking must leave it alone.
+    across_bands: bool,
 }
 
 /// The buffers that ranking and layering reuse between calls. Keep one per thread and pass it to every call, as
@@ -221,7 +224,8 @@ fn ranking_edges(
         if !rule.ranks || source == target {
             continue;
         }
-        let backward = strict && band(source) > band(target);
+        let (source_band, target_band) = (band(source), band(target));
+        let backward = strict && source_band > target_band;
         let (from, to) = if backward {
             (target, source)
         } else {
@@ -234,19 +238,27 @@ fn ranking_edges(
             min_length: rule.min_length,
             weight: rule.weight,
             reversed: backward,
+            across_bands: strict && (source_band < target_band || backward),
         });
     }
 }
 
 /// Flips the edges that the greedy order of `acyclic` reports, so the ranking graph has no cycle. `arcs` is scratch for
-/// the edges' ends.
+/// the edges' ends. An edge across bands is passed as a self-loop, which the greedy order never reports, so it is never
+/// flipped: a flip would point it against the band order, and the strict gate arcs would then close a cycle.
 fn break_cycles(
     edges: &mut [RankingEdge],
     arcs: &mut Vec<(usize, usize)>,
     cycles: &mut CycleScratch,
 ) {
     arcs.clear();
-    arcs.extend(edges.iter().map(|e| (e.from, e.to)));
+    arcs.extend(edges.iter().map(|e| {
+        if e.across_bands {
+            (e.from, e.from)
+        } else {
+            (e.from, e.to)
+        }
+    }));
     for &i in cycles.reversed_arcs(arcs.as_slice()) {
         let e = &mut edges[i];
         std::mem::swap(&mut e.from, &mut e.to);

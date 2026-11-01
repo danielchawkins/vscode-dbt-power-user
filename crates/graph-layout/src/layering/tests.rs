@@ -450,6 +450,43 @@ fn negative_zero_is_the_band_of_zero() {
 }
 
 #[test]
+fn lower_strict_case_keeps_cross_band_edges_forward() {
+    // The saved case of `lower_strict_partitions_sit_in_earlier_ranks`. Cycle breaking used to flip edges across bands,
+    // and the strict gate arcs then closed a cycle with them. Ranking must succeed, and every lower band must sit in an
+    // earlier rank.
+    let edges = [
+        (1, 2, 0),
+        (4, 0, 0),
+        (0, 4, 0),
+        (4, 1, 0),
+        (3, 2, 0),
+        (1, 2, 0),
+        (2, 3, 0),
+    ];
+    let bands = [None, Some(1.0), Some(2.0), Some(2.0), None];
+    let rules = rules_of(&edges);
+    let budget = balanced();
+    let graph = indexed(5, &pairs_of(&edges));
+    let result = rank(
+        &graph,
+        &options(PartitionMode::Strict, &bands, &rules, &budget),
+        &mut Scratch::default(),
+    )
+    .expect("ranks");
+    let band = |u: usize| bands[u].unwrap_or(0.0);
+    for u in 0..5 {
+        for v in 0..5 {
+            if band(u) < band(v) {
+                assert!(
+                    result.ranks[u] < result.ranks[v],
+                    "band {u} not above band {v}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn a_free_node_is_ranked_by_its_edges_alone_under_soft_partitions() {
     // Two band-2 nodes and one free node, with no edges. The free node puts no band above band 2, so all three share
     // rank 0. Counted as band 0, it would push both band-2 nodes a rank below it.
