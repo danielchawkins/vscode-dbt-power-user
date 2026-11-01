@@ -226,17 +226,17 @@ Measured once on Node v24.18.1 (the repo pin), from the TypeScript sources throu
 | Graph           | Effort   | Runtime     | ms per pass | Crossings |  Bends | Edge length |   Bounds (w × h) |
 | --------------- | -------- | ----------- | ----------: | --------: | -----: | ----------: | ---------------: |
 | finance         | fast     | TypeScript  |         511 |    42,176 |  3,458 | 192,660,594 |  358,754 × 5,731 |
-| finance         | fast     | Rust native |          64 |   309,563 |  3,518 | 201,280,707 |  374,652 × 9,511 |
-| finance         | fast     | Rust WASM   |          82 |   309,563 |  3,518 | 201,280,707 |  374,652 × 9,511 |
+| finance         | fast     | Rust native |          60 |    40,886 |  3,534 | 200,781,234 |  376,188 × 6,637 |
+| finance         | fast     | Rust WASM   |          81 |    40,886 |  3,534 | 200,781,234 |  376,188 × 6,637 |
 | finance         | balanced | TypeScript  |       3,833 |    35,332 |  3,774 | 174,709,525 |  335,574 × 6,847 |
-| finance         | balanced | Rust native |       1,255 |   345,557 |  3,864 | 181,523,633 |  336,970 × 9,325 |
-| finance         | balanced | Rust WASM   |       1,487 |   345,557 |  3,864 | 181,523,633 |  336,970 × 9,325 |
+| finance         | balanced | Rust native |       1,167 |    36,378 |  3,880 | 180,541,685 |  337,923 × 7,159 |
+| finance         | balanced | Rust WASM   |       1,384 |    36,378 |  3,880 | 180,541,685 |  337,923 × 7,159 |
 | synthetic 3,000 | fast     | TypeScript  |       6,436 |   954,655 | 13,818 |  95,923,285 |  95,323 × 10,998 |
-| synthetic 3,000 | fast     | Rust native |       1,084 |   989,337 | 13,818 |  93,429,847 |   95,323 × 9,840 |
-| synthetic 3,000 | fast     | Rust WASM   |       1,376 |   989,337 | 13,818 |  93,429,847 |   95,323 × 9,840 |
+| synthetic 3,000 | fast     | Rust native |       1,087 |   926,784 | 13,818 |  97,202,155 |  95,323 × 12,402 |
+| synthetic 3,000 | fast     | Rust WASM   |       1,192 |   926,784 | 13,818 |  97,202,155 |  95,323 × 12,402 |
 | synthetic 3,000 | balanced | TypeScript  |      15,415 | 1,061,864 | 32,198 |  86,943,405 | 114,120 × 36,564 |
-| synthetic 3,000 | balanced | Rust native |       2,838 | 1,452,237 | 32,194 |  58,494,057 | 114,120 × 13,470 |
-| synthetic 3,000 | balanced | Rust WASM   |       3,373 | 1,452,237 | 32,194 |  58,494,057 | 114,120 × 13,470 |
+| synthetic 3,000 | balanced | Rust native |       2,315 | 1,070,273 | 32,194 |  86,993,253 | 114,120 × 36,408 |
+| synthetic 3,000 | balanced | Rust WASM   |       3,203 | 1,070,273 | 32,194 |  86,993,253 | 114,120 × 36,408 |
 
 Every Rust cell has zero overlaps, zero opaque breaches, and no flagged edge. The TypeScript times are one in-process run each; the Rust times are slopes of whole processes, so they are not the same measurement.
 
@@ -253,7 +253,11 @@ Phase 6 is the point at which the Rust core is a complete replacement for the Ty
 - Native and WASM byte-identical: `just crates::parity` prints `layout-parity: native and wasm outputs are byte-identical on 8 cases`. `parity-plant` plants a one-byte divergence and expects exit 1.
 - Thread sweep: `thorough_layout_is_written_for_the_thread_sweep` writes the thorough layout at 1, 2, 4 and 8 threads (`RAYON_NUM_THREADS`), and the four files are byte-identical (16,936 bytes each). The sweep is not part of `just check`; it was run by hand on this revision.
 
-The Rust numbers are in the table above, next to the TypeScript baseline, and are not a gate. Rust's crossings are higher than TypeScript's on both graphs (synthetic balanced 1,452,237 against 1,061,864). The router's simplifications, stated in `route/mod.rs`, are the candidate cause, and this is not verified. The simplifications that remain are: one track per run, no doglegs (TypeScript may jog a run to a second track), no pair budget, and no crossing count. The Rust engine also does not give the TypeScript crossing bound for `thorough` (see the restart change). The finance dump changed since the baseline, so its rows are not the same input.
+The Rust numbers are in the table above, next to the TypeScript baseline, and are not a gate. The crossing gap is closed to within a few per cent on all four cells, by the router's track assignment (`route/bands.rs`: runs grouped into stars, each overlapping pair ordered by the touches and crossings each order costs, cycles cut, and the tracks assigned left-edge in that order, under the `route_pairs` budget). Crossings against TypeScript: finance `fast` 40,886 against 42,176 (−3%), finance `balanced` 36,378 against 35,332 (+3%), synthetic `fast` 926,784 against 954,655 (−3%), synthetic `balanced` 1,070,273 against 1,061,864 (+1%). The finance rows are not the same input (1,131 nodes and 1,309 edges, against 1,128 and 1,297), so that comparison is approximate. The heights are still clearly taller than TypeScript's, by 16% for finance `fast` (6,637 against 5,731), 5% for finance `balanced` (7,159 against 6,847) and 13% for synthetic `fast` (12,402 against 10,998); synthetic `balanced` is level (36,408 against 36,564). The height gap is not diagnosed: the TypeScript router was not run on the Rust placement, so it is not yet known whether the cause is the track count or the placement. The Rust engine also does not give the TypeScript crossing bound for `thorough` (see the restart change).
+
+New router tests in `route/tests.rs`: `a_run_whose_verticals_are_struck_takes_the_track_above` (the lower-crossing order is chosen, and the count is 0); the proptest `a_band_whose_runs_do_not_overlap_takes_one_track_and_no_crossing` (one track and no crossing when one track is optimal); `reversing_the_edge_order_gives_the_same_routes`; and `with_no_pair_budget_every_run_is_still_drawn_orthogonally`. The crossing oracle is `brute_crossings_of_routes` in `testkit/crossings.rs`.
+
+Next steps, in order: (1) doglegs, so that a run may change track where its track would otherwise be crossed; `dogleg_work` is already in the budget but nothing reads it yet; (2) a TypeScript-router run on the same placed graph, to attribute the height gap to tracks or to placement; (3) if the height persists, share a track between a star's runs across more bands.
 
 ## Phase 7: the `engine` handle
 
