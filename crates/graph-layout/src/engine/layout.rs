@@ -28,6 +28,17 @@ pub enum LayoutError {
     Phases(PhaseError),
 }
 
+impl std::fmt::Display for LayoutError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Input(error) => write!(f, "{error}"),
+            Self::Phases(error) => write!(f, "{error}"),
+        }
+    }
+}
+
+impl std::error::Error for LayoutError {}
+
 /// Lays out `graph` with `options`: validates it, runs every phase and assembles the layout. This is a fresh
 /// [`Engine`] run to the end, so it is the handle's result on the same inputs.
 ///

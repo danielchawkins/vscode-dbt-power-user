@@ -131,16 +131,16 @@ parity-plant: wasm napi
     set -euo pipefail
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
-    sed 's/^frame empty-layout 474c4652/frame empty-layout 474c4653/' graph-layout/fixtures/parity/frame.txt > "$tmp/frame.txt"
+    sed 's/^frame layout 474c4652/frame layout 474c4653/' graph-layout/fixtures/parity/golden-layout.txt > "$tmp/golden-layout.txt"
     status=0
-    report=$(node graph-layout-wasm/js/parity.mjs ../dist/graph-layout "$tmp/frame.txt" 2>&1) || status=$?
+    report=$(node graph-layout-wasm/js/parity.mjs ../dist/graph-layout "$tmp/golden-layout.txt" 2>&1) || status=$?
     if [[ "$status" -ne 1 ]]; then
         echo "parity-plant: parity exited $status for a planted divergence; expected 1" >&2
         echo "$report" >&2
         exit 1
     fi
     # Exit 1 alone is not enough: a crash (a module that fails to load) also exits 1. Require the mismatch report.
-    if ! grep -qE '^parity: (native|wasm) returned ' <<<"$report"; then
+    if ! grep -qE '^parity: (native|wasm) [a-z -]*returned ' <<<"$report"; then
         echo "parity-plant: parity exited 1 without a mismatch report; this is a crash, not a divergence" >&2
         echo "$report" >&2
         exit 1

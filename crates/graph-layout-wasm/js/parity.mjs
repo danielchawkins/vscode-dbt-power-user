@@ -1,25 +1,22 @@
+// Parity check (`just crates::parity`): the native Node-API build and the WebAssembly build must return the same bytes for
+// the golden graph frame, through the one-shot `layout` and through the engine handle, and those bytes must equal the
+// Rust golden layout. Both must also refuse a non-frame with the code `frame`. Usage: node parity.mjs <dist dir> [golden
+// file]. Exits 1 on any difference.
 import { readFileSync } from "node:fs";
-// Parity check (`just crates::parity`): the native Node-API build and the WebAssembly build must return, for the golden
-// graph frame, the bytes of the empty-layout frame in the fixture. Usage: node parity.mjs <dist dir> [fixture file].
-// Exits 1 on any difference.
-import { createRequire } from "node:module";
 import path from "node:path";
-import { loadWasm } from "./index.mjs";
+import { Engine, layout, loadNative, loadWasm } from "./index.mjs";
 
 const dir = path.resolve(process.argv[2] ?? "../dist/graph-layout");
-const fixture = path.resolve(
-  process.argv[3] ??
-    path.join(
-      import.meta.dirname,
-      "../../graph-layout/fixtures/parity/frame.txt",
-    ),
+const fixtures = path.join(
+  import.meta.dirname,
+  "../../graph-layout/fixtures/parity",
 );
-const native = createRequire(import.meta.url)(
-  path.join(dir, "graph_layout_napi.node"),
+const golden = path.resolve(
+  process.argv[3] ?? path.join(fixtures, "golden-layout.txt"),
 );
-const wasm = loadWasm(dir);
+const bindings = { native: loadNative(dir), wasm: loadWasm(dir) };
 
-// The fixture holds one line per frame: `frame <kind> <hex>`.
+// The fixtures hold one line per frame: `frame <kind> <hex>`.
 function frameOf(text, kind) {
   const prefix = `frame ${kind} `;
   const line = text.split("\n").find((row) => row.startsWith(prefix));
@@ -29,24 +26,56 @@ function frameOf(text, kind) {
   return Buffer.from(line.slice(prefix.length), "hex");
 }
 
-const text = readFileSync(fixture, "utf8");
-const graph = frameOf(text, "graph");
-const expected = frameOf(text, "empty-layout").toString("hex");
-const outputs = {
-  native: Buffer.from(native.layout(graph)).toString("hex"),
-  wasm: Buffer.from(wasm.layout(graph)).toString("hex"),
+// The golden graph's two edge kinds need a policy to lay out.
+const options = {
+  edgeKinds: { lineage: { ranks: true }, ref: { ranks: false } },
 };
+const graph = frameOf(
+  readFileSync(path.join(fixtures, "frame.txt"), "utf8"),
+  "graph",
+);
+const expected = frameOf(readFileSync(golden, "utf8"), "layout");
+
+const outputs = {};
+const codes = {};
+for (const [name, binding] of Object.entries(bindings)) {
+  outputs[`${name} one-shot`] = Buffer.from(layout(binding, graph, options));
+  const engine = new Engine(binding, { bigint: name === "wasm" });
+  const handled = engine.layout(graph, options, 1);
+  if (handled === undefined) {
+    throw new Error(
+      `parity: the ${name} handle returned nothing for generation 1`,
+    );
+  }
+  outputs[`${name} handle`] = Buffer.from(handled);
+  try {
+    layout(binding, Buffer.from("not a frame"), options);
+    codes[name] = "no error";
+  } catch (error) {
+    codes[name] = error.code;
+  }
+}
 
 let failed = false;
-for (const [name, hex] of Object.entries(outputs)) {
-  if (hex !== expected) {
+for (const [name, bytes] of Object.entries(outputs)) {
+  if (!bytes.equals(expected)) {
     failed = true;
-    console.error(`parity: ${name} returned ${hex}, golden is ${expected}`);
+    console.error(
+      `parity: ${name} returned ${bytes.toString("hex")}, the golden layout is ${expected.toString("hex")}`,
+    );
+  }
+}
+for (const [name, code] of Object.entries(codes)) {
+  if (code !== "frame") {
+    failed = true;
+    console.error(
+      `parity: ${name} refused a non-frame with code ${code}, expected frame`,
+    );
   }
 }
 if (failed) {
   process.exit(1);
 }
 console.log(
-  `parity: native and wasm match the empty layout in ${path.relative(process.cwd(), fixture)}`,
+  `parity: native and wasm, one-shot and handle, return the golden layout (${expected.length} bytes); both refuse a non-frame with code frame`,
 );

@@ -70,6 +70,22 @@ pub enum PhaseError {
     Placing(String),
 }
 
+impl std::fmt::Display for PhaseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownEffort(effort) => {
+                write!(
+                    f,
+                    "unknown effort \"{effort}\": expected fast, balanced or thorough"
+                )
+            }
+            Self::NonIntegerRank => write!(f, "a rank is not a whole number below 2^32"),
+            Self::Ranking(error) => write!(f, "ranking failed: {error}"),
+            Self::Placing(message) => write!(f, "placing failed: {message}"),
+        }
+    }
+}
+
 /// What the rank stage produced: each node's rank as a whole number, the ranks as ranking measured them (which layering
 /// reads), the ranking edges laid out against their direction, and the rule of each edge (which layering and placement
 /// read).

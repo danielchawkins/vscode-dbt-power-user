@@ -115,7 +115,7 @@ pub struct PartialSpacing {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
+    serde(rename_all = "camelCase", default)
 )]
 pub struct Options {
     /// The direction ranks run.
