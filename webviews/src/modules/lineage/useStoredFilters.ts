@@ -31,13 +31,14 @@ export const hiddenCardsOf = (
 ): { id: string; name: string }[] =>
   cards.map((card) => ({ id: card.id, name: card.label ?? card.id }));
 
-/** No Scope filter, no card softened or dimmed, and every edge group on. */
+/** No Scope filter, no card softened or dimmed, every edge group on, and transitive reduction off. */
 const ALL_ON: lineage.LineageScope = {
   offTypes: [],
   offTags: [],
   softened: [],
   dimmed: [],
   offEdgeGroups: [],
+  transitiveReduction: false,
 };
 
 /**
@@ -81,6 +82,8 @@ export interface ScopeControls {
   setType: (type: string, on: boolean) => void;
   setTag: (tag: string, on: boolean) => void;
   setEdgeGroup: (group: EdgeGroup, on: boolean) => void;
+  /** Switches transitive reduction on or off: the dependencies another path implies leave the layout, drawn as hints. */
+  setTransitiveReduction: (on: boolean) => void;
   /** Switches every type, tag and edge group back on, and leaves the busy cards as they are. */
   showAll: () => void;
 }
@@ -122,6 +125,14 @@ export const useScopeControls = (
     },
     [stored, change],
   );
+  const setTransitiveReduction = useCallback(
+    (on: boolean) => {
+      if (stored) {
+        change({ ...stored, transitiveReduction: on });
+      }
+    },
+    [stored, change],
+  );
   // Show all switches the types, tags and edge groups on; the softened and dimmed cards keep their own undo in the busy-node list.
   const showAll = useCallback(() => {
     if (stored) {
@@ -137,6 +148,7 @@ export const useScopeControls = (
     setType,
     setTag,
     setEdgeGroup,
+    setTransitiveReduction,
     showAll,
   };
 };

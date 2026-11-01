@@ -376,6 +376,7 @@ describe("lineage panel messages", () => {
         softened: ["model.a"],
         dimmed: [],
         offEdgeGroups: ["grouped"],
+        transitiveReduction: true,
       });
       await h.send({ command: "getLineageScope", syncRequestId: "s1" });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -386,6 +387,7 @@ describe("lineage panel messages", () => {
             softened: ["model.a"],
             dimmed: [],
             offEdgeGroups: ["grouped"],
+            transitiveReduction: true,
           },
         }),
       );
@@ -402,6 +404,7 @@ describe("lineage panel messages", () => {
               softened: [],
               dimmed: ["model.b"],
               offEdgeGroups: ["column"],
+              transitiveReduction: true,
             },
           },
         },
@@ -413,6 +416,7 @@ describe("lineage panel messages", () => {
         softened: [],
         dimmed: ["model.b"],
         offEdgeGroups: ["column"],
+        transitiveReduction: true,
       });
       expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
     },

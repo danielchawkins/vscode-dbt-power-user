@@ -20,12 +20,19 @@ export const useGraphScope = (
   const offTags = stored?.offTags;
   const softened = stored?.softened;
   const offEdgeGroups = stored?.offEdgeGroups;
+  const transitiveReduction = stored?.transitiveReduction;
   return useMemo(
     () =>
       offTypes && offTags && softened && offEdgeGroups
-        ? { offTypes, offTags, softened, offEdgeGroups }
+        ? {
+            offTypes,
+            offTags,
+            softened,
+            offEdgeGroups,
+            transitiveReduction: transitiveReduction === true,
+          }
         : undefined,
-    [offTypes, offTags, softened, offEdgeGroups],
+    [offTypes, offTags, softened, offEdgeGroups, transitiveReduction],
   );
 };
 

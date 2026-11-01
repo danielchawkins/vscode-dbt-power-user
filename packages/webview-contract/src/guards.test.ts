@@ -404,6 +404,7 @@ const lineagePanel: Fixture[] = [
           softened: [],
           dimmed: [],
           offEdgeGroups: [],
+          transitiveReduction: false,
         },
       }),
     },
