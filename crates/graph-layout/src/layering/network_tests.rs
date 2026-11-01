@@ -4,10 +4,93 @@
 
 use proptest::prelude::*;
 
-use super::constraints::{hint_constraints, partition_constraints};
-use super::network::{NetworkEdge, network_simplex};
-use super::tree::{SpanningTree, feasible_tree};
+use super::network::NetworkEdge;
+use super::tree::Tree;
 use super::{PartitionMode, RankError};
+
+/// [`super::network::network_simplex`] with fresh buffers, returning the ranks as a vector.
+fn network_simplex(
+    count: usize,
+    edges: &[NetworkEdge],
+    max_iterations: usize,
+) -> Result<Vec<f64>, RankError> {
+    super::network::network_simplex(
+        count,
+        edges,
+        max_iterations,
+        &mut super::network::Simplex::default(),
+    )
+    .map(<[f64]>::to_vec)
+}
+
+/// The constraints that a partition or hint adds, with the node count after them.
+struct Extension {
+    count: usize,
+    edges: Vec<NetworkEdge>,
+}
+
+fn partition_constraints(partitions: &[Option<f64>], mode: PartitionMode) -> Extension {
+    let mut edges = Vec::new();
+    let count =
+        super::constraints::partition_constraints(partitions, mode, &mut Vec::new(), &mut edges);
+    Extension { count, edges }
+}
+
+fn hint_constraints(count: usize, hints: &[Option<u32>], weight: f64) -> Extension {
+    let mut edges = Vec::new();
+    let count =
+        super::constraints::hint_constraints(count, hints, weight, &mut Vec::new(), &mut edges);
+    Extension { count, edges }
+}
+
+fn feasible_tree(
+    count: usize,
+    edges: &[NetworkEdge],
+    ranks: &mut [f64],
+) -> Result<Vec<usize>, RankError> {
+    let mut tree = Tree::default();
+    super::tree::feasible_tree(count, edges, ranks, &mut tree)?;
+    Ok(tree.tree_edges().to_vec())
+}
+
+/// A spanning tree over `edges` with the given tree edges, as the pivot loop sees it.
+struct SpanningTree<'a> {
+    edges: &'a [NetworkEdge],
+    tree: Tree,
+}
+
+impl<'a> SpanningTree<'a> {
+    fn new(count: usize, edges: &'a [NetworkEdge], tree_edges: &[usize]) -> Self {
+        let mut tree = Tree::default();
+        tree.chosen.extend_from_slice(tree_edges);
+        tree.prepare(count, edges);
+        Self { edges, tree }
+    }
+
+    fn tree_edges(&self) -> &[usize] {
+        self.tree.tree_edges()
+    }
+
+    fn is_tree(&self, ei: usize) -> bool {
+        self.tree.is_tree(ei)
+    }
+
+    fn cut(&self, ei: usize) -> f64 {
+        self.tree.cut(ei)
+    }
+
+    fn child_of(&self, ei: usize) -> usize {
+        self.tree.child_of(self.edges, ei)
+    }
+
+    fn in_subtree(&self, v: usize, x: usize) -> bool {
+        self.tree.in_subtree(v, x)
+    }
+
+    fn exchange(&mut self, leave: usize, enter: usize) {
+        self.tree.exchange(self.edges, leave, enter);
+    }
+}
 
 const MAX_ITERATIONS: usize = 10_000;
 

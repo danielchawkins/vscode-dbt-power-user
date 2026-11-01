@@ -1,10 +1,9 @@
 //! Network simplex ranking: the constraint network, the longest-path start, and the pivot loop. A port of
 //! `packages/graph-layout/src/rank/networkSimplex.ts` and `networkEdge.ts`.
 
-use std::collections::BTreeMap;
-
 use super::RankError;
-use super::tree::{SpanningTree, feasible_tree};
+use super::reset_lists;
+use super::tree::{Tree, feasible_tree};
 
 /// A constraint `head - tail >= min_length`, costing `weight` per unit of span.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -20,71 +19,153 @@ pub(super) fn slack(ranks: &[f64], e: NetworkEdge) -> f64 {
     ranks[e.head] - ranks[e.tail] - e.min_length
 }
 
+/// The buffers that network simplex reuses between calls: the merged and joined network, the longest-path start, the
+/// spanning tree, and the result. Every buffer is cleared, not reallocated, so a warm one allocates nothing for the
+/// same network.
+#[derive(Debug, Default)]
+pub(super) struct Simplex {
+    keys: Vec<(usize, usize, usize)>,
+    reps: Vec<(usize, NetworkEdge)>,
+    merged: Vec<NetworkEdge>,
+    joins: Vec<NetworkEdge>,
+    network: Vec<NetworkEdge>,
+    parent: Vec<usize>,
+    seen: Vec<bool>,
+    out: Vec<Vec<usize>>,
+    indegree: Vec<usize>,
+    queue: Vec<usize>,
+    ranks: Vec<f64>,
+    tree: Tree,
+    result: Vec<f64>,
+}
+
 /// Ranks `count` nodes so that every edge's span is at least its `min_length` and the weighted sum of spans is least,
 /// by the network simplex method of Gansner, Koutsofios, North and Vo (1993). Ranks are integers with the lowest real
 /// node at 0. Each pivot keeps the ranks feasible, so stopping at `max_iterations` gives a valid, possibly non-optimal
-/// ranking. The result depends only on the inputs: the search order is fixed.
-pub(super) fn network_simplex(
+/// ranking. The result depends only on the inputs: the search order is fixed. The result is borrowed from `scratch`.
+pub(super) fn network_simplex<'s>(
     count: usize,
     edges: &[NetworkEdge],
     max_iterations: usize,
-) -> Result<Vec<f64>, RankError> {
+    scratch: &'s mut Simplex,
+) -> Result<&'s [f64], RankError> {
     if count == 0 {
-        return Ok(Vec::new());
+        scratch.result.clear();
+        return Ok(&scratch.result);
     }
-    let merged = merge_parallel(edges);
-    let mut network = merged.clone();
-    network.extend(root_edges(count, &merged));
-    let mut ranks = longest_path_ranks(count + 1, &network)?;
-    let tree_edges = feasible_tree(count + 1, &network, &mut ranks)?;
-    let mut tree = SpanningTree::new(count + 1, &network, &tree_edges);
-    pivot(&mut tree, &network, &mut ranks, max_iterations)?;
-    Ok(normalise(&ranks[..count]))
+    scratch.merge_parallel(edges);
+    scratch.root_edges(count);
+    scratch.network.clear();
+    scratch.network.extend_from_slice(&scratch.merged);
+    scratch.network.extend_from_slice(&scratch.joins);
+    scratch.longest_path(count + 1)?;
+    let Simplex {
+        network,
+        ranks,
+        tree,
+        result,
+        ..
+    } = scratch;
+    feasible_tree(count + 1, network, ranks, tree)?;
+    tree.prepare(count + 1, network);
+    pivot(tree, network, ranks, max_iterations)?;
+    normalise(&ranks[..count], result);
+    Ok(result)
 }
 
-/// Parallel edges become one: weights add and the longest minimum length wins. The first edge of each pair keeps its
-/// place in the output.
-fn merge_parallel(edges: &[NetworkEdge]) -> Vec<NetworkEdge> {
-    let mut by_ends: BTreeMap<(usize, usize), usize> = BTreeMap::new();
-    let mut merged: Vec<NetworkEdge> = Vec::new();
-    for e in edges {
-        if let Some(&i) = by_ends.get(&(e.tail, e.head)) {
-            let seen = &mut merged[i];
-            seen.weight += e.weight;
-            seen.min_length = seen.min_length.max(e.min_length);
-        } else {
-            by_ends.insert((e.tail, e.head), merged.len());
-            merged.push(*e);
+impl Simplex {
+    /// Parallel edges become one: weights add and the longest minimum length wins. The first edge of each pair keeps its
+    /// place in the output. Edges are grouped by their ends after a sort, and the weights are added in input order, as
+    /// the first-seen merge adds them.
+    fn merge_parallel(&mut self, edges: &[NetworkEdge]) {
+        self.keys.clear();
+        self.keys
+            .extend(edges.iter().enumerate().map(|(i, e)| (e.tail, e.head, i)));
+        self.keys.sort_unstable();
+        self.reps.clear();
+        let mut k = 0;
+        while k < self.keys.len() {
+            let (tail, head, first) = self.keys[k];
+            let mut merged = edges[first];
+            k += 1;
+            while k < self.keys.len() && self.keys[k].0 == tail && self.keys[k].1 == head {
+                let e = edges[self.keys[k].2];
+                merged.weight += e.weight;
+                merged.min_length = merged.min_length.max(e.min_length);
+                k += 1;
+            }
+            self.reps.push((first, merged));
         }
+        // The first indices are distinct, so the order is total.
+        self.reps.sort_unstable_by_key(|&(first, _)| first);
+        self.merged.clear();
+        self.merged.extend(self.reps.iter().map(|&(_, e)| e));
     }
-    merged
-}
 
-/// Joins the components with a virtual root (node `count`): an edge of zero length and weight from the root to the
-/// lowest node of each component, so the tree search reaches every node.
-fn root_edges(count: usize, edges: &[NetworkEdge]) -> Vec<NetworkEdge> {
-    let mut parent: Vec<usize> = (0..count).collect();
-    for e in edges {
-        let r = find(&mut parent, e.tail);
-        let s = find(&mut parent, e.head);
-        parent[r] = s;
-    }
-    let mut seen = vec![false; count];
-    let mut joins = Vec::new();
-    for v in 0..count {
-        let root = find(&mut parent, v);
-        if seen[root] {
-            continue;
+    /// Joins the components of the merged edges with a virtual root (node `count`): an edge of zero length and weight
+    /// from the root to the lowest node of each component, so the tree search reaches every node.
+    fn root_edges(&mut self, count: usize) {
+        self.parent.clear();
+        self.parent.extend(0..count);
+        for e in &self.merged {
+            let r = find(&mut self.parent, e.tail);
+            let s = find(&mut self.parent, e.head);
+            self.parent[r] = s;
         }
-        seen[root] = true;
-        joins.push(NetworkEdge {
-            tail: count,
-            head: v,
-            min_length: 0.0,
-            weight: 0.0,
-        });
+        self.seen.clear();
+        self.seen.resize(count, false);
+        self.joins.clear();
+        for v in 0..count {
+            let root = find(&mut self.parent, v);
+            if self.seen[root] {
+                continue;
+            }
+            self.seen[root] = true;
+            self.joins.push(NetworkEdge {
+                tail: count,
+                head: v,
+                min_length: 0.0,
+                weight: 0.0,
+            });
+        }
     }
-    joins
+
+    /// The longest path from a source to each node of the network: feasible, and the start of the search. Writes
+    /// `ranks`.
+    fn longest_path(&mut self, count: usize) -> Result<(), RankError> {
+        reset_lists(&mut self.out, count);
+        self.indegree.clear();
+        self.indegree.resize(count, 0);
+        for (ei, e) in self.network.iter().enumerate() {
+            self.out[e.tail].push(ei);
+            self.indegree[e.head] += 1;
+        }
+        self.ranks.clear();
+        self.ranks.resize(count, 0.0);
+        self.queue.clear();
+        for v in 0..count {
+            if self.indegree[v] == 0 {
+                self.queue.push(v);
+            }
+        }
+        let mut q = 0;
+        while q < self.queue.len() {
+            let v = self.queue[q];
+            q += 1;
+            for &ei in &self.out[v] {
+                let e = self.network[ei];
+                self.ranks[e.head] = self.ranks[e.head].max(self.ranks[v] + e.min_length);
+                self.indegree[e.head] -= 1;
+                if self.indegree[e.head] == 0 {
+                    self.queue.push(e.head);
+                }
+            }
+        }
+        if self.queue.len() != count {
+            return Err(RankError::Cycle);
+        }
+        Ok(())
+    }
 }
 
 /// The union-find root of `v`, halving the path as it goes.
@@ -97,38 +178,9 @@ fn find(parent: &mut [usize], v: usize) -> usize {
     x
 }
 
-/// The longest path from a source to each node: feasible, and the start of the search.
-fn longest_path_ranks(count: usize, edges: &[NetworkEdge]) -> Result<Vec<f64>, RankError> {
-    let mut out = vec![Vec::new(); count];
-    let mut indegree = vec![0usize; count];
-    for (ei, e) in edges.iter().enumerate() {
-        out[e.tail].push(ei);
-        indegree[e.head] += 1;
-    }
-    let mut ranks = vec![0.0_f64; count];
-    let mut queue: Vec<usize> = (0..count).filter(|&v| indegree[v] == 0).collect();
-    let mut q = 0;
-    while q < queue.len() {
-        let v = queue[q];
-        q += 1;
-        for &ei in &out[v] {
-            let e = edges[ei];
-            ranks[e.head] = ranks[e.head].max(ranks[v] + e.min_length);
-            indegree[e.head] -= 1;
-            if indegree[e.head] == 0 {
-                queue.push(e.head);
-            }
-        }
-    }
-    if queue.len() != count {
-        return Err(RankError::Cycle);
-    }
-    Ok(ranks)
-}
-
 /// Exchanges tree edges while one has a negative cut value, up to `max_iterations` exchanges.
 fn pivot(
-    tree: &mut SpanningTree<'_>,
+    tree: &mut Tree,
     edges: &[NetworkEdge],
     ranks: &mut [f64],
     max_iterations: usize,
@@ -141,7 +193,7 @@ fn pivot(
         let leave = tree.tree_edges()[slot];
         let enter = entering_edge(tree, edges, ranks, leave).ok_or(RankError::Unbounded)?;
         shift_subtree(tree, edges, ranks, leave, enter);
-        tree.exchange(leave, enter);
+        tree.exchange(edges, leave, enter);
         cursor = slot + 1;
     }
     Ok(())
@@ -149,7 +201,7 @@ fn pivot(
 
 /// The first tree edge with a negative cut value, searching cyclically from `from`. Starting each search where the last
 /// exchange left off keeps the pivots from cycling on one set of ties.
-fn leaving_slot(tree: &SpanningTree<'_>, from: usize) -> Option<usize> {
+fn leaving_slot(tree: &Tree, from: usize) -> Option<usize> {
     let len = tree.tree_edges().len();
     (0..len)
         .map(|k| (from + k) % len)
@@ -158,13 +210,8 @@ fn leaving_slot(tree: &SpanningTree<'_>, from: usize) -> Option<usize> {
 
 /// The non-tree edge with the least slack that runs from the head side of `leave` to its tail side. Such an edge exists
 /// whenever the cut value is negative. Ties go to the lowest edge index.
-fn entering_edge(
-    tree: &SpanningTree<'_>,
-    edges: &[NetworkEdge],
-    ranks: &[f64],
-    leave: usize,
-) -> Option<usize> {
-    let child = tree.child_of(leave);
+fn entering_edge(tree: &Tree, edges: &[NetworkEdge], ranks: &[f64], leave: usize) -> Option<usize> {
+    let child = tree.child_of(edges, leave);
     let head_is_child = child == edges[leave].head;
     let mut best: Option<usize> = None;
     let mut best_slack = f64::INFINITY;
@@ -189,14 +236,14 @@ fn entering_edge(
 /// Makes `enter` tight by moving the subtree below `leave` (the head side, when the head is the child). Its slack is
 /// the shift, and the tree edge then leaves the cycle that `enter` closes.
 fn shift_subtree(
-    tree: &SpanningTree<'_>,
+    tree: &Tree,
     edges: &[NetworkEdge],
     ranks: &mut [f64],
     leave: usize,
     enter: usize,
 ) {
     let s = slack(ranks, edges[enter]);
-    let child = tree.child_of(leave);
+    let child = tree.child_of(edges, leave);
     let shift = if child == edges[leave].head { s } else { -s };
     for (v, rank) in ranks.iter_mut().enumerate() {
         if tree.in_subtree(child, v) {
@@ -205,8 +252,9 @@ fn shift_subtree(
     }
 }
 
-/// Shifts the ranks so the lowest is 0.
-fn normalise(ranks: &[f64]) -> Vec<f64> {
+/// Shifts the ranks so the lowest is 0, into `out`.
+fn normalise(ranks: &[f64], out: &mut Vec<f64>) {
     let low = ranks.iter().fold(f64::INFINITY, |least, &r| least.min(r));
-    ranks.iter().map(|&r| r - low).collect()
+    out.clear();
+    out.extend(ranks.iter().map(|&r| r - low));
 }
