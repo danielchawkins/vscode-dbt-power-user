@@ -213,7 +213,7 @@ Not probed: the attraction weight, the attraction edges, and the excluded flags,
 - **I1.** After any sequence of requests, the handle's layout equals `layout(graph, options)` on the same inputs, bit for bit (`handle::tests`).
 - **I2.** Not built with the staged budgets; a run is not split. Future work.
 - **I3.** A request superseded by a newer generation returns `None`, and the cache it would have replaced stays as it was.
-- **I4.** A steady placement-only relayout allocates nothing after warm-up. Not met: no counting-allocator test covers the engine yet (`tests/alloc.rs` covers the solver and layering), and the phase's S5 status is in the plan.
+- **I4.** A steady placement-only relayout allocates a bounded amount that does not grow after warm-up (`tests/alloc.rs`, `an_engine_relayout_after_warm_up_allocates_a_bounded_amount_that_does_not_grow`). Zero allocations is not the target; reusing the placement and routing buffers is Phase 8's "Placement and routing performance" in the plan.
 
 ## New core features
 
