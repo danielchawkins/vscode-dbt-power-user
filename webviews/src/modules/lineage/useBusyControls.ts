@@ -1,6 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { useMemo } from "react";
 import { useBusyCards } from "./busyCards";
+import type { EdgeGroup } from "./edgeGroups";
 import type { GraphScope, GraphState } from "./graph";
 import {
   type ScopeControls,
@@ -9,8 +10,8 @@ import {
 } from "./useStoredFilters";
 
 /**
- * The Scope settings the graph reads: the filters and the softened cards. The dimmed cards are left out, so a dim
- * restyles the flow without a new graph, and its identity changes only when one of these lists does.
+ * The Scope settings the graph reads: the filters, the softened cards and the edge groups. The dimmed cards are left
+ * out, so a dim restyles the flow without a new graph, and its identity changes only when one of these lists does.
  */
 export const useGraphScope = (
   stored: lineage.LineageScope | undefined,
@@ -18,12 +19,13 @@ export const useGraphScope = (
   const offTypes = stored?.offTypes;
   const offTags = stored?.offTags;
   const softened = stored?.softened;
+  const offEdgeGroups = stored?.offEdgeGroups;
   return useMemo(
     () =>
-      offTypes && offTags && softened
-        ? { offTypes, offTags, softened }
+      offTypes && offTags && softened && offEdgeGroups
+        ? { offTypes, offTags, softened, offEdgeGroups }
         : undefined,
-    [offTypes, offTags, softened],
+    [offTypes, offTags, softened, offEdgeGroups],
   );
 };
 
@@ -36,11 +38,13 @@ export const useBusyControls = ({
   threshold,
   stored,
   hide,
+  edgeGroups,
 }: {
   graph: GraphState;
   threshold: number;
   stored: ReturnType<typeof useStoredScope>;
   hide: (table: string, label: string) => void;
+  edgeGroups: EdgeGroup[];
 }): ScopeControls => {
   const filters = useScopeControls(graph, stored.scope, stored.change);
   const busy = useBusyCards({
@@ -50,5 +54,5 @@ export const useBusyControls = ({
     change: stored.change,
     hide,
   });
-  return { ...filters, busy };
+  return { ...filters, busy, edgeGroups };
 };

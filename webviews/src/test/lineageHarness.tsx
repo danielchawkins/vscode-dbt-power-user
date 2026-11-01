@@ -204,6 +204,7 @@ const NO_SCOPE: lineage.LineageScope = {
   offTags: [],
   softened: [],
   dimmed: [],
+  offEdgeGroups: [],
 };
 let hostScope: lineage.LineageScope = NO_SCOPE;
 
@@ -498,6 +499,8 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Scope",
   "checkbox:source",
   "checkbox:model",
+  "checkbox:Model dependencies",
+  "checkbox:Source dependencies",
   "checkbox:nightly",
   "checkbox:finance",
   "button:Show all",

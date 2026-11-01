@@ -10,19 +10,11 @@ import {
   useRef,
   useState,
 } from "react";
+import { flowOf } from "./builtFlow";
 import { connectionCounts, emphasisOf } from "./emphasis";
-import { createLayouter, type Layouter } from "./engine/layoutCache";
-import type { LayoutInput } from "./engine/layoutRequest";
-import { cappedCounts } from "./expansionCap";
-import { collapsedGroups, groupChips } from "./expansionGroups";
-import { type BuiltFlow, drawnPairs, emphasize, toFlow } from "./flow";
-import {
-  type GraphState,
-  knownPairs,
-  type ViewSettings,
-  visibleOf,
-} from "./graph";
-import { combinedEdges } from "./groupEdges";
+import { createLayouter } from "./engine/layoutCache";
+import { type BuiltFlow, emphasize } from "./flow";
+import { type GraphState, knownPairs, type ViewSettings } from "./graph";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import { useBusyControls, useGraphScope } from "./useBusyControls";
 import { useDetailsDrawer } from "./useDetailsDrawer";
@@ -35,8 +27,7 @@ import {
   useStoredScope,
 } from "./useStoredFilters";
 import type { ResolvedSettings } from "./viewModel";
-import { resolveSettings, visibleRefs } from "./viewModel";
-import { lineageData } from "./visibility";
+import { resolveSettings } from "./viewModel";
 
 /** The host's view settings, with `loaded` false until they arrive; a change is applied at once and persisted. */
 const useSettings = () => {
@@ -110,89 +101,6 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
     };
   }, [settings.connections, settings.includeSourcesInInference, drawnKey]);
   return refs;
-};
-
-/**
- * The settings a flow is built from: each one that places, labels or filters a card or edge. The emphasis settings are
- * not among them, so changing one restyles the built flow instead of rebuilding it.
- */
-type FlowSettings = Pick<
-  ResolvedSettings,
-  | "showSelectEdges"
-  | "showNonSelectEdges"
-  | "connections"
-  | "engine"
-  | "title"
-  | "layerColors"
-  | "enabledRefSources"
-  | "inferenceConfidenceThreshold"
->;
-
-/** The counts of `extra` added to those of `base`, key by key. */
-const sumCounts = (
-  base: Record<string, number>,
-  extra: Record<string, number>,
-): Record<string, number> => {
-  const sum = { ...base };
-  for (const [key, count] of Object.entries(extra)) {
-    sum[key] = (sum[key] ?? 0) + count;
-  }
-  return sum;
-};
-
-/** The React Flow nodes and edges, with no emphasis, and the drawn pairs the emphasis follows. */
-const flowOf = ({
-  graph,
-  settings,
-  refs,
-  columnsNeedStrict,
-  layouter,
-}: {
-  graph: GraphState;
-  settings: FlowSettings;
-  refs: lineage.LineageRef[];
-  columnsNeedStrict: boolean;
-  layouter: Layouter;
-}): { flow: BuiltFlow; pairs: ReturnType<typeof drawnPairs> } => {
-  const visible = visibleOf(graph);
-  const data = lineageData(graph, {
-    direct: settings.showSelectEdges,
-    indirect: settings.showNonSelectEdges,
-  });
-  const drawn = new Set(data.tables.map((t) => t.table));
-  const groups = collapsedGroups(graph);
-  const layout: LayoutInput = {
-    data,
-    columns: graph.columns,
-    columnTables: graph.columnTables,
-    groups,
-    groupEdges: combinedEdges(graph, groups),
-    chips: groupChips(graph),
-    connections: settings.connections,
-    refs: visibleRefs(refs, settings, drawn),
-    engine: settings.engine,
-    softened: graph.scope.softened,
-  };
-  const flow = toFlow(
-    layout,
-    {
-      title: settings.title,
-      expansions: graph.expansions,
-      pending: graph.pending,
-      capped: sumCounts(cappedCounts(graph), visible.capped),
-      // The whole project draws every card, so an expander has no neighbours to open.
-      expandable: graph.view.viewMode === "neighbourhood",
-      filteredOut: visible.filteredOut,
-      errors: graph.errors,
-      selectedTable: graph.selectedTable,
-      selectedColumn: graph.selectedColumn,
-      tracing: graph.tracing,
-      columnsNeedStrict,
-      layerColors: settings.layerColors,
-    },
-    layouter,
-  );
-  return { flow, pairs: drawnPairs(layout) };
 };
 
 /**
@@ -408,12 +316,6 @@ export const useGraphModel = (
     () => hiddenCardsOf(graph.hiddenCards),
     [graph.hiddenCards],
   );
-  const scope = useBusyControls({
-    graph,
-    threshold: settings.maxNeighbours,
-    stored: storedScope,
-    hide: actions.hide,
-  });
   const notice = rendered?.missingLineageMessage;
   const refs = useRefs(settings, drawnKey);
   const { hovered, hover } = useHoveredCard(settings);
@@ -422,6 +324,13 @@ export const useGraphModel = (
     settings,
     refs,
     columnsNeedStrict: rendered?.columnsNeedStrict === true,
+  });
+  const scope = useBusyControls({
+    graph,
+    threshold: settings.maxNeighbours,
+    stored: storedScope,
+    hide: actions.hide,
+    edgeGroups: built.edgeGroups,
   });
   const { nodes, edges } = useEmphasizedFlow({
     graph,

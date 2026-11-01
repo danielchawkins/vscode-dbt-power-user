@@ -24,12 +24,13 @@ export type TableColumn = [table: string, column: string];
  * start table plus each entry of `expansions`, in order, whose table is drawn.
  */
 /**
- * The Scope settings the projection and the layout read: the node types and the tags switched off, and the cards whose
- * edges are soft. The dimmed cards are not here: they restyle the built flow, so they never rebuild the graph.
+ * The Scope settings the projection and the layout read: the node types and the tags switched off, the cards whose
+ * edges are soft, and the edge groups switched off. The dimmed cards are not here: they restyle the built flow, so they
+ * never rebuild the graph.
  */
 export type GraphScope = Pick<
   lineage.LineageScope,
-  "offTypes" | "offTags" | "softened"
+  "offTypes" | "offTags" | "softened" | "offEdgeGroups"
 >;
 
 export interface GraphState {

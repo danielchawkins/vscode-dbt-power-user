@@ -375,6 +375,7 @@ describe("lineage panel messages", () => {
         offTags: ["nightly"],
         softened: ["model.a"],
         dimmed: [],
+        offEdgeGroups: ["grouped"],
       });
       await h.send({ command: "getLineageScope", syncRequestId: "s1" });
       expect(h.postMessage).toHaveBeenCalledWith(
@@ -384,6 +385,7 @@ describe("lineage panel messages", () => {
             offTags: ["nightly"],
             softened: ["model.a"],
             dimmed: [],
+            offEdgeGroups: ["grouped"],
           },
         }),
       );
@@ -399,6 +401,7 @@ describe("lineage panel messages", () => {
               offTags: ["nightly"],
               softened: [],
               dimmed: ["model.b"],
+              offEdgeGroups: ["column"],
             },
           },
         },
@@ -409,6 +412,7 @@ describe("lineage panel messages", () => {
         offTags: ["nightly"],
         softened: [],
         dimmed: ["model.b"],
+        offEdgeGroups: ["column"],
       });
       expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
     },

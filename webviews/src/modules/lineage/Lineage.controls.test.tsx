@@ -70,6 +70,13 @@ type Mode = (typeof MODES)[number];
 const drawnIn = (mode: Mode, ids: string[]): string[] =>
   mode === "whole" ? PROJECT_IDS.toSorted() : ids.toSorted();
 
+/** The ids of the edges the panel draws, in the order it draws them. */
+const drawnEdgeIds = (container: HTMLElement): string[] =>
+  Array.from(
+    container.querySelectorAll<HTMLElement>(".react-flow__edge"),
+    (el) => el.dataset.id ?? "",
+  );
+
 /** The whole project without the cards `ids`: what the whole-project view draws once they are hidden. */
 const projectWithout = (...ids: string[]): string[] =>
   PROJECT_IDS.filter((id) => !ids.includes(id)).toSorted();
@@ -1507,10 +1514,77 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
             offTags: [],
             softened: [],
             dimmed: [],
+            offEdgeGroups: [],
           },
         },
       },
     });
+  });
+
+  it("switches an edge group off by relaying out the layout without its edges, and back on restores them", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(all));
+    expect(drawnEdgeIds(container)).toEqual(
+      expect.arrayContaining(["t:a->b", "t:b->c"]),
+    );
+    await openScope(user);
+    const laidOut = layout.mock.calls.length;
+    await press(user, "checkbox", "Source dependencies");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: ["source"],
+          },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
+    );
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).not.toContain("t:a->b"),
+    );
+    expect(drawnEdgeIds(container)).toContain("t:b->c");
+    await press(user, "checkbox", "Source dependencies");
+    await expectPosted("persistLineageScope", {
+      args: {
+        params: {
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+          },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).toEqual(
+        expect.arrayContaining(["t:a->b", "t:b->c"]),
+      ),
+    );
+    await press(user, "checkbox", "Model dependencies");
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).not.toContain("t:b->c"),
+    );
+    expect(drawnEdgeIds(container)).toContain("t:a->b");
+    await press(user, "checkbox", "Model dependencies");
+    await waitFor(() =>
+      expect(drawnEdgeIds(container)).toEqual(
+        expect.arrayContaining(["t:a->b", "t:b->c"]),
+      ),
+    );
+    layout.mockRestore();
   });
 
   it("removes every card of an unchecked node type", async () => {
@@ -1595,7 +1669,13 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
     await expectPosted("persistLineageScope", {
       args: {
         params: {
-          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+          },
         },
       },
     });
@@ -1795,6 +1875,7 @@ describe("Lineage busy-node list", () => {
             offTags: [],
             softened: [],
             dimmed: ["b"],
+            offEdgeGroups: [],
           },
         },
       },
@@ -1809,7 +1890,13 @@ describe("Lineage busy-node list", () => {
     await expectPosted("persistLineageScope", {
       args: {
         params: {
-          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+          },
         },
       },
     });
@@ -1827,7 +1914,13 @@ describe("Lineage busy-node list", () => {
     await expectPosted("persistLineageScope", {
       args: {
         params: {
-          scope: { offTypes: [], offTags: [], softened: ["b"], dimmed: [] },
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: ["b"],
+            dimmed: [],
+            offEdgeGroups: [],
+          },
         },
       },
     });
@@ -1840,7 +1933,13 @@ describe("Lineage busy-node list", () => {
     await expectPosted("persistLineageScope", {
       args: {
         params: {
-          scope: { offTypes: [], offTags: [], softened: [], dimmed: [] },
+          scope: {
+            offTypes: [],
+            offTags: [],
+            softened: [],
+            dimmed: [],
+            offEdgeGroups: [],
+          },
         },
       },
     });

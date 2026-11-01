@@ -2,7 +2,7 @@ import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
-import { expectExclusions } from "./lineageExclusions";
+import { expectEdgeGroups, expectExclusions } from "./lineageExclusions";
 import { setLineageViewMode } from "./lineageViewMode";
 import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -341,6 +341,14 @@ suite("Lineage interactions", function () {
         "Whole project view. Scope popover open with an Exclusions list under the busy cards' filters: each rule with the " +
         "nodes it excludes or the failure dbt gave, a Remove button per rule, and an input with an Add rule button.",
       measured: { exclusions },
+    });
+    // The Edge groups section sits in the same popover, above the busy cards: a checkbox per edge kind the graph draws.
+    const edgeGroups = await expectEdgeGroups();
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-edge-groups-open",
+      expect:
+        "Whole project view. Scope popover open with an Edge groups heading and one on/off checkbox per edge kind the graph draws, all on by default.",
+      measured: { edgeGroups },
     });
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });
