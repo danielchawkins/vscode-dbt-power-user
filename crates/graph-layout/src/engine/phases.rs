@@ -21,7 +21,7 @@ use crate::layering::{
     EdgeRule, LayeredGraph, Layers, PartitionMode, RankError, RankOptions, Scratch, layer, rank,
 };
 use crate::model::{Direction, Graph, Options, Partitions, Ranks};
-use crate::order::{Hints, order};
+use crate::order::{Hints, Ordered, order};
 use crate::place::{
     ClusterSpec, Hint, Layered, LayeredNode, LinkOptions, Mode, PlaceInput, Placement, Segment,
     Spacing, place, problem_of,
@@ -68,9 +68,26 @@ pub enum PhaseError {
     Placing(String),
 }
 
-/// Runs index, rank, layering, order and place on `graph` with `options`, and returns what they produced. The result is a
-/// pure function of the graph and the options. The graph is not validated here: `validate` refuses what the phases
-/// cannot lay out.
+/// What the index stage produced: the indexed graph, the rule of each edge, and the hints that ranking reads
+/// (`hint_ranks`, empty without hints) and ordering reads (`hint_orders`).
+struct Indexing {
+    index: Indexed,
+    rules: Vec<EdgeRule>,
+    hint_ranks: Vec<Option<u32>>,
+    hint_orders: Option<Hints>,
+}
+
+/// What the rank stage produced: each node's rank as a whole number, the ranks as ranking measured them (which layering
+/// reads), and the ranking edges laid out against their direction.
+struct Ranking {
+    ranks: Vec<usize>,
+    measured: Vec<f64>,
+    reversed: Vec<usize>,
+}
+
+/// Runs index, rank, layering, order, place and route on `graph` with `options`, and returns what they produced. The
+/// result is a pure function of the graph and the options. The graph is not validated here: `validate` refuses what the
+/// phases cannot lay out. Each stage is a function of its explicit inputs, so a caller can keep any stage's output.
 ///
 /// # Errors
 ///
@@ -78,52 +95,28 @@ pub enum PhaseError {
 pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError> {
     let budget = Budget::for_effort(options.effort.as_deref())
         .ok_or_else(|| PhaseError::UnknownEffort(options.effort.clone().unwrap_or_default()))?;
-    let index = Indexed::new(graph, Some(options));
-    let rules = edge_rules(graph, options, &index);
-    let (hint_ranks, hint_orders) = hints(graph, &index, options);
-    let rank_options = RankOptions {
-        partitions: partition_mode(options.partitions.unwrap_or_default()),
-        node_partition: &graph.nodes.partition,
-        edges: &rules,
-        hints: &hint_ranks,
-        stability: options.stability.unwrap_or(1.0),
-        budget: &budget,
-    };
-    let ranking =
-        rank(&index, &rank_options, &mut Scratch::default()).map_err(PhaseError::Ranking)?;
-    let ranks = ranking
-        .ranks
-        .iter()
-        .map(|&r| whole_rank(r))
-        .collect::<Option<Vec<usize>>>()
-        .ok_or(PhaseError::NonIntegerRank)?;
-    let layers = layer(&index, &rules, &ranking.ranks);
-    let layered = build(graph, options, &layers, &ranks);
-    let seed = to_uint32(options.seed.unwrap_or(0.0));
-    let ordered = order(&layered, hint_orders.as_ref(), &budget, seed);
-    let placement = place_layout(
+    let indexing = index_stage(graph, options);
+    let ranking = rank_stage(graph, options, &indexing, &budget)?;
+    let layers = layer_stage(&indexing, &ranking);
+    let layered = build_stage(graph, options, &layers, &ranking.ranks);
+    let ordered = order_stage(options, &indexing, &layered, &budget);
+    let placement = place_stage(
         &PlaceGlue {
             graph,
-            index: &index,
+            index: &indexing.index,
             options,
-            rules: &rules,
+            rules: &indexing.rules,
             bundles: &layers,
         },
         &layered,
         &ordered.layers,
         budget.place_iterations,
     )?;
-    let routing = route_layout(
-        graph,
-        options,
-        &index,
-        &layers,
-        &layered,
-        &placement,
-        budget.route_pairs,
+    let routing = route_stage(
+        graph, options, &indexing, &layers, &layered, &placement, &budget,
     );
     Ok(Phases {
-        ranks,
+        ranks: ranking.ranks,
         reversed: ranking.reversed,
         layered,
         layers: ordered.layers,
@@ -131,6 +124,92 @@ pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError
         placement,
         routing,
     })
+}
+
+/// The index stage: the indexed graph, the edge rules and the hints, from the graph and the options.
+fn index_stage(graph: &Graph, options: &Options) -> Indexing {
+    let index = Indexed::new(graph, Some(options));
+    let rules = edge_rules(graph, options, &index);
+    let (hint_ranks, hint_orders) = hints(graph, &index, options);
+    Indexing {
+        index,
+        rules,
+        hint_ranks,
+        hint_orders,
+    }
+}
+
+/// The rank stage: the ranks and the reversed edges of ranking under `budget`. A rank that is not a whole number is
+/// refused.
+fn rank_stage(
+    graph: &Graph,
+    options: &Options,
+    indexing: &Indexing,
+    budget: &Budget,
+) -> Result<Ranking, PhaseError> {
+    let rank_options = RankOptions {
+        partitions: partition_mode(options.partitions.unwrap_or_default()),
+        node_partition: &graph.nodes.partition,
+        edges: &indexing.rules,
+        hints: &indexing.hint_ranks,
+        stability: options.stability.unwrap_or(1.0),
+        budget,
+    };
+    let ranking = rank(&indexing.index, &rank_options, &mut Scratch::default())
+        .map_err(PhaseError::Ranking)?;
+    let ranks = ranking
+        .ranks
+        .iter()
+        .map(|&r| whole_rank(r))
+        .collect::<Option<Vec<usize>>>()
+        .ok_or(PhaseError::NonIntegerRank)?;
+    Ok(Ranking {
+        ranks,
+        measured: ranking.ranks,
+        reversed: ranking.reversed,
+    })
+}
+
+/// The layering stage: the bundles of the graph, laid out in the measured ranks.
+fn layer_stage(indexing: &Indexing, ranking: &Ranking) -> Layers {
+    layer(&indexing.index, &indexing.rules, &ranking.measured)
+}
+
+/// The build stage: the layered graph of the bundles, at the whole ranks.
+fn build_stage(graph: &Graph, options: &Options, layers: &Layers, ranks: &[usize]) -> LayeredGraph {
+    build(graph, options, layers, ranks)
+}
+
+/// The order stage: the order of each rank, under `budget`, from the seed and the hinted orders.
+fn order_stage(
+    options: &Options,
+    indexing: &Indexing,
+    layered: &LayeredGraph,
+    budget: &Budget,
+) -> Ordered {
+    let seed = to_uint32(options.seed.unwrap_or(0.0));
+    order(layered, indexing.hint_orders.as_ref(), budget, seed)
+}
+
+/// The route stage: the polylines of the edges through the placement, under the route pairs of `budget`.
+fn route_stage(
+    graph: &Graph,
+    options: &Options,
+    indexing: &Indexing,
+    layers: &Layers,
+    layered: &LayeredGraph,
+    placement: &Placement,
+    budget: &Budget,
+) -> Routing {
+    route_layout(
+        graph,
+        options,
+        &indexing.index,
+        layers,
+        layered,
+        placement,
+        budget.route_pairs,
+    )
 }
 
 /// What the placement reads from the run: the graph and its indexed ids, the options, each edge's rule, and the bundles
@@ -146,7 +225,7 @@ struct PlaceGlue<'a> {
 /// The placement of the ordered layered graph, as `place` in `packages/graph-layout/src/place/index.ts` runs it: the
 /// in-rank problem of the layered graph, the box plan of the clusters, and the across axis under the rows or the
 /// levels. `iterations` is the in-rank solve's budget (`Budget::place_iterations`).
-fn place_layout(
+fn place_stage(
     glue: &PlaceGlue<'_>,
     layered: &LayeredGraph,
     layers: &[Vec<usize>],
