@@ -12,7 +12,9 @@ mod routing;
 pub(super) mod tests;
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
+use super::keys::{Stage, stage_keys};
 use super::layered::build;
 use crate::budget::Budget;
 use crate::constraints::components;
@@ -68,95 +70,263 @@ pub enum PhaseError {
     Placing(String),
 }
 
-/// What the index stage produced: the indexed graph, the rule of each edge, and the hints that ranking reads
-/// (`hint_ranks`, empty without hints) and ordering reads (`hint_orders`).
-struct Indexing {
-    index: Indexed,
-    rules: Vec<EdgeRule>,
-    hint_ranks: Vec<Option<u32>>,
-    hint_orders: Option<Hints>,
-}
-
 /// What the rank stage produced: each node's rank as a whole number, the ranks as ranking measured them (which layering
-/// reads), and the ranking edges laid out against their direction.
+/// reads), the ranking edges laid out against their direction, and the rule of each edge (which layering and placement
+/// read).
+#[derive(Debug, Clone, PartialEq)]
 struct Ranking {
     ranks: Vec<usize>,
     measured: Vec<f64>,
     reversed: Vec<usize>,
+    rules: Vec<EdgeRule>,
 }
 
-/// Runs index, rank, layering, order, place and route on `graph` with `options`, and returns what they produced. The
-/// result is a pure function of the graph and the options. The graph is not validated here: `validate` refuses what the
-/// phases cannot lay out. Each stage is a function of its explicit inputs, so a caller can keep any stage's output.
+/// The outputs of the seven stages of one run, each behind an `Arc`, so a run that reuses a stage shares its output
+/// instead of copying it. `keys` is the key each stage was computed under (see `engine::keys`).
+#[derive(Debug, Clone)]
+pub(super) struct Stages {
+    keys: [u64; Stage::COUNT],
+    index: Arc<Indexed>,
+    ranking: Arc<Ranking>,
+    layers: Arc<Layers>,
+    layered: Arc<LayeredGraph>,
+    ordered: Arc<Ordered>,
+    placement: Arc<Placement>,
+    routing: Arc<Routing>,
+}
+
+/// The outputs that `assemble` reads, by reference: the view of a run's `Stages`, which needs no copy.
+pub(super) struct PhasesRef<'a> {
+    pub(super) reversed: &'a [usize],
+    pub(super) layered: &'a LayeredGraph,
+    pub(super) layers: &'a [Vec<usize>],
+    pub(super) routing: &'a Routing,
+}
+
+impl Stages {
+    /// The outputs of this run, by reference.
+    pub(super) fn view(&self) -> PhasesRef<'_> {
+        PhasesRef {
+            reversed: &self.ranking.reversed,
+            layered: &self.layered,
+            layers: &self.ordered.layers,
+            routing: &self.routing,
+        }
+    }
+
+    /// The phases as `run_phases` returns them. Each output is moved out of its `Arc`, which copies only a stage that a
+    /// second owner still shares.
+    fn into_phases(self) -> Phases {
+        let ranking = Arc::unwrap_or_clone(self.ranking);
+        let ordered = Arc::unwrap_or_clone(self.ordered);
+        Phases {
+            ranks: ranking.ranks,
+            reversed: ranking.reversed,
+            layered: Arc::unwrap_or_clone(self.layered),
+            layers: ordered.layers,
+            crossings: ordered.crossings,
+            placement: Arc::unwrap_or_clone(self.placement),
+            routing: Arc::unwrap_or_clone(self.routing),
+        }
+    }
+}
+
+/// Runs index, rank, layering, build, order, place and route on `graph` with `options`, and returns what they produced.
+/// The result is a pure function of the graph and the options. The graph is not validated here: `validate` refuses what
+/// the phases cannot lay out.
 ///
 /// # Errors
 ///
 /// Returns the reason the phases do not run on this input: see [`PhaseError`].
 pub fn run_phases(graph: &Graph, options: &Options) -> Result<Phases, PhaseError> {
-    let budget = Budget::for_effort(options.effort.as_deref())
-        .ok_or_else(|| PhaseError::UnknownEffort(options.effort.clone().unwrap_or_default()))?;
-    let indexing = index_stage(graph, options);
-    let ranking = rank_stage(graph, options, &indexing, &budget)?;
-    let layers = layer_stage(&indexing, &ranking);
-    let layered = build_stage(graph, options, &layers, &ranking.ranks);
-    let ordered = order_stage(options, &indexing, &layered, &budget);
-    let placement = place_stage(
-        &PlaceGlue {
-            graph,
-            index: &indexing.index,
-            options,
-            rules: &indexing.rules,
-            bundles: &layers,
-        },
-        &layered,
-        &ordered.layers,
-        budget.place_iterations,
-    )?;
-    let routing = route_stage(
-        graph, options, &indexing, &layers, &layered, &placement, &budget,
-    );
-    Ok(Phases {
-        ranks: ranking.ranks,
-        reversed: ranking.reversed,
-        layered,
-        layers: ordered.layers,
-        crossings: ordered.crossings,
-        placement,
-        routing,
-    })
+    let Some(run) = run_stages(graph, options, None, &|| true)? else {
+        unreachable!("a run that is never superseded completes")
+    };
+    Ok(run.stages.into_phases())
 }
 
-/// The index stage: the indexed graph, the edge rules and the hints, from the graph and the options.
-fn index_stage(graph: &Graph, options: &Options) -> Indexing {
-    let index = Indexed::new(graph, Some(options));
-    let rules = edge_rules(graph, options, &index);
-    let (hint_ranks, hint_orders) = hints(graph, &index, options);
-    Indexing {
-        index,
-        rules,
-        hint_ranks,
-        hint_orders,
+/// What a run produced: its stages, and the stages it ran again. The other stages came from the prior run.
+#[derive(Debug)]
+pub(super) struct Run {
+    pub(super) stages: Stages,
+    pub(super) reran: Vec<Stage>,
+}
+
+/// Runs, from the first stage whose key differs from `prior`'s, every stage that the prior run cannot supply, and returns
+/// the stages with their outputs. Without a prior run, every stage runs. `current` is asked before each stage that runs
+/// and once more before the outputs are kept: once it answers `false`, the run is superseded and returns `None`.
+///
+/// # Errors
+///
+/// Returns the reason the phases do not run on this input: see [`PhaseError`].
+pub(super) fn run_stages(
+    graph: &Graph,
+    options: &Options,
+    prior: Option<&Stages>,
+    current: &dyn Fn() -> bool,
+) -> Result<Option<Run>, PhaseError> {
+    let budget = budget_of(options)?;
+    let keys = stage_keys(graph, options, &budget);
+    let reused = prior.map_or(0, |p| {
+        (0..Stage::COUNT)
+            .take_while(|&i| p.keys[i] == keys[i])
+            .count()
+    });
+    let mut step = Step {
+        prior,
+        reused,
+        current,
+        reran: Vec::new(),
+    };
+
+    let Some(index) = step.output(
+        Stage::Index,
+        |p| &p.index,
+        || Ok(index_stage(graph, options)),
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(ranking) = step.output(
+        Stage::Rank,
+        |p| &p.ranking,
+        || rank_stage(graph, options, &index, &budget),
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(layers) = step.output(
+        Stage::Layer,
+        |p| &p.layers,
+        || Ok(layer_stage(&index, &ranking)),
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(layered) = step.output(
+        Stage::Build,
+        |p| &p.layered,
+        || Ok(build_stage(graph, options, &layers, &ranking.ranks)),
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(ordered) = step.output(
+        Stage::Order,
+        |p| &p.ordered,
+        || Ok(order_stage(graph, options, &index, &layered, &budget)),
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(placement) = step.output(
+        Stage::Place,
+        |p| &p.placement,
+        || {
+            place_stage(
+                &PlaceGlue {
+                    graph,
+                    index: &index,
+                    options,
+                    rules: &ranking.rules,
+                    bundles: &layers,
+                },
+                &layered,
+                &ordered.layers,
+                budget.place_iterations,
+            )
+        },
+    )?
+    else {
+        return Ok(None);
+    };
+    let Some(routing) = step.output(
+        Stage::Route,
+        |p| &p.routing,
+        || {
+            Ok(route_stage(
+                graph, options, &index, &layers, &layered, &placement, &budget,
+            ))
+        },
+    )?
+    else {
+        return Ok(None);
+    };
+    Ok(Some(Run {
+        stages: Stages {
+            keys,
+            index,
+            ranking,
+            layers,
+            layered,
+            ordered,
+            placement,
+            routing,
+        },
+        reran: step.reran,
+    }))
+}
+
+/// The state of one run: the prior run whose outputs it may reuse, how many leading stages that run agrees with, the
+/// supersession check, and the stages this run has run.
+struct Step<'a> {
+    prior: Option<&'a Stages>,
+    reused: usize,
+    current: &'a dyn Fn() -> bool,
+    reran: Vec<Stage>,
+}
+
+impl Step<'_> {
+    /// The output of `stage`: the prior run's when that run agrees with the stage's key, else the output of `make`, once
+    /// `current` allows the run on. `None` means the run is superseded.
+    fn output<T>(
+        &mut self,
+        stage: Stage,
+        cached: impl FnOnce(&Stages) -> &Arc<T>,
+        make: impl FnOnce() -> Result<T, PhaseError>,
+    ) -> Result<Option<Arc<T>>, PhaseError> {
+        if let Some(prior) = self.prior.filter(|_| stage.position() < self.reused) {
+            return Ok(Some(Arc::clone(cached(prior))));
+        }
+        if !(self.current)() {
+            return Ok(None);
+        }
+        self.reran.push(stage);
+        Ok(Some(Arc::new(make()?)))
     }
 }
 
-/// The rank stage: the ranks and the reversed edges of ranking under `budget`. A rank that is not a whole number is
-/// refused.
+/// The budget of the effort in `options`, or the refusal of an effort that names no budget.
+pub(super) fn budget_of(options: &Options) -> Result<Budget, PhaseError> {
+    Budget::for_effort(options.effort.as_deref())
+        .ok_or_else(|| PhaseError::UnknownEffort(options.effort.clone().unwrap_or_default()))
+}
+
+/// The index stage: the indexed graph, from the graph and the options.
+fn index_stage(graph: &Graph, options: &Options) -> Indexed {
+    Indexed::new(graph, Some(options))
+}
+
+/// The rank stage: the rule of each edge, and the ranks and the reversed edges of ranking under `budget`. A rank that is
+/// not a whole number is refused.
 fn rank_stage(
     graph: &Graph,
     options: &Options,
-    indexing: &Indexing,
+    index: &Indexed,
     budget: &Budget,
 ) -> Result<Ranking, PhaseError> {
+    let rules = edge_rules(graph, options, index);
+    let (hint_ranks, _) = hints(graph, index, options);
     let rank_options = RankOptions {
         partitions: partition_mode(options.partitions.unwrap_or_default()),
         node_partition: &graph.nodes.partition,
-        edges: &indexing.rules,
-        hints: &indexing.hint_ranks,
+        edges: &rules,
+        hints: &hint_ranks,
         stability: options.stability.unwrap_or(1.0),
         budget,
     };
-    let ranking = rank(&indexing.index, &rank_options, &mut Scratch::default())
-        .map_err(PhaseError::Ranking)?;
+    let ranking =
+        rank(index, &rank_options, &mut Scratch::default()).map_err(PhaseError::Ranking)?;
     let ranks = ranking
         .ranks
         .iter()
@@ -167,12 +337,13 @@ fn rank_stage(
         ranks,
         measured: ranking.ranks,
         reversed: ranking.reversed,
+        rules,
     })
 }
 
 /// The layering stage: the bundles of the graph, laid out in the measured ranks.
-fn layer_stage(indexing: &Indexing, ranking: &Ranking) -> Layers {
-    layer(&indexing.index, &indexing.rules, &ranking.measured)
+fn layer_stage(index: &Indexed, ranking: &Ranking) -> Layers {
+    layer(index, &ranking.rules, &ranking.measured)
 }
 
 /// The build stage: the layered graph of the bundles, at the whole ranks.
@@ -182,20 +353,22 @@ fn build_stage(graph: &Graph, options: &Options, layers: &Layers, ranks: &[usize
 
 /// The order stage: the order of each rank, under `budget`, from the seed and the hinted orders.
 fn order_stage(
+    graph: &Graph,
     options: &Options,
-    indexing: &Indexing,
+    index: &Indexed,
     layered: &LayeredGraph,
     budget: &Budget,
 ) -> Ordered {
     let seed = to_uint32(options.seed.unwrap_or(0.0));
-    order(layered, indexing.hint_orders.as_ref(), budget, seed)
+    let (_, hint_orders) = hints(graph, index, options);
+    order(layered, hint_orders.as_ref(), budget, seed)
 }
 
 /// The route stage: the polylines of the edges through the placement, under the route pairs of `budget`.
 fn route_stage(
     graph: &Graph,
     options: &Options,
-    indexing: &Indexing,
+    index: &Indexed,
     layers: &Layers,
     layered: &LayeredGraph,
     placement: &Placement,
@@ -204,7 +377,7 @@ fn route_stage(
     route_layout(
         graph,
         options,
-        &indexing.index,
+        index,
         layers,
         layered,
         placement,
@@ -333,7 +506,7 @@ fn place_stage(
 }
 
 /// The spacing of the run: each field the options leave out takes the circuit preset's value, as `place` takes it.
-fn spacing_of(options: &Options) -> Spacing {
+pub(super) fn spacing_of(options: &Options) -> Spacing {
     let given = options.spacing.unwrap_or_default();
     Spacing {
         node: given.node.unwrap_or(12.0),

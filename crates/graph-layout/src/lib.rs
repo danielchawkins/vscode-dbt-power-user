@@ -12,11 +12,10 @@ mod across;
 // `metrics` is compiled for the engine's layout (`engine::layout`).
 mod metrics;
 mod place;
-// `budget`, `constraints` (its `components`), `index`, `layering`, `order`, `rand` and `solve` are compiled for the
-// layout phases (`engine::phases`). `hash` is still compiled for its tests only, until a phase uses it.
+// `budget`, `constraints` (its `components`), `index`, `layering`, `order`, `rand`, `solve` and `hash` (the stage keys
+// of `engine::keys`) are compiled for the layout phases (`engine::phases`).
 mod budget;
 mod constraints;
-#[cfg(test)]
 mod hash;
 mod index;
 mod layering;

@@ -1,11 +1,16 @@
-//! Public entry: the engine handle, its progress and generations (stub until the engine lands). `layered` builds the
-//! layered graph that ordering reads from the output of layering, and `phases` runs the phases on a model graph.
+//! Public entry: the engine handle, its progress and generations, and the wrapper `layout`. `handle` keeps each stage's output
+//! and re-runs from the first stage whose key (`keys`) changed. `layered` builds the layered graph that ordering reads from
+//! the output of layering, and `phases` runs the stages on a model graph.
 
+mod handle;
+mod keys;
 pub(crate) mod layered;
 mod layout;
 mod phases;
 
 pub use crate::route::{ClusterBox, EdgeRoute, Point, Rect, RouteWork, Routing};
+pub use handle::{Engine, Generation, Progress};
+pub use keys::Stage;
 pub use layout::{LayoutError, layout};
 pub use phases::{PhaseError, Phases, run_phases};
 

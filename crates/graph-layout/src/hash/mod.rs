@@ -52,6 +52,7 @@ impl Default for Fnv64 {
 }
 
 /// The FNV-1a 64 key of `bytes`.
+#[cfg(test)]
 #[must_use]
 pub(crate) fn key_of(bytes: &[u8]) -> u64 {
     let mut hasher = Fnv64::new();
