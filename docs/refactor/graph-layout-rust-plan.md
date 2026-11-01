@@ -315,6 +315,58 @@ The finance manifest had 1,139 nodes and 1,316 edges this time, not the 1,129 an
 - CSP: the panel's CSP is unchanged unless S8 has passed, and the research note is updated with the S8 result either way (`docs/research/webview-csp-october-2026.md`).
 - Node native against WASM timing recorded for the finance graph (the choice O-2 depends on).
 
+**S1 measurement (boundary cost; recorded, S1 fails).** Machine: Apple M5 Pro, macOS 26.5.2, rustc 1.99.1, Node v24.18.1 (the repo pin). Both bindings are release builds from `just crates::wasm crates::napi`, the same build `crates::parity` uses. The load average was 8 to 10 during the runs, with other work on the machine, so the repeated runs below show the spread. Command, with 30 samples each and nearest-rank p50 and p95 in ms:
+
+```text
+mise exec -- just crates::wasm crates::napi
+node scripts/bench/flatten-graph.mjs synthetic 3000 1 /tmp/s12/synthetic-3000.txt   # 3,000 nodes, 5,902 edges
+cd crates
+mise exec -- node ../scripts/bench/boundary-timings.mjs ../dist/graph-layout /tmp/s12/finance.txt
+mise exec -- node ../scripts/bench/boundary-timings.mjs ../dist/graph-layout /tmp/s12/synthetic-3000.txt
+GRAPH_LAYOUT_BENCH_GRAPH=/tmp/s12/synthetic-3000.txt GRAPH_LAYOUT_BENCH_EFFORT=balanced GRAPH_LAYOUT_BENCH_SAMPLES=30 \
+  mise exec -- cargo test --release -p graph-layout --lib relayout_workload_is_timed -- --nocapture
+```
+
+The finance graph is `/tmp/s12/finance.txt` from the S12 step (1,139 nodes, 1,316 edges, 26 clusters); the same S12 command was run on it as well. The bench was fixed to run: its option names match the serde names of `Options` (`edgeKinds`, `spacing`, `partitions`, `ranks`, `effort`), and it ran unchanged after that. napi returns `null` for a superseded generation and WASM returns `undefined`, so `Engine.layout` in `js/index.mjs` now returns `undefined` for both. The round trip is timed per sample (encode, copy in, copy out, decode), so its p95 is a percentile of the whole path, not a sum of p50s.
+
+Per call, run 1 of each graph (p50 / p95, ms). Encode is the same JS function for both bindings. Copy in is a stale-generation handle call, which decodes the frame in the binding and returns before layout. Copy out is the JS copy of the result. Decode reads the layout frame in JS.
+
+| Graph, binding        | Encode       | Copy in     | Copy out      | Decode      | Round trip    |
+| --------------------- | ------------ | ----------- | ------------- | ----------- | ------------- |
+| finance, napi         | 1.86 / 2.40  | 1.09 / 1.27 | 0.021 / 0.030 | 0.86 / 1.34 | 4.06 / 5.06   |
+| finance, WASM         | 1.86 / 2.40  | 1.63 / 1.95 | 0.006 / 0.018 | 0.86 / 1.34 | 4.38 / 4.90   |
+| 3,000 synthetic, napi | 6.11 / 10.53 | 2.70 / 2.85 | 0.063 / 0.096 | 3.24 / 3.64 | 11.24 / 16.77 |
+| 3,000 synthetic, WASM | 6.11 / 10.53 | 3.06 / 3.29 | 0.030 / 0.243 | 3.24 / 3.64 | 12.09 / 17.24 |
+
+Columnar against JSON (graph frame, p50, run 1). The criterion needs columnar to be at least 3x cheaper, so JSON's round trip divided by columnar's encode plus decode must be at least 3.0. Finance: JSON round trip 0.69 ms, columnar encode plus decode 2.97 ms (1.86 + 1.11), ratio 0.23, so columnar costs 4.3x JSON. 3,000 nodes: JSON 1.74 ms, columnar 9.85 ms (6.11 + 3.75), ratio 0.18, so columnar costs 5.7x JSON. The columnar side is the bench's JS encoder and decoder (a `Buffer` per column and a `TextEncoder` or `TextDecoder` call per string), and JSON is V8's native `JSON.stringify` and `JSON.parse`. So this measures that JS code against JSON, not every possible columnar encoder.
+
+S12 relayout p50 from the same run of `relayout_workload_is_timed` (native, `balanced`, ms, p50):
+
+| Graph                    | Full  | Placement-only | Build-onward |
+| ------------------------ | ----- | -------------- | ------------ |
+| finance (1,139 nodes)    | 1,383 | 1,222          | 1,196        |
+| 3,000 synthetic (seed 1) | 2,355 | 153            | 1,709        |
+
+The round trip as a share of those, from run 1 (napi / WASM, %):
+
+| Graph           | Full        | Placement-only | Build-onward |
+| --------------- | ----------- | -------------- | ------------ |
+| finance         | 0.29 / 0.32 | 0.33 / 0.36    | 0.34 / 0.37  |
+| 3,000 synthetic | 0.48 / 0.51 | 7.37 / 7.93    | 0.66 / 0.71  |
+
+The criterion does not say which relayout it means, so the table gives all three. Read against full or build-onward, the boundary is under 5% on both graphs. Read against placement-only, which is the live-tuning case S12 names, it is 7 to 8% on the 3,000-node graph and fails.
+
+Layout (one-shot `layout`, p50 ms, napi / WASM, and the ratio WASM / napi). The ADR's margin is about 1.5x:
+
+| Graph | Runs | napi / WASM / ratio |
+| --- | --- | --- |
+| finance | 7 | 1,196 / 1,805 / 1.51; 1,282 / 1,438 / 1.12; 1,200 / 1,488 / 1.24; 1,323 / 1,409 / 1.06; 1,213 / 1,544 / 1.27; 1,482 / 1,541 / 1.04; 1,338 / 1,432 / 1.07 |
+| 3,000 synthetic | 3 | 3,081 / 3,220 / 1.05; 2,346 / 2,742 / 1.17; 3,760 / 3,122 / 0.83 |
+
+Finance: median 1.12, range 1.04 to 1.51. The 1.5x margin is reached in one of seven runs. On the 3,000-node graph the median is 1.05 and no run reaches 1.5x. The one-shot call is the figure recorded here. The handle's relayout was not timed on either binding in this run.
+
+**What this means for O-2 (measurement only; O-2 is not decided here).** The napi-over-WASM margin on the one-shot layout call is about 1.1x (median of the seven finance runs), not the about-1.5x that ADR 0011 needs before the native addon is worth shipping; one finance run reached 1.5x. The boundary is small against the full layout on both graphs, so it does not decide O-2 either way. Against S1's criteria, the JSON ratio fails on both graphs, and the placement-only share fails on the 3,000-node graph.
+
 **Undo.** Setting back to TypeScript; the TypeScript engine is still in the package until Phase 10.
 
 ## Phase 9: new features (each defaults off)
@@ -343,7 +395,7 @@ Each spike runs in the phase named, writes its result into this plan or the ADR,
 
 | ID | Measures | Method | Pass criterion | Decides | Run in |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------- |
-| S1 | Boundary cost: encode, copy and decode in WASM and napi; the relayout p50 it sits beside | Columnar frame vs JSON on the finance graph and a 3,000-node synthetic graph, round trip in each binding | Columnar is at least 3x cheaper in encode-plus-decode than JSON, and below 5% of relayout p50 | Decision 6 (encoding) | Phase 1 (WASM), Phase 8 (napi) |
+| S1 | Boundary cost: encode, copy and decode in WASM and napi; the relayout p50 it sits beside | Columnar frame vs JSON on the finance graph and a 3,000-node synthetic graph, round trip in each binding | Columnar is at least 3x cheaper in encode-plus-decode than JSON, and below 5% of relayout p50 | Decision 6 (encoding) | Phase 1 (WASM), Phase 8 (napi). **Result (Phase 8, both bindings, `boundary-timings.mjs`): fails.** Columnar is not 3x cheaper than JSON: columnar encode plus decode of the graph frame costs 4.3x JSON's round trip on finance and 5.7x on the 3,000-node graph (JSON over columnar 0.23 and 0.18; the criterion needs 3.0 or more). The round trip is 0.29 to 0.71% of the S12 relayout p50 for full and build-onward on both graphs, but 7.4 to 7.9% of the placement-only p50 on the 3,000-node graph, so that reading also fails. Numbers, machine and command: Phase 8, "S1 measurement". |
 | S2 | Native thread scaling | Sweep 1, 2, 4, 8 threads on the finance graph (one component, so restarts carry the gain) and the 3,000-node graph | Output bit-equal across thread counts; speed-up recorded | Decision 7 (rayon), thorough restarts | Phase 6 |
 | S3 | Webview `crossOriginIsolated` and `SharedArrayBuffer` in pinned VS Code and Cursor hosts; Node wasm-threads speed as an upper bound | A probe panel in the smoke harness reading both flags; Node `wasm32-wasip1-threads` build of the core; research into other routes to browser threads (a cross-origin-isolated iframe or worker, a host Worker pool, a separate process) | Result recorded, with each route tried. If none works, WASM is single-threaded in the webview (O-11) | O-11, WASM threads (Decision 7) | Phase 1 |
 | S4 | SIMD benefit | Scalar against `simd128` on the VPSC merge loop, the crossing count and the quadratic term | Bit-equal; speed-up recorded; adopt only if bit-equal | SIMD choice | Phase 2. **Result (not adopted):** bit-equal to scalar, with the 2,000 random outputs byte-identical to native under WASI with simd128, but slower than the scalar merge loop it would replace (WASI random pass 6.5 ms against 5.7 to 5.9 ms; merging chain at n = 1,024 6.1 ms against 4.2 to 4.9 ms). The scalar code stays. |
