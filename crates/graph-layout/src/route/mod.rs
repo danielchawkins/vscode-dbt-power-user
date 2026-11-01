@@ -7,16 +7,17 @@
 //!
 //! Each edge is a chain of stops from its source end to its target end: its two real ends and the dummies between
 //! them. A run joins two adjacent stops and lies in a band: the band below the upper stop's rank, or below the rank
-//! itself for a flat run (both ends on one rank). In each band, a run whose horizontal piece overlaps another's gets a
-//! track of its own (`bands`); the band is `(tracks + 1) * edge` tall, at least the rank gap, plus the margins of the
+//! itself for a flat run (both ends on one rank). In each band, the horizontal pieces are given tracks by `bands`, which
+//! chooses them to make few crossings (stars of runs share a track, and the tracks are assigned in a crossing-aware
+//! order); the band is `(tracks + 1) * edge` tall, at least the rank gap, plus the margins of the
 //! cluster boxes that end and start beside it, and the ranks are stacked with those heights (`stack`). The in-rank
 //! coordinates that placement chose are kept. A run's polyline goes down from its upper stop to its track, across it,
 //! and on to the lower stop (`polyline`).
 //!
 //! Simplifications against TypeScript, all of them choices of this port: a run takes one track and never doglegs
-//! (TypeScript may jog a run to a second track); the tracks are the fewest that keep the runs of a band apart, found
-//! greedily by start, which is optimal for intervals; there is no pair budget and no crossing count; lateral ports are
-//! refused before routing (`engine/phases.rs`), so there are no stubs.
+//! (TypeScript may jog a run to a second track), so `dogleg_work` is not used yet; the overlapping pairs of a band are
+//! examined up to `route_pairs`, and past that budget the pairs left out get no preference; lateral ports are refused
+//! before routing (`engine/phases.rs`), so there are no stubs.
 //!
 //! Which edges are drawn. A self-loop is `RouteFailed`: it takes no run and is flagged, as `types.ts` says of a
 //! self-loop. An edge of a kind with `routed: false` is `NotRouted`: it is a pure layout constraint and has no entry.
