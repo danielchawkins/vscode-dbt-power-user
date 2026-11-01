@@ -11,7 +11,7 @@ import {
 } from "./edgeIds";
 import type { EmphasisView, Pair } from "./emphasis";
 import { freshLayouter, type Layouter } from "./engine/layoutCache";
-import type { LayerBand, Point } from "./engine/layoutEngine";
+import type { LayerBand, LayoutResponse, Point } from "./engine/layoutEngine";
 import {
   drawsTableEdges,
   type FlowDecoration,
@@ -190,6 +190,7 @@ function placeCards(
   positions: Map<string, Point>;
   layerBands: LayerBand[];
   paths: Map<string, RoutedEdgeData>;
+  metrics: LayoutResponse["metrics"];
 } {
   const request = layoutRequest(input, sizes.listed, sizes.heightOf);
   const response = layouter(
@@ -205,6 +206,7 @@ function placeCards(
     positions: new Map(response.positions),
     layerBands: [...response.bands],
     paths,
+    metrics: response.metrics,
   };
 }
 
@@ -235,6 +237,8 @@ function arrowColour(edge: Edge): string | undefined {
 export interface BuiltFlow {
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
+  /** The measures of the layout the cards are placed by, for the Layout readout. */
+  metrics: LayoutResponse["metrics"];
 }
 
 /**
@@ -282,6 +286,7 @@ export function toFlow(
   return {
     nodes: [...bandNodes(placed.layerBands, decoration.layerColors), ...nodes],
     edges: routedEdges(edges, placed),
+    metrics: placed.metrics,
   };
 }
 
@@ -306,6 +311,7 @@ const cardClass = (view: EmphasisView, id: string): string =>
  */
 export function emphasize(flow: BuiltFlow, view: EmphasisView): BuiltFlow {
   return {
+    ...flow,
     nodes: flow.nodes.map((node) => emphasizedNode(node, view)),
     edges: flow.edges.map((edge) => emphasizedEdge(edge, view)),
   };

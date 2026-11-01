@@ -143,3 +143,21 @@ export async function readDrawnCrossings(): Promise<DrawnCrossings> {
   assert.ok(match, "the lineage webview is not showing");
   return match.value;
 }
+
+/** The text of the Layout readout of the lineage view, read from the drawn panel. */
+const LAYOUT_READOUT = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  text: document.querySelector("[data-testid=lineage-readout]")?.textContent ?? null,
+} : null)()`;
+
+/** Reads the text of the Layout readout of the lineage view: the measures of the last layout. */
+export async function readLayoutReadout(): Promise<string> {
+  const match = await evaluatePanel<{ entry: string; text: string | null }>(
+    cdpPort(),
+    PANELS.lineage.entry,
+    LAYOUT_READOUT,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  assert.ok(match.value.text, "the Layout readout is not drawn");
+  return match.value.text;
+}

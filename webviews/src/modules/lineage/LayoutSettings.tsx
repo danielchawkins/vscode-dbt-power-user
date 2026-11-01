@@ -1,5 +1,6 @@
 import { lineage } from "@fusion-power-user/webview-contract";
 import { PopoverWithButton } from "@uicore";
+import type { LayoutResponse } from "./engine/layoutEngine";
 import styles from "./lineageGraph.module.css";
 import type { LayoutControl } from "./useStoredLayout";
 
@@ -35,6 +36,23 @@ const LayoutSettings = ({
       ))}
     </div>
   </section>
+);
+
+const count = (value: number): string =>
+  Math.round(value).toLocaleString("en-US");
+
+/**
+ * The Layout readout: the measures of the last layout, read only. It shows what the layout drew and never lays
+ * anything out, so it is updated by each relayout and by nothing else.
+ */
+export const LayoutReadout = ({
+  metrics,
+}: {
+  metrics: LayoutResponse["metrics"];
+}): React.JSX.Element => (
+  <span className={styles.readout} data-testid="lineage-readout">
+    {`Crossings ${count(metrics.crossings)} · Bends ${count(metrics.bends)} · Edge length ${count(metrics.edgeLength)} px · Area ${count(metrics.area)} px²`}
+  </span>
 );
 
 /** The Layout control: a button that is pressed while the spacing is not the default, and the popover behind it. */

@@ -96,6 +96,12 @@ export function graphLayoutEngine(effort: GraphLayoutEffort): LayoutEngine {
         bands: bandsOf(result),
         edges: edgesOf(result, graph),
         hints: { engine: "graph-layout", data: result.hints },
+        metrics: {
+          crossings: result.metrics.crossings,
+          bends: result.metrics.bends,
+          edgeLength: result.metrics.edgeLength,
+          area: result.metrics.area,
+        },
       };
     },
   };
