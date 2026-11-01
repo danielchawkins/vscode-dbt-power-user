@@ -64,6 +64,7 @@ function lineageHarness() {
       tables: [{ table: "model.p.a" }, { table: "model.p.z" }],
       edges: [["model.p.z", "model.p.a"]],
     }),
+    exclusions: { resolveRules: vi.fn().mockResolvedValue([]) },
   };
   const queryManifestService = {
     manifestFor: vi.fn().mockReturnValue(undefined),
@@ -410,6 +411,35 @@ describe("lineage panel messages", () => {
         dimmed: ["model.b"],
       });
       expect(h.postMessage).toHaveBeenCalledWith(response("s2", { ok: true }));
+    },
+    getExclusions: async () => {
+      const h = lineageHarness();
+      await h.send({ command: "getExclusions", syncRequestId: "x1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("x1", { rules: expect.any(Array) }),
+      );
+    },
+    addExclusion: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "addExclusion",
+        args: { params: { rule: " tag:skip " } },
+        syncRequestId: "x2",
+      });
+      expect(workspace.getConfiguration().update).toHaveBeenCalledWith(
+        "lineage.exclude",
+        ["tag:skip"],
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(response("x2", { ok: true }));
+    },
+    removeExclusion: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "removeExclusion",
+        args: { params: { rule: "tag:skip" } },
+        syncRequestId: "x3",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(response("x3", { ok: true }));
     },
   };
 

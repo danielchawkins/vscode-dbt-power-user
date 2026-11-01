@@ -1602,6 +1602,113 @@ describe.each(MODES)("Lineage Scope control in the %s view", (viewMode) => {
   });
 });
 
+describe("Lineage exclusions in the Scope popover", () => {
+  /** Opens the Scope popover with `exclusions` as the host's rules; the list is the section's region. */
+  const openExclusions = async (exclusions?: lineage.ExclusionRule[]) => {
+    const { user } = await openLineage(undefined, { exclusions });
+    await press(user, "button", "Scope");
+    return {
+      user,
+      list: within(screen.getByRole("region", { name: "Exclusions" })),
+    };
+  };
+
+  it("lists each rule with the nodes it excludes", async () => {
+    const { list } = await openExclusions();
+    expect(
+      await list.findByText("resource_type:function resource_type:macro"),
+    ).toBeInTheDocument();
+    expect(list.getByText("1 node excluded")).toBeInTheDocument();
+    expect(
+      list.getByRole("textbox", { name: "Exclusion rule" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the failure dbt gave for a rule it could not resolve", async () => {
+    const { list } = await openExclusions([
+      {
+        rule: "source:broken",
+        failure: "dbt could not parse the selector",
+        namesMacro: false,
+      },
+    ]);
+    expect(
+      await list.findByText("Not resolved: dbt could not parse the selector"),
+    ).toBeInTheDocument();
+    expect(list.queryByText(/nodes? excluded/)).not.toBeInTheDocument();
+  });
+
+  it("notes that Fusion returns no macros for a macro rule that matches no node", async () => {
+    const { list } = await openExclusions([
+      { rule: "resource_type:macro", count: 0, namesMacro: true },
+    ]);
+    expect(
+      await list.findByText(/Fusion 2.0.6 returns no macros/),
+    ).toBeInTheDocument();
+    expect(list.getByText("0 nodes excluded")).toBeInTheDocument();
+  });
+
+  it("adds a rule, writes it to the setting, and lists it", async () => {
+    const { user, list } = await openExclusions();
+    await typeInto(user, "textbox", "Exclusion rule", "tag:nightly");
+    await press(user, "button", "Add rule");
+    await expectPosted("addExclusion", {
+      args: { params: { rule: "tag:nightly" } },
+    });
+    expect(await list.findByText("tag:nightly")).toBeInTheDocument();
+    expect(list.getByRole("textbox", { name: "Exclusion rule" })).toHaveValue(
+      "",
+    );
+  });
+
+  it("removes a rule, writes the setting, and says none is excluded when none is left", async () => {
+    const { user, list } = await openExclusions();
+    await press(
+      user,
+      "button",
+      "Remove resource_type:function resource_type:macro",
+    );
+    await expectPosted("removeExclusion", {
+      args: {
+        params: { rule: "resource_type:function resource_type:macro" },
+      },
+    });
+    expect(
+      await list.findByText("No node is excluded. Add a dbt selector below."),
+    ).toBeInTheDocument();
+  });
+
+  it("removes a rule that dbt could not resolve", async () => {
+    const { user, list } = await openExclusions([
+      {
+        rule: "source:broken",
+        failure: "dbt could not parse the selector",
+        namesMacro: false,
+      },
+    ]);
+    await press(user, "button", "Remove source:broken");
+    await expectPosted("removeExclusion", {
+      args: { params: { rule: "source:broken" } },
+    });
+    await waitFor(() =>
+      expect(list.queryByText("source:broken")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("removes a macro rule that matches no node", async () => {
+    const { user, list } = await openExclusions([
+      { rule: "resource_type:macro", count: 0, namesMacro: true },
+    ]);
+    await press(user, "button", "Remove resource_type:macro");
+    await expectPosted("removeExclusion", {
+      args: { params: { rule: "resource_type:macro" } },
+    });
+    await waitFor(() =>
+      expect(list.queryByText("resource_type:macro")).not.toBeInTheDocument(),
+    );
+  });
+});
+
 describe("Lineage busy-node list", () => {
   /**
    * The neighbourhood of `c`, which reaches `b` (two connections, `a` and `c`) and `a` through `b`. With a cap of one

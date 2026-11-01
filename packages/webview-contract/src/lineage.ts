@@ -285,7 +285,13 @@ export type PanelMessage =
   | Request<"persistHiddenCards", { cards: HiddenCard[] }>
   /** The node types and tags the workspace has switched off in the Scope control, for every start model. */
   | OptionalRequest<"getLineageScope">
-  | Request<"persistLineageScope", { scope: LineageScope }>;
+  | Request<"persistLineageScope", { scope: LineageScope }>
+  /** The `lineage.exclude` rules as the user wrote them, each with the nodes it excludes in the current manifest. */
+  | OptionalRequest<"getExclusions">
+  /** Appends `rule` to the `lineage.exclude` setting. */
+  | Request<"addExclusion", { rule: string }>
+  /** Removes the first `lineage.exclude` entry that is exactly `rule`. */
+  | Request<"removeExclusion", { rule: string }>;
 
 /**
  * A card the user hid: its unique ID, and the title the panel showed it by when it was hidden (`label`, absent when none
@@ -310,6 +316,21 @@ export interface LineageScope {
 }
 
 /**
+ * One `lineage.exclude` rule, a dbt selector, as the Scope popover lists it. `count` is the number of nodes it excludes
+ * when dbt resolved it, and `failure` says why dbt could not when it did not; the host never sends the node IDs.
+ */
+export interface ExclusionRule {
+  /** The rule as the user wrote it in the setting. */
+  rule: string;
+  /** The number of nodes the rule excludes; absent when the rule failed. */
+  count?: number | undefined;
+  /** Why dbt could not resolve the rule; absent when it resolved. */
+  failure?: string | undefined;
+  /** True when the rule names `resource_type:macro`, which Fusion 2.0.6 does not return macros for. */
+  namesMacro: boolean;
+}
+
+/**
  * The body the host answers each request with, by request command. `getExposureDetails` and `getFunctionDetails`
  * answer with manifest metadata this contract does not model, so they stay `unknown`.
  */
@@ -328,6 +349,9 @@ export interface ResponseBodies {
   persistHiddenCards: { ok: true };
   getLineageScope: { scope: LineageScope };
   persistLineageScope: { ok: true };
+  getExclusions: { rules: ExclusionRule[] };
+  addExclusion: { ok: true };
+  removeExclusion: { ok: true };
   getProjectGraph: { tables: LineageTable[]; edges: [string, string][] };
 }
 
@@ -417,6 +441,9 @@ const panelFields: CommandFields<PanelMessage> = {
   persistLineageScope: request<{ scope: LineageScope }>({
     scope: isLineageScope,
   }),
+  getExclusions: optionalRequest({}),
+  addExclusion: request<{ rule: string }>({ rule: isString }),
+  removeExclusion: request<{ rule: string }>({ rule: isString }),
 };
 
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);

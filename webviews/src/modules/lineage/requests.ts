@@ -76,6 +76,18 @@ export const persistLineageScope = (scope: lineage.LineageScope): void => {
   executeRequestInAsync("persistLineageScope", { args: { params: { scope } } });
 };
 
+/** The `lineage.exclude` rules, each with the nodes it excludes or the failure dbt gave. */
+export const fetchExclusions = async (): Promise<lineage.ExclusionRule[]> =>
+  (await executeRequestInSync("getExclusions")).rules;
+
+/** Adds `rule` to the exclusion setting; the host answers once the setting is written. */
+export const addExclusion = (rule: string): Promise<unknown> =>
+  executeRequestInSync("addExclusion", { args: { params: { rule } } });
+
+/** Removes the exclusion setting's entry that is `rule`; the host answers once the setting is written. */
+export const removeExclusion = (rule: string): Promise<unknown> =>
+  executeRequestInSync("removeExclusion", { args: { params: { rule } } });
+
 export const persistSettings = (
   settings: Partial<lineage.LineageSettings>,
 ): Promise<unknown> =>

@@ -89,6 +89,28 @@ describe("Lineage control coverage", () => {
           activate(user, "button", "Connections"),
         ),
         "Scope open": stateOf(({ user }) => activate(user, "button", "Scope")),
+        "exclusions open": async () => {
+          const { user } = await openLineage(undefined, {
+            exclusions: [
+              {
+                rule: "resource_type:function resource_type:macro",
+                count: 1,
+                namesMacro: true,
+              },
+              {
+                rule: "source:broken",
+                failure: "dbt could not parse the selector",
+                namesMacro: false,
+              },
+              { rule: "resource_type:macro", count: 0, namesMacro: true },
+            ],
+          });
+          await activate(user, "button", "Scope");
+          await screen.findByRole("button", {
+            name: "Remove resource_type:macro",
+          });
+          return page();
+        },
         "busy cards open": async () => {
           const { user } = await openLineage(
             { node: TABLES.b, publication: "s:1" },

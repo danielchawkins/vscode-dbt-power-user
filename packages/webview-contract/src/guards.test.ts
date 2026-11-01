@@ -408,6 +408,21 @@ const lineagePanel: Fixture[] = [
     },
     required: ["args.params.scope"],
   },
+  { message: { command: "getExclusions", ...params({}) }, required: [] },
+  {
+    message: {
+      command: "addExclusion",
+      ...params({ rule: "resource_type:model" }),
+    },
+    required: ["args.params.rule"],
+  },
+  {
+    message: {
+      command: "removeExclusion",
+      ...params({ rule: "resource_type:model" }),
+    },
+    required: ["args.params.rule"],
+  },
   {
     message: {
       command: "persistHiddenCards",
