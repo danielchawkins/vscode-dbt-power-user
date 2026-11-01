@@ -13,6 +13,8 @@ import { useGraphModel } from "./useGraphModel";
 // Every layout the panel's layouter runs, with the request it was given: the hints it seeds from are on the request.
 const layouts = vi.hoisted(() => ({
   runs: [] as { request: { previous?: unknown }; response: unknown }[],
+  // While set, each layout waits for it, so a test decides when the layouts answer.
+  gate: undefined as Promise<void> | undefined,
 }));
 
 vi.mock("./engine/layoutCache", async (importOriginal) => {
@@ -25,10 +27,13 @@ vi.mock("./engine/layoutCache", async (importOriginal) => {
         const real = engineFor(engine);
         return {
           ...real,
-          layout: (request) => {
-            const response = real.layout(request);
-            layouts.runs.push({ request, response });
-            return response;
+          layout: async (request, generation) => {
+            await layouts.gate;
+            const answer = await real.layout(request, generation);
+            if (!answer.superseded) {
+              layouts.runs.push({ request, response: answer.response });
+            }
+            return answer;
           },
         };
       }, capacity),
@@ -100,5 +105,27 @@ describe("useGraphModel layouts", () => {
     expect(layouts.runs.at(-1)!.request.previous).toBe(
       (shown.response as { hints?: unknown }).hints,
     );
+  });
+
+  it("keeps the cards on screen while a newer layout is pending, and draws only the latest", async () => {
+    const probe = await drawFilter();
+    let release = () => {};
+    layouts.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    act(() => probe.model.actions.hide("kept", "kept"));
+    act(() => probe.model.actions.hide("audit", "audit"));
+    // Both relayouts wait, so the previous answer is still what is drawn.
+    expect(probe.model.nodes.map((n) => n.id)).toEqual(
+      expect.arrayContaining(["filter", "kept", "audit"]),
+    );
+    layouts.gate = undefined;
+    release();
+    // The older relayout answers superseded, and the latest is drawn: neither hidden card is left.
+    await waitFor(() =>
+      expect(probe.model.nodes.map((n) => n.id)).not.toContain("audit"),
+    );
+    expect(probe.model.nodes.map((n) => n.id)).not.toContain("kept");
+    expect(probe.model.nodes.map((n) => n.id)).toContain("filter");
   });
 });

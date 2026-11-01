@@ -1,11 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { graphLayoutEngine } from "./graphLayoutEngine";
-import type {
-  LayerBand,
-  LayoutCard,
-  LayoutRequest,
-  Point,
+import {
+  type LayerBand,
+  type LayoutCard,
+  type LayoutEngine,
+  type LayoutRequest,
+  type LayoutResponse,
+  nextGeneration,
+  type Point,
 } from "./layoutEngine";
+
+/** The response of a layout that was not superseded; the layout is the newest asked for, so it is never superseded. */
+const answered = async (
+  engine: LayoutEngine,
+  request: LayoutRequest,
+): Promise<LayoutResponse> => {
+  const answer = await engine.layout(request, nextGeneration());
+  if (answer.superseded) {
+    throw new Error("the newest layout was superseded");
+  }
+  return answer.response;
+};
 
 /** The lineage-groups `hub` view: a model in Other above two staging groups and a mart in a third layer. */
 const CARDS: LayoutCard[] = [
@@ -52,7 +67,10 @@ function touches(p: Point, q: Point, card: LayerBand): boolean {
 describe.each(["balanced", "thorough"] as const)(
   "graphLayoutEngine(%s)",
   (effort) => {
-    const response = graphLayoutEngine(effort).layout(REQUEST);
+    let response: LayoutResponse;
+    beforeAll(async () => {
+      response = await answered(graphLayoutEngine(effort), REQUEST);
+    });
 
     it("draws one band per layer, none overlapping another", () => {
       const bands = response.bands;
@@ -137,7 +155,10 @@ describe("graphLayoutEngine with cards in Other", () => {
     rankPairs: pairs,
     traceOn: false,
   };
-  const response = graphLayoutEngine("balanced").layout(request);
+  let response: LayoutResponse;
+  beforeAll(async () => {
+    response = await answered(graphLayoutEngine("balanced"), request);
+  });
 
   it("draws one small Other band per Other card, overlapping no other band", () => {
     const other = response.bands.filter((band) => band.tag === "other");
@@ -167,16 +188,16 @@ describe("a hint edge", () => {
     edges: [{ id: "a>b", from: "a", to: "b", role: "hint" }],
   };
 
-  it("neither ranks its cards nor is drawn", () => {
-    const plain = graphLayoutEngine("balanced").layout(base);
-    const withHint = graphLayoutEngine("balanced").layout(hinted);
+  it("neither ranks its cards nor is drawn", async () => {
+    const plain = await answered(graphLayoutEngine("balanced"), base);
+    const withHint = await answered(graphLayoutEngine("balanced"), hinted);
     expect(withHint.positions).toEqual(plain.positions);
     expect(withHint.edges.has("a>b")).toBe(false);
   });
 });
 
 describe("graphLayoutEngine soft edges", () => {
-  it("accepts a soft edge and routes it", () => {
+  it("accepts a soft edge and routes it", async () => {
     const request: LayoutRequest = {
       ...REQUEST,
       edges: [
@@ -184,7 +205,16 @@ describe("graphLayoutEngine soft edges", () => {
         { id: "soft:a>b", from: "a", to: "b", role: "soft" },
       ],
     };
-    const response = graphLayoutEngine("balanced").layout(request);
+    const response = await answered(graphLayoutEngine("balanced"), request);
     expect(response.edges.has("soft:a>b")).toBe(true);
+  });
+});
+
+describe("graphLayoutEngine generations", () => {
+  it("answers superseded once a newer generation has been asked for", async () => {
+    const older = nextGeneration();
+    nextGeneration();
+    const answer = await graphLayoutEngine("balanced").layout(REQUEST, older);
+    expect(answer).toEqual({ superseded: true });
   });
 });

@@ -2,7 +2,12 @@ import { layout } from "@fusion-power-user/graph-layout";
 import type * as GraphLayout from "@fusion-power-user/graph-layout";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { graphLayoutEngine } from "./graphLayoutEngine";
-import type { LayoutCard, LayoutRequest } from "./layoutEngine";
+import {
+  type LayoutCard,
+  type LayoutRequest,
+  type LayoutResponse,
+  nextGeneration,
+} from "./layoutEngine";
 
 // The package's `layout` stays real; the spy records the options each request was laid out with.
 vi.mock("@fusion-power-user/graph-layout", async (importOriginal) => {
@@ -46,19 +51,31 @@ beforeEach(() => {
   vi.mocked(layout).mockClear();
 });
 
+/** Lays out `request` with the graph-layout engine, and resolves to its response; a superseded answer throws. */
+const laidOut = async (request: LayoutRequest): Promise<LayoutResponse> => {
+  const answer = await graphLayoutEngine("balanced").layout(
+    request,
+    nextGeneration(),
+  );
+  if (answer.superseded) {
+    throw new Error("the layout was superseded");
+  }
+  return answer.response;
+};
+
 describe("graphLayoutEngine spacing", () => {
-  it("lays out a request with no spacing at the default spacing, unchanged", () => {
-    graphLayoutEngine("balanced").layout(REQUEST);
+  it("lays out a request with no spacing at the default spacing, unchanged", async () => {
+    await laidOut(REQUEST);
     expect(spacingOfLastCall()).toEqual(DEFAULT_SPACING);
   });
 
-  it("lays out a default request at the default spacing, unchanged", () => {
-    graphLayoutEngine("balanced").layout({ ...REQUEST, spacing: "default" });
+  it("lays out a default request at the default spacing, unchanged", async () => {
+    await laidOut({ ...REQUEST, spacing: "default" });
     expect(spacingOfLastCall()).toEqual(DEFAULT_SPACING);
   });
 
-  it("lays out a compact request at the compact spacing", () => {
-    graphLayoutEngine("balanced").layout({ ...REQUEST, spacing: "compact" });
+  it("lays out a compact request at the compact spacing", async () => {
+    await laidOut({ ...REQUEST, spacing: "compact" });
     expect(spacingOfLastCall()).toEqual(COMPACT_SPACING);
   });
 
@@ -70,14 +87,13 @@ describe("graphLayoutEngine spacing", () => {
     }
   });
 
-  it("draws the compact layout no wider than the default", () => {
-    const widthOf = (spacing: LayoutRequest["spacing"]) => {
-      const { positions } = graphLayoutEngine("balanced").layout({
-        ...REQUEST,
-        spacing,
-      });
+  it("draws the compact layout no wider than the default", async () => {
+    const widthOf = async (spacing: LayoutRequest["spacing"]) => {
+      const { positions } = await laidOut({ ...REQUEST, spacing });
       return Math.max(...Array.from(positions.values(), (p) => p.x));
     };
-    expect(widthOf("compact")).toBeLessThanOrEqual(widthOf("default"));
+    expect(await widthOf("compact")).toBeLessThanOrEqual(
+      await widthOf("default"),
+    );
   });
 });

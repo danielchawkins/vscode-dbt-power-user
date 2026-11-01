@@ -175,38 +175,46 @@ function bandNodes(
   }));
 }
 
+/** Where the layout put each card and band, and the routed path of each edge. */
+interface Placement {
+  positions: Map<string, Point>;
+  layerBands: LayerBand[];
+  paths: Map<string, RoutedEdgeData>;
+  /** The measures of the layout, for the Layout readout. */
+  metrics: LayoutResponse["metrics"];
+}
+
 /**
  * The placement: every card and band position, and the routed path of every edge. The edge ids are the ones
- * `toEdges` gives, so each edge finds its path by id.
+ * `toEdges` gives, so each edge finds its path by id. Undefined when a newer layout was asked for before this one
+ * answered.
  */
-function placeCards(
+async function placeCards(
   input: LayoutInput,
   sizes: {
     listed: (table: string) => lineage.LineageColumn[] | undefined;
     heightOf: (id: string) => number;
   },
   layouter: Layouter,
-): {
-  positions: Map<string, Point>;
-  layerBands: LayerBand[];
-  paths: Map<string, RoutedEdgeData>;
-  metrics: LayoutResponse["metrics"];
-} {
+): Promise<Placement | undefined> {
   const request = layoutRequest(input, sizes.listed, sizes.heightOf);
-  const response = layouter(
+  const answer = await layouter(
     request,
     input.engine ?? lineage.DEFAULT_LINEAGE_ENGINE,
   );
-  const { paths: drawn } = drawLayout(request, response);
+  if (answer.superseded) {
+    return undefined;
+  }
+  const { paths: drawn } = drawLayout(request, answer.response);
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of drawn) {
     paths.set(id, { ...path });
   }
   return {
-    positions: new Map(response.positions),
-    layerBands: [...response.bands],
+    positions: new Map(answer.response.positions),
+    layerBands: [...answer.response.bands],
     paths,
-    metrics: response.metrics,
+    metrics: answer.response.metrics,
   };
 }
 
@@ -258,12 +266,13 @@ export function drawnPairs(layout: LayoutInput): Pair[] {
 /**
  * React Flow nodes and edges for the drawn lineage and its groups: the cards in their layer bands, and the routed
  * edges. The layout decides where things go; the decoration decides what they show. Emphasis is not applied here.
+ * Resolves to undefined when a newer layout was asked for first; the caller keeps drawing what it has.
  */
-export function toFlow(
+export async function toFlow(
   layout: LayoutInput,
   decoration: FlowDecoration,
   layouter: Layouter = freshLayouter,
-): BuiltFlow {
+): Promise<BuiltFlow | undefined> {
   const { columns, columnTables } = layout;
   const groups = layout.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
@@ -276,7 +285,10 @@ export function toFlow(
     tableHeight(listed(table), chipsOf(table).length);
   const heightOf = (id: string) =>
     groupIds.has(id) ? geometry.groupHeight : heightOfTable(id);
-  const placed = placeCards(layout, { listed, heightOf }, layouter);
+  const placed = await placeCards(layout, { listed, heightOf }, layouter);
+  if (!placed) {
+    return undefined;
+  }
   const nodes = cardNodes(layout, decoration, {
     positions: placed.positions,
     listed,
@@ -430,10 +442,7 @@ function cardNodes(
 }
 
 /** The routed edges: each is drawn on the path the router gave it, so the edges the router did not route are left out. */
-function routedEdges(
-  edges: Edge[],
-  placed: ReturnType<typeof placeCards>,
-): Edge[] {
+function routedEdges(edges: Edge[], placed: Placement): Edge[] {
   // Edges are drawn from the router's paths; an edge the router did not route is not drawn.
   return edges.flatMap((edge): Edge[] => {
     const path = placed.paths.get(edge.id);

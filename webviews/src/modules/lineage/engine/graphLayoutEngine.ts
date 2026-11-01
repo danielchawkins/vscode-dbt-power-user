@@ -17,15 +17,17 @@ import {
  */
 import { lineage } from "@fusion-power-user/webview-contract";
 import { OTHER_TAG } from "../layerTags";
-import type {
-  LayerBand,
-  LayoutCard,
-  LayoutEdgeSpec,
-  LayoutEngine,
-  LayoutRequest,
-  LayoutResponse,
-  Point,
-  RoutedGeometry,
+import {
+  isSuperseded,
+  type LayerBand,
+  type LayoutAnswer,
+  type LayoutCard,
+  type LayoutEdgeSpec,
+  type LayoutEngine,
+  type LayoutRequest,
+  type LayoutResponse,
+  type Point,
+  type RoutedGeometry,
 } from "./layoutEngine";
 
 /** The card spacing the panel draws with: the band padding, the gap between cards and the gutter their edges route through. */
@@ -87,11 +89,11 @@ export type GraphLayoutEffort = NonNullable<LayoutOptions["effort"]>;
 export function graphLayoutEngine(effort: GraphLayoutEffort): LayoutEngine {
   return {
     id: "graph-layout",
-    layout(request: LayoutRequest): LayoutResponse {
+    layout(request: LayoutRequest, generation: number): Promise<LayoutAnswer> {
       const tags = layerTags(request.cards);
       const graph = toGraph(request, tags);
       const result = layout(graph, optionsFor(request, effort));
-      return {
+      const response: LayoutResponse = {
         positions: positionsOf(result),
         bands: bandsOf(result),
         edges: edgesOf(result, graph),
@@ -103,6 +105,11 @@ export function graphLayoutEngine(effort: GraphLayoutEffort): LayoutEngine {
           area: result.metrics.area,
         },
       };
+      return Promise.resolve(
+        isSuperseded(generation)
+          ? { superseded: true }
+          : { superseded: false, response },
+      );
     },
   };
 }
