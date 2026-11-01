@@ -9,12 +9,13 @@ mod tests;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::phases::{PhaseError, Phases, run_phases};
+use super::handle::{Engine, Generation};
+use super::phases::{PhaseError, PhasesRef};
 use crate::index::Indexed;
 use crate::metrics::{Drawing, DrawnPath, Opaque, measure};
 use crate::model::{
     ClusterRects, EdgeLayouts, Graph, Hints, InputError, Layout, NodeLayouts, Options,
-    PartitionRects, Partitions, Point, Rect, validate,
+    PartitionRects, Partitions, Point, Rect,
 };
 use crate::route::EdgeRoute;
 
@@ -27,21 +28,25 @@ pub enum LayoutError {
     Phases(PhaseError),
 }
 
-/// Lays out `graph` with `options`: validates it, runs every phase and assembles the layout.
+/// Lays out `graph` with `options`: validates it, runs every phase and assembles the layout. This is a fresh
+/// [`Engine`] run to the end, so it is the handle's result on the same inputs.
 ///
 /// # Errors
 ///
 /// Returns [`LayoutError::Input`] with every issue `validate` finds in the graph or the options, and
 /// [`LayoutError::Phases`] when the phases do not run on a valid graph.
 pub fn layout(graph: &Graph, options: &Options) -> Result<Layout, LayoutError> {
-    validate(graph, options).map_err(LayoutError::Input)?;
-    let phases = run_phases(graph, options).map_err(LayoutError::Phases)?;
-    Ok(result_of(graph, options, &phases))
+    match Engine::new().layout(graph, options, Generation::default())? {
+        Some(progress) => Ok(progress.into_layout()),
+        None => {
+            unreachable!("a fresh engine has no newer generation, so its run is never superseded")
+        }
+    }
 }
 
 /// The result of the phases, as `resultOf` assembles it: the nodes, the edges, the clusters, the partitions, the bounds,
-/// the hints and the metrics.
-fn result_of(graph: &Graph, options: &Options, phases: &Phases) -> Layout {
+/// the hints and the metrics. The inputs are validated by the caller.
+pub(super) fn result_of(graph: &Graph, options: &Options, phases: &PhasesRef<'_>) -> Layout {
     let index = Indexed::new(graph, Some(options));
     let rects = node_rects(graph, phases);
     let slots = slots_of(phases, rects.len());
@@ -114,7 +119,7 @@ fn rect_of(rect: crate::route::Rect) -> Rect {
 }
 
 /// The rectangle of each real node: its routed centre, minus half its size, as `nodeRects` computes it.
-fn node_rects(graph: &Graph, phases: &Phases) -> Vec<Rect> {
+fn node_rects(graph: &Graph, phases: &PhasesRef<'_>) -> Vec<Rect> {
     phases
         .routing
         .nodes
@@ -134,9 +139,9 @@ fn node_rects(graph: &Graph, phases: &Phases) -> Vec<Rect> {
 
 /// Each real node's rank and its index among the real nodes of that rank, by node index (`slotsOf`). Dummies are not
 /// counted.
-fn slots_of(phases: &Phases, count: usize) -> Vec<(u32, u32)> {
+fn slots_of(phases: &PhasesRef<'_>, count: usize) -> Vec<(u32, u32)> {
     let mut slots = vec![(0, 0); count];
-    for members in &phases.layers {
+    for members in phases.layers {
         let mut order = 0;
         for &member in members {
             let node = &phases.layered.nodes[member];
@@ -151,7 +156,11 @@ fn slots_of(phases: &Phases, count: usize) -> Vec<(u32, u32)> {
 
 /// The edge columns, and the drawn edges the metrics measure: every edge of a routed kind, in edge order. An edge with
 /// no polyline is flagged and has no points; a kind with `routed: false` has no entry. `reversed` is the ranking's.
-fn edges_of(graph: &Graph, phases: &Phases, index: &Indexed) -> (EdgeLayouts, Vec<DrawnPath>) {
+fn edges_of(
+    graph: &Graph,
+    phases: &PhasesRef<'_>,
+    index: &Indexed,
+) -> (EdgeLayouts, Vec<DrawnPath>) {
     let mut edges = EdgeLayouts {
         point_start: vec![0],
         ..EdgeLayouts::default()
@@ -204,7 +213,7 @@ fn edges_of(graph: &Graph, phases: &Phases, index: &Indexed) -> (EdgeLayouts, Ve
 
 /// The opaque boxes of the drawing, and for each drawn path the boxes it may enter: those of the clusters that hold its
 /// source or its target. A path enters no other opaque box.
-fn opaque_of(graph: &Graph, phases: &Phases, paths: &[DrawnPath]) -> Opaque {
+fn opaque_of(graph: &Graph, phases: &PhasesRef<'_>, paths: &[DrawnPath]) -> Opaque {
     let mut clusters = Vec::new();
     let mut boxes = Vec::new();
     for served in &phases.routing.clusters {
