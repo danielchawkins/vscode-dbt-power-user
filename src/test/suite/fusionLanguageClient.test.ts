@@ -30,6 +30,7 @@ import {
   stateListenerFor,
   waitForState,
 } from "../fusionClientHarness";
+import { unavailableExclusions } from "../unavailableExclusions";
 
 const cancellationToken: CancellationToken = {
   isCancellationRequested: false,
@@ -592,6 +593,7 @@ describe("FusionLanguageClient lifecycle", () => {
     await waitForState(client, "running");
     const lsp = createFusionCommands(() => client);
     const service = new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: {} as any,
       currentClient: () => client,
       currentLsp: () => lsp,

@@ -95,6 +95,8 @@ function payloadOf(c: CliCommand): string[] {
     case "compile":
     case "build":
       return c.select === undefined ? [] : [c.select];
+    case "ls":
+      return [c.select];
     case "compileInline":
       return [c.sql];
     case "show":

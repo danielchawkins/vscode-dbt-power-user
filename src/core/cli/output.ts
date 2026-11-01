@@ -190,3 +190,27 @@ export function showPreview(stdout: string): ShowPreview {
     compiledSql: String((sqlLines.at(-1)?.["sql"] as string | undefined) ?? ""),
   };
 }
+
+/**
+ * The unique IDs `dbt ls --output json --output-keys unique_id` printed, in order. dbt's banner and summary lines
+ * share stdout with the JSON records, so a line that is not a JSON object with a string `unique_id` is skipped.
+ */
+export function lsUniqueIds(stdout: string): string[] {
+  const ids: string[] = [];
+  for (const raw of stdout.split("\n")) {
+    const line = raw.trim();
+    if (!line.startsWith("{")) {
+      continue;
+    }
+    let record: JsonRecord | undefined;
+    try {
+      record = asRecord(JSON.parse(line) as unknown);
+    } catch {
+      continue;
+    }
+    if (typeof record?.unique_id === "string") {
+      ids.push(record.unique_id);
+    }
+  }
+  return ids;
+}

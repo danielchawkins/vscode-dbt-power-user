@@ -6,6 +6,7 @@ import {
   firstLogLine,
   isConfigError,
   logLocation,
+  lsUniqueIds,
   parseLogEntries,
   showPreview,
   textLogErrors,
@@ -94,6 +95,29 @@ const SHOW_STDOUT = [
     info: { code: "Q041", level: "info", name: "ShowNode" },
   }),
 ].join("\n");
+
+describe("lsUniqueIds", () => {
+  it("reads the unique IDs of the JSON records and skips dbt's banner and summary", () => {
+    const stdout = [
+      "       dbt 2.0.6",
+      "=======================Selected nodes=======================",
+      JSON.stringify({ unique_id: "function.shop.normalize_timestamp" }),
+      "not json",
+      JSON.stringify({ name: "no unique id" }),
+      JSON.stringify({ unique_id: "model.shop.orders" }),
+      "New version available 2.0.9",
+      "Finished 'list' successfully",
+    ].join("\n");
+    expect(lsUniqueIds(stdout)).toEqual([
+      "function.shop.normalize_timestamp",
+      "model.shop.orders",
+    ]);
+  });
+
+  it("finds nothing when the selection is empty", () => {
+    expect(lsUniqueIds("Finished 'list' successfully\n")).toEqual([]);
+  });
+});
 
 describe("parseLogEntries", () => {
   it("lists errors before warnings and skips other levels and non-JSON lines", () => {

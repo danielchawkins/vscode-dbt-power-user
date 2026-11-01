@@ -68,6 +68,21 @@ const argv = (text: string) => text.split(" ");
 const golden: [string, CliCommand, string | string[], Golden?][] = [
   // Body, then command params, then snapshot flags.
   [
+    "ls with a rule of two selectors is one --select value",
+    { kind: "ls", select: "resource_type:function resource_type:macro" },
+    [
+      "ls",
+      "--select",
+      "resource_type:function resource_type:macro",
+      "--output",
+      "json",
+      "--output-keys",
+      "unique_id",
+      "--project-dir",
+      root,
+    ],
+  ],
+  [
     "run +a+",
     { kind: "run", select: "+a+" },
     `run --select +a+ ${THREADS} ${P}`,
