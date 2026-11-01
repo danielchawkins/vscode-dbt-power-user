@@ -13,7 +13,6 @@ import {
   toPanelLineage,
 } from "../../core/lineage";
 import type { ListNodesResult } from "../../core/lsp";
-import type { GraphMetaMap } from "../../core/manifest/types";
 import type {
   NeedsStrict,
   StrictInputs,
@@ -32,6 +31,7 @@ import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import { readSetting } from "../../settings";
+import { type Direction, LineageAdjacency } from "./lineageAdjacency";
 import { lineageTable } from "./lineageTables";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
@@ -115,6 +115,9 @@ export class LineageService {
   }
 
   private readonly currentLsp: () => FusionCommands | undefined;
+
+  /** Each manifest's adjacency, built on first use; see {@link adjacencyOf}. */
+  private adjacencies: WeakMap<Manifest, LineageAdjacency> | undefined;
 
   /**
    * Answers the panel's column click from the Fusion Client's `dbt.listNodes`, one request per distinct target
@@ -254,17 +257,9 @@ export class LineageService {
     if (!manifest) {
       return { edges: [] };
     }
-    const ids = new Set(tables);
-    const children = manifest.graphMetaMap.children;
-    const edges: [string, string][] = [];
-    for (const parent of ids) {
-      for (const child of children.get(parent)?.nodes ?? []) {
-        if (child.edgeType !== "constraint" && ids.has(child.key)) {
-          edges.push([parent, child.key]);
-        }
-      }
-    }
-    return { edges };
+    return {
+      edges: this.adjacencyOf(manifest).edgesAmong(tables),
+    };
   }
 
   /**
@@ -279,68 +274,63 @@ export class LineageService {
     if (!manifest) {
       return { tables: [], edges: [] };
     }
-    const { graphMetaMap } = manifest;
-    const urls = new Map<string, string>();
-    for (const map of [graphMetaMap.parents, graphMetaMap.children]) {
-      for (const { nodes } of map.values()) {
-        for (const node of nodes) {
-          if (node.url !== undefined) {
-            urls.set(node.key, node.url);
-          }
-        }
-      }
-    }
-    const keys = new Set([
-      ...graphMetaMap.parents.keys(),
-      ...graphMetaMap.children.keys(),
-    ]);
+    const adjacency = this.adjacencyOf(manifest);
     const tables: lineage.LineageTable[] = [];
-    for (const key of keys) {
-      const table = this.createTable(manifest, urls.get(key), key);
+    for (const key of adjacency.tableKeys()) {
+      const table = this.createTable(manifest, adjacency.urlOf(key), key);
       if (table) {
         tables.push(table);
       }
     }
-    const { edges } = this.getTableEdges({
-      tables: tables.map((table) => table.table),
-    });
-    return { tables, edges };
+    return {
+      tables,
+      edges: adjacency.edgesAmong(tables.map((table) => table.table)),
+    };
   }
 
   private getConnectedTables(
-    key: keyof GraphMetaMap,
+    direction: Direction,
     table: string,
   ): lineage.LineageTable[] | undefined {
     const manifest = this.currentProject.current?.manifest;
     if (!manifest) {
       return;
     }
-    const { graphMetaMap } = manifest;
-    const dependencyNodes = graphMetaMap[key];
-    const node = dependencyNodes.get(table);
-    if (!node) {
+    const adjacency = this.adjacencyOf(manifest);
+    if (!adjacency.has(direction, table)) {
       return;
     }
     const tables = new Map<string, lineage.LineageTable>();
-    node.nodes
-      // Hide foreign-key-only edges: the parent is referenced by a declared FK
-      // constraint but never read by the model's SQL, so it isn't a data-flow
-      // edge. The edge still exists in graphMetaMap for build order / impact
-      // analysis; only this data-flow lineage view drops it.
-      .filter((n) => n.edgeType !== "constraint")
-      .forEach(({ url, key }) => {
-        const _node = this.createTable(manifest, url, key);
-        if (!_node) {
-          return;
-        }
-        if (!tables.has(_node.table)) {
-          tables.set(_node.table, _node);
-        }
-      });
+    for (const { url, key } of adjacency.neighbours(direction, table)) {
+      const node = this.createTable(manifest, url, key);
+      if (!node) {
+        continue;
+      }
+      if (!tables.has(node.table)) {
+        tables.set(node.table, node);
+      }
+    }
     return [...tables.values()].sort((a, b) => a.table.localeCompare(b.table));
   }
 
-  /** The lineage table for the node `key`; see {@link lineageTable}. */
+  /**
+   * The data-flow adjacency the lineage requests answer from; see {@link LineageAdjacency}. Built once per manifest,
+   * so a request does not rebuild the graph for each card it draws.
+   */
+  private adjacencyOf(manifest: Manifest): LineageAdjacency {
+    this.adjacencies ??= new WeakMap();
+    let adjacency = this.adjacencies.get(manifest);
+    if (!adjacency) {
+      adjacency = new LineageAdjacency(manifest.graphMetaMap);
+      this.adjacencies.set(manifest, adjacency);
+    }
+    return adjacency;
+  }
+
+  /**
+   * The lineage table for the node `key`; see {@link lineageTable}. The card's counts come from the manifest's
+   * adjacency, the same one the edge requests read.
+   */
   createTable(
     manifest: Manifest,
     tableUrl: string | undefined,
@@ -353,6 +343,7 @@ export class LineageService {
         tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
         fromPath: readSetting("lineage.layer.inferFromPath") ?? true,
       },
+      adjacency: this.adjacencyOf(manifest),
     });
   }
 }
