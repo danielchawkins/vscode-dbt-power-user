@@ -33,3 +33,14 @@ A row leaves this list when a newer Fusion version returns the field for every n
 Relationship input, not a field row: `meta.relationships` on a node (`nodeMetaMap`) or a source table (`sourceMetaMap`) declares a relation by hand. Each entry gives `from_columns`, `to` and `to_columns`. `to` is `ref('name')`, matched by model name, or `source('source_name', 'table')`; a name that more than one node claims resolves to the declaring node's own package first, then to the one `latest_version`, and otherwise not at all. A `source_name.table` that more than one source table claims resolves to nothing. The declaring node or table is the many side, so the referenced node is the one side. Entries with `cases` or `to_schema` are not supported and are skipped. Fusion may place the declaration under `config.meta`, which the parser reads when `meta` has no `relationships` key. The parser is `RelationshipParser.fromMeta` in `relationshipParser.ts`, which delegates to `declaredRefs` in `declaredRelationships.ts`.
 
 Two parse outputs are not `ParsedManifest` maps and stay outside the port: configuration errors that stop the project loading (an unknown target, an unset `env_var` in `profiles.yml`), which the server does not report and `ProjectErrors` reads from `dbt parse`; and raw and compiled SQL and `compiled_path`, which no feature reads from the manifest.
+
+## Macros under `resource_type:macro` (dbt Fusion 2.0.6)
+
+Checked on the `mise.toml` pin, 2.0.6, with a scratch project that has one macro (`macros/example.sql`), one scalar function (`functions/normalize_timestamp.sql`) and one model:
+
+- `dbt.listNodes ["resource_type:macro"]` answers "No nodes found". `dbt.listNodes ["resource_type:function"]` returns `function.<project>.normalize_timestamp`, and `resource_type:function resource_type:macro` returns the same function.
+- `dbt ls --select resource_type:macro` lists nothing; `dbt ls --select resource_type:function` lists the function. A `dbt ls` with no selector lists the function and the model, and no macro.
+
+So under 2.0.6, the default lineage exclusion rule (`resource_type:function resource_type:macro`, resolved by dbt through `LineageExclusions`) excludes functions only, and a macro rule matches nothing. The rule keeps the macro selector, so a Fusion version that lists macros excludes them without a settings change. The Scope popover says so next to a rule that matches no node and names `resource_type:macro`.
+
+Re-check on each Fusion upgrade by running both commands above against a project with a macro, and update this section.

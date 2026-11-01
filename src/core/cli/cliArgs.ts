@@ -21,6 +21,8 @@ export type CliCommand =
   /** `skipVersionCheck` passes `--no-version-check`, so the parse makes no network request for a version. */
   | { kind: "parse"; skipVersionCheck?: boolean }
   | { kind: "deps" }
+  /** Lists the unique IDs `select` picks, as JSON lines on stdout; read with `lsUniqueIds`. */
+  | { kind: "ls"; select: string }
   | { kind: "clean" }
   | { kind: "debug" };
 
@@ -58,6 +60,7 @@ export function commandParamsFor(
     case "show":
     case "parse":
     case "deps":
+    case "ls":
     case "clean":
     case "debug":
       return [];
@@ -121,6 +124,16 @@ function body(command: CliCommand, params: readonly string[]): string[] {
         "--log-format",
         "json",
         ...(command.skipVersionCheck ? ["--no-version-check"] : []),
+      ];
+    case "ls":
+      return [
+        "ls",
+        "--select",
+        command.select,
+        "--output",
+        "json",
+        "--output-keys",
+        "unique_id",
       ];
     case "deps":
     case "clean":

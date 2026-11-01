@@ -32,6 +32,7 @@ import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import { readSetting } from "../../settings";
 import { type Direction, LineageAdjacency } from "./lineageAdjacency";
+import type { LineageExclusions } from "./lineageExclusion";
 import { lineageTable } from "./lineageTables";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
@@ -99,6 +100,7 @@ export class LineageService {
     currentError = () => undefined,
     currentLsp,
     currentStrict = () => ({ strict: false }),
+    exclusions,
   }: {
     currentProject: CurrentProject;
     currentClient?: () => FusionClient | undefined;
@@ -106,15 +108,20 @@ export class LineageService {
     /** The Current Project's server commands, which schedule the lineage requests. */
     currentLsp: () => FusionCommands | undefined;
     currentStrict?: () => StrictInputs;
+    /** Resolves the exclusion rules to unique IDs; see {@link LineageExclusions}. */
+    exclusions: LineageExclusions;
   }) {
     this.currentProject = currentProject;
     this.currentClient = currentClient;
     this.currentError = currentError;
     this.currentStrict = currentStrict;
     this.currentLsp = currentLsp;
+    this.exclusions = exclusions;
   }
 
   private readonly currentLsp: () => FusionCommands | undefined;
+
+  readonly exclusions: LineageExclusions;
 
   /** Each manifest's adjacency, built on first use; see {@link adjacencyOf}. */
   private adjacencies: WeakMap<Manifest, LineageAdjacency> | undefined;

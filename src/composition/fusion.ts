@@ -1,5 +1,6 @@
 import { Disposable } from "vscode";
 import { schemaOriginLaunchEnv } from "../core/snapshot/schemaOrigin";
+import { LineageExclusions } from "../features/lineage/lineageExclusion";
 import { LineageService } from "../features/lineage/lineageService";
 import { DefaultFusionClientFactory } from "../languageClient/defaultFusionClientFactory";
 import {
@@ -48,6 +49,20 @@ export function composeFusion(graph: ProjectsGraph) {
         folder: currentProject.folderScope(),
       };
     },
+    exclusions: new LineageExclusions({
+      server: () => {
+        const lsp = currentProject.current?.lsp;
+        return lsp?.state === "running" ? lsp : undefined;
+      },
+      cli: () => {
+        const project = currentProject.current;
+        if (!project) {
+          throw new Error("No Current Project to run dbt ls in");
+        }
+        return project.getFusionCli();
+      },
+      log: graph.terminal,
+    }),
   });
   const fusionStatus = new FusionStatus({
     registry: graph.projectRegistry,

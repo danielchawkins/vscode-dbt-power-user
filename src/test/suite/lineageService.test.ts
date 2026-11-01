@@ -8,6 +8,7 @@ import { lineageTable } from "../../features/lineage/lineageTables";
 import { createFusionCommands } from "../../fusion/fusionCommands";
 import { fakeFusionCommands } from "../fusionCommandsFake";
 import { manualToken } from "../manualToken";
+import { unavailableExclusions } from "../unavailableExclusions";
 
 // Minimal NodeData-shaped edge.
 function node(key: string, edgeType?: "data" | "constraint") {
@@ -197,6 +198,7 @@ describe("LineageService.getConnectedColumns", () => {
 
   const service = (client: unknown) => {
     const lineage = new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: {} as any,
       currentClient: () => client as any,
       currentLsp: () => fakeFusionCommands(() => client as any),
@@ -317,6 +319,7 @@ describe("LineageService.getConnectedColumns", () => {
     const { token } = manualToken();
     const listNodes = vi.fn((..._args: unknown[]) => new Promise(() => {}));
     const service = new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: {} as any,
       currentClient: () => fakeClient(vi.fn()),
       currentLsp: () => ({ state: "running", listNodes }) as any,
@@ -349,6 +352,7 @@ describe("LineageService.getConnectedColumns", () => {
     const request = vi.fn((..._args: unknown[]) => new Promise(() => {}));
     const client = fakeClient(request);
     const service = new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: {} as any,
       currentClient: () => client,
       currentLsp: () => createFusionCommands(() => client),
@@ -447,6 +451,7 @@ describe("LineageService.getConnectedColumns", () => {
         .mockResolvedValue({ error: null, nodes: [] });
       const client = fakeClient(request, { staticAnalysis: setting });
       const result = await new LineageService({
+        exclusions: unavailableExclusions(),
         currentProject: {} as any,
         currentClient: () => client,
         currentError: undefined,
@@ -493,6 +498,7 @@ describe("LineageService.getConnectedColumns", () => {
   it("reports columnsNeedStrict only for a running client outside strict", () => {
     const needs = (client: unknown, strict = false) =>
       new LineageService({
+        exclusions: unavailableExclusions(),
         currentProject: {} as any,
         currentClient: () => client as any,
         currentError: undefined,
@@ -568,6 +574,7 @@ describe("LineageService.getInferredColumns", () => {
   const client = (request: Mock<(...args: any[]) => Promise<any>>) => {
     const running = { state: "running", request } as any;
     return new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: {} as any,
       currentClient: () => running,
       currentLsp: () => fakeFusionCommands(() => running),
@@ -607,6 +614,7 @@ describe("LineageService.getInferredColumns", () => {
   it("is undefined when the client is not running or the request fails", async () => {
     expect(
       await new LineageService({
+        exclusions: unavailableExclusions(),
         currentProject: {} as any,
         currentClient: () => undefined,
         currentLsp: () => fakeFusionCommands(() => undefined),
@@ -681,6 +689,7 @@ describe("LineageService — merged value", () => {
 
   it("draws a server node the parse lacks with no tests", () => {
     const svc = new LineageService({
+      exclusions: unavailableExclusions(),
       currentProject: { current: undefined } as any,
       currentLsp: () => undefined,
     });
