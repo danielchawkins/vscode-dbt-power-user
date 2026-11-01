@@ -111,8 +111,29 @@ export interface LayoutResponse {
 
 type LayoutEngineId = "graph-layout";
 
-/** A layout engine: pure and synchronous, with no DOM, React or React Flow. */
+/**
+ * What a layout answers: its response, or that a newer generation was requested before it finished, so the panel
+ * drops it and draws the latest.
+ */
+export type LayoutAnswer =
+  | { readonly superseded: false; readonly response: LayoutResponse }
+  | { readonly superseded: true };
+
+/** The newest generation issued so far, for every engine: an older generation is superseded once it is passed. */
+let newest = 0;
+
+/** Issues the next generation, newer than every one before it. The panel issues one per layout it asks for. */
+export function nextGeneration(): number {
+  newest += 1;
+  return newest;
+}
+
+/** Whether a newer generation has been issued since `generation`, so its answer is superseded. */
+export const isSuperseded = (generation: number): boolean =>
+  generation < newest;
+
+/** A layout engine: no DOM, React or React Flow. A layout resolves once its answer is ready, or superseded. */
 export interface LayoutEngine {
   readonly id: LayoutEngineId;
-  layout(request: LayoutRequest): LayoutResponse;
+  layout(request: LayoutRequest, generation: number): Promise<LayoutAnswer>;
 }

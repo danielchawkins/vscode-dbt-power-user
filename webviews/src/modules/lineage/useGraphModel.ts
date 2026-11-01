@@ -104,9 +104,24 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
   return refs;
 };
 
+/** What the panel draws from: a built flow and the pairs and edge groups it was built with. */
+type Built = NonNullable<Awaited<ReturnType<typeof flowOf>>>;
+
+/** Nothing is drawn until the first layout answers. */
+const NOTHING_DRAWN: Built = {
+  flow: {
+    nodes: [],
+    edges: [],
+    metrics: { crossings: 0, bends: 0, edgeLength: 0, area: 0 },
+  },
+  pairs: [],
+  edgeGroups: [],
+};
+
 /**
- * The flow built from the layout settings, with the pairs its emphasis follows. The memo keys on the settings a flow is
- * built from, as primitives, so a hover or an emphasis setting never rebuilds it.
+ * The flow built from the layout settings, with the pairs its emphasis follows. A layout runs when a setting it is built
+ * from changes, so a hover or an emphasis setting never runs one. While a newer layout is pending the previous answer
+ * stays drawn; a superseded answer is dropped, and so is one whose inputs have changed since it was asked for.
  */
 const useBuiltFlow = ({
   graph,
@@ -120,9 +135,10 @@ const useBuiltFlow = ({
   spacing: lineage.SpacingPreset;
   refs: lineage.LineageRef[];
   columnsNeedStrict: boolean;
-}) => {
+}): Built => {
   // One layouter for the panel: its cache and the result on screen seed each layout.
   const [layouter] = useState(() => createLayouter());
+  const [built, setBuilt] = useState<Built>(NOTHING_DRAWN);
   const {
     showSelectEdges,
     showNonSelectEdges,
@@ -133,41 +149,50 @@ const useBuiltFlow = ({
     enabledRefSources,
     inferenceConfidenceThreshold,
   } = settings;
-  return useMemo(
-    () =>
-      flowOf({
-        graph,
-        settings: {
-          showSelectEdges,
-          showNonSelectEdges,
-          connections,
-          engine,
-          title,
-          layerColors,
-          enabledRefSources,
-          inferenceConfidenceThreshold,
-          spacing,
-        },
-        refs,
-        columnsNeedStrict,
-        layouter,
-      }),
-    [
+  useEffect(() => {
+    let live = true;
+    flowOf({
       graph,
+      settings: {
+        showSelectEdges,
+        showNonSelectEdges,
+        connections,
+        engine,
+        title,
+        layerColors,
+        enabledRefSources,
+        inferenceConfidenceThreshold,
+        spacing,
+      },
       refs,
       columnsNeedStrict,
       layouter,
-      spacing,
-      showSelectEdges,
-      showNonSelectEdges,
-      connections,
-      engine,
-      title,
-      layerColors,
-      enabledRefSources,
-      inferenceConfidenceThreshold,
-    ],
-  );
+    })
+      .then((next) => {
+        if (live && next) {
+          setBuilt(next);
+        }
+      })
+      .catch((error) => panelLogger.error("lineage layout", error));
+    return () => {
+      live = false;
+    };
+  }, [
+    graph,
+    refs,
+    columnsNeedStrict,
+    layouter,
+    spacing,
+    showSelectEdges,
+    showNonSelectEdges,
+    connections,
+    engine,
+    title,
+    layerColors,
+    enabledRefSources,
+    inferenceConfidenceThreshold,
+  ]);
+  return built;
 };
 
 /**

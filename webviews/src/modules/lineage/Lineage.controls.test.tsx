@@ -1271,6 +1271,12 @@ describe("Lineage card strip", () => {
         ).toHaveClass("selected"),
       );
       await press(user, "button", "Columns", node(container, "c"));
+      // The layout answers asynchronously; the card is redrawn once its columns are listed.
+      await waitFor(() =>
+        expect(
+          node(container, "c").getByRole("button", { name: "Columns" }),
+        ).toHaveAttribute("aria-pressed", "true"),
+      );
       expect(
         container.querySelector('.react-flow__node[data-id="c"]'),
       ).not.toHaveClass("selected");
@@ -1755,14 +1761,16 @@ describe("Lineage Layout control", () => {
   });
 });
 
-/** The measures the engine returned for the last layout it made. */
-const lastMeasures = (
+/** The measures the engine answered with for the last layout it made. */
+const lastMeasures = async (
   layout: MockInstance<ReturnType<typeof engineFor>["layout"]>,
 ) => {
   const last = layout.mock.results.at(-1);
   if (last?.type !== "return")
     throw new Error("the last layout did not return");
-  return last.value.metrics;
+  const answer = await last.value;
+  if (answer.superseded) throw new Error("the last layout was superseded");
+  return answer.response.metrics;
 };
 
 /** The readout's text for measures: the numbers as the readout writes them. */
@@ -1785,7 +1793,7 @@ describe("Lineage layout readout", () => {
     });
     await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
     expect(screen.getByTestId("lineage-readout").textContent).toBe(
-      readoutOf(lastMeasures(layout)),
+      readoutOf(await lastMeasures(layout)),
     );
     layout.mockRestore();
   });
@@ -1804,9 +1812,9 @@ describe("Lineage layout readout", () => {
     await waitFor(() =>
       expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
     );
-    await waitFor(() =>
+    await waitFor(async () =>
       expect(screen.getByTestId("lineage-readout").textContent).toBe(
-        readoutOf(lastMeasures(layout)),
+        readoutOf(await lastMeasures(layout)),
       ),
     );
     expect(screen.getByTestId("lineage-readout").textContent).not.toBe(shown);

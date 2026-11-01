@@ -4,24 +4,27 @@
  */
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { engineFor } from "./engines";
-import type {
-  LayoutEngine,
-  LayoutRequest,
-  LayoutResponse,
+import {
+  isSuperseded,
+  type LayoutAnswer,
+  type LayoutEngine,
+  type LayoutRequest,
+  type LayoutResponse,
+  nextGeneration,
 } from "./layoutEngine";
 
-/** Lays out one request with the named engine. */
+/** Lays out one request with the named engine; resolves to the answer, or to superseded if a newer layout was asked. */
 export type Layouter = (
   request: LayoutRequest,
   engine: lineage.LineageEngine,
-) => LayoutResponse;
+) => Promise<LayoutAnswer>;
 
 /** How many results the layouter keeps: the views a user flips between, not the whole session. */
 const CAPACITY = 8;
 
 /** Lays out every request afresh, with no cache and no hints. */
 export const freshLayouter: Layouter = (request, engine) =>
-  engineFor(engine).layout(request);
+  engineFor(engine).layout(request, nextGeneration());
 
 /** cyrb53: a 53-bit string hash, the same on every run, so a key means the same content in every session. */
 function hashOf(text: string): string {
@@ -62,7 +65,8 @@ const contentKey = (
 /**
  * A layouter that keeps the last `capacity` results, least recently used first to go, and seeds each layout with the
  * result on screen when it has the same start card: an expansion then moves the cards it had as little as it can.
- * `resolve` picks the engine; the default is the panel's engine table.
+ * A layout a newer one has overtaken resolves superseded, and is not the result on screen. `resolve` picks the engine;
+ * the default is the panel's engine table.
  */
 export function createLayouter(
   resolve: (engine: lineage.LineageEngine) => LayoutEngine = engineFor,
@@ -70,7 +74,8 @@ export function createLayouter(
 ): Layouter {
   const results = new Map<string, LayoutResponse>();
   let shown: { focus: string; response: LayoutResponse } | undefined;
-  return (request, engine) => {
+  return async (request, engine) => {
+    const generation = nextGeneration();
     const key = contentKey(request, engine);
     let response = results.get(key);
     if (response) {
@@ -78,14 +83,24 @@ export function createLayouter(
     } else {
       const previous =
         shown?.focus === request.focus ? shown.response.hints : undefined;
-      response = resolve(engine).layout({ ...request, previous });
+      const answer = await resolve(engine).layout(
+        { ...request, previous },
+        generation,
+      );
+      if (answer.superseded) {
+        return answer;
+      }
+      response = answer.response;
     }
     results.set(key, response);
     const oldest = results.keys().next();
     if (results.size > capacity && !oldest.done) {
       results.delete(oldest.value);
     }
+    if (isSuperseded(generation)) {
+      return { superseded: true };
+    }
     shown = { focus: request.focus, response };
-    return response;
+    return { superseded: false, response };
   };
 }

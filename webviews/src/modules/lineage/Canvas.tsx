@@ -11,7 +11,7 @@ import "@xyflow/react/dist/style.css";
 import { type RefObject, use } from "react";
 import { CONTROL_CLICK_SELECTS_CARD, isCardControl } from "./cardControls";
 import { MIN_ZOOM } from "./fit";
-import type { toFlow } from "./flow";
+import type { BuiltFlow } from "./flow";
 import { GroupNode } from "./GroupNode";
 import { LayerBand } from "./LayerBand";
 import styles from "./lineageGraph.module.css";
@@ -28,7 +28,7 @@ import { TableNode } from "./TableNode";
 import { useFit, useMinimap } from "./useCanvasFit";
 import { useHandleMeasurement } from "./useHandleMeasurement";
 
-type FlowGraph = Pick<ReturnType<typeof toFlow>, "nodes" | "edges">;
+type FlowGraph = Pick<BuiltFlow, "nodes" | "edges">;
 
 /** Logs React Flow's warnings to the webview devtools console. */
 const onError = (code: string, message: string) => {

@@ -47,7 +47,7 @@ const sumCounts = (
   return sum;
 };
 
-export const flowOf = ({
+export const flowOf = async ({
   graph,
   settings,
   refs,
@@ -59,11 +59,14 @@ export const flowOf = ({
   refs: lineage.LineageRef[];
   columnsNeedStrict: boolean;
   layouter: Layouter;
-}): {
-  flow: BuiltFlow;
-  pairs: ReturnType<typeof drawnPairs>;
-  edgeGroups: EdgeGroup[];
-} => {
+}): Promise<
+  | {
+      flow: BuiltFlow;
+      pairs: ReturnType<typeof drawnPairs>;
+      edgeGroups: EdgeGroup[];
+    }
+  | undefined
+> => {
   const visible = visibleOf(graph);
   const data = lineageData(graph, {
     direct: settings.showSelectEdges,
@@ -89,7 +92,7 @@ export const flowOf = ({
   const kept = withoutEdgeGroups(layout, graph.scope.offEdgeGroups);
   // Transitive reduction runs last, on the edges the filters, exclusions and edge groups left.
   const reduced = withoutTransitiveEdges(kept, graph.scope.transitiveReduction);
-  const placed = toFlow(
+  const placed = await toFlow(
     reduced.layout,
     {
       title: settings.title,
@@ -108,6 +111,9 @@ export const flowOf = ({
     },
     layouter,
   );
+  if (!placed) {
+    return undefined;
+  }
   // The dropped edges are drawn as hints between their cards, after the routed edges, which no layout sees.
   const flow = {
     ...placed,
