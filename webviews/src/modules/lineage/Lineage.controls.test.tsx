@@ -1,7 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type MockInstance, vi } from "vitest";
 import { expectPosted } from "../../test/controlCoverage";
 import { controlRecorder } from "../../test/controlRecorder";
 import { fits } from "../../test/fitRecorder";
@@ -1751,6 +1751,86 @@ describe("Lineage Layout control", () => {
     expect(drawn.every(([request]) => request.spacing === "compact")).toBe(
       true,
     );
+    layout.mockRestore();
+  });
+});
+
+/** The measures the engine returned for the last layout it made. */
+const lastMeasures = (
+  layout: MockInstance<ReturnType<typeof engineFor>["layout"]>,
+) => {
+  const last = layout.mock.results.at(-1);
+  if (last?.type !== "return")
+    throw new Error("the last layout did not return");
+  return last.value.metrics;
+};
+
+/** The readout's text for measures: the numbers as the readout writes them. */
+const readoutOf = (measures: {
+  crossings: number;
+  bends: number;
+  edgeLength: number;
+  area: number;
+}): string => {
+  const whole = (value: number) => Math.round(value).toLocaleString("en-US");
+  return `Crossings ${whole(measures.crossings)} · Bends ${whole(measures.bends)} · Edge length ${whole(measures.edgeLength)} px · Area ${whole(measures.area)} px²`;
+};
+
+describe("Lineage layout readout", () => {
+  it("shows the measures of the last layout the engine made", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    expect(screen.getByTestId("lineage-readout").textContent).toBe(
+      readoutOf(lastMeasures(layout)),
+    );
+    layout.mockRestore();
+  });
+
+  it("shows the measures of a new layout once a relayout runs, and nothing else lays out", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    const shown = screen.getByTestId("lineage-readout").textContent;
+    const laidOut = layout.mock.calls.length;
+    await press(user, "button", "Layout");
+    await press(user, "radio", "Compact");
+    await waitFor(() =>
+      expect(layout.mock.calls.length).toBeGreaterThan(laidOut),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("lineage-readout").textContent).toBe(
+        readoutOf(lastMeasures(layout)),
+      ),
+    );
+    expect(screen.getByTestId("lineage-readout").textContent).not.toBe(shown);
+    layout.mockRestore();
+  });
+
+  it("keeps its numbers, and calls no engine, when only the emphasis changes", async () => {
+    const engine = engineFor(resolveSettings(undefined).engine);
+    const layout = vi.spyOn(engine, "layout");
+    const { user, container } = await openLineage(undefined, {
+      settings: { viewMode: "whole" },
+    });
+    await waitFor(() => expect(tableIds(container)).toEqual(projectWithout()));
+    const shown = screen.getByTestId("lineage-readout").textContent;
+    const laidOut = layout.mock.calls.length;
+    await press(user, "button", "Settings");
+    await press(
+      user,
+      "checkbox",
+      "Highlight the paths of the hovered or selected card",
+    );
+    await user.hover(container.querySelector('[data-table="c"]')!);
+    expect(layout.mock.calls.length).toBe(laidOut);
+    expect(screen.getByTestId("lineage-readout").textContent).toBe(shown);
     layout.mockRestore();
   });
 });

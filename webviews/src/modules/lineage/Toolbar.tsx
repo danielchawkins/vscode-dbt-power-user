@@ -3,7 +3,8 @@ import { PopoverWithButton } from "@uicore";
 import { useEffect, useRef, useState } from "react";
 import { Check } from "./Check";
 import HelpButton from "./components/help/HelpButton";
-import { LayoutPopover } from "./LayoutSettings";
+import type { BuiltFlow } from "./flow";
+import { LayoutPopover, LayoutReadout } from "./LayoutSettings";
 import styles from "./lineageGraph.module.css";
 import { ScopePopover } from "./ScopeSettings";
 import type { ScopeControls } from "./useStoredFilters";
@@ -320,6 +321,7 @@ const Toolbar = ({
   restoreAll,
   scope,
   layout,
+  metrics,
 }: {
   settings: ResolvedSettings;
   change: Change;
@@ -329,6 +331,7 @@ const Toolbar = ({
   restoreAll: () => void;
   scope: ScopeControls;
   layout: LayoutControl;
+  metrics: BuiltFlow["metrics"];
 }): React.JSX.Element => (
   <div className={styles.toolbar}>
     <PopoverWithButton
@@ -352,6 +355,7 @@ const Toolbar = ({
     </PopoverWithButton>
     <ScopePopover scope={scope} />
     <LayoutPopover layout={layout} />
+    <LayoutReadout metrics={metrics} />
     <PopoverWithButton
       width={260}
       button={

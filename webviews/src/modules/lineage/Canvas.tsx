@@ -28,7 +28,7 @@ import { TableNode } from "./TableNode";
 import { useFit, useMinimap } from "./useCanvasFit";
 import { useHandleMeasurement } from "./useHandleMeasurement";
 
-type FlowGraph = ReturnType<typeof toFlow>;
+type FlowGraph = Pick<ReturnType<typeof toFlow>, "nodes" | "edges">;
 
 /** Logs React Flow's warnings to the webview devtools console. */
 const onError = (code: string, message: string) => {

@@ -233,6 +233,8 @@ interface GraphModel {
   scope: ScopeControls;
   /** The Layout control: the spacing the cards are placed with, and its change. */
   layout: LayoutControl;
+  /** The measures of the last layout, for the Layout readout. */
+  metrics: BuiltFlow["metrics"];
   drawnKey: number;
   nodes: BuiltFlow["nodes"];
   edges: BuiltFlow["edges"];
@@ -330,7 +332,15 @@ const useDrawnFlow = ({
     dimmed: storedScope.scope?.dimmed,
   });
   const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);
-  return { scope, hover, nodes, edges, nodeKey, shapeKey };
+  return {
+    scope,
+    hover,
+    nodes,
+    edges,
+    nodeKey,
+    shapeKey,
+    metrics: built.flow.metrics,
+  };
 };
 
 /**
@@ -377,15 +387,16 @@ export const useGraphModel = (
     [graph.hiddenCards],
   );
   const notice = rendered?.missingLineageMessage;
-  const { scope, hover, nodes, edges, nodeKey, shapeKey } = useDrawnFlow({
-    graph,
-    rendered,
-    drawnKey,
-    settings,
-    layout,
-    storedScope,
-    actions,
-  });
+  const { scope, hover, nodes, edges, nodeKey, shapeKey, metrics } =
+    useDrawnFlow({
+      graph,
+      rendered,
+      drawnKey,
+      settings,
+      layout,
+      storedScope,
+      actions,
+    });
   const details = detailsTable ? graph.known[detailsTable] : undefined;
   return {
     frame,
@@ -401,6 +412,7 @@ export const useGraphModel = (
     restoreAll,
     scope,
     layout,
+    metrics,
     drawnKey,
     nodes,
     edges,

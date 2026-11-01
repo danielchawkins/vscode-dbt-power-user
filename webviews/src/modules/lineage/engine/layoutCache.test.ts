@@ -33,6 +33,7 @@ const recordingEngine = (requests: LayoutRequest[]): LayoutEngine => ({
       bands: [],
       edges: new Map(),
       hints: { engine: "graph-layout", data: requests.length },
+      metrics: { crossings: 0, bends: 0, edgeLength: 0, area: 0 },
     };
   },
 });

@@ -87,12 +87,26 @@ export interface RoutedGeometry {
   startsAt?: string | undefined;
 }
 
+/** What the engine measured of its drawing: the numbers the Layout readout shows. */
+interface LayoutMeasures {
+  /** Pairs of drawn edges that cross. */
+  crossings: number;
+  /** Bends in the drawn edges, summed over all of them. */
+  bends: number;
+  /** Total length of the drawn edges, in canvas pixels. */
+  edgeLength: number;
+  /** Area of the drawing's bounds, in square canvas pixels. */
+  area: number;
+}
+
 export interface LayoutResponse {
   positions: ReadonlyMap<string, Point>;
   bands: readonly LayerBand[];
   /** One entry per routed edge id; an edge left out is not drawn. */
   edges: ReadonlyMap<string, RoutedGeometry>;
   hints: LayoutHints;
+  /** The measures of this layout, for the readout; they never change what is drawn. */
+  metrics: LayoutMeasures;
 }
 
 type LayoutEngineId = "graph-layout";
