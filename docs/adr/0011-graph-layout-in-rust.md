@@ -152,29 +152,56 @@ impl Engine {
 
 `Progress` carries the generation, the stage (`Fast`, `Refined` or `Final`) and whether the run is done. The WASM wrapper exposes the same methods. Its loop yields between `run` calls, so a Worker's `onmessage` can deliver `set_options` between steps. That is cooperative cancellation, and it needs no thread interruption.
 
-**Phase keys.** Each phase's key covers the options that phase reads. The table below is the design's claim about what each phase reads. S7 checks it against the TypeScript code and against a scripted sequence of edits.
+**Phase keys.** Each stage's key is FNV-1a 64 over the canonical bytes of the key of the stage before it and of what the stage reads (`crates/graph-layout/src/engine/keys.rs`). Keys chain, so a change that reaches a stage reaches every stage after it. The table below is the output of the S7 probe (`crates/graph-layout/src/engine/keys/tests.rs`). The probe starts from a base that sets every option, changes one option at a time, and marks each stage whose key changes. The test fails when this table differs from its output. A dot marks a stage whose key changes. Index is the graph and the edge kinds' joins; the stages after it read the graph only through it.
 
-| Phase              | Reads                                                                                                                                                                          | Changed by                               |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| Index              | graph structure, sizes, ports, partitions, clusters, excluded flags                                                                                                            | `set_graph`, an exclusion toggle         |
-| Layering (rank)    | `ranks`, `minLength`, `weight` of ranking kinds; `partitions`; rank hints; `budget.rankPivots`; `seed`                                                                         | ranking policy, partitions, effort, seed |
-| Ordering           | Layering key; order-affecting weights (including attraction weight if D-attr says so); `clusters`; `budget.sweeps`, `siftRounds`, `restarts`; `seed`; order hints; `stability` | effort, order weights, hints, seed       |
-| Across (new stage) | `across`; wrap width                                                                                                                                                           | `across` changes                         |
-| Placement          | Ordering key; placement weights (relationship and attraction); `spacing.node`, `spacing.cluster`; `anchor`; `across`; position hints; `budget.placeIterations`                 | weights, spacing, anchor, across, effort |
-| Routing            | Placement key; `spacing.edge`; `routed`; `sourceSide`/`targetSide`; `direction`; `budget.routePairs`, `doglegWork`                                                             | routing spacing and policy, direction    |
-| Assembly           | every key above                                                                                                                                                                | every change; cheap                      |
+<!-- key-table:start -->
+| Option                      | Index | Rank | Layer | Build | Order | Place | Route |
+| --------------------------- | ----- | ---- | ----- | ----- | ----- | ----- | ----- |
+| `direction`                 |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `edgeKinds.rank.ranks`      | ●     | ●    | ●     | ●     | ●     | ●     | ●     |
+| `edgeKinds.rank.minLength`  |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `edgeKinds.rank.weight`     |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `edgeKinds.rank.routed`     | ●     | ●    | ●     | ●     | ●     | ●     | ●     |
+| `edgeKinds.rank.sourceSide` |       |      |       |       |       |       |       |
+| `edgeKinds.rank.targetSide` |       |      |       |       |       |       |       |
+| `edgeKinds.info.weight`     |       |      | ●     | ●     | ●     | ●     | ●     |
+| `spacing.node`              |       |      |       |       |       | ●     | ●     |
+| `spacing.rank`              |       |      |       |       |       | ●     | ●     |
+| `spacing.edge`              |       |      |       | ●     | ●     | ●     | ●     |
+| `spacing.cluster`           |       |      |       |       |       | ●     | ●     |
+| `partitions`                |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `ranks`                     |       |      |       |       |       | ●     | ●     |
+| `anchor`                    |       |      |       |       |       | ●     | ●     |
+| `hints (presence)`          |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `hints.id and hints.rank`   |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `hints.order`               |       |      |       |       | ●     | ●     | ●     |
+| `hints.x`                   |       |      |       |       |       | ●     | ●     |
+| `hints.y`                   |       |      |       |       |       | ●     | ●     |
+| `stability`                 |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `effort`                    |       | ●    | ●     | ●     | ●     | ●     | ●     |
+| `seed`                      |       |      |       |       | ●     | ●     | ●     |
+<!-- key-table:end -->
 
-Which spacing fields each phase reads is an assumption to check in S7. The table implies the examples below.
+What the probe corrects in the design's table:
 
-| Edit                                       | Re-runs                                                   | Reuses                               |
+- `spacing.rank` is read by placement (`place/mod.rs`, the rank gap) as well as by routing, and `spacing.cluster` is read by placement only. Routing reads `spacing.edge` and `spacing.rank`.
+- `spacing.edge` is read by `layered::build`, so a change of it re-runs from Build, not from Routing alone.
+- `sourceSide` and `targetSide` are checked by `validate` and read by no stage. Changing them changes no key.
+- `budget.doglegWork` is defined but no stage reads it (`route/mod.rs` says routing never doglegs yet). Routing reads `routePairs` only.
+- No option reaches routing alone. Every option that reaches Route reaches Place first, so the cache test for a placement-only change re-runs Place and Route, and no test can pick a routing-only option.
+- Effort reaches Rank and Order as well as Place and Route, because the rank pivots and the sweep counts are budget counts.
+
+Not probed: the attraction weight, the attraction edges, and the excluded flags, which have no Rust code yet.
+
+| Edit | Re-runs | Reuses |
 | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------ |
-| Relationship-edge weight (`ranks: false`)  | Ordering, Placement, Routing                              | Index, Layering                      |
-| Attraction weight of a collapsed busy node | Placement, Routing (and Ordering if D-attr adds it there) | Index, Layering                      |
-| `spacing.edge` only                        | Routing                                                   | Index, Layering, Ordering, Placement |
-| `spacing.node`                             | Placement, Routing                                        | Index, Layering, Ordering            |
-| `rows` ↔ `levels`                          | Placement, Routing                                        | Index, Layering, Ordering            |
-| Effort change                              | from the first changed budget                             | earlier phases                       |
-| Node excluded or restored                  | Index, then only the components it touches                | every other component                |
+| `edgeKinds.info.weight` (`ranks: false`) | Layer, Build, Ordering, Placement, Routing | Index, Rank |
+| Attraction weight of a collapsed busy node | Placement, Routing (and Ordering if D-attr adds it there) | Index, Layering |
+| `spacing.edge` only | Build, Ordering, Placement, Routing | Index, Rank, Layering |
+| `spacing.node` | Placement, Routing | Index, Rank, Layering, Build, Ordering |
+| `rows` ↔ `levels` | Placement, Routing | Index, Rank, Layering, Build, Ordering |
+| Effort change | from Rank (the budget counts reach Rank and Order) | Index |
+| Node excluded or restored | Index, then only the components it touches | every other component |
 
 **Progressive results.** Stages are budget constants, not elapsed time. `Fast` is the first complete placement with a small budget; `Refined` continues the same engine state with a larger budget; `Final` is the `thorough` budget. The unit size is one sweep, one projection iteration, or one routing batch, chosen so the maximum single step stays small enough for a Worker's event loop (S12 measures it). Whether a Brandes–Köpf-only placement is legal enough to serve as `Fast` is open (S12). If it is not, `Fast` is placement with a capped number of projection iterations.
 

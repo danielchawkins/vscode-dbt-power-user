@@ -13,6 +13,9 @@ use crate::model::{Direction, Graph, Hints, Options, Partitions, Ranks};
 
 use super::phases::{spacing_of, to_uint32};
 
+#[cfg(test)]
+mod tests;
+
 /// A stage of the layout, in the order the phases run: the index, then rank and layer, build, order, place and route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Stage {
