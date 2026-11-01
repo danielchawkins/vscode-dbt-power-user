@@ -2,6 +2,7 @@ import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { pollUntil } from "../async";
 import { currentFixtureName } from "./fixtureContext";
+import { expectExclusions } from "./lineageExclusions";
 import { setLineageViewMode } from "./lineageViewMode";
 import { evaluatePanel } from "./panelFrames";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -330,6 +331,16 @@ suite("Lineage interactions", function () {
         "connections, most first, with Soften and Dim, and Hide unless it is the start card; or a line saying no card " +
         "has more connections than the cap.",
       measured: { busy },
+    });
+    // The Exclusions section sits in the same popover: each rule with the nodes it excludes or the failure dbt gave, a
+    // Remove button, and an input with an Add rule button.
+    const exclusions = await expectExclusions();
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-exclusions-open",
+      expect:
+        "Whole project view. Scope popover open with an Exclusions list under the busy cards' filters: each rule with the " +
+        "nodes it excludes or the failure dbt gave, a Remove button per rule, and an input with an Add rule button.",
+      measured: { exclusions },
     });
     await pressKeyInWebview(LINEAGE, "Escape");
     await expectWebviewDom(LINEAGE, { absent: "[role=dialog]" });

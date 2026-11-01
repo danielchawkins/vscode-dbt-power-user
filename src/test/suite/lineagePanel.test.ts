@@ -1166,3 +1166,134 @@ describe("LineagePanel — source YAML rooting", () => {
     expect((panel as any).lineageService.createTable).not.toHaveBeenCalled();
   });
 });
+
+describe("LineagePanel — exclusions", () => {
+  /** A panel with a manifest, the setting `exclude` and the rule resolver `resolveRules`; `ask` sends as the page does. */
+  const setup = (exclude: string[], resolveRules = vi.fn()) => {
+    const config = { get: vi.fn(() => exclude), update: vi.fn() };
+    (workspace.getConfiguration as Mock).mockReturnValue(config);
+    const panel = lineagePanel(silentLog(), {
+      lineageService: {
+        columnsNeedStrict: () => undefined,
+        exclusions: { resolveRules },
+      },
+      currentProject: { current: { manifest: { id: "m" } } },
+      queryManifestService: { manifestFor: () => undefined },
+    }) as any;
+    const page = openPage(panel, fakeView(), false);
+    const postMessage = page.page.webview.postMessage as Mock;
+    const ask = async (message: Record<string, unknown>) => {
+      await page.send({ syncRequestId: "ask", ...message });
+      return postMessage.mock.calls.findLast(
+        ([response]) => response.command === "response",
+      )?.[0].args.body;
+    };
+    return { panel, config, resolveRules, postMessage, ask };
+  };
+
+  it("answers each rule as the user wrote it, with its count or its failure, and never a node ID", async () => {
+    const resolveRules = vi.fn().mockResolvedValue([
+      {
+        rule: "resource_type:function resource_type:macro",
+        ids: ["function.p.f", "function.p.g"],
+      },
+      { rule: "resource_type:macro", failure: "dbt ls exited with code 2" },
+    ]);
+    const { ask } = setup(
+      [
+        "  resource_type:function resource_type:macro ",
+        "",
+        "resource_type:macro",
+      ],
+      resolveRules,
+    );
+
+    const body = await ask({ command: "getExclusions" });
+
+    expect(resolveRules).toHaveBeenCalledWith({ id: "m" }, [
+      "resource_type:function resource_type:macro",
+      "resource_type:macro",
+    ]);
+    expect(body).toEqual({
+      rules: [
+        {
+          rule: "  resource_type:function resource_type:macro ",
+          count: 2,
+          namesMacro: true,
+        },
+        {
+          rule: "resource_type:macro",
+          failure: "dbt ls exited with code 2",
+          namesMacro: true,
+        },
+      ],
+    });
+    expect(JSON.stringify(body)).not.toContain("function.p.f");
+  });
+
+  it("answers that the rules wait for a compiled project when no manifest is loaded", async () => {
+    const resolveRules = vi.fn();
+    const { ask, panel } = setup(["tag:nightly"], resolveRules);
+    panel.currentProject = { current: undefined };
+
+    const body = await ask({ command: "getExclusions" });
+
+    expect(resolveRules).not.toHaveBeenCalled();
+    expect(body).toEqual({
+      rules: [
+        {
+          rule: "tag:nightly",
+          failure: "Lineage needs a compiled project.",
+          namesMacro: false,
+        },
+      ],
+    });
+  });
+
+  it("appends a rule to the setting, trimmed, and leaves the setting alone for one already there", async () => {
+    const { ask, config } = setup([
+      "resource_type:function resource_type:macro",
+    ]);
+
+    await ask({
+      command: "addExclusion",
+      args: { params: { rule: " tag:nightly " } },
+    });
+    expect(config.update).toHaveBeenCalledWith("lineage.exclude", [
+      "resource_type:function resource_type:macro",
+      "tag:nightly",
+    ]);
+
+    config.update.mockClear();
+    await ask({
+      command: "addExclusion",
+      args: {
+        params: { rule: "resource_type:function resource_type:macro" },
+      },
+    });
+    expect(config.update).not.toHaveBeenCalled();
+  });
+
+  it("removes the setting's entry that is exactly the rule, and keeps the others", async () => {
+    const { ask, config } = setup(["a", "resource_type:macro", "b"]);
+
+    await ask({
+      command: "removeExclusion",
+      args: { params: { rule: "resource_type:macro" } },
+    });
+
+    expect(config.update).toHaveBeenCalledWith("lineage.exclude", ["a", "b"]);
+  });
+
+  it("tells the webview the graph changed when lineage.exclude changes", async () => {
+    const { postMessage } = setup([]);
+    const listener = vi
+      .mocked(workspace.onDidChangeConfiguration)
+      .mock.calls.at(-1)?.[0];
+
+    listener?.({ affectsConfiguration: () => true });
+    await settle();
+
+    expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
+  });
+});

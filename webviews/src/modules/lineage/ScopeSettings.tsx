@@ -1,6 +1,7 @@
 import BusyCardList from "./BusyCardList";
 import { Check } from "./Check";
 import styles from "./lineageGraph.module.css";
+import ScopeExclusions from "./ScopeExclusions";
 import type { ScopeControls } from "./useStoredFilters";
 
 /**
@@ -44,6 +45,7 @@ const ScopeSettings = ({
       <button type="button" disabled={!scope.ready} onClick={scope.showAll}>
         Show all
       </button>
+      <ScopeExclusions />
       <BusyCardList busy={scope.busy} />
     </section>
   );

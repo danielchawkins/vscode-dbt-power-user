@@ -1,8 +1,11 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
+import type { Disposable } from "vscode";
 import { firstLogLine, lsUniqueIds } from "../../core/cli";
 import type { Log } from "../../core/log";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
+import { onDidChangeSettings, readSetting, writeSetting } from "../../settings";
 
 const LOG_SOURCE = "Lineage:exclusion";
 
@@ -10,6 +13,9 @@ const LOG_SOURCE = "Lineage:exclusion";
 export type RuleResolution =
   | { rule: string; ids: readonly string[] }
   | { rule: string; failure: string };
+
+/** The answer for a rule when no manifest is loaded: dbt cannot resolve a rule before one is. */
+const NO_MANIFEST = "Lineage needs a compiled project.";
 
 /** Where a rule is answered: the language server while its client runs, and the dbt CLI otherwise. */
 export interface ExclusionSources {
@@ -99,6 +105,78 @@ export class LineageExclusions {
     }
     return lsUniqueIds(stdout);
   }
+}
+
+/** Whether `rule` names `resource_type:macro`, which Fusion 2.0.6 returns no macros for; see docs/lsp-metadata-gaps.md. */
+function namesMacro(rule: string): boolean {
+  return /(?:^|[\s,])resource_type:macro(?=$|[\s,])/.test(rule);
+}
+
+/** The answer for one rule the user wrote: its count of excluded nodes, or the failure dbt gave. */
+function answerOf(
+  rule: string,
+  resolution: RuleResolution,
+): lineage.ExclusionRule {
+  const named = { rule, namesMacro: namesMacro(rule) };
+  return "ids" in resolution
+    ? { ...named, count: new Set(resolution.ids).size }
+    : { ...named, failure: resolution.failure };
+}
+
+/** The `lineage.exclude` entries as the user wrote them, without blank ones. */
+function writtenRules(): string[] {
+  return (readSetting("lineage.exclude") ?? []).filter(
+    (rule) => rule.trim() !== "",
+  );
+}
+
+/**
+ * Each rule the setting holds, as written, with the nodes it excludes in `manifest` or the failure dbt gave. A rule
+ * resolves against the trimmed text; the IDs stay here, and only the count leaves.
+ */
+export async function exclusionAnswers(
+  exclusions: LineageExclusions,
+  manifest: Manifest | undefined,
+): Promise<lineage.ExclusionRule[]> {
+  const written = writtenRules();
+  const resolutions: RuleResolution[] = manifest
+    ? await exclusions.resolveRules(
+        manifest,
+        written.map((rule) => rule.trim()),
+      )
+    : written.map((rule) => ({ rule, failure: NO_MANIFEST }));
+  return written.map((rule, index) => answerOf(rule, resolutions[index]!));
+}
+
+/** Appends `rule`, trimmed, to the setting, unless the setting already holds it. */
+export async function addExclusionRule(rule: string): Promise<void> {
+  const text = rule.trim();
+  const written = readSetting("lineage.exclude") ?? [];
+  if (text !== "" && !written.some((entry) => entry.trim() === text)) {
+    await writeSetting("lineage.exclude", [...written, text]);
+  }
+}
+
+/** Removes the setting's first entry that is exactly `rule`; the other entries stay as they are. */
+export async function removeExclusionRule(rule: string): Promise<void> {
+  const written = readSetting("lineage.exclude") ?? [];
+  const index = written.indexOf(rule);
+  if (index >= 0) {
+    await writeSetting(
+      "lineage.exclude",
+      written.filter((_, position) => position !== index),
+    );
+  }
+}
+
+/** Calls `listener` when the `lineage.exclude` setting changes, in any scope. */
+export function onExclusionsChanged(listener: () => void): Disposable {
+  // ast-grep-ignore: ts-settings-subscribers-listed -- lineage.exclude is window-scoped, so no Project Snapshot carries it, and a change must refetch the graph.
+  return onDidChangeSettings(["lineage.exclude"], (change) => {
+    if (change.affects()) {
+      listener();
+    }
+  });
 }
 
 /** The `unique_id` of each node that has one, in order. */

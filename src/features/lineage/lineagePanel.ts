@@ -25,8 +25,10 @@ import type { Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
-import { detailRequestHandlers } from "./lineageDetailHandlers";
+import { detailRequestHandlers, type Respond } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
+import { onExclusionsChanged } from "./lineageExclusion";
+import { exclusionRequestHandlers } from "./lineageExclusionHandlers";
 import type { LineageService } from "./lineageService";
 import type { ResolvedSourceTable } from "./lineageSources";
 import {
@@ -118,7 +120,10 @@ export class LineagePanel
     if (columnsCommand) {
       this._disposables.push(columnsCommand);
     }
-    this._disposables.push(this.columnTraces);
+    this._disposables.push(
+      this.columnTraces,
+      onExclusionsChanged(() => void this.post({ command: "projectSaved" })),
+    );
   }
 
   /**
@@ -311,6 +316,9 @@ export class LineagePanel
   protected override handlers(
     page: WebviewView | WebviewPanel,
   ): Handlers<PanelMessage> {
+    const respond: Respond = (command, id, body) =>
+      this.respond(command, id, body);
+    const { lineageService, currentProject } = this;
     return {
       ...this.commonHandlers(page),
       init: () => this.init(),
@@ -327,14 +335,13 @@ export class LineagePanel
       ...columnTraceHandlers({
         lineageService: this.lineageService,
         traces: this.columnTraces,
-        respond: (command, syncRequestId, body) =>
-          this.respond(command, syncRequestId, body),
+        respond,
       }),
+      ...exclusionRequestHandlers({ lineageService, currentProject, respond }),
       ...detailRequestHandlers({
         details: this.details,
         extensionContext: this.extensionContext,
-        respond: (command, syncRequestId, body) =>
-          this.respond(command, syncRequestId, body),
+        respond,
       }),
     };
   }

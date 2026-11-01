@@ -207,6 +207,16 @@ const NO_SCOPE: lineage.LineageScope = {
 };
 let hostScope: lineage.LineageScope = NO_SCOPE;
 
+/** The `lineage.exclude` rules the host answers `getExclusions` with: the default rule, which resolves to a function. */
+const DEFAULT_EXCLUSIONS: lineage.ExclusionRule[] = [
+  {
+    rule: "resource_type:function resource_type:macro",
+    count: 1,
+    namesMacro: true,
+  },
+];
+let hostExclusions: lineage.ExclusionRule[] = DEFAULT_EXCLUSIONS;
+
 /** Sets what the host answers `getLineageSettings` with, for a test that renders without `openLineage`. */
 export const setHostSettings = (settings: Partial<lineage.LineageSettings>) => {
   hostSettings = settings;
@@ -265,6 +275,23 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   persistHiddenCards: () => ({ ok: true }),
   getLineageScope: () => ({ scope: hostScope }),
   persistLineageScope: () => ({ ok: true }),
+  getExclusions: () => ({ rules: hostExclusions }),
+  addExclusion: ({ rule }) => {
+    const text = String(rule);
+    hostExclusions = [
+      ...hostExclusions,
+      {
+        rule: text,
+        count: 1,
+        namesMacro: text.includes("resource_type:macro"),
+      },
+    ];
+    return { ok: true };
+  },
+  removeExclusion: ({ rule }) => {
+    hostExclusions = hostExclusions.filter((item) => item.rule !== rule);
+    return { ok: true };
+  },
 };
 
 type Posted = {
@@ -326,6 +353,8 @@ export const openLineage = async (
     hidden?: lineage.HiddenCard[];
     /** The Scope settings the host answers `getLineageScope` with: switched off, softened or dimmed in this workspace. */
     scope?: Partial<lineage.LineageScope>;
+    /** The exclusion rules the host answers `getExclusions` with; the default rule when unset. */
+    exclusions?: lineage.ExclusionRule[];
     renderFirst?: boolean;
     /**
      * How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. The whole
@@ -342,6 +371,7 @@ export const openLineage = async (
   hostRefs = options.refs ?? [];
   hostHidden = options.hidden ?? [];
   hostScope = { ...NO_SCOPE, ...options.scope };
+  hostExclusions = options.exclusions ?? DEFAULT_EXCLUSIONS;
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
@@ -471,6 +501,11 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "checkbox:nightly",
   "checkbox:finance",
   "button:Show all",
+  "textbox:Exclusion rule",
+  "button:Add rule",
+  "button:Remove resource_type:function resource_type:macro",
+  "button:Remove source:broken",
+  "button:Remove resource_type:macro",
   "button:Hide b",
   "button:Soften b",
   "button:Dim b",
