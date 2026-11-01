@@ -55,6 +55,7 @@ const contentKey = (
       request.edges,
       request.rankPairs,
       request.traceOn,
+      request.spacing,
     ]),
   );
 

@@ -1,3 +1,4 @@
+import { PopoverWithButton } from "@uicore";
 import BusyCardList from "./BusyCardList";
 import { Check } from "./Check";
 import { EDGE_GROUP_LABELS } from "./edgeGroups";
@@ -69,4 +70,27 @@ const ScopeSettings = ({
   );
 };
 
-export default ScopeSettings;
+/** The Scope control: a button that is pressed while a filter is on, and the filters behind it. */
+export const ScopePopover = ({
+  scope,
+}: {
+  scope: ScopeControls;
+}): React.JSX.Element => (
+  <PopoverWithButton
+    width={260}
+    button={
+      <button
+        type="button"
+        aria-pressed={
+          scope.scope.offTypes.length + scope.scope.offTags.length > 0
+        }
+        title="Scope"
+      >
+        <span className="codicon codicon-filter" />
+        <span className={styles.buttonLabel}>Scope</span>
+      </button>
+    }
+  >
+    {() => <ScopeSettings scope={scope} />}
+  </PopoverWithButton>
+);

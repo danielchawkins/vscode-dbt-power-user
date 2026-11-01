@@ -1,9 +1,3 @@
-/**
- * The @fusion-power-user/graph-layout adapter behind the layout-engine port. It maps a `LayoutRequest` to the
- * package's typed graph and maps the result back: cards are nodes, column rows are ports, and the dbt layer is both a
- * partition, which orders the ranks, and a cluster, whose box is the band. Clusters keep their boxes apart and widen
- * the rank gaps for their padding, so bands never overlap and edges run between them.
- */
 import {
   type EdgeKindPolicy,
   type LayoutEdge,
@@ -13,7 +7,15 @@ import {
   type LayoutOptions,
   type LayoutResult,
   layout,
+  type Spacing,
 } from "@fusion-power-user/graph-layout";
+/**
+ * The @fusion-power-user/graph-layout adapter behind the layout-engine port. It maps a `LayoutRequest` to the
+ * package's typed graph and maps the result back: cards are nodes, column rows are ports, and the dbt layer is both a
+ * partition, which orders the ranks, and a cluster, whose box is the band. Clusters keep their boxes apart and widen
+ * the rank gaps for their padding, so bands never overlap and edges run between them.
+ */
+import { lineage } from "@fusion-power-user/webview-contract";
 import { OTHER_TAG } from "../layerTags";
 import type {
   LayerBand,
@@ -30,6 +32,16 @@ import type {
 const BAND_PAD = 22;
 const CARD_GAP = 28;
 const GUTTER = 36;
+
+/**
+ * The layout spacing each preset gives: `node` between cards in one rank, `rank` between ranks, `edge` between parallel
+ * edge segments, `cluster` between layer boxes. Compact is about two thirds of default in each setting, so cards and
+ * their gaps keep their proportions.
+ */
+const SPACING: Readonly<Record<lineage.SpacingPreset, Spacing>> = {
+  default: { node: CARD_GAP, rank: GUTTER, edge: 6, cluster: CARD_GAP },
+  compact: { node: 18, rank: 24, edge: 4, cluster: 18 },
+};
 
 /** The dbt layers in flow order; a custom layer ranks between intermediate and marts, and Other after every layer. */
 const LAYER_ORDER = ["source", "staging", "intermediate", "marts"];
@@ -105,7 +117,7 @@ function optionsFor(
     ranks: "rows",
     anchor: request.focus,
     effort,
-    spacing: { node: CARD_GAP, rank: GUTTER, edge: 6, cluster: CARD_GAP },
+    spacing: SPACING[request.spacing ?? lineage.DEFAULT_SPACING_PRESET],
     ...(previous ? { hints: previous } : {}),
   };
 }

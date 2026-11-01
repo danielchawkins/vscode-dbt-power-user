@@ -6,7 +6,6 @@
  *
  * Plain data only, so the evaluation harness drives every engine the same way and compares their answers.
  */
-
 /** Top-left corner of a card, or a point of an edge's path, in canvas pixels. */
 export interface Point {
   x: number;
@@ -75,6 +74,8 @@ export interface LayoutRequest {
   rankPairs: readonly (readonly [string, string])[];
   /** A column trace is shown, so column edges take precedence over table edges. */
   traceOn: boolean;
+  /** The spacing the layout draws with, the preset's name; absent means the default. */
+  spacing?: "default" | "compact" | undefined;
   /** The previous answer's hints for this start card, if any. */
   previous?: LayoutHints | undefined;
 }

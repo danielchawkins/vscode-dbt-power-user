@@ -26,6 +26,7 @@ import {
   useHiddenCards,
   useStoredScope,
 } from "./useStoredFilters";
+import { type LayoutControl, useStoredLayout } from "./useStoredLayout";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings } from "./viewModel";
 
@@ -110,11 +111,13 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
 const useBuiltFlow = ({
   graph,
   settings,
+  spacing,
   refs,
   columnsNeedStrict,
 }: {
   graph: GraphState;
   settings: ResolvedSettings;
+  spacing: lineage.SpacingPreset;
   refs: lineage.LineageRef[];
   columnsNeedStrict: boolean;
 }) => {
@@ -143,6 +146,7 @@ const useBuiltFlow = ({
           layerColors,
           enabledRefSources,
           inferenceConfidenceThreshold,
+          spacing,
         },
         refs,
         columnsNeedStrict,
@@ -153,6 +157,7 @@ const useBuiltFlow = ({
       refs,
       columnsNeedStrict,
       layouter,
+      spacing,
       showSelectEdges,
       showNonSelectEdges,
       connections,
@@ -226,6 +231,8 @@ interface GraphModel {
   restoreAll: () => void;
   /** The Scope control: the filters and what they take out. */
   scope: ScopeControls;
+  /** The Layout control: the spacing the cards are placed with, and its change. */
+  layout: LayoutControl;
   drawnKey: number;
   nodes: BuiltFlow["nodes"];
   edges: BuiltFlow["edges"];
@@ -279,6 +286,54 @@ const useSettingsRefs = (
 };
 
 /**
+ * The flow the graph draws: its refs, the built layout, the Scope controls, the emphasised nodes and edges,
+ * and the keys the canvas fits by. A hover restyles the built flow; only a change to its inputs lays it out again.
+ */
+const useDrawnFlow = ({
+  graph,
+  rendered,
+  drawnKey,
+  settings,
+  layout,
+  storedScope,
+  actions,
+}: {
+  graph: GraphState;
+  rendered: Lineage["rendered"];
+  drawnKey: number;
+  settings: ResolvedSettings;
+  layout: LayoutControl;
+  storedScope: ReturnType<typeof useStoredScope>;
+  actions: Lineage["actions"];
+}) => {
+  const refs = useRefs(settings, drawnKey);
+  const { hovered, hover } = useHoveredCard(settings);
+  const built = useBuiltFlow({
+    graph,
+    settings,
+    spacing: layout.spacing,
+    refs,
+    columnsNeedStrict: rendered?.columnsNeedStrict === true,
+  });
+  const scope = useBusyControls({
+    graph,
+    threshold: settings.maxNeighbours,
+    stored: storedScope,
+    hide: actions.hide,
+    edgeGroups: built.edgeGroups,
+  });
+  const { nodes, edges } = useEmphasizedFlow({
+    graph,
+    settings,
+    built,
+    hovered,
+    dimmed: storedScope.scope?.dimmed,
+  });
+  const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);
+  return { scope, hover, nodes, edges, nodeKey, shapeKey };
+};
+
+/**
  * The lineage view's model: the settings, the graph and its React Flow nodes and edges, the notice, and the keys the
  * canvas fits by. The details drawer opens for a table through `openDetails`.
  */
@@ -288,6 +343,7 @@ export const useGraphModel = (
   const { settings, loaded, change } = useSettings();
   const hiddenIds = useHiddenCards();
   const storedScope = useStoredScope();
+  const layout = useStoredLayout();
   const graphScope = useGraphScope(storedScope.scope);
   const { detailsTable, openDetails } = useDetailsDrawer(drawerRef);
   const { defaultExpansion, expansionOptions, raiseBudget } = useSettingsRefs(
@@ -307,8 +363,12 @@ export const useGraphModel = (
   } = useLineageGraph(defaultExpansion, openDetails, {
     expansionOptions,
     raiseBudget,
-    // The first graph waits for the stored Scope too, so it is drawn with the filters already applied.
-    ready: loaded && hiddenIds !== undefined && storedScope.scope !== undefined,
+    // The first graph waits for the stored Scope and Layout too, so it is drawn with them already applied.
+    ready:
+      loaded &&
+      hiddenIds !== undefined &&
+      storedScope.scope !== undefined &&
+      layout.loaded,
     hidden: hiddenIds,
     scope: graphScope,
   });
@@ -317,30 +377,16 @@ export const useGraphModel = (
     [graph.hiddenCards],
   );
   const notice = rendered?.missingLineageMessage;
-  const refs = useRefs(settings, drawnKey);
-  const { hovered, hover } = useHoveredCard(settings);
-  const built = useBuiltFlow({
+  const { scope, hover, nodes, edges, nodeKey, shapeKey } = useDrawnFlow({
     graph,
+    rendered,
+    drawnKey,
     settings,
-    refs,
-    columnsNeedStrict: rendered?.columnsNeedStrict === true,
-  });
-  const scope = useBusyControls({
-    graph,
-    threshold: settings.maxNeighbours,
-    stored: storedScope,
-    hide: actions.hide,
-    edgeGroups: built.edgeGroups,
-  });
-  const { nodes, edges } = useEmphasizedFlow({
-    graph,
-    settings,
-    built,
-    hovered,
-    dimmed: storedScope.scope?.dimmed,
+    layout,
+    storedScope,
+    actions,
   });
   const details = detailsTable ? graph.known[detailsTable] : undefined;
-  const { nodeKey, shapeKey } = useFitKeys(built.flow, settings);
   return {
     frame,
     settings,
@@ -354,6 +400,7 @@ export const useGraphModel = (
     restore,
     restoreAll,
     scope,
+    layout,
     drawnKey,
     nodes,
     edges,

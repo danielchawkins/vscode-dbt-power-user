@@ -220,6 +220,17 @@ export interface LineageSettings {
 /** The views the lineage panel draws: every table of the project, or the neighbourhood of the open model. */
 export type ViewMode = "whole" | "neighbourhood";
 
+/** The spacing the layout draws cards and edges with: the default, or compact, which packs them closer. */
+export type SpacingPreset = "default" | "compact";
+
+/** The spacing an unset Layout control gives. */
+export const DEFAULT_SPACING_PRESET: SpacingPreset = "default";
+
+/** The Layout control's settings, kept for the workspace, whatever the start model. */
+export interface LineageLayout {
+  spacing: SpacingPreset;
+}
+
 /** The deepest a neighbourhood's upstream or downstream depth goes. */
 export const MAX_VIEW_DEPTH = 10;
 
@@ -286,6 +297,9 @@ export type PanelMessage =
   /** The node types and tags the workspace has switched off in the Scope control, for every start model. */
   | OptionalRequest<"getLineageScope">
   | Request<"persistLineageScope", { scope: LineageScope }>
+  /** The Layout control's settings the workspace keeps, for every start model. */
+  | OptionalRequest<"getLineageLayout">
+  | Request<"persistLineageLayout", { layout: LineageLayout }>
   /** The `lineage.exclude` rules as the user wrote them, each with the nodes it excludes in the current manifest. */
   | OptionalRequest<"getExclusions">
   /** Appends `rule` to the `lineage.exclude` setting. */
@@ -353,6 +367,8 @@ export interface ResponseBodies {
   persistHiddenCards: { ok: true };
   getLineageScope: { scope: LineageScope };
   persistLineageScope: { ok: true };
+  getLineageLayout: { layout: LineageLayout };
+  persistLineageLayout: { ok: true };
   getExclusions: { rules: ExclusionRule[] };
   addExclusion: { ok: true };
   removeExclusion: { ok: true };
@@ -388,6 +404,12 @@ const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
 const isHiddenCard = shape<HiddenCard>({
   id: isString,
   label: optional(isString),
+});
+
+const isSpacingPreset = oneOf("default", "compact");
+
+const isLineageLayout = shape<LineageLayout>({
+  spacing: isSpacingPreset,
 });
 
 const isLineageScope = shape<LineageScope>({
@@ -446,6 +468,10 @@ const panelFields: CommandFields<PanelMessage> = {
   getLineageScope: optionalRequest({}),
   persistLineageScope: request<{ scope: LineageScope }>({
     scope: isLineageScope,
+  }),
+  getLineageLayout: optionalRequest({}),
+  persistLineageLayout: request<{ layout: LineageLayout }>({
+    layout: isLineageLayout,
   }),
   getExclusions: optionalRequest({}),
   addExclusion: request<{ rule: string }>({ rule: isString }),

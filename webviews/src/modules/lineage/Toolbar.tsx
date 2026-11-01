@@ -3,9 +3,11 @@ import { PopoverWithButton } from "@uicore";
 import { useEffect, useRef, useState } from "react";
 import { Check } from "./Check";
 import HelpButton from "./components/help/HelpButton";
+import { LayoutPopover } from "./LayoutSettings";
 import styles from "./lineageGraph.module.css";
-import ScopeSettings from "./ScopeSettings";
+import { ScopePopover } from "./ScopeSettings";
 import type { ScopeControls } from "./useStoredFilters";
+import type { LayoutControl } from "./useStoredLayout";
 import type { ResolvedSettings } from "./viewModel";
 import { REF_SOURCES } from "./viewModel";
 
@@ -308,7 +310,7 @@ const HiddenCards = ({
   </section>
 );
 
-/** The toolbar: edge settings, the hidden cards, the Scope filters, the connections choice, help and reset. */
+/** The toolbar: edge settings, the hidden cards, the Scope filters, the Layout spacing, the connections choice, help and reset. */
 const Toolbar = ({
   settings,
   change,
@@ -317,6 +319,7 @@ const Toolbar = ({
   restore,
   restoreAll,
   scope,
+  layout,
 }: {
   settings: ResolvedSettings;
   change: Change;
@@ -325,6 +328,7 @@ const Toolbar = ({
   restore: (table: string) => void;
   restoreAll: () => void;
   scope: ScopeControls;
+  layout: LayoutControl;
 }): React.JSX.Element => (
   <div className={styles.toolbar}>
     <PopoverWithButton
@@ -346,23 +350,8 @@ const Toolbar = ({
         </EdgeSettings>
       )}
     </PopoverWithButton>
-    <PopoverWithButton
-      width={260}
-      button={
-        <button
-          type="button"
-          aria-pressed={
-            scope.scope.offTypes.length + scope.scope.offTags.length > 0
-          }
-          title="Scope"
-        >
-          <span className="codicon codicon-filter" />
-          <span className={styles.buttonLabel}>Scope</span>
-        </button>
-      }
-    >
-      {() => <ScopeSettings scope={scope} />}
-    </PopoverWithButton>
+    <ScopePopover scope={scope} />
+    <LayoutPopover layout={layout} />
     <PopoverWithButton
       width={260}
       button={

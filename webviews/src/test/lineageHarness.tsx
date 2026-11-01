@@ -222,6 +222,9 @@ const NO_SCOPE: lineage.LineageScope = {
 };
 let hostScope: lineage.LineageScope = NO_SCOPE;
 
+/** The Layout control the host answers `getLineageLayout` with, as `openLineage` sets it: the default spacing. */
+let hostLayout: lineage.LineageLayout = { spacing: "default" };
+
 /** The `lineage.exclude` rules the host answers `getExclusions` with: the default rule, which resolves to a function. */
 const DEFAULT_EXCLUSIONS: lineage.ExclusionRule[] = [
   {
@@ -290,6 +293,8 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   persistHiddenCards: () => ({ ok: true }),
   getLineageScope: () => ({ scope: hostScope }),
   persistLineageScope: () => ({ ok: true }),
+  getLineageLayout: () => ({ layout: hostLayout }),
+  persistLineageLayout: () => ({ ok: true }),
   getExclusions: () => ({ rules: hostExclusions }),
   addExclusion: ({ rule }) => {
     const text = String(rule);
@@ -368,6 +373,8 @@ export const openLineage = async (
     hidden?: lineage.HiddenCard[];
     /** The Scope settings the host answers `getLineageScope` with: switched off, softened or dimmed in this workspace. */
     scope?: Partial<lineage.LineageScope>;
+    /** The Layout control the host answers `getLineageLayout` with: the spacing kept in this workspace. */
+    layout?: Partial<lineage.LineageLayout>;
     /** The exclusion rules the host answers `getExclusions` with; the default rule when unset. */
     exclusions?: lineage.ExclusionRule[];
     renderFirst?: boolean;
@@ -386,6 +393,7 @@ export const openLineage = async (
   hostRefs = options.refs ?? [];
   hostHidden = options.hidden ?? [];
   hostScope = { ...NO_SCOPE, ...options.scope };
+  hostLayout = { spacing: "default", ...options.layout };
   hostExclusions = options.exclusions ?? DEFAULT_EXCLUSIONS;
   const user = userEvent.setup();
   const { container } = render(
@@ -507,6 +515,9 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "checkbox:inferred",
   "slider:Inferred confidence ≥ 0.80",
   "checkbox:Infer relationships for sources",
+  "button:Layout",
+  "radio:Default",
+  "radio:Compact",
   "button:Reset",
   "button:Restore a",
   "button:Restore all",

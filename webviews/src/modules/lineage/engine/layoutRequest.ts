@@ -84,6 +84,7 @@ export function layoutRequest(
       ([parent, child]) => both(parent, child) && !soft(parent, child),
     ),
     traceOn: data.columnEdges.length > 0,
+    spacing: input.spacing,
   };
 }
 
@@ -156,6 +157,8 @@ export interface LayoutInput {
   softened?: readonly string[] | undefined;
   /** The engine that places and routes the cards; absent means `balanced`. */
   engine?: lineage.LineageEngine | undefined;
+  /** The spacing the cards are placed with; absent means the default. */
+  spacing?: lineage.SpacingPreset | undefined;
 }
 
 /**

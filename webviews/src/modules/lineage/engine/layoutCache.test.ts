@@ -56,6 +56,17 @@ describe("createLayouter", () => {
     expect(requests).toHaveLength(3);
   });
 
+  it("lays out again when the spacing differs, seeded with the hints on screen", () => {
+    const requests: LayoutRequest[] = [];
+    const layout = createLayouter(() => recordingEngine(requests));
+    const first = layout({ ...request(280), spacing: "default" }, "balanced");
+    const compact = layout({ ...request(280), spacing: "compact" }, "balanced");
+    expect(requests).toHaveLength(2);
+    expect(requests[1]?.spacing).toBe("compact");
+    expect(requests[1]?.previous).toEqual(first.hints);
+    expect(compact).not.toBe(first);
+  });
+
   it("keeps the least recently used results and lays out the one it dropped again", () => {
     const requests: LayoutRequest[] = [];
     const layout = createLayouter(() => recordingEngine(requests), 2);

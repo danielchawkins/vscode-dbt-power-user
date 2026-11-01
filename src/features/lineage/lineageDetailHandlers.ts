@@ -3,6 +3,7 @@ import type { ExtensionContextStore } from "../../extensionContext";
 import type { Handlers } from "../../webview/messageRouter";
 import type { LineageDetails } from "./lineageDetails";
 import { persistHiddenCards, readHiddenCards } from "./lineageHiddenCards";
+import { persistLineageLayout, readLineageLayout } from "./lineageLayout";
 import { persistLineageScope, readLineageScope } from "./lineageScope";
 import { persistLineageSettings, readLineageSettings } from "./lineageSettings";
 
@@ -30,6 +31,8 @@ export function detailRequestHandlers(deps: {
   | "persistHiddenCards"
   | "getLineageScope"
   | "persistLineageScope"
+  | "getLineageLayout"
+  | "persistLineageLayout"
 > {
   const { details, extensionContext, respond } = deps;
   return {
@@ -70,6 +73,14 @@ export function detailRequestHandlers(deps: {
     persistLineageScope: ({ args, syncRequestId }) => {
       persistLineageScope(extensionContext, args.params.scope);
       respond("persistLineageScope", syncRequestId, { ok: true });
+    },
+    getLineageLayout: ({ syncRequestId }) =>
+      respond("getLineageLayout", syncRequestId, {
+        layout: readLineageLayout(extensionContext),
+      }),
+    persistLineageLayout: ({ args, syncRequestId }) => {
+      persistLineageLayout(extensionContext, args.params.layout);
+      respond("persistLineageLayout", syncRequestId, { ok: true });
     },
   };
 }
