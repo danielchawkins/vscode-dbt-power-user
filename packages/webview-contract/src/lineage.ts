@@ -165,10 +165,15 @@ export interface LineageRef {
 }
 
 /**
- * Which engine places and routes the lineage cards: `balanced` and `thorough` are @fusion-power-user/graph-layout
- * with that ordering effort, `thorough` searching harder for fewer crossings.
+ * Which engine places and routes the lineage cards. `rust-balanced` and `rust-thorough` are the Rust engine (ADR 0011),
+ * run in the host's Worker, with that ordering effort; `thorough` searches harder for fewer crossings. `balanced` and
+ * `thorough` are the TypeScript engine, kept as the fallback until Phase 10.
  */
-export type LineageEngine = "balanced" | "thorough";
+export type LineageEngine =
+  | "rust-balanced"
+  | "rust-thorough"
+  | "balanced"
+  | "thorough";
 
 /** The engine an unset `lineage.engine` gives. */
 export const DEFAULT_LINEAGE_ENGINE: LineageEngine = "balanced";
@@ -305,7 +310,26 @@ export type PanelMessage =
   /** Appends `rule` to the `lineage.exclude` setting. */
   | Request<"addExclusion", { rule: string }>
   /** Removes the first `lineage.exclude` entry that is exactly `rule`. */
-  | Request<"removeExclusion", { rule: string }>;
+  | Request<"removeExclusion", { rule: string }>
+  /** Lays out the graph frame `frame` with the Rust engine in the host's worker, for the panel's generation. */
+  | Request<"layout", LayoutParams>;
+
+/**
+ * A layout the host runs with the Rust engine (ADR 0011). `frame` is the graph frame as base64 text: a webview message
+ * is JSON, so the bytes cross as text, not as a `Uint8Array`, which JSON would turn into an object. `options` is the
+ * engine options as JSON text, the form the WASM binding takes, so the host passes it on without reading it.
+ * `generation` orders the panel's layouts: a layout a newer one overtakes is answered `superseded`.
+ */
+export interface LayoutParams {
+  frame: string;
+  options: string;
+  generation: number;
+}
+
+/** The host's answer to `layout`: the layout frame as base64 text, or `superseded` when a newer generation overtook it. */
+export type LayoutBody =
+  | { superseded: true }
+  | { superseded: false; frame: string };
 
 /**
  * A card the user hid: its unique ID, and the title the panel showed it by when it was hidden (`label`, absent when none
@@ -373,6 +397,7 @@ export interface ResponseBodies {
   addExclusion: { ok: true };
   removeExclusion: { ok: true };
   getProjectGraph: { tables: LineageTable[]; edges: [string, string][] };
+  layout: LayoutBody;
 }
 
 const request = <P>(params: Fields<NoInfer<P>>) => ({
@@ -476,6 +501,11 @@ const panelFields: CommandFields<PanelMessage> = {
   getExclusions: optionalRequest({}),
   addExclusion: request<{ rule: string }>({ rule: isString }),
   removeExclusion: request<{ rule: string }>({ rule: isString }),
+  layout: request<LayoutParams>({
+    frame: isString,
+    options: isString,
+    generation: isNumber,
+  }),
 };
 
 export const isPanelMessage = messageGuard<PanelMessage>(panelFields);

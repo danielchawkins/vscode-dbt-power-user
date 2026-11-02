@@ -8,6 +8,8 @@ export default defineConfig({
   source: {
     entry: {
       extension: "./src/extension.ts",
+      // The host's Worker thread for the Rust layout; it loads dist/graph-layout (ADR 0011).
+      graphLayoutThread: "./src/features/lineage/graphLayoutThread.ts",
     },
   },
   output: {

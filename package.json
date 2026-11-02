@@ -56,6 +56,7 @@
     "syntaxes/*.tmLanguage.json",
     "snippets/*.json",
     "dist/webview/assets/**",
+    "dist/graph-layout/**",
     "LICENSE",
     "README.md"
   ],
@@ -150,14 +151,18 @@
           "fusionPowerUser.lineage.engine": {
             "type": "string",
             "enum": [
+              "rust-balanced",
+              "rust-thorough",
               "balanced",
               "thorough"
             ],
             "enumDescriptions": [
-              "The graph-layout engine with a balanced search for the card order with the fewest crossings.",
-              "The graph-layout engine searching harder for that order. Slower on large graphs."
+              "The Rust layout engine, run in the extension host, with a balanced search for the card order with the fewest crossings.",
+              "The Rust layout engine, run in the extension host, searching harder for that order. Slower on large graphs.",
+              "The TypeScript layout engine with a balanced search for the card order with the fewest crossings. Kept as a fallback.",
+              "The TypeScript layout engine searching harder for that order. Slower on large graphs. Kept as a fallback."
             ],
-            "description": "Which engine places and routes the lineage layout. Read-only in the panel, like the other lineage settings.",
+            "description": "Which engine places and routes the lineage layout. The rust-* engines lay out in the extension host; balanced and thorough are the TypeScript fallback. Read-only in the panel, like the other lineage settings.",
             "default": "balanced"
           },
           "fusionPowerUser.lineage.semanticZoom": {
@@ -1094,7 +1099,8 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:packages && npm run build:app --workspace webviews && npm run build:app",
+    "vscode:prepublish": "npm run build:wasm && npm run build:packages && npm run build:app --workspace webviews && npm run build:app",
+    "build:wasm": "just crates::wasm",
     "build:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout",
     "watch:packages": "node node_modules/typescript-7/bin/tsc -b packages/webview-contract packages/graph-layout --watch --preserveWatchOutput",
     "build": "npm run build:packages && npm run build:app",

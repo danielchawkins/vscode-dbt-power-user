@@ -5,6 +5,7 @@ import { EventEmitter, Uri } from "vscode";
 import type { Log } from "../core/log";
 import { ColumnProposalRequests } from "../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../features/docs/docsEditPanel";
+import { GraphLayoutWorker } from "../features/lineage/graphLayoutWorker";
 import { LineagePanel } from "../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../features/queryResults/queryResultPanel";
 import { QueryPanelRequests } from "../projects/project/queryPanelRequests";
@@ -210,6 +211,7 @@ export function lineagePanel(
     lineageService?: unknown;
     queryManifestService?: unknown;
     currentProject?: unknown;
+    layouts?: unknown;
   } = {},
 ): LineagePanel {
   return new LineagePanel({
@@ -218,6 +220,8 @@ export function lineagePanel(
     lineageService: (services.lineageService ?? {}) as never,
     currentProject: (services.currentProject ?? {}) as never,
     queryManifestService: (services.queryManifestService ?? {}) as never,
+    layouts: (services.layouts ??
+      new GraphLayoutWorker({ entry: "", wasmDir: "" })) as never,
   });
 }
 

@@ -12,9 +12,6 @@ import type {
 } from "vscode";
 import { commands, Uri, window } from "vscode";
 import type { Log } from "../../core/log";
-import { USE_STRICT_ANALYSIS_COMMAND } from "../../core/snapshot/schemaOrigin";
-import type { NeedsStrict } from "../../core/snapshot/strictNeeded";
-import { strictNeededMessage } from "../../core/snapshot/strictNeeded";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
 import type { MetadataDemand } from "../../projects/manifest/metadataDemand";
@@ -25,16 +22,19 @@ import type { Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { ColumnTraceRequests } from "./columnTraceRequests";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
+import type { GraphLayoutWorker } from "./graphLayoutWorker";
 import { detailRequestHandlers, type Respond } from "./lineageDetailHandlers";
 import { LineageDetails } from "./lineageDetails";
 import { onExclusionsChanged } from "./lineageExclusion";
 import { exclusionRequestHandlers } from "./lineageExclusionHandlers";
+import { LayoutRequests } from "./lineageLayoutHandlers";
 import type { LineageService } from "./lineageService";
 import type { ResolvedSourceTable } from "./lineageSources";
 import {
   resolveSourceStartingNode,
   SOURCE_YAML_EXTENSIONS,
 } from "./lineageSources";
+import { staticAnalysisNotice, useStrictAnalysis } from "./lineageStrictNotice";
 import { columnTraceHandlers } from "./lineageTraceHandlers";
 
 type HostMessage = lineage.HostMessage;
@@ -42,20 +42,6 @@ type PanelMessage = lineage.PanelMessage;
 
 /** The view id contributed in `package.json`. */
 export const LINEAGE_VIEW_TYPE = "fusionPowerUser.Lineage";
-
-/** The panel notice for a project whose effective static-analysis mode computes no column lineage. */
-function staticAnalysisNotice(needs: NeedsStrict): PanelNotice {
-  return {
-    message: strictNeededMessage(needs),
-    type: "warning",
-    actions: [{ title: "Use strict analysis", action: "useStrictAnalysis" }],
-  };
-}
-
-/** Runs the notice button's command for the Current Project's root. */
-function useStrictAnalysis(root: Uri | undefined): Thenable<unknown> {
-  return commands.executeCommand(USE_STRICT_ANALYSIS_COMMAND, root);
-}
 
 interface LineagePanelView extends WebviewViewProvider {
   init(): void;
@@ -92,6 +78,8 @@ export class LineagePanel
   private readonly columnTraces = new ColumnTraceRequests();
   /** The latest starting-node render; see {@link renderStartingNode}. */
   private renderGeneration = 0;
+  /** This panel's layouts in the host's layout Worker; released with the panel. */
+  private readonly layoutRequests: LayoutRequests;
 
   public constructor({
     extensionContext,
@@ -100,6 +88,7 @@ export class LineagePanel
     queryManifestService,
     currentProject,
     metadataDemand,
+    layouts,
   }: {
     extensionContext: ExtensionContextStore;
     terminal: Log;
@@ -107,8 +96,11 @@ export class LineagePanel
     queryManifestService: QueryManifestService;
     currentProject: CurrentProject;
     metadataDemand?: MetadataDemand;
+    layouts: GraphLayoutWorker;
   }) {
     super({ extensionContext, log: terminal });
+    this.layoutRequests = new LayoutRequests(layouts);
+    this._disposables.push(this.layoutRequests);
     this.queryManifestService = queryManifestService;
     this.currentProject = currentProject;
     this.terminal = terminal;
@@ -343,6 +335,7 @@ export class LineagePanel
         extensionContext: this.extensionContext,
         respond,
       }),
+      ...this.layoutRequests.handlers(respond),
     };
   }
 

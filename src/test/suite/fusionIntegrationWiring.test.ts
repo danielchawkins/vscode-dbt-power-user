@@ -29,6 +29,7 @@ import { disposeAll } from "../../core/disposables";
 function stubContext(workspaceValue?: string) {
   return {
     extension: { id: "danielchawkins.fusion-power-user" },
+    extensionUri: { path: "/ext", fsPath: "/ext" },
     workspaceState: { get: vi.fn(() => workspaceValue), update: vi.fn() },
     globalState: { get: vi.fn(), update: vi.fn() },
   } as never;

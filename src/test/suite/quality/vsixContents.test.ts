@@ -59,8 +59,8 @@ describe("missingEntries", () => {
   });
 });
 
-// Checklist 12: the Rust sources and the WebAssembly and Node-API outputs never reach the VSIX. Each plant is an entry
-// vsce would write for the file, the way `unzip -Z1` lists it.
+// Checklist 12: the Rust sources and the Node-API binding never reach the VSIX; the WebAssembly engine does. Each plant
+// is an entry vsce would write for the file, the way `unzip -Z1` lists it.
 describe("Rust outputs stay out of the VSIX (checklist 12)", () => {
   it("plant: a file under crates/ is rejected", () => {
     expect(
@@ -74,18 +74,19 @@ describe("Rust outputs stay out of the VSIX (checklist 12)", () => {
     ]);
   });
 
-  it("plant: a file under dist/graph-layout/ is rejected", () => {
+  it("plant: the Node-API binding under dist/graph-layout/ is rejected", () => {
+    expect(
+      unexpectedEntries(["extension/dist/graph-layout/graph_layout_napi.node"]),
+    ).toEqual(["extension/dist/graph-layout/graph_layout_napi.node"]);
+  });
+
+  it("accepts the WebAssembly engine under dist/graph-layout/", () => {
     expect(
       unexpectedEntries([
         "extension/dist/graph-layout/graph_layout_wasm_bg.wasm",
         "extension/dist/graph-layout/graph_layout_wasm.js",
-        "extension/dist/graph-layout/graph_layout_napi.node",
       ]),
-    ).toEqual([
-      "extension/dist/graph-layout/graph_layout_wasm_bg.wasm",
-      "extension/dist/graph-layout/graph_layout_wasm.js",
-      "extension/dist/graph-layout/graph_layout_napi.node",
-    ]);
+    ).toEqual([]);
   });
 
   it("keeps the extension's own bundles in dist/ shipped", () => {
@@ -97,12 +98,12 @@ describe("Rust outputs stay out of the VSIX (checklist 12)", () => {
     ).toEqual([]);
   });
 
-  it("does not name dist/graph-layout in package.json files until Phase 8", () => {
+  // vsce refuses a `!` pattern that matches no file, and `just package` builds no `.node`, so the contents check above
+  // is what keeps the binding out.
+  it("names dist/graph-layout in package.json files", () => {
     const manifest = JSON.parse(
       readFileSync(path.join(root, "package.json"), "utf8"),
     ) as { files: string[] };
-    expect(
-      manifest.files.filter((file) => file.startsWith("dist/graph-layout")),
-    ).toEqual([]);
+    expect(manifest.files).toContain("dist/graph-layout/**");
   });
 });

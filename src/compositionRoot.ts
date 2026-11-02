@@ -1,4 +1,5 @@
 import type { ExtensionContext } from "vscode";
+import { Uri } from "vscode";
 import { composeCommands } from "./composition/commands";
 import { composeEditorProviders } from "./composition/editorProviders";
 import { composeFusion } from "./composition/fusion";
@@ -7,6 +8,7 @@ import { composeWebviews } from "./composition/webviews";
 import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { ColumnProposalRequests } from "./features/docs/columnProposals";
+import { GraphLayoutWorker } from "./features/lineage/graphLayoutWorker";
 import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { UnservedProjectsNotice } from "./features/projectSetup/unservedProjects";
@@ -35,6 +37,12 @@ export function compose(context: ExtensionContext): Composition {
   const fusion = composeFusion(graph);
   const startupGate = new StartupGate();
   const columnProposalRequests = new ColumnProposalRequests();
+  // The host's Rust layout: the Worker starts on the first layout and stops when the extension does.
+  const layouts = new GraphLayoutWorker({
+    entry: Uri.joinPath(context.extensionUri, "dist", "graphLayoutThread.js")
+      .fsPath,
+    wasmDir: Uri.joinPath(context.extensionUri, "dist", "graph-layout").fsPath,
+  });
   const commands = composeCommands(graph, startupGate, columnProposalRequests);
   const editor = composeEditorProviders(graph);
   const statusBars = new StatusBars(commands.deferToProductionStatusBar);
@@ -59,7 +67,12 @@ export function compose(context: ExtensionContext): Composition {
     graph.projectEnvironments,
     graph.projectSettings,
     columnProposalRequests,
-    composeWebviews(graph, fusion.lineageService, columnProposalRequests),
+    layouts,
+    composeWebviews(graph, {
+      lineageService: fusion.lineageService,
+      columnProposalRequests,
+      layouts,
+    }),
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,

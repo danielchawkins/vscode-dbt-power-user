@@ -184,7 +184,12 @@ export async function persistLineageSettings(
   }
 }
 
-const ENGINES: readonly lineage.LineageEngine[] = ["balanced", "thorough"];
+const ENGINES: readonly lineage.LineageEngine[] = [
+  "rust-balanced",
+  "rust-thorough",
+  "balanced",
+  "thorough",
+];
 
 /** `lineage.engine` as a known engine; anything else is the default. */
 function lineageEngineSetting(): lineage.LineageEngine {
